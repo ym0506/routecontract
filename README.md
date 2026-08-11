@@ -2,13 +2,15 @@
 
 [한국어](README.md) | [English](README.en.md)
 
+[![CI](https://github.com/ym0506/routecontract/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ym0506/routecontract/actions/workflows/ci.yml?query=branch%3Amain)
+
 > CI contracts for observed physical JDBC executions
 
 RouteContract는 Apache ShardingSphere-JDBC 애플리케이션에서 하나의 application operation 동안 `SQLExecutionHook`으로 **관측된 물리 JDBC 실행 시도**를 결정적인 manifest로 만들고, SQL·설정 변경으로 생긴 관측 실행 확장과 실행 구조 변화를 CI에서 차단하는 Java 테스트 라이브러리입니다.
 
 비즈니스 결과만 검사하면 같은 행을 정상 반환하면서도 hook이 보고한 관측 실행 시도가 `1 → 2` 또는 `1 → 8`로 늘어난 변경을 놓칠 수 있습니다. RouteContract는 operation별 실행 예산, 관측 data-source 이름, rewritten-SQL fingerprint의 구조적 diff를 별도의 회귀 계약으로 검증합니다.
 
-현재 상태는 `v0.1.0-SNAPSHOT` 개발본입니다. 공개 릴리스와 외부 사용자 검증 전이므로 아래 수치는 2026-08-11 로컬 worktree 증거이며, 수상·운영환경 지원·일반적 성능을 뜻하지 않습니다.
+현재 상태는 `v0.1.0-SNAPSHOT` 개발본입니다. 공개 소스와 Ubuntu CI는 준비됐지만 공개 릴리스와 외부 사용자 검증은 아직 없습니다. 아래 50개 정상 테스트와 독립 소비자 테스트 1개는 [revision `54f1c92`의 공개 main CI](https://github.com/ym0506/routecontract/actions/runs/31501026857)에서도 실패·오류·skip 0건으로 확인됐습니다. 자세한 환경·원시 artifact·한계는 [공개 CI 증거 기록](docs/public-ci-evidence.md)에 있습니다. 이는 수상·운영환경 지원·일반적 성능이나 외부 채택을 뜻하지 않습니다.
 
 ## Quick Start
 
