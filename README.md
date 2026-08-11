@@ -180,8 +180,12 @@ RouteContract는 ShardingSphere의 관측 기능이나 일반 JDBC 도구가 “
 
 근거와 한계까지 포함한 비교는 [competitive-analysis.md](docs/competitive-analysis.md)에 있습니다.
 공식 ShardingSphere Agent 5.5.3과 강제 중첩 조건에서 비교한 opt-in 실험은
-[방법·로컬 결과·금지 주장](docs/empirical-agent-comparison.md)을 별도로 기록합니다. 공개
-불변 workflow artifact가 생기기 전까지 그 수치는 로컬 검증 결과로만 취급합니다.
+[방법·로컬 결과·금지 주장](docs/empirical-agent-comparison.md)을 별도로 기록합니다. 공개 commit에
+연결된 workflow run과 digest로 식별되는 90일 artifact가 생기기 전까지 그 수치는 로컬 검증
+결과로만 취급합니다. 같은 현상이
+RouteContract runtime 없이도 나타나는지 확인한 후속 실험은
+[datasource-proxy 1.11.0 oracle을 둔 runtime-absent reproducer](docs/agent-runtime-absent-reproducer.md)에
+별도로 기록합니다.
 
 ## 정확한 증거 경계
 

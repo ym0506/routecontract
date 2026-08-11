@@ -4,6 +4,12 @@ plugins {
 
 description = 'MySQL Testcontainers example and regression fixture for RouteContract'
 
+sourceSets {
+    // This source set deliberately does not extend testImplementation.  Its forked
+    // JVM must not contain the RouteContract project output or SPI provider.
+    agentOnlyTest
+}
+
 dependencies {
     testImplementation project(':routecontract-shardingsphere-5.5')
     testImplementation "org.apache.shardingsphere:shardingsphere-jdbc:${shardingSphereVersion}"
@@ -27,6 +33,27 @@ dependencies {
     testImplementation "com.alibaba:transmittable-thread-local:${transmittableThreadLocalVersion}"
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testRuntimeOnly "org.slf4j:slf4j-simple:${slf4jVersion}"
+
+    agentOnlyTestImplementation "org.apache.shardingsphere:shardingsphere-jdbc:${shardingSphereVersion}"
+    agentOnlyTestRuntimeOnly "org.apache.shardingsphere:shardingsphere-infra-url-absolutepath:${shardingSphereVersion}"
+    agentOnlyTestRuntimeOnly "org.apache.shardingsphere:shardingsphere-infra-data-source-pool-hikari:${shardingSphereVersion}"
+    agentOnlyTestRuntimeOnly "org.apache.shardingsphere:shardingsphere-standalone-mode-repository-memory:${shardingSphereVersion}"
+    agentOnlyTestRuntimeOnly "org.apache.shardingsphere:shardingsphere-sharding-core:${shardingSphereVersion}"
+    agentOnlyTestRuntimeOnly "org.apache.shardingsphere:shardingsphere-parser-sql-engine-sql92:${shardingSphereVersion}"
+    agentOnlyTestRuntimeOnly "org.apache.shardingsphere:shardingsphere-parser-sql-engine-mysql:${shardingSphereVersion}"
+    agentOnlyTestRuntimeOnly "org.apache.shardingsphere:shardingsphere-authority-simple:${shardingSphereVersion}"
+    agentOnlyTestRuntimeOnly "com.zaxxer:HikariCP:${hikariVersion}"
+    agentOnlyTestRuntimeOnly("com.mysql:mysql-connector-j:${mysqlConnectorVersion}") {
+        exclude group: 'com.google.protobuf', module: 'protobuf-java'
+    }
+
+    agentOnlyTestImplementation platform("org.junit:junit-bom:${junitVersion}")
+    agentOnlyTestImplementation 'org.junit.jupiter:junit-jupiter'
+    agentOnlyTestImplementation "org.testcontainers:junit-jupiter:${testcontainersVersion}"
+    agentOnlyTestImplementation "org.testcontainers:mysql:${testcontainersVersion}"
+    agentOnlyTestImplementation "net.ttddyy:datasource-proxy:${datasourceProxyVersion}"
+    agentOnlyTestRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    agentOnlyTestRuntimeOnly "org.slf4j:slf4j-simple:${slf4jVersion}"
 }
 
 tasks.named('test') {
@@ -104,5 +131,84 @@ tasks.register('agentComparisonMySql', Test) {
 
         jvmArgs "-javaagent:${agentJar.absolutePath}"
         systemProperty 'routecontractAgentEvidence', evidenceFile.absolutePath
+    }
+}
+
+def agentOnlyAgentJar = providers.gradleProperty('agentOnlyAgentJar')
+def agentOnlyEvidence = providers.gradleProperty('agentOnlyEvidence')
+
+tasks.register('agentOnlyReproducerMySql', Test) {
+    group = 'verification'
+    description = 'Run the Agent-only forced-overlap reproducer without RouteContract on the test runtime classpath.'
+    outputs.upToDateWhen { false }
+    testClassesDirs = sourceSets.agentOnlyTest.output.classesDirs
+    classpath = sourceSets.agentOnlyTest.runtimeClasspath
+    maxParallelForks = 1
+    forkEvery = 1
+    systemProperty 'api.version', '1.44'
+    useJUnitPlatform()
+    filter {
+        includeTestsMatching 'io.github.ym0506.shardingsphereagentrepro.AgentOnlyForcedOverlapMySqlTest'
+        failOnNoMatchingTests = true
+    }
+    reports {
+        html.required = false
+        junitXml {
+            includeSystemOutLog = false
+            includeSystemErrLog = false
+        }
+    }
+
+    doFirst {
+        if (!agentOnlyAgentJar.isPresent()) {
+            throw new GradleException(
+                    'Set -PagentOnlyAgentJar to the caller-verified ShardingSphere Agent 5.5.3 JAR.')
+        }
+        if (!agentOnlyEvidence.isPresent()) {
+            throw new GradleException(
+                    'Set -PagentOnlyEvidence to the new privacy-safe JSON output path.')
+        }
+
+        File productBuild = rootProject.file('routecontract-shardingsphere-5.5/build').canonicalFile
+        Set<File> normalTestOutput = sourceSets.test.output.files.collect { it.canonicalFile } as Set
+        boolean forbiddenClasspathEntry = classpath.files.any { File candidate ->
+            File canonical = candidate.canonicalFile
+            canonical.toPath().startsWith(productBuild.toPath())
+                    || canonical.name.startsWith('routecontract-shardingsphere-5.5-')
+                    || normalTestOutput.contains(canonical)
+        }
+        if (forbiddenClasspathEntry) {
+            throw new GradleException(
+                    'The Agent-only runtime classpath contains RouteContract or the normal test output.')
+        }
+
+        File agentJar = file(agentOnlyAgentJar.get()).canonicalFile
+        if (!agentJar.isFile() || !agentJar.canRead()
+                || agentJar.name != 'shardingsphere-agent-5.5.3.jar') {
+            throw new GradleException(
+                    '-PagentOnlyAgentJar must name the readable '
+                            + 'shardingsphere-agent-5.5.3.jar file from the verified distribution.')
+        }
+        File agentConfig = new File(agentJar.parentFile, 'conf/agent.yaml')
+        File openTelemetryPlugin = new File(
+                agentJar.parentFile,
+                'plugins/tracing/shardingsphere-agent-tracing-opentelemetry-5.5.3.jar')
+        if (!agentConfig.isFile() || !agentConfig.canRead()
+                || !openTelemetryPlugin.isFile() || !openTelemetryPlugin.canRead()) {
+            throw new GradleException(
+                    'The verified Agent directory must contain readable conf/agent.yaml and '
+                            + 'the ShardingSphere 5.5.3 OpenTelemetry tracing plugin.')
+        }
+        File evidenceFile = file(agentOnlyEvidence.get()).canonicalFile
+        if (evidenceFile.exists()) {
+            throw new GradleException('-PagentOnlyEvidence must name a new file.')
+        }
+        if (evidenceFile.toPath().startsWith(agentJar.parentFile.toPath())) {
+            throw new GradleException(
+                    'The evidence output must be outside the verified Agent distribution directory.')
+        }
+
+        jvmArgs "-javaagent:${agentJar.absolutePath}"
+        systemProperty 'agentOnlyEvidence', evidenceFile.absolutePath
     }
 }

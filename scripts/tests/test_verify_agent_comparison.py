@@ -10,6 +10,7 @@ import http.client
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -97,18 +98,33 @@ def valid_spans() -> list[dict[str, object]]:
     return spans
 
 
-def write_junit(path: Path) -> None:
+def write_fixed_junit(path: Path, suite: str, method: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         "<?xml version='1.0' encoding='UTF-8'?>\n"
-        f"<testsuite name='{comparison.EXPECTED_JUNIT_SUITE}' tests='1' "
+        f"<testsuite name='{suite}' tests='1' "
         "failures='0' errors='0' skipped='0' timestamp='2026-01-01T00:00:00Z' "
         "hostname='fixture.invalid' time='1.0'>\n"
         "  <properties/>\n"
-        f"  <testcase classname='{comparison.EXPECTED_JUNIT_SUITE}' "
-        f"name='{comparison.EXPECTED_JUNIT_METHOD}' time='1.0'/>\n"
+        f"  <testcase classname='{suite}' name='{method}' time='1.0'/>\n"
         "</testsuite>\n",
         encoding="utf-8",
+    )
+
+
+def write_junit(path: Path) -> None:
+    write_fixed_junit(
+        path,
+        comparison.EXPECTED_JUNIT_SUITE,
+        comparison.EXPECTED_JUNIT_METHOD,
+    )
+
+
+def write_agent_only_junit(path: Path) -> None:
+    write_fixed_junit(
+        path,
+        comparison.AGENT_ONLY_JUNIT_SUITE,
+        comparison.AGENT_ONLY_JUNIT_METHOD,
     )
 
 
@@ -159,6 +175,74 @@ class VerifyAgentComparisonTest(unittest.TestCase):
         comparison.scan_public_text(serialized)
         comparison.scan_public_text(comparison.SUCCESS_MARKER + "\n")
         self.assert_no_raw(serialized)
+
+    def test_existing_summary_encoding_remains_byte_stable(self) -> None:
+        summary = comparison.build_summary(
+            comparison.EXPECTED_ORACLE,
+            comparison.analyze_spans(valid_spans()),
+            comparison.JunitCounts(tests=1, failures=0, errors=0, skipped=0),
+        )
+        self.assertEqual(
+            "40061ab53689a011c341cf983256e417498380370684b6b5316a10527f767b06",
+            hashlib.sha256(comparison.serialize_summary(summary).encode()).hexdigest(),
+        )
+
+    def test_agent_only_result_is_exact_isolated_and_privacy_safe(self) -> None:
+        observation = comparison.analyze_spans(valid_spans())
+        summary = comparison.build_agent_only_summary(
+            comparison.EXPECTED_AGENT_ONLY_ORACLE,
+            observation,
+            comparison.JunitCounts(tests=1, failures=0, errors=0, skipped=0),
+        )
+        serialized = comparison.serialize_summary(summary)
+
+        self.assertEqual(60, summary["workloadCounts"]["expectedBackingCallbacks"])
+        self.assertEqual(60, summary["oracleCounts"]["proxyObservedBackingCallbacks"])
+        self.assertEqual(40, summary["agentCounts"]["executeSpans"])
+        self.assertEqual(20, summary["agentCounts"]["totalExecuteGap"])
+        self.assertEqual(20, summary["agentCounts"]["fanOutExecuteGap"])
+        self.assertEqual(
+            2,
+            summary["agentCounts"]["fanOutSurvivingDataSourceCount"],
+        )
+        self.assertEqual("1.11.0", summary["versions"]["datasourceProxy"])
+        self.assertEqual(
+            {
+                "routeContractArtifactClasspathEntries": 0,
+                "routeContractApiClassPresent": False,
+                "routeContractHookClassPresent": False,
+                "routeContractSpiProviderPresent": False,
+            },
+            summary["isolation"],
+        )
+        comparison.scan_public_text(serialized)
+        comparison.scan_public_text(comparison.AGENT_ONLY_SUCCESS_MARKER + "\n")
+        self.assert_no_raw(serialized)
+
+    def test_agent_only_aggregate_preserves_surviving_source_cardinality(self) -> None:
+        summaries = []
+        for surviving_sources in (1, 2):
+            summaries.append(
+                comparison.build_agent_only_summary(
+                    comparison.EXPECTED_AGENT_ONLY_ORACLE,
+                    comparison.AgentObservation(
+                        root_invoke_spans=40,
+                        execute_spans=40,
+                        control_execute_spans=20,
+                        fanout_execute_spans=20,
+                        fanout_surviving_data_source_count=surviving_sources,
+                    ),
+                    comparison.JunitCounts(
+                        tests=1, failures=0, errors=0, skipped=0
+                    ),
+                )
+            )
+        self.assertEqual(1, summaries[0]["agentCounts"]["fanOutSurvivingDataSourceCount"])
+        self.assertEqual(2, summaries[1]["agentCounts"]["fanOutSurvivingDataSourceCount"])
+        self.assertNotEqual(
+            comparison.serialize_summary(summaries[0]),
+            comparison.serialize_summary(summaries[1]),
+        )
 
     def test_rejects_missing_parent_root_and_required_attributes(self) -> None:
         mutations = []
@@ -254,6 +338,34 @@ class VerifyAgentComparisonTest(unittest.TestCase):
                 comparison.read_oracle(oracle)
             self.assert_no_raw(str(caught.exception))
 
+    def test_agent_only_oracle_requires_exact_absence_proof(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            oracle = Path(raw) / "agent-only-oracle.json"
+            oracle.write_text(
+                json.dumps(comparison.EXPECTED_AGENT_ONLY_ORACLE) + "\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                comparison.EXPECTED_AGENT_ONLY_ORACLE,
+                comparison.read_agent_only_oracle(oracle),
+            )
+
+            mutations = (
+                ("routeContractArtifactClasspathEntries", 1),
+                ("routeContractApiClassPresent", True),
+                ("routeContractHookClassPresent", True),
+                ("routeContractSpiProviderPresent", True),
+                ("raw", "SELECT PAID FROM ds_0"),
+            )
+            for key, value in mutations:
+                with self.subTest(key=key):
+                    unsafe = dict(comparison.EXPECTED_AGENT_ONLY_ORACLE)
+                    unsafe[key] = value
+                    oracle.write_text(json.dumps(unsafe), encoding="utf-8")
+                    with self.assertRaises(comparison.ComparisonError) as caught:
+                        comparison.read_agent_only_oracle(oracle)
+                    self.assert_no_raw(str(caught.exception))
+
     def test_junit_parser_uses_only_the_fixed_result_shape(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             results = Path(raw)
@@ -278,6 +390,25 @@ class VerifyAgentComparisonTest(unittest.TestCase):
                 comparison.read_junit_counts(results)
             self.assert_no_raw(str(caught.exception))
 
+    def test_agent_only_junit_parser_uses_the_neutral_exact_suite(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            results = Path(raw)
+            junit = results / f"TEST-{comparison.AGENT_ONLY_JUNIT_SUITE}.xml"
+            write_agent_only_junit(junit)
+
+            counts = comparison.read_junit_counts(
+                results,
+                expected_suite=comparison.AGENT_ONLY_JUNIT_SUITE,
+                expected_method=comparison.AGENT_ONLY_JUNIT_METHOD,
+            )
+            self.assertEqual(
+                comparison.JunitCounts(tests=1, failures=0, errors=0, skipped=0),
+                counts,
+            )
+            with self.assertRaises(comparison.ComparisonError) as caught:
+                comparison.read_junit_counts(results)
+            self.assert_no_raw(str(caught.exception))
+
     def test_junit_parser_rejects_forged_suite_level_failure(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             results = Path(raw)
@@ -291,6 +422,39 @@ class VerifyAgentComparisonTest(unittest.TestCase):
             with self.assertRaises(comparison.ComparisonError) as caught:
                 comparison.read_junit_counts(results)
             self.assert_no_raw(str(caught.exception))
+
+    def test_junit_parser_rejects_non_schema_children_text_and_tail(self) -> None:
+        mutations = (
+            lambda text: text.replace(
+                "hostname='fixture.invalid' time='1.0'>",
+                "hostname='fixture.invalid' time='1.0'>forged",
+            ),
+            lambda text: text.replace(
+                "time='1.0'/>",
+                "time='1.0'><metadata/></testcase>",
+            ),
+            lambda text: text.replace(
+                "time='1.0'/>",
+                "time='1.0'>forged</testcase>",
+            ),
+            lambda text: text.replace(
+                "time='1.0'/>",
+                "time='1.0'/>forged",
+            ),
+        )
+        with tempfile.TemporaryDirectory() as raw:
+            results = Path(raw)
+            junit = results / f"TEST-{comparison.EXPECTED_JUNIT_SUITE}.xml"
+            for mutate in mutations:
+                with self.subTest(mutation=mutate):
+                    write_junit(junit)
+                    junit.write_text(
+                        mutate(junit.read_text(encoding="utf-8")),
+                        encoding="utf-8",
+                    )
+                    with self.assertRaises(comparison.ComparisonError) as caught:
+                        comparison.read_junit_counts(results)
+                    self.assert_no_raw(str(caught.exception))
 
     def test_receiver_accepts_valid_batch_without_logging_raw_data(self) -> None:
         receiver = comparison.ZipkinReceiver(max_body_bytes=64 * 1024, max_requests=4)
@@ -536,6 +700,13 @@ class VerifyAgentComparisonTest(unittest.TestCase):
             summary["privacyClassification"]["requiredAgentTagsValidated"]
         )
 
+    def test_agent_only_fixture_is_independent_and_version_pinned(self) -> None:
+        versions = comparison.validate_agent_only_fixture_configuration(
+            REPOSITORY_ROOT
+        )
+        self.assertEqual(comparison.EXPECTED_AGENT_ONLY_FIXTURE_VERSIONS, versions)
+        self.assertEqual("1.11.0", versions["datasourceProxy"])
+
     def test_failed_capped_process_never_exposes_captured_output(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             command = [
@@ -551,6 +722,34 @@ class VerifyAgentComparisonTest(unittest.TestCase):
                     max_output_bytes=1024,
                 )
             self.assert_no_raw(str(caught.exception))
+
+    def test_gradle_subprocess_environment_excludes_ambient_secret(self) -> None:
+        sentinel = "ROUTECONTRACT_SENTINEL_SECRET_MUST_NOT_REACH_GRADLE"
+        with tempfile.TemporaryDirectory() as raw, mock.patch.dict(
+            os.environ,
+            {
+                "PATH": "/usr/bin:/bin",
+                "LANG": "C.UTF-8",
+                "ROUTECONTRACT_SENTINEL_SECRET": sentinel,
+                "GITHUB_TOKEN": sentinel,
+                "ORG_GRADLE_PROJECT_password": sentinel,
+                "JAVA_TOOL_OPTIONS": sentinel,
+            },
+            clear=True,
+        ):
+            environment = comparison._build_gradle_environment(Path(raw))
+
+            self.assertEqual(
+                {"PATH", "LANG", "HOME", "GRADLE_USER_HOME", "TMPDIR"},
+                set(environment),
+            )
+            self.assertNotIn(sentinel, environment)
+            self.assertNotIn(sentinel, environment.values())
+            for key in ("HOME", "GRADLE_USER_HOME", "TMPDIR"):
+                directory = Path(environment[key])
+                self.assertTrue(directory.is_dir())
+                self.assertTrue(directory.is_relative_to(Path(raw)))
+                self.assertEqual(0o700, directory.stat().st_mode & 0o777)
 
     def test_summary_writer_refuses_symlinked_ancestors_and_exactly_verifies_output(self) -> None:
         observation = comparison.analyze_spans(valid_spans())
@@ -614,6 +813,48 @@ class VerifyAgentComparisonTest(unittest.TestCase):
                 comparison.verify_repository_summary(repository)
             self.assert_no_raw(str(caught.exception))
 
+    def test_agent_only_summary_uses_a_distinct_exact_output_contract(self) -> None:
+        summary = comparison.build_agent_only_summary(
+            comparison.EXPECTED_AGENT_ONLY_ORACLE,
+            comparison.analyze_spans(valid_spans()),
+            comparison.JunitCounts(tests=1, failures=0, errors=0, skipped=0),
+        )
+        with tempfile.TemporaryDirectory() as raw:
+            repository = Path(raw) / "repository"
+            repository.mkdir()
+            comparison._write_repository_summary(
+                repository,
+                summary,
+                output_directory=comparison.AGENT_ONLY_OUTPUT_DIRECTORY,
+            )
+            comparison.verify_agent_only_repository_summary(repository)
+            output = repository / "build" / comparison.AGENT_ONLY_OUTPUT_DIRECTORY
+            self.assertEqual([output / "summary.json"], list(output.iterdir()))
+
+            payload = json.loads((output / "summary.json").read_text(encoding="utf-8"))
+            payload["junitCounts"]["tests"] = True
+            (output / "summary.json").write_text(
+                comparison.serialize_summary(payload),
+                encoding="utf-8",
+            )
+            with self.assertRaises(comparison.ComparisonError) as caught:
+                comparison.verify_agent_only_repository_summary(repository)
+            self.assert_no_raw(str(caught.exception))
+
+            comparison._write_repository_summary(
+                repository,
+                summary,
+                output_directory=comparison.AGENT_ONLY_OUTPUT_DIRECTORY,
+            )
+            payload = json.loads((output / "summary.json").read_text(encoding="utf-8"))
+            payload["rawExtra"] = "SELECT PAID FROM ds_0"
+            (output / "summary.json").write_text(
+                json.dumps(payload) + "\n", encoding="utf-8"
+            )
+            with self.assertRaises(comparison.ComparisonError) as caught:
+                comparison.verify_agent_only_repository_summary(repository)
+            self.assert_no_raw(str(caught.exception))
+
     def test_main_converts_unexpected_exceptions_to_one_fixed_marker(self) -> None:
         error_output = io.StringIO()
         with mock.patch.object(
@@ -627,6 +868,24 @@ class VerifyAgentComparisonTest(unittest.TestCase):
 
         self.assertEqual(1, result)
         self.assertEqual(comparison.FAILURE_MARKER + "\n", error_output.getvalue())
+        self.assert_no_raw(error_output.getvalue())
+
+    def test_agent_only_main_uses_one_fixed_failure_marker(self) -> None:
+        error_output = io.StringIO()
+        with mock.patch.object(
+            comparison,
+            "run_agent_only_reproducer",
+            side_effect=KeyError(
+                "SELECT PAID FROM ds_0 via jdbc://localhost /private/tmp/secret"
+            ),
+        ), contextlib.redirect_stderr(error_output):
+            result = comparison.main(["--agent-only"])
+
+        self.assertEqual(1, result)
+        self.assertEqual(
+            comparison.AGENT_ONLY_FAILURE_MARKER + "\n",
+            error_output.getvalue(),
+        )
         self.assert_no_raw(error_output.getvalue())
 
 

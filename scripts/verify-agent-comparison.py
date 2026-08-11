@@ -82,6 +82,12 @@ EXPECTED_JUNIT_SUITE = (
 EXPECTED_JUNIT_METHOD = (
     "sequentialOperationsExposeExpectedPhysicalAttemptCounts()"
 )
+AGENT_ONLY_JUNIT_SUITE = (
+    "io.github.ym0506.shardingsphereagentrepro.AgentOnlyForcedOverlapMySqlTest"
+)
+AGENT_ONLY_JUNIT_METHOD = (
+    "forcesTwentyTwoWayFanOutPairsWithoutRouteContractRuntime()"
+)
 EXPECTED_ORACLE = {
     "schemaVersion": 1,
     "operations": 20,
@@ -94,6 +100,23 @@ EXPECTED_ORACLE = {
     "forcedFanOutPairs": 20,
     "uniqueRouteSignatures": 1,
 }
+EXPECTED_AGENT_ONLY_ORACLE = {
+    "schemaVersion": 1,
+    "iterations": 20,
+    "logicalStatements": 40,
+    "controlExpectedBackingCallbacks": 20,
+    "fanOutExpectedBackingCallbacks": 40,
+    "expectedBackingCallbacks": 60,
+    "proxyObservedBackingCallbacks": 60,
+    "proxyReportedFailures": 0,
+    "forcedFanOutPairs": 20,
+    "controlReturnedRows": 20,
+    "fanOutReturnedRows": 20,
+    "routeContractArtifactClasspathEntries": 0,
+    "routeContractApiClassPresent": False,
+    "routeContractHookClassPresent": False,
+    "routeContractSpiProviderPresent": False,
+}
 EXPECTED_FIXTURE_VERSIONS = {
     "javaMajor": 17,
     "mysql": "8.4.11",
@@ -102,6 +125,16 @@ EXPECTED_FIXTURE_VERSIONS = {
     ),
     "testcontainers": "1.21.4",
     "connectorJ": "26.7.0",
+}
+EXPECTED_AGENT_ONLY_FIXTURE_VERSIONS = {
+    "javaMajor": 17,
+    "mysql": "8.4.11",
+    "mysqlImageDigest": (
+        "sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb"
+    ),
+    "testcontainers": "1.21.4",
+    "connectorJ": "26.7.0",
+    "datasourceProxy": "1.11.0",
 }
 
 MAX_ARCHIVE_MEMBERS = 64
@@ -128,6 +161,40 @@ SUMMARY_SUCCESS_MARKER = (
     "ROUTECONTRACT_AGENT_COMPARISON_SUMMARY result=VERIFIED_PRIVACY_SAFE_ARTIFACT"
 )
 FAILURE_MARKER = "ROUTECONTRACT_AGENT_COMPARISON result=FAILED"
+AGENT_ONLY_SUCCESS_MARKER = (
+    "SHARDINGSPHERE_AGENT_ONLY_REPRODUCER "
+    "result=VERIFIED_SHARDINGSPHERE_AGENT_5_5_3"
+)
+AGENT_ONLY_SUMMARY_SUCCESS_MARKER = (
+    "SHARDINGSPHERE_AGENT_ONLY_REPRODUCER_SUMMARY "
+    "result=VERIFIED_PRIVACY_SAFE_ARTIFACT"
+)
+AGENT_ONLY_FAILURE_MARKER = "SHARDINGSPHERE_AGENT_ONLY_REPRODUCER result=FAILED"
+
+COMPARISON_OUTPUT_DIRECTORY = "agent-comparison"
+AGENT_ONLY_OUTPUT_DIRECTORY = "agent-only-reproducer"
+ALLOWED_OUTPUT_DIRECTORIES = {
+    COMPARISON_OUTPUT_DIRECTORY,
+    AGENT_ONLY_OUTPUT_DIRECTORY,
+}
+
+GRADLE_ENVIRONMENT_ALLOWLIST = frozenset(
+    {
+        "CI",
+        "DOCKER_CERT_PATH",
+        "DOCKER_CONTEXT",
+        "DOCKER_HOST",
+        "DOCKER_TLS_VERIFY",
+        "JAVA_HOME",
+        "LANG",
+        "LC_ALL",
+        "LC_CTYPE",
+        "PATH",
+        "TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE",
+        "TESTCONTAINERS_HOST_OVERRIDE",
+        "TZ",
+    }
+)
 
 RAW_PUBLIC_PATTERNS = (
     re.compile(r"\b(?:select|from|where|between|insert|update|delete|merge|values)\b", re.I),
@@ -192,6 +259,11 @@ class JunitCounts:
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = SafeArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--agent-only",
+        action="store_true",
+        help="Run the isolated Agent-only fixture without RouteContract at runtime",
+    )
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument(
         "--archive",
@@ -477,16 +549,26 @@ def _atomic_write_text(path: Path, content: str) -> None:
         raise ComparisonError("OUTPUT_WRITE") from error
 
 
-def write_agent_config(path: Path, port: int) -> None:
+def write_agent_config(
+    path: Path,
+    port: int,
+    *,
+    service_name: str = "routecontract-agent-comparison",
+) -> None:
     if not 1 <= port <= 65_535:
         raise ComparisonError("HTTP_PORT")
+    if service_name not in {
+        "routecontract-agent-comparison",
+        "shardingsphere-agent-overlap-reproducer",
+    }:
+        raise ComparisonError("AGENT_CONFIG")
     if path.is_symlink() or not path.is_file():
         raise ComparisonError("AGENT_CONFIG")
     content = f"""plugins:
   tracing:
     OpenTelemetry:
       props:
-        otel.service.name: "routecontract-agent-comparison"
+        otel.service.name: "{service_name}"
         otel.traces.exporter: "zipkin"
         otel.exporter.zipkin.endpoint: "http://127.0.0.1:{port}{ZIPKIN_PATH}"
         otel.traces.sampler: "always_on"
@@ -840,6 +922,38 @@ def run_capped_process(
         captured.clear()
 
 
+def _build_gradle_environment(temporary_root: Path) -> dict[str, str]:
+    """Build a minimal child environment with private state directories."""
+    try:
+        if temporary_root.is_symlink() or not temporary_root.is_dir():
+            raise ComparisonError("GRADLE_ENVIRONMENT")
+        private_home = temporary_root / "home"
+        private_gradle_home = temporary_root / "gradle-user-home"
+        private_tmp = temporary_root / "tmp"
+        for directory in (private_home, private_gradle_home, private_tmp):
+            directory.mkdir(mode=0o700)
+    except ComparisonError:
+        raise
+    except OSError as error:
+        raise ComparisonError("GRADLE_ENVIRONMENT") from error
+
+    environment = {
+        key: value
+        for key, value in os.environ.items()
+        if key in GRADLE_ENVIRONMENT_ALLOWLIST and value
+    }
+    if "PATH" not in environment:
+        raise ComparisonError("GRADLE_ENVIRONMENT")
+    environment.update(
+        {
+            "HOME": str(private_home),
+            "GRADLE_USER_HOME": str(private_gradle_home),
+            "TMPDIR": str(private_tmp),
+        }
+    )
+    return environment
+
+
 def _bounded_string(value: object) -> str:
     if not isinstance(value, str) or not value:
         raise ComparisonError("SPAN_FIELD")
@@ -958,6 +1072,23 @@ def _object_without_duplicates(pairs: list[tuple[str, object]]) -> dict[str, obj
     return result
 
 
+def _exact_typed_equal(actual: object, expected: object) -> bool:
+    if type(actual) is not type(expected):
+        return False
+    if isinstance(expected, dict):
+        if set(actual) != set(expected):
+            return False
+        return all(
+            _exact_typed_equal(actual[key], expected[key]) for key in expected
+        )
+    if isinstance(expected, list):
+        return len(actual) == len(expected) and all(
+            _exact_typed_equal(actual_value, expected_value)
+            for actual_value, expected_value in zip(actual, expected, strict=True)
+        )
+    return actual == expected
+
+
 def read_oracle(path: Path) -> dict[str, int]:
     try:
         if path.is_symlink() or not path.is_file():
@@ -980,12 +1111,44 @@ def read_oracle(path: Path) -> dict[str, int]:
     return {key: int(parsed[key]) for key in EXPECTED_ORACLE}
 
 
+def read_agent_only_oracle(path: Path) -> dict[str, object]:
+    try:
+        if path.is_symlink() or not path.is_file():
+            raise ComparisonError("AGENT_ONLY_ORACLE_TYPE")
+        if path.stat().st_size > MAX_ORACLE_BYTES:
+            raise ComparisonError("AGENT_ONLY_ORACLE_SIZE")
+        raw = path.read_bytes()
+        decoded = raw.decode("utf-8", errors="strict")
+        parsed = json.loads(decoded, object_pairs_hook=_object_without_duplicates)
+    except ComparisonError:
+        raise
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ComparisonError("AGENT_ONLY_ORACLE_JSON") from error
+    if not isinstance(parsed, dict) or set(parsed) != set(EXPECTED_AGENT_ONLY_ORACLE):
+        raise ComparisonError("AGENT_ONLY_ORACLE_SCHEMA")
+    if any(
+        type(parsed[key]) is not type(expected)
+        for key, expected in EXPECTED_AGENT_ONLY_ORACLE.items()
+    ):
+        raise ComparisonError("AGENT_ONLY_ORACLE_SCHEMA")
+    if not _exact_typed_equal(parsed, EXPECTED_AGENT_ONLY_ORACLE):
+        raise ComparisonError("AGENT_ONLY_ORACLE_VALUES")
+    return dict(parsed)
+
+
 def _xml_local_name(tag: str) -> str:
     return tag.rsplit("}", 1)[-1]
 
 
-def read_junit_counts(results_directory: Path) -> JunitCounts:
-    expected_path = results_directory / f"TEST-{EXPECTED_JUNIT_SUITE}.xml"
+def read_junit_counts(
+    results_directory: Path,
+    *,
+    expected_suite: str = EXPECTED_JUNIT_SUITE,
+    expected_method: str = EXPECTED_JUNIT_METHOD,
+) -> JunitCounts:
+    if not expected_suite or not expected_method:
+        raise ComparisonError("JUNIT_ARGUMENTS")
+    expected_path = results_directory / f"TEST-{expected_suite}.xml"
     try:
         if results_directory.is_symlink() or not results_directory.is_dir():
             raise ComparisonError("JUNIT_DIRECTORY")
@@ -1010,8 +1173,10 @@ def read_junit_counts(results_directory: Path) -> JunitCounts:
         raise ComparisonError("JUNIT_XML") from error
     if _xml_local_name(root.tag) != "testsuite":
         raise ComparisonError("JUNIT_SCHEMA")
+    if (root.text or "").strip() or (root.tail or "").strip():
+        raise ComparisonError("JUNIT_SCHEMA")
     expected_attributes = {
-        "name": EXPECTED_JUNIT_SUITE,
+        "name": expected_suite,
         "tests": "1",
         "failures": "0",
         "errors": "0",
@@ -1039,7 +1204,12 @@ def read_junit_counts(results_directory: Path) -> JunitCounts:
     ]:
         raise ComparisonError("JUNIT_SCHEMA")
     properties = children[0]
-    if properties.attrib or list(properties) or (properties.text or "").strip():
+    if (
+        properties.attrib
+        or list(properties)
+        or (properties.text or "").strip()
+        or (properties.tail or "").strip()
+    ):
         raise ComparisonError("JUNIT_SCHEMA")
     testcases = [child for child in root if _xml_local_name(child.tag) == "testcase"]
     if len(testcases) != 1:
@@ -1047,14 +1217,12 @@ def read_junit_counts(results_directory: Path) -> JunitCounts:
     testcase = testcases[0]
     if (
         set(testcase.attrib) != {"name", "classname", "time"}
-        or testcase.get("classname") != EXPECTED_JUNIT_SUITE
-        or testcase.get("name") != EXPECTED_JUNIT_METHOD
+        or testcase.get("classname") != expected_suite
+        or testcase.get("name") != expected_method
         or not testcase.get("time")
         or (testcase.text or "").strip()
-        or any(
-            _xml_local_name(child.tag) in {"failure", "error", "skipped"}
-            for child in testcase
-        )
+        or (testcase.tail or "").strip()
+        or list(testcase)
     ):
         raise ComparisonError("JUNIT_RESULT")
     return JunitCounts(tests=1, failures=0, errors=0, skipped=0)
@@ -1132,7 +1300,11 @@ def validate_fixture_configuration(repository_root: Path) -> dict[str, object]:
             'b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb"',
         ),
         (fixture_source, "new MySQLContainer<>(MYSQL_IMAGE)"),
-        (lockfile, "com.mysql:mysql-connector-j:26.7.0=testRuntimeClasspath"),
+        (
+            lockfile,
+            "com.mysql:mysql-connector-j:26.7.0=agentOnlyTestRuntimeClasspath,"
+            "testRuntimeClasspath",
+        ),
         (lockfile, "org.testcontainers:mysql:1.21.4="),
         (lockfile, "org.testcontainers:junit-jupiter:1.21.4="),
     )
@@ -1141,15 +1313,135 @@ def validate_fixture_configuration(repository_root: Path) -> dict[str, object]:
     return dict(EXPECTED_FIXTURE_VERSIONS)
 
 
+def validate_agent_only_fixture_configuration(
+    repository_root: Path,
+) -> dict[str, object]:
+    properties_text = _read_bounded_source(repository_root / "gradle.properties")
+    properties: dict[str, str] = {}
+    for raw_line in properties_text.splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if "=" not in line:
+            raise ComparisonError("AGENT_ONLY_FIXTURE_PROPERTIES")
+        key, value = (part.strip() for part in line.split("=", 1))
+        if not key or not value or key in properties:
+            raise ComparisonError("AGENT_ONLY_FIXTURE_PROPERTIES")
+        properties[key] = value
+    expected_properties = {
+        "shardingSphereVersion": SHARDINGSPHERE_VERSION,
+        "testcontainersVersion": str(
+            EXPECTED_AGENT_ONLY_FIXTURE_VERSIONS["testcontainers"]
+        ),
+        "mysqlConnectorVersion": str(
+            EXPECTED_AGENT_ONLY_FIXTURE_VERSIONS["connectorJ"]
+        ),
+        "datasourceProxyVersion": str(
+            EXPECTED_AGENT_ONLY_FIXTURE_VERSIONS["datasourceProxy"]
+        ),
+    }
+    if any(properties.get(key) != value for key, value in expected_properties.items()):
+        raise ComparisonError("AGENT_ONLY_FIXTURE_VERSIONS")
+
+    root_build = _read_bounded_source(repository_root / "build.gradle")
+    mysql_build = _read_bounded_source(
+        repository_root / "examples" / "mysql" / "build.gradle"
+    )
+    fixture_source = _read_bounded_source(
+        repository_root
+        / "examples"
+        / "mysql"
+        / "src"
+        / "agentOnlyTest"
+        / "java"
+        / "io"
+        / "github"
+        / "ym0506"
+        / "shardingsphereagentrepro"
+        / "AgentOnlyForcedOverlapMySqlTest.java"
+    )
+    lockfile = _read_bounded_source(
+        repository_root / "examples" / "mysql" / "gradle.lockfile"
+    )
+    required_fragments = (
+        (root_build, "languageVersion = JavaLanguageVersion.of(17)"),
+        (root_build, "options.release = 17"),
+        (
+            mysql_build,
+            'agentOnlyTestImplementation "org.apache.shardingsphere:'
+            'shardingsphere-jdbc:${shardingSphereVersion}"',
+        ),
+        (
+            mysql_build,
+            'agentOnlyTestImplementation "net.ttddyy:'
+            'datasource-proxy:${datasourceProxyVersion}"',
+        ),
+        (
+            mysql_build,
+            "testClassesDirs = sourceSets.agentOnlyTest.output.classesDirs",
+        ),
+        (
+            mysql_build,
+            "classpath = sourceSets.agentOnlyTest.runtimeClasspath",
+        ),
+        (
+            mysql_build,
+            "includeTestsMatching 'io.github.ym0506.shardingsphereagentrepro."
+            "AgentOnlyForcedOverlapMySqlTest'",
+        ),
+        (
+            fixture_source,
+            '"mysql:8.4.11@sha256:'
+            'b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb"',
+        ),
+        (fixture_source, "new MySQLContainer<>(MYSQL_IMAGE)"),
+        (fixture_source, "routeContractApiClassPresent\\\":false"),
+        (fixture_source, "routeContractHookClassPresent\\\":false"),
+        (fixture_source, "routeContractSpiProviderPresent\\\":false"),
+        (fixture_source, "StandardOpenOption.CREATE_NEW"),
+        (
+            lockfile,
+            "com.mysql:mysql-connector-j:26.7.0=agentOnlyTestRuntimeClasspath",
+        ),
+        (
+            lockfile,
+            "org.testcontainers:mysql:1.21.4=agentOnlyTestCompileClasspath,"
+            "agentOnlyTestRuntimeClasspath",
+        ),
+        (
+            lockfile,
+            "org.testcontainers:junit-jupiter:1.21.4=agentOnlyTestCompileClasspath,"
+            "agentOnlyTestRuntimeClasspath",
+        ),
+        (
+            lockfile,
+            "net.ttddyy:datasource-proxy:1.11.0=agentOnlyTestCompileClasspath,"
+            "agentOnlyTestRuntimeClasspath",
+        ),
+    )
+    if any(text.count(fragment) != 1 for text, fragment in required_fragments):
+        raise ComparisonError("AGENT_ONLY_FIXTURE_CONFIGURATION")
+    forbidden_fragments = (
+        "agentOnlyTestImplementation project(",
+        "agentOnlyTestRuntimeOnly project(",
+        "agentOnlyTestImplementation.extendsFrom",
+        "agentOnlyTestRuntimeOnly.extendsFrom",
+        "agentOnlyTestRuntimeClasspath.extendsFrom",
+    )
+    if any(fragment in mysql_build for fragment in forbidden_fragments):
+        raise ComparisonError("AGENT_ONLY_FIXTURE_CLASSPATH")
+    return dict(EXPECTED_AGENT_ONLY_FIXTURE_VERSIONS)
+
+
 def build_summary(
     oracle: dict[str, int],
     observation: AgentObservation,
     junit: JunitCounts,
     fixture_versions: dict[str, object] = EXPECTED_FIXTURE_VERSIONS,
 ) -> dict[str, object]:
-    if oracle != EXPECTED_ORACLE:
+    if not _exact_typed_equal(oracle, EXPECTED_ORACLE):
         raise ComparisonError("SUMMARY_ORACLE")
-    if fixture_versions != EXPECTED_FIXTURE_VERSIONS:
+    if not _exact_typed_equal(fixture_versions, EXPECTED_FIXTURE_VERSIONS):
         raise ComparisonError("SUMMARY_VERSIONS")
     gap = oracle["expectedPhysicalAttempts"] - observation.execute_spans
     if (
@@ -1216,6 +1508,111 @@ def build_summary(
     }
 
 
+def build_agent_only_summary(
+    oracle: dict[str, object],
+    observation: AgentObservation,
+    junit: JunitCounts,
+    fixture_versions: dict[str, object] = EXPECTED_AGENT_ONLY_FIXTURE_VERSIONS,
+) -> dict[str, object]:
+    if not _exact_typed_equal(oracle, EXPECTED_AGENT_ONLY_ORACLE):
+        raise ComparisonError("AGENT_ONLY_SUMMARY_ORACLE")
+    if not _exact_typed_equal(
+        fixture_versions,
+        EXPECTED_AGENT_ONLY_FIXTURE_VERSIONS,
+    ):
+        raise ComparisonError("AGENT_ONLY_SUMMARY_VERSIONS")
+    expected_backing = int(oracle["expectedBackingCallbacks"])
+    expected_fanout = int(oracle["fanOutExpectedBackingCallbacks"])
+    total_gap = expected_backing - observation.execute_spans
+    fanout_gap = expected_fanout - observation.fanout_execute_spans
+    if (
+        observation.root_invoke_spans != 40
+        or observation.control_execute_spans != 20
+        or observation.fanout_execute_spans != 20
+        or observation.execute_spans != 40
+        or total_gap != 20
+        or fanout_gap != 20
+        or observation.fanout_surviving_data_source_count not in (1, 2)
+        or junit != JunitCounts(tests=1, failures=0, errors=0, skipped=0)
+    ):
+        raise ComparisonError("AGENT_ONLY_SUMMARY_COUNTS")
+    return {
+        "schemaVersion": 1,
+        "classification": (
+            "verified-mysql-shardingsphere-5.5.3-agent-only-reproducer"
+        ),
+        "versions": {
+            "agent": AGENT_VERSION,
+            "shardingSphere": SHARDINGSPHERE_VERSION,
+            "javaMajor": fixture_versions["javaMajor"],
+            "mysql": fixture_versions["mysql"],
+            "mysqlImageDigest": fixture_versions["mysqlImageDigest"],
+            "testcontainers": fixture_versions["testcontainers"],
+            "connectorJ": fixture_versions["connectorJ"],
+            "datasourceProxy": fixture_versions["datasourceProxy"],
+        },
+        "archive": {
+            "bytes": EXPECTED_ARCHIVE_BYTES,
+            "sha512": EXPECTED_ARCHIVE_SHA512,
+        },
+        "workloadCounts": {
+            "iterations": oracle["iterations"],
+            "logicalStatements": oracle["logicalStatements"],
+            "controlExpectedBackingCallbacks": oracle[
+                "controlExpectedBackingCallbacks"
+            ],
+            "fanOutExpectedBackingCallbacks": oracle[
+                "fanOutExpectedBackingCallbacks"
+            ],
+            "expectedBackingCallbacks": oracle["expectedBackingCallbacks"],
+            "forcedFanOutPairs": oracle["forcedFanOutPairs"],
+        },
+        "isolation": {
+            "routeContractArtifactClasspathEntries": oracle[
+                "routeContractArtifactClasspathEntries"
+            ],
+            "routeContractApiClassPresent": oracle[
+                "routeContractApiClassPresent"
+            ],
+            "routeContractHookClassPresent": oracle[
+                "routeContractHookClassPresent"
+            ],
+            "routeContractSpiProviderPresent": oracle[
+                "routeContractSpiProviderPresent"
+            ],
+        },
+        "oracleCounts": {
+            "proxyObservedBackingCallbacks": oracle[
+                "proxyObservedBackingCallbacks"
+            ],
+            "proxyReportedFailures": oracle["proxyReportedFailures"],
+            "controlReturnedRows": oracle["controlReturnedRows"],
+            "fanOutReturnedRows": oracle["fanOutReturnedRows"],
+        },
+        "agentCounts": {
+            "rootInvokeSpans": observation.root_invoke_spans,
+            "executeSpans": observation.execute_spans,
+            "controlExecuteSpans": observation.control_execute_spans,
+            "fanOutExecuteSpans": observation.fanout_execute_spans,
+            "totalExecuteGap": total_gap,
+            "fanOutExecuteGap": fanout_gap,
+            "fanOutSurvivingDataSourceCount": (
+                observation.fanout_surviving_data_source_count
+            ),
+        },
+        "junitCounts": {
+            "tests": junit.tests,
+            "failures": junit.failures,
+            "errors": junit.errors,
+            "skipped": junit.skipped,
+        },
+        "privacyClassification": {
+            "requiredAgentTagsValidated": True,
+            "rawTelemetryPersisted": False,
+        },
+    }
+
+
 def serialize_summary(summary: dict[str, object]) -> str:
     try:
         serialized = json.dumps(
@@ -1249,12 +1646,19 @@ def _directory_open_flags() -> int:
     )
 
 
-def _open_output_directory(repository_root: Path, *, create: bool) -> int:
-    """Open build/agent-comparison without following repository-relative links."""
+def _open_output_directory(
+    repository_root: Path,
+    *,
+    create: bool,
+    output_directory: str = COMPARISON_OUTPUT_DIRECTORY,
+) -> int:
+    """Open one fixed summary directory without following repository-relative links."""
+    if output_directory not in ALLOWED_OUTPUT_DIRECTORIES:
+        raise ComparisonError("OUTPUT_DIRECTORY_NAME")
     try:
         current = os.open(repository_root, _directory_open_flags())
         try:
-            for component in ("build", "agent-comparison"):
+            for component in ("build", output_directory):
                 if create:
                     try:
                         os.mkdir(component, mode=0o700, dir_fd=current)
@@ -1277,8 +1681,16 @@ def _open_output_directory(repository_root: Path, *, create: bool) -> int:
         raise ComparisonError("OUTPUT_DIRECTORY") from error
 
 
-def _remove_stale_repository_summary(repository_root: Path) -> None:
-    directory = _open_output_directory(repository_root, create=True)
+def _remove_stale_repository_summary(
+    repository_root: Path,
+    *,
+    output_directory: str = COMPARISON_OUTPUT_DIRECTORY,
+) -> None:
+    directory = _open_output_directory(
+        repository_root,
+        create=True,
+        output_directory=output_directory,
+    )
     try:
         try:
             metadata = os.stat(
@@ -1303,9 +1715,15 @@ def _remove_stale_repository_summary(repository_root: Path) -> None:
 def _write_repository_summary(
     repository_root: Path,
     summary: dict[str, object],
+    *,
+    output_directory: str = COMPARISON_OUTPUT_DIRECTORY,
 ) -> None:
     serialized = serialize_summary(summary).encode("utf-8")
-    directory = _open_output_directory(repository_root, create=True)
+    directory = _open_output_directory(
+        repository_root,
+        create=True,
+        output_directory=output_directory,
+    )
     temporary_name = f".summary.json.{secrets.token_hex(12)}"
     descriptor: int | None = None
     try:
@@ -1344,8 +1762,16 @@ def _write_repository_summary(
             os.close(directory)
 
 
-def _read_repository_summary(repository_root: Path) -> str:
-    directory = _open_output_directory(repository_root, create=False)
+def _read_repository_summary(
+    repository_root: Path,
+    *,
+    output_directory: str = COMPARISON_OUTPUT_DIRECTORY,
+) -> str:
+    directory = _open_output_directory(
+        repository_root,
+        create=False,
+        output_directory=output_directory,
+    )
     descriptor: int | None = None
     try:
         if os.listdir(directory) != ["summary.json"]:
@@ -1408,8 +1834,44 @@ def verify_repository_summary(repository_root: Path) -> None:
         JunitCounts(tests=1, failures=0, errors=0, skipped=0),
         dict(EXPECTED_FIXTURE_VERSIONS),
     )
-    if payload != expected or serialize_summary(payload) != serialized:
+    if not _exact_typed_equal(payload, expected) or serialize_summary(payload) != serialized:
         raise ComparisonError("SUMMARY_FILE_SCHEMA")
+
+
+def verify_agent_only_repository_summary(repository_root: Path) -> None:
+    serialized = _read_repository_summary(
+        repository_root,
+        output_directory=AGENT_ONLY_OUTPUT_DIRECTORY,
+    )
+    try:
+        payload = json.loads(
+            serialized,
+            object_pairs_hook=_object_without_duplicates,
+        )
+    except (json.JSONDecodeError, UnicodeDecodeError) as error:
+        raise ComparisonError("AGENT_ONLY_SUMMARY_FILE_JSON") from error
+    if not isinstance(payload, dict):
+        raise ComparisonError("AGENT_ONLY_SUMMARY_FILE_SCHEMA")
+    agent_counts = payload.get("agentCounts")
+    if not isinstance(agent_counts, dict):
+        raise ComparisonError("AGENT_ONLY_SUMMARY_FILE_SCHEMA")
+    surviving = agent_counts.get("fanOutSurvivingDataSourceCount")
+    if type(surviving) is not int or surviving not in (1, 2):
+        raise ComparisonError("AGENT_ONLY_SUMMARY_FILE_SCHEMA")
+    expected = build_agent_only_summary(
+        EXPECTED_AGENT_ONLY_ORACLE,
+        AgentObservation(
+            root_invoke_spans=40,
+            execute_spans=40,
+            control_execute_spans=20,
+            fanout_execute_spans=20,
+            fanout_surviving_data_source_count=surviving,
+        ),
+        JunitCounts(tests=1, failures=0, errors=0, skipped=0),
+        dict(EXPECTED_AGENT_ONLY_FIXTURE_VERSIONS),
+    )
+    if not _exact_typed_equal(payload, expected) or serialize_summary(payload) != serialized:
+        raise ComparisonError("AGENT_ONLY_SUMMARY_FILE_SCHEMA")
 
 
 def run_comparison(local_archive: Path | None) -> None:
@@ -1445,23 +1907,7 @@ def run_comparison(local_archive: Path | None) -> None:
                 f"-ProutecontractAgentJar={agent_jar}",
                 f"-ProutecontractAgentEvidence={oracle_path}",
             ]
-            environment = os.environ.copy()
-            for key in tuple(environment):
-                if key.startswith("ORG_GRADLE_PROJECT_"):
-                    environment.pop(key, None)
-            for key in (
-                "CLASSPATH",
-                "GRADLE_OPTS",
-                "GRADLE_USER_HOME",
-                "JAVA_OPTS",
-                "JAVA_TOOL_OPTIONS",
-                "JDK_JAVA_OPTIONS",
-                "_JAVA_OPTIONS",
-            ):
-                environment.pop(key, None)
-            environment["GRADLE_USER_HOME"] = str(
-                temporary_root / "gradle-user-home"
-            )
+            environment = _build_gradle_environment(temporary_root)
             run_capped_process(
                 command,
                 cwd=repository_root,
@@ -1492,21 +1938,115 @@ def run_comparison(local_archive: Path | None) -> None:
         verify_repository_summary(repository_root)
 
 
+def run_agent_only_reproducer(local_archive: Path | None) -> None:
+    repository_root = Path(__file__).resolve().parents[1]
+    _remove_stale_repository_summary(
+        repository_root,
+        output_directory=AGENT_ONLY_OUTPUT_DIRECTORY,
+    )
+
+    with tempfile.TemporaryDirectory(prefix="shardingsphere-agent-only.") as raw:
+        temporary_root = Path(raw)
+        archive = temporary_root / "agent.tar.gz"
+        if local_archive is None:
+            download_archive(archive)
+            verify_archive_file(archive)
+        else:
+            stage_local_archive(local_archive.expanduser(), archive)
+
+        extracted = temporary_root / "extracted"
+        extract_agent_archive(archive, extracted)
+        agent_jar = (extracted / AGENT_JAR_RELATIVE).resolve(strict=True)
+        agent_config = extracted / AGENT_CONFIG_RELATIVE
+        oracle_path = (temporary_root / "agent-only-oracle.json").resolve()
+
+        receiver = ZipkinReceiver()
+        receiver.start()
+        try:
+            _, port = receiver.address
+            write_agent_config(
+                agent_config,
+                port,
+                service_name="shardingsphere-agent-overlap-reproducer",
+            )
+            command = [
+                str(repository_root / "gradlew"),
+                "--no-daemon",
+                "--no-build-cache",
+                "--rerun-tasks",
+                ":mysql-example:agentOnlyReproducerMySql",
+                f"-PagentOnlyAgentJar={agent_jar}",
+                f"-PagentOnlyEvidence={oracle_path}",
+            ]
+            environment = _build_gradle_environment(temporary_root)
+            run_capped_process(
+                command,
+                cwd=repository_root,
+                environment=environment,
+            )
+        finally:
+            receiver.stop()
+
+        receiver.raise_if_failed()
+        oracle = read_agent_only_oracle(oracle_path)
+        observation = analyze_spans(receiver.snapshot())
+        junit = read_junit_counts(
+            repository_root
+            / "examples"
+            / "mysql"
+            / "build"
+            / "test-results"
+            / "agentOnlyReproducerMySql",
+            expected_suite=AGENT_ONLY_JUNIT_SUITE,
+            expected_method=AGENT_ONLY_JUNIT_METHOD,
+        )
+        fixture_versions = validate_agent_only_fixture_configuration(
+            repository_root
+        )
+        summary = build_agent_only_summary(
+            oracle,
+            observation,
+            junit,
+            fixture_versions,
+        )
+        _write_repository_summary(
+            repository_root,
+            summary,
+            output_directory=AGENT_ONLY_OUTPUT_DIRECTORY,
+        )
+        verify_agent_only_repository_summary(repository_root)
+
+
 def main(argv: list[str] | None = None) -> int:
+    requested = sys.argv[1:] if argv is None else argv
+    agent_only_requested = "--agent-only" in requested
+    failure_marker = (
+        AGENT_ONLY_FAILURE_MARKER if agent_only_requested else FAILURE_MARKER
+    )
     try:
         args = parse_args(argv)
         if args.verify_summary_only:
             repository_root = Path(__file__).resolve().parents[1]
-            verify_repository_summary(repository_root)
-            scan_public_text(SUMMARY_SUCCESS_MARKER + "\n")
-            print(SUMMARY_SUCCESS_MARKER)
+            if args.agent_only:
+                verify_agent_only_repository_summary(repository_root)
+                scan_public_text(AGENT_ONLY_SUMMARY_SUCCESS_MARKER + "\n")
+                print(AGENT_ONLY_SUMMARY_SUCCESS_MARKER)
+            else:
+                verify_repository_summary(repository_root)
+                scan_public_text(SUMMARY_SUCCESS_MARKER + "\n")
+                print(SUMMARY_SUCCESS_MARKER)
             return 0
-        run_comparison(args.archive)
-        scan_public_text(SUCCESS_MARKER + "\n")
+        if args.agent_only:
+            run_agent_only_reproducer(args.archive)
+            success_marker = AGENT_ONLY_SUCCESS_MARKER
+        else:
+            run_comparison(args.archive)
+            success_marker = SUCCESS_MARKER
+        scan_public_text(success_marker + "\n")
     except Exception:
-        print(FAILURE_MARKER, file=sys.stderr)
+        print(failure_marker, file=sys.stderr)
         return 1
-    print(SUCCESS_MARKER)
+    print(success_marker)
     return 0
 
 

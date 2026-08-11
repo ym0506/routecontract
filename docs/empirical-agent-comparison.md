@@ -6,7 +6,7 @@ This experiment asks one deliberately narrow question:
 
 > When two backing JDBC executions from one ShardingSphere fan-out are forced to overlap, how many completed OpenTelemetry `/executeSQL/` spans does the official ShardingSphere Agent 5.5.3 export, compared with two in-process execution-attempt oracles?
 
-It is not a general Agent benchmark, a performance test or evidence that RouteContract is universally more accurate than tracing. The public workflow is manual because it downloads a 46.7 MB archived distribution and starts two MySQL containers. Until an immutable Actions run exists at the submitted revision, the numbers below are **verified locally; public artifact pending**.
+It is not a general Agent benchmark, a performance test or evidence that RouteContract is universally more accurate than tracing. The public workflow is manual because it downloads a 46.7 MB archived distribution and starts two MySQL containers. Until a public commit-bound Actions run and digest-identified 90-day artifact exist at the submitted revision, the numbers below are **verified locally; public artifact pending**. That artifact can expire or be deleted and is not equivalent to an immutable GitHub Release.
 
 ## Why this comparison exists
 
@@ -54,7 +54,7 @@ The Java fixture is [AgentComparisonMySqlTest](../examples/mysql/src/test/java/i
 
 All 20 controls produced one completed execute span. Across 20 forced two-way fan-outs, the two oracles reported 40 backing attempts while Agent exported 20 completed fan-out execute spans. The surviving fan-out spans covered both data-source identities across the run. The JUnit fixture passed once with zero failures, errors or skips, and all 20 RouteContract operation signatures were identical.
 
-The canonical local summary was 1,068 bytes with SHA-256 `40061ab53689a011c341cf983256e417498380370684b6b5316a10527f767b06`. That checksum identifies a local run only; it is not a public immutable evidence claim. A public Actions artifact must replace it before the result appears in the contest report.
+The canonical local summary was 1,068 bytes with SHA-256 `40061ab53689a011c341cf983256e417498380370684b6b5316a10527f767b06`. That checksum identifies a local run only; it is not a public evidence claim. A public commit-bound Actions run and digest-identified 90-day artifact must replace it before the result appears in the contest report.
 
 ## What the result means
 
@@ -71,7 +71,7 @@ This supports a version-specific integration and defaults argument. It does **no
 - RouteContract is safe for arbitrary asynchronous or failure-return paths; or
 - tracing cannot be assembled into a contract-testing workflow.
 
-An Agent-only minimal reproducer, without RouteContract on the application classpath, remains the preferred artifact before reporting the observation upstream. The independent datasource-proxy count prevents RouteContract from being the sole oracle in this comparison, but the current fixture is still a competition comparison rather than the smallest upstream reproducer.
+A follow-up [RouteContract-runtime-absent reproducer](agent-runtime-absent-reproducer.md) now runs the same forced-overlap shape from a dedicated source set without the RouteContract product, API, hook provider or normal test output on the forked runtime. It uses datasource-proxy 1.11.0 as its sole count oracle and reproduced the same `60` returned callbacks versus `40` completed Agent execute spans in two local runs. This narrows one alternative explanation but is maintainer-authored evidence, not independent third-party validation or the smallest upstream reproducer. Its public commit-bound workflow run and digest-identified 90-day artifact are still pending.
 
 ## Privacy and supply-chain controls
 
