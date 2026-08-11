@@ -22,6 +22,11 @@ import unicodedata
 import xml.etree.ElementTree as ET
 from zipfile import BadZipFile, ZipFile
 
+try:
+    import pwd
+except ImportError:  # pragma: no cover - unavailable on Windows
+    pwd = None  # type: ignore[assignment]
+
 
 ARTIFACT_ID = "routecontract-shardingsphere-5.5"
 POM_NAME = f"{ARTIFACT_ID}.pom"
@@ -46,12 +51,21 @@ VERSION_PART = r"(?:0|[1-9][0-9]{0,8})"
 RELEASE_VERSION_PATTERN = re.compile(
     rf"{VERSION_PART}\.{VERSION_PART}\.{VERSION_PART}(?:-rc[1-9][0-9]{{0,5}})?"
 )
+XML_DECLARATION_PATTERN = re.compile(
+    r'\A(?:\ufeff)?<\?xml\s+version\s*=\s*(["\'])1\.0\1\s+'
+    r'encoding\s*=\s*(["\'])([A-Za-z][A-Za-z0-9._-]*)\2'
+    r'(?:\s+standalone\s*=\s*(["\'])(?:yes|no)\4)?\s*\?>'
+)
 CHECKSUM_LINE_PATTERN = re.compile(r"([0-9a-f]{64})  ([A-Za-z0-9][A-Za-z0-9._+-]*)")
 JAVA_IDENTIFIER_PATTERN = re.compile(r"[A-Za-z_$][A-Za-z0-9_$]*")
 MAX_POM_BYTES = 1024 * 1024
 MAX_CHECKSUM_BYTES = 1024 * 1024
 MAX_JAR_BYTES = 100 * 1024 * 1024
 MAX_JAR_UNCOMPRESSED_BYTES = 200 * 1024 * 1024
+MAX_JAR_ENTRIES = 20_000
+MAX_ARCHIVE_ENTRY_NAME_BYTES = 4 * 1024
+MAX_ARCHIVE_PATH_COMPONENTS = 256
+MAX_ARCHIVE_TOTAL_PATH_COMPONENTS = 100_000
 MAX_SOURCE_ARCHIVE_BYTES = 100 * 1024 * 1024
 MAX_SOURCE_ARCHIVE_UNCOMPRESSED_BYTES = 200 * 1024 * 1024
 MAX_SOURCE_ARCHIVE_ENTRIES = 20_000
@@ -81,15 +95,33 @@ SOURCE_REQUIRED_PATHS = {
 }
 SOURCE_FORBIDDEN_PARTS = {
     ".agents",
+    ".aws",
     ".codex",
+    ".docker",
     ".git",
+    ".gnupg",
     ".gradle",
     ".idea",
+    ".kube",
+    ".ssh",
     "__pycache__",
     "build",
     "out",
     "private_codex",
     "private_notes",
+}
+SOURCE_FORBIDDEN_FILENAMES = {
+    ".netrc",
+    ".npmrc",
+    ".pypirc",
+    "auth.json",
+    "credentials",
+    "credentials.json",
+    "id_dsa",
+    "id_ecdsa",
+    "id_ed25519",
+    "id_rsa",
+    "secrets.json",
 }
 SOURCE_FORBIDDEN_PREFIXES = (
     "submission/draft",
@@ -118,31 +150,119 @@ class InstallError(RuntimeError):
     """A validation or safe-install failure suitable for a concise CLI error."""
 
 
-def portable_source_parts(parts: tuple[str, ...], path: str) -> tuple[str, ...]:
+def portable_source_parts(
+    parts: tuple[str, ...], path: str, *, label: str = "source archive"
+) -> tuple[str, ...]:
     """Return a Windows-portable NFC/casefold key or reject unsafe segments."""
     result: list[str] = []
     for part in parts:
         normalized = unicodedata.normalize("NFC", part)
         if normalized.endswith((".", " ")):
             raise InstallError(
-                f"source archive path is not portable across filesystems: {path}"
+                f"{label} path is not portable across filesystems: {path}"
             )
         if any(character in WINDOWS_FORBIDDEN_CHARACTERS for character in normalized):
             raise InstallError(
-                f"source archive path is not portable across filesystems: {path}"
+                f"{label} path is not portable across filesystems: {path}"
             )
         folded = normalized.casefold()
         if folded in {"", ".", ".."}:
             raise InstallError(
-                f"source archive path is not portable across filesystems: {path}"
+                f"{label} path is not portable across filesystems: {path}"
             )
         basename = folded.split(".", 1)[0]
         if basename in WINDOWS_RESERVED_BASENAMES:
             raise InstallError(
-                f"source archive path uses a reserved Windows name: {path}"
+                f"{label} path uses a reserved Windows name: {path}"
             )
         result.append(folded)
     return tuple(result)
+
+
+def register_archive_path(
+    logical_name: str,
+    is_directory: bool,
+    *,
+    label: str,
+    logical_entries: dict[tuple[str, ...], bool],
+    portable_trie: dict[tuple[int, str], tuple[str, int]],
+    portable_paths: dict[tuple[str, ...], tuple[str, ...]],
+    total_path_components: list[int],
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Register one bounded archive path and reject portable-name aliases."""
+    if len(logical_name.encode("utf-8")) > MAX_ARCHIVE_ENTRY_NAME_BYTES:
+        raise InstallError(f"{label} entry name exceeds the 4096-byte safety limit")
+    logical_parts = PurePosixPath(logical_name).parts
+    if len(logical_parts) > MAX_ARCHIVE_PATH_COMPONENTS:
+        raise InstallError(f"{label} path exceeds the 256-component safety limit")
+    total_path_components[0] += len(logical_parts)
+    if total_path_components[0] > MAX_ARCHIVE_TOTAL_PATH_COMPONENTS:
+        raise InstallError(
+            f"{label} exceeds the 100000-total-path-component safety limit"
+        )
+    if logical_parts in logical_entries:
+        raise InstallError(
+            f"{label} contains a duplicate logical path: {logical_name}"
+        )
+    portable_parts = portable_source_parts(
+        logical_parts,
+        logical_name,
+        label=label,
+    )
+    trie_node = 0
+    for logical_component, portable_component in zip(
+        logical_parts, portable_parts, strict=True
+    ):
+        edge = (trie_node, portable_component)
+        previous = portable_trie.get(edge)
+        if previous is not None and previous[0] != logical_component:
+            raise InstallError(
+                f"{label} contains a case or Unicode-normalization path collision: "
+                f"{previous[0]!r}, {logical_component!r} in {logical_name!r}"
+            )
+        if previous is None:
+            trie_node = len(portable_trie) + 1
+            portable_trie[edge] = (logical_component, trie_node)
+        else:
+            trie_node = previous[1]
+    logical_entries[logical_parts] = is_directory
+    portable_paths[logical_parts] = portable_parts
+    return logical_parts, portable_parts
+
+
+def validate_archive_path_graph(
+    logical_entries: dict[tuple[str, ...], bool],
+    portable_paths: dict[tuple[str, ...], tuple[str, ...]],
+    *,
+    label: str,
+) -> None:
+    """Reject exact and portable file/descendant collisions in bounded time."""
+    portable_entries = {
+        portable_paths[logical_parts]: logical_parts
+        for logical_parts in logical_entries
+    }
+    for logical_parts in logical_entries:
+        logical_name = PurePosixPath(*logical_parts).as_posix()
+        portable_parts = portable_paths[logical_parts]
+        for length in range(1, len(logical_parts)):
+            logical_ancestor = logical_parts[:length]
+            if logical_entries.get(logical_ancestor) is False:
+                ancestor_name = PurePosixPath(*logical_ancestor).as_posix()
+                raise InstallError(
+                    f"{label} contains a file/descendant path collision: "
+                    f"{ancestor_name!r}, {logical_name!r}"
+                )
+            portable_ancestor = portable_entries.get(portable_parts[:length])
+            if (
+                portable_ancestor is not None
+                and logical_entries.get(portable_ancestor) is False
+            ):
+                ancestor_name = PurePosixPath(*portable_ancestor).as_posix()
+                raise InstallError(
+                    f"{label} contains a case or Unicode-normalization "
+                    "file/descendant collision: "
+                    f"{ancestor_name!r}, {logical_name!r}"
+                )
 
 
 def forbidden_source_path(relative: str, parts: tuple[str, ...]) -> bool:
@@ -155,6 +275,8 @@ def forbidden_source_path(relative: str, parts: tuple[str, ...]) -> bool:
     ):
         return True
     folded = parts[-1]
+    if folded in SOURCE_FORBIDDEN_FILENAMES:
+        return True
     if folded == ".ds_store":
         return True
     if folded == ".env" or (folded.startswith(".env.") and folded != ".env.example"):
@@ -439,26 +561,42 @@ def verify_checksum(path: Path, expected: str) -> None:
         )
 
 
+def scalar_xml_value(element: ET.Element, name: str) -> str:
+    if len(element) != 0:
+        raise InstallError(f"release POM {name} must not contain nested XML elements")
+    raw = element.text or ""
+    value = raw.strip(" \t\r\n")
+    if not value:
+        raise InstallError(f"release POM {name} must be non-empty")
+    return value
+
+
 def direct_xml_value(root: ET.Element, name: str) -> str:
-    values = [
-        (child.text or "").strip()
-        for child in root
-        if child.tag.rsplit("}", 1)[-1] == name
+    elements = [
+        child for child in root if child.tag.rsplit("}", 1)[-1] == name
     ]
-    if len(values) != 1 or not values[0]:
+    if len(elements) != 1:
         raise InstallError(f"release POM must contain exactly one non-empty {name}")
-    return values[0]
+    return scalar_xml_value(elements[0], name)
 
 
 def optional_direct_xml_value(root: ET.Element, name: str) -> str | None:
-    values = [
-        (child.text or "").strip()
-        for child in root
-        if child.tag.rsplit("}", 1)[-1] == name
+    elements = [
+        child for child in root if child.tag.rsplit("}", 1)[-1] == name
     ]
-    if len(values) > 1 or (values and not values[0]):
+    if len(elements) > 1:
         raise InstallError(f"release POM contains an invalid {name}")
-    return values[0] if values else None
+    return scalar_xml_value(elements[0], name) if elements else None
+
+
+def parse_service_descriptor(text: str) -> list[str]:
+    """Parse only the CR/LF and ASCII space/tab syntax used by ServiceLoader."""
+    providers: list[str] = []
+    for line in re.split(r"\r\n?|\n", text):
+        candidate = line.split("#", 1)[0].strip(" \t")
+        if candidate:
+            providers.append(candidate)
+    return providers
 
 
 def parse_coordinate(path: Path) -> tuple[str, str]:
@@ -469,6 +607,11 @@ def parse_coordinate(path: Path) -> tuple[str, str]:
         text = raw.decode("utf-8", errors="strict")
     except UnicodeDecodeError as error:
         raise InstallError("release POM must be valid UTF-8 XML") from error
+    declaration = XML_DECLARATION_PATTERN.match(text)
+    if declaration is None or declaration.group(3).casefold() != "utf-8":
+        raise InstallError(
+            "release POM XML declaration must specify version 1.0 and UTF-8 encoding"
+        )
     uppercase = text.upper()
     if "<!DOCTYPE" in uppercase or "<!ENTITY" in uppercase:
         raise InstallError("release POM must not contain a DTD or entity declaration")
@@ -569,28 +712,80 @@ def validate_archive(
             infos = archive.infolist()
             if not infos:
                 raise InstallError(f"{label} is empty")
+            if len(infos) > MAX_JAR_ENTRIES:
+                raise InstallError(f"{label} exceeds the 20000-entry safety limit")
             names: set[str] = set()
+            logical_entries: dict[tuple[str, ...], bool] = {}
+            portable_trie: dict[tuple[int, str], tuple[str, int]] = {}
+            portable_paths: dict[tuple[str, ...], tuple[str, ...]] = {}
+            total_path_components = [0]
             uncompressed = 0
             for info in infos:
+                original_name = getattr(info, "orig_filename", info.filename)
+                if original_name != info.filename or "\x00" in original_name:
+                    raise InstallError(
+                        f"{label} contains a truncated or NUL-bearing entry name"
+                    )
+                if any(
+                    ord(character) < 32 or ord(character) == 127
+                    for character in info.filename
+                ):
+                    raise InstallError(
+                        f"{label} contains a control character in an entry"
+                    )
                 pure = PurePosixPath(info.filename)
                 unix_mode = info.external_attr >> 16
+                unix_type = stat.S_IFMT(unix_mode)
+                is_directory = info.is_dir()
                 if (
                     not info.filename
                     or "\\" in info.filename
                     or pure.is_absolute()
                     or ".." in pure.parts
-                    or stat.S_ISLNK(unix_mode)
                     or info.flag_bits & 0x1
                 ):
                     raise InstallError(f"{label} contains an unsafe entry: {info.filename}")
+                canonical_name = PurePosixPath(*pure.parts).as_posix()
+                if is_directory:
+                    canonical_name += "/"
+                if canonical_name != info.filename:
+                    raise InstallError(
+                        f"{label} contains a non-canonical entry name: {info.filename}"
+                    )
+                if is_directory:
+                    if unix_type not in (0, stat.S_IFDIR) or info.file_size != 0:
+                        raise InstallError(
+                            f"{label} directory has an incompatible type or payload: "
+                            f"{info.filename}"
+                        )
+                elif unix_type not in (0, stat.S_IFREG):
+                    raise InstallError(
+                        f"{label} contains a special or mismatched Unix entry: "
+                        f"{info.filename}"
+                    )
                 if info.filename in names:
                     raise InstallError(f"{label} contains a duplicate entry: {info.filename}")
                 names.add(info.filename)
+                logical_name = canonical_name.rstrip("/")
+                register_archive_path(
+                    logical_name,
+                    is_directory,
+                    label=label,
+                    logical_entries=logical_entries,
+                    portable_trie=portable_trie,
+                    portable_paths=portable_paths,
+                    total_path_components=total_path_components,
+                )
                 uncompressed += info.file_size
                 if uncompressed > MAX_JAR_UNCOMPRESSED_BYTES:
                     raise InstallError(
                         f"{label} exceeds the 200 MiB uncompressed safety limit"
                     )
+            validate_archive_path_graph(
+                logical_entries,
+                portable_paths,
+                label=label,
+            )
             missing = required_entries - names
             if missing:
                 raise InstallError(f"{label} is missing required entries: {sorted(missing)}")
@@ -632,13 +827,11 @@ def validate_archive(
                     raise InstallError("main JAR manifest has an unexpected Manifest-Version")
                 if manifest.get("automatic-module-name") != EXPECTED_MODULE_NAME:
                     raise InstallError("main JAR has an unexpected Automatic-Module-Name")
-                providers = [
-                    line.strip()
-                    for line in archive.read(SERVICE_DESCRIPTOR)
-                    .decode("utf-8", errors="strict")
-                    .splitlines()
-                    if line.strip() and not line.lstrip().startswith("#")
-                ]
+                providers = parse_service_descriptor(
+                    archive.read(SERVICE_DESCRIPTOR).decode(
+                        "utf-8", errors="strict"
+                    )
+                )
                 if providers != [EXPECTED_PROVIDER]:
                     raise InstallError("main JAR has an unexpected SQLExecutionHook provider")
     except (BadZipFile, UnicodeDecodeError) as error:
@@ -683,8 +876,10 @@ def validate_source_archive(path: Path, version: str) -> None:
                 raise InstallError("source archive is empty")
             if len(infos) > MAX_SOURCE_ARCHIVE_ENTRIES:
                 raise InstallError("source archive exceeds the 20000-entry safety limit")
-            logical_entries: dict[str, bool] = {}
-            portable_entries: dict[str, str] = {}
+            logical_entries: dict[tuple[str, ...], bool] = {}
+            portable_trie: dict[tuple[int, str], tuple[str, int]] = {}
+            portable_paths: dict[tuple[str, ...], tuple[str, ...]] = {}
+            total_path_components = [0]
             source_files: set[str] = set()
             uncompressed = 0
             unexpected_namespaces: list[str] = []
@@ -733,30 +928,15 @@ def validate_source_archive(path: Path, version: str) -> None:
                         f"source archive contains a special or mismatched Unix entry: {info.filename}"
                     )
                 logical_name = canonical_name.rstrip("/")
-                if logical_name in logical_entries:
-                    raise InstallError(
-                        f"source archive contains a duplicate logical path: {logical_name}"
-                    )
-                logical_entries[logical_name] = is_directory
-                portable_parts = portable_source_parts(
-                    PurePosixPath(logical_name).parts, logical_name
+                _, portable_parts = register_archive_path(
+                    logical_name,
+                    is_directory,
+                    label="source archive",
+                    logical_entries=logical_entries,
+                    portable_trie=portable_trie,
+                    portable_paths=portable_paths,
+                    total_path_components=total_path_components,
                 )
-                portable_name = PurePosixPath(*portable_parts).as_posix()
-                logical_parts = PurePosixPath(logical_name).parts
-                for length in range(1, len(logical_parts) + 1):
-                    logical_prefix = PurePosixPath(
-                        *logical_parts[:length]
-                    ).as_posix()
-                    portable_prefix = PurePosixPath(
-                        *portable_parts[:length]
-                    ).as_posix()
-                    previous = portable_entries.get(portable_prefix)
-                    if previous is not None and previous != logical_prefix:
-                        raise InstallError(
-                            "source archive contains a case or Unicode-normalization "
-                            f"path collision: {previous!r}, {logical_prefix!r}"
-                        )
-                    portable_entries[portable_prefix] = logical_prefix
                 uncompressed += info.file_size
                 if uncompressed > MAX_SOURCE_ARCHIVE_UNCOMPRESSED_BYTES:
                     raise InstallError(
@@ -803,26 +983,11 @@ def validate_source_archive(path: Path, version: str) -> None:
                 if is_directory:
                     continue
                 source_files.add(relative)
-            for logical_name, is_directory in logical_entries.items():
-                parts = PurePosixPath(logical_name).parts
-                for length in range(1, len(parts)):
-                    ancestor = PurePosixPath(*parts[:length]).as_posix()
-                    if ancestor in logical_entries and not logical_entries[ancestor]:
-                        raise InstallError(
-                            "source archive contains a file/descendant path collision: "
-                            f"{ancestor!r}, {logical_name!r}"
-                        )
-            for portable_name, logical_name in portable_entries.items():
-                parts = PurePosixPath(portable_name).parts
-                for length in range(1, len(parts)):
-                    portable_ancestor = PurePosixPath(*parts[:length]).as_posix()
-                    ancestor_name = portable_entries.get(portable_ancestor)
-                    if logical_entries.get(ancestor_name) is False:
-                        raise InstallError(
-                            "source archive contains a case or Unicode-normalization "
-                            "file/descendant collision: "
-                            f"{ancestor_name!r}, {logical_name!r}"
-                        )
+            validate_archive_path_graph(
+                logical_entries,
+                portable_paths,
+                label="source archive",
+            )
             if unexpected_namespaces:
                 raise InstallError(
                     "source archive contains an unexpected RouteContract package "
@@ -883,16 +1048,14 @@ def validate_source_archive(path: Path, version: str) -> None:
                 raise InstallError(
                     "source archive hook does not declare the expected top-level SPI class"
                 )
-            source_providers = [
-                line.strip()
-                for line in read_archive_text(
+            source_providers = parse_service_descriptor(
+                read_archive_text(
                     archive,
                     f"{expected_root}/{SOURCE_SERVICE_DESCRIPTOR_PATH}",
                     "source archive SQLExecutionHook descriptor",
                     limit=64 * 1024,
-                ).splitlines()
-                if line.strip() and not line.lstrip().startswith("#")
-            ]
+                )
+            )
             if source_providers != [EXPECTED_PROVIDER]:
                 raise InstallError(
                     "source archive has an unexpected SQLExecutionHook provider"
@@ -906,6 +1069,22 @@ def validate_source_archive(path: Path, version: str) -> None:
 
 def paths_overlap(first: Path, second: Path) -> bool:
     return first == second or first in second.parents or second in first.parents
+
+
+def conventional_maven_repositories() -> set[Path]:
+    """Return process-home and POSIX account-home Maven defaults."""
+    homes = {Path.home()}
+    if pwd is not None:
+        try:
+            account_home = pwd.getpwuid(os.getuid()).pw_dir
+        except (KeyError, OSError):
+            account_home = ""
+        if account_home:
+            homes.add(Path(account_home))
+    return {
+        (home / ".m2" / "repository").resolve(strict=False)
+        for home in homes
+    }
 
 
 def install(
@@ -1003,21 +1182,19 @@ def run(argv: list[str]) -> int:
         raise InstallError("target Maven repository must not be a symlink")
     assets = assets_argument.resolve(strict=True)
     repository = repository_argument.resolve(strict=False)
-    conventional_default_repository = (
-        Path.home() / ".m2" / "repository"
-    ).resolve(strict=False)
     repository_key = tuple(
         unicodedata.normalize("NFC", part).casefold() for part in repository.parts
     )
-    conventional_default_key = tuple(
-        unicodedata.normalize("NFC", part).casefold()
-        for part in conventional_default_repository.parts
-    )
-    if repository_key[: len(conventional_default_key)] == conventional_default_key:
-        raise InstallError(
-            "target Maven repository must not be the conventional "
-            "~/.m2/repository or any path below it"
+    for conventional_default_repository in conventional_maven_repositories():
+        conventional_default_key = tuple(
+            unicodedata.normalize("NFC", part).casefold()
+            for part in conventional_default_repository.parts
         )
+        if repository_key[: len(conventional_default_key)] == conventional_default_key:
+            raise InstallError(
+                "target Maven repository must not be the conventional "
+                "~/.m2/repository or any path below it"
+            )
     if paths_overlap(assets, repository):
         raise InstallError("release assets and target Maven repository must not overlap")
 

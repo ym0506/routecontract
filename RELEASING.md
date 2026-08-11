@@ -36,9 +36,12 @@ credentials have been verified.
 Create an annotated tag matching the Gradle project version, including the
 leading `v` (for example, project version `0.1.0-rc1` uses tag `v0.1.0-rc1`,
 and `0.1.0` uses `v0.1.0`). The release installer accepts only these stable or
-strict `-rcN` forms and rejects snapshots. The final contest package still
-requires the immutable stable `v0.1.0` release. Pushing a matching tag runs the
-read-only `Release evidence` workflow. The workflow:
+strict `-rcN` forms and rejects snapshots. The planned final contest package
+uses the immutable stable `v0.1.0` release. If that release fails a required
+post-publication verification check, it remains immutable; final evidence must
+instead name a corrected later stable patch with its own tag, revision, assets
+and evidence run. Pushing a matching tag runs the read-only `Release evidence`
+workflow. The workflow:
 
 - accepts only a tag-push event, validates the Wrapper and annotated
   tag/version match, and requires the peeled tag commit to equal both the
@@ -59,8 +62,8 @@ read-only `Release evidence` workflow. The workflow:
 - validates that source archive's bounded and unambiguous ZIP structure, exact
   versioned root, required project/hook sources, every Java path/package pair
   under conventional `src/main/java` and `src/test/java` roots, canonical
-  `ym0506` provider namespace and absence of declared
-  private/generated or credential-like paths before installing any binary
+  `ym0506` provider namespace, and absence of paths matching the explicit
+  private/generated/credential-like denylist before installing any binary
   artifact;
 - stages the exact public Release payload set and creates `SHA256SUMS` over
   those payloads only;
@@ -111,7 +114,8 @@ present in both places; `SHA256SUMS` declares exactly the other public payloads
 (not itself) and never the three workflow-only logs. The gate checks the public
 checksum set separately, then protects the entire public-plus-private evidence
 directory through the Actions artifact ID/digest, byte-identical extraction
-and exact flat-file allowlist. The immutable final `v0.1.0` Release must be a
+and exact flat-file allowlist. The intended immutable final `v0.1.0` Release,
+or a corrected later stable patch selected by the final manifest, must use a
 new stable tag/revision/evidence run with `prerelease=false`; never retag or
 promote RC assets as if they were the final stable evidence.
 The v0.1 packaging gate requires no signature assets because no signing
@@ -137,3 +141,6 @@ implemented and verified.
   by itself prove Git-tree identity; the final submission packaging gate
   recreates `git archive` from the final commit and compares tracked paths,
   content and executable permissions before accepting it.
+- The source-path denylist is not a general secret or content scanner. It
+  rejects the declared private/build/environment/key-like path patterns; the
+  final Git-tree comparison and maintainer review remain required.
