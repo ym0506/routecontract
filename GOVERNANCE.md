@@ -1,7 +1,7 @@
 # Governance
 
 RouteContract is currently maintained by one student contributor. Decisions are made in public
-issues and focused pull requests once the repository is published; local or AI review is not
+issues and focused pull requests; local or AI review is not
 presented as independent community approval.
 
 ## Decision process

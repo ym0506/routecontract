@@ -2,13 +2,15 @@
 
 [한국어](README.md) | [English](README.en.md)
 
+[![CI](https://github.com/ym0506/routecontract/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ym0506/routecontract/actions/workflows/ci.yml?query=branch%3Amain)
+
 > CI contracts for observed physical JDBC executions
 
 RouteContract is a Java testing library for Apache ShardingSphere-JDBC applications. During one application operation, it turns the **physical JDBC execution attempts observed through `SQLExecutionHook`** into a deterministic manifest, then lets CI block observed execution expansion and structural changes caused by SQL or configuration changes.
 
 Business-result assertions alone can stay green even when the hook-reported observed attempts increase from `1 → 2` or `1 → 8` while returning the same row. RouteContract adds a separate regression contract for per-operation execution budgets, hook-reported data-source names, and structural diffs of rewritten-SQL fingerprints.
 
-The current version is a `v0.1.0-SNAPSHOT` development build. It has not been publicly released or independently validated by external users. The figures below are evidence from the local worktree as of 2026-08-11; they do not imply an award outcome, production support, or general performance.
+The current version is a `v0.1.0-SNAPSHOT` development build. Public source and Ubuntu CI now exist, but there is no public release or independent external-user validation yet. The 50 normal tests and one isolated consumer test below also passed with zero failures, errors, or skips in the [public main CI for revision `54f1c92`](https://github.com/ym0506/routecontract/actions/runs/31501026857). See the [public CI evidence record](docs/public-ci-evidence.md) for the environment, raw artifacts, and limitations. This does not imply an award outcome, production support, general performance, or external adoption.
 
 ## Quick Start
 
