@@ -175,9 +175,13 @@ RouteContract는 ShardingSphere의 관측 기능이나 일반 JDBC 도구가 “
 - ShardingSphere-Proxy의 `PREVIEW SQL`, 그리고 ShardingSphere의 `sql-show`·Agent는 계획·로그·운영 telemetry를 제공합니다.
 - ShardingSphere Audit는 built-in 알고리즘 기준으로 인식 가능한 sharding condition의 존재를 검사합니다.
 - Sniffy와 datasource-proxy는 SQL 수 검증 또는 사용자 정의 JDBC 수집을 제공합니다.
+- 표준 OpenTelemetry Java Agent와 Tracetest를 조합해 application span·trace assertion·CI workflow를 구성할 수도 있습니다.
 - RouteContract가 추가하는 것은 **caller가 정한 application-operation 경계**, ShardingSphere worker까지의 상관관계, 최소정보 canonical manifest, 승인 workflow, stable semantic diff, CI assertion, 실제 회귀 corpus입니다.
 
 근거와 한계까지 포함한 비교는 [competitive-analysis.md](docs/competitive-analysis.md)에 있습니다.
+공식 ShardingSphere Agent 5.5.3과 강제 중첩 조건에서 비교한 opt-in 실험은
+[방법·로컬 결과·금지 주장](docs/empirical-agent-comparison.md)을 별도로 기록합니다. 공개
+불변 workflow artifact가 생기기 전까지 그 수치는 로컬 검증 결과로만 취급합니다.
 
 ## 정확한 증거 경계
 
@@ -233,6 +237,7 @@ manifest match를 통과시키지 않습니다.
 - [아키텍처와 신뢰 경계](docs/architecture.md)
 - [경쟁 도구 분석](docs/competitive-analysis.md)
 - [datasource-proxy 실증 비교](docs/empirical-comparison.md)
+- [ShardingSphere Agent 5.5.3 강제 중첩 비교](docs/empirical-agent-comparison.md)
 - [대회 증거 매트릭스](docs/evidence-matrix.md)
 - [8월 27일까지 개발 계획](docs/development-plan.md)
 - [독립 published-JAR consumer](examples/standalone-consumer/README.md)

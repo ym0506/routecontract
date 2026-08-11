@@ -181,11 +181,12 @@ RouteContract does not claim that ShardingSphere observability facilities or gen
 - ShardingSphere-Proxy `PREVIEW SQL`, together with ShardingSphere `sql-show` and Agent, provides planning, logging, and operational telemetry.
 - ShardingSphere Audit checks whether built-in algorithms recognize a sharding condition.
 - Sniffy and datasource-proxy support SQL-count assertions or custom JDBC collection.
+- The standard OpenTelemetry Java Agent and Tracetest can also be composed into an application-span, trace-assertion, and CI workflow.
 - RouteContract packages a **caller-defined application-operation boundary**, correlation into ShardingSphere workers, a value-minimized canonical manifest, an approval workflow, stable semantic diffs, CI assertions, and a real regression corpus.
 
 datasource-proxy is a credible do-it-yourself alternative, not a strawman. By wrapping every physical data source and adding application-owned correlation, minimization, canonicalization, diff, and assertion code, it can implement a comparable narrow check. RouteContract's scoped contribution is packaging that workflow for ShardingSphere-JDBC 5.5.3 without requiring every physical data source to be wrapped.
 
-See [competitive-analysis.md](docs/competitive-analysis.md) for the sourced comparison and limitations, and [empirical-comparison.md](docs/empirical-comparison.md) for the measured datasource-proxy fixture.
+See [competitive-analysis.md](docs/competitive-analysis.md) for the sourced comparison and limitations, and [empirical-comparison.md](docs/empirical-comparison.md) for the measured datasource-proxy fixture. The opt-in forced-overlap experiment against official ShardingSphere Agent 5.5.3 records its [method, local result, and forbidden claims](docs/empirical-agent-comparison.md) separately. Treat those counts as local verification until an immutable public workflow artifact exists.
 
 ## Exact evidence boundary
 
@@ -239,6 +240,7 @@ Snapshots and manifests do not store raw SQL, parameter values, connection prope
 - [Architecture and trust boundaries](docs/architecture.md)
 - [Competitive analysis](docs/competitive-analysis.md)
 - [Empirical datasource-proxy comparison](docs/empirical-comparison.md)
+- [ShardingSphere Agent 5.5.3 forced-overlap comparison](docs/empirical-agent-comparison.md)
 - [Contest evidence matrix](docs/evidence-matrix.md)
 - [Development plan through August 27](docs/development-plan.md)
 - [Independent published-JAR consumer](examples/standalone-consumer/README.md)

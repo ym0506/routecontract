@@ -33,7 +33,76 @@ tasks.named('test') {
     maxParallelForks = 1
     systemProperty 'api.version', '1.44'
     systemProperty 'routecontract.repositoryRoot', rootProject.projectDir.absolutePath
+    useJUnitPlatform {
+        excludeTags 'agent-comparison'
+    }
     testLogging {
         showStandardStreams = true
+    }
+}
+
+def routecontractAgentJar = providers.gradleProperty('routecontractAgentJar')
+def routecontractAgentEvidence = providers.gradleProperty('routecontractAgentEvidence')
+
+tasks.register('agentComparisonMySql', Test) {
+    group = 'verification'
+    description = 'Run the opt-in ShardingSphere Agent comparison against pinned MySQL containers.'
+    outputs.upToDateWhen { false }
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    maxParallelForks = 1
+    forkEvery = 1
+    systemProperty 'api.version', '1.44'
+    systemProperty 'routecontract.repositoryRoot', rootProject.projectDir.absolutePath
+    useJUnitPlatform {
+        includeTags 'agent-comparison'
+    }
+    filter {
+        includeTestsMatching 'io.github.ym0506.routecontract.example.AgentComparisonMySqlTest'
+        failOnNoMatchingTests = true
+    }
+    reports {
+        html.required = false
+        junitXml {
+            includeSystemOutLog = false
+            includeSystemErrLog = false
+        }
+    }
+
+    doFirst {
+        if (!routecontractAgentJar.isPresent()) {
+            throw new GradleException(
+                    'Set -ProutecontractAgentJar to the caller-verified ShardingSphere Agent 5.5.3 JAR.')
+        }
+        if (!routecontractAgentEvidence.isPresent()) {
+            throw new GradleException(
+                    'Set -ProutecontractAgentEvidence to the privacy-safe JSON output path.')
+        }
+
+        File agentJar = file(routecontractAgentJar.get()).canonicalFile
+        if (!agentJar.isFile() || !agentJar.canRead()
+                || agentJar.name != 'shardingsphere-agent-5.5.3.jar') {
+            throw new GradleException(
+                    '-ProutecontractAgentJar must name the readable '
+                            + 'shardingsphere-agent-5.5.3.jar file from the verified distribution.')
+        }
+        File agentConfig = new File(agentJar.parentFile, 'conf/agent.yaml')
+        File openTelemetryPlugin = new File(
+                agentJar.parentFile,
+                'plugins/tracing/shardingsphere-agent-tracing-opentelemetry-5.5.3.jar')
+        if (!agentConfig.isFile() || !agentConfig.canRead()
+                || !openTelemetryPlugin.isFile() || !openTelemetryPlugin.canRead()) {
+            throw new GradleException(
+                    'The verified Agent directory must contain readable conf/agent.yaml and '
+                            + 'the ShardingSphere 5.5.3 OpenTelemetry tracing plugin.')
+        }
+        File evidenceFile = file(routecontractAgentEvidence.get()).canonicalFile
+        if (evidenceFile.toPath().startsWith(agentJar.parentFile.toPath())) {
+            throw new GradleException(
+                    'The evidence output must be outside the verified Agent distribution directory.')
+        }
+
+        jvmArgs "-javaagent:${agentJar.absolutePath}"
+        systemProperty 'routecontractAgentEvidence', evidenceFile.absolutePath
     }
 }

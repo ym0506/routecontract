@@ -45,6 +45,18 @@ specific build:
 | Gradle Wrapper | 8.14.4 | Reproducible build entry point | Apache-2.0 |
 | CycloneDX Gradle plugin | 3.4.0 | CycloneDX 1.6 JSON/XML SBOM generation | Apache-2.0 |
 
+## Opt-in external comparison input
+
+| Component | Version | Purpose | License / distribution boundary |
+|---|---:|---|---|
+| Apache ShardingSphere Agent binary distribution | 5.5.3 | Manual empirical comparison only | Apache-2.0; exact official archive is checksum-verified, used from a private temporary directory, not redistributed and not included in the Gradle SBOM |
+
+The comparison runner accepts only the official 46,741,869-byte archive with
+SHA-512
+`6538bf650cbdb1813814e1922b6c2072246c4595cb07322f793d5592c86be875949529ab6a00553c15f72a0b17e2d23628f6e8b5da9fb189a72ce8c4cfb37839`.
+See [the empirical Agent comparison](docs/empirical-agent-comparison.md) for the
+download URL, method, privacy boundary and reproduction command.
+
 License identifiers and names above were checked against the projects' Maven
 metadata or upstream license files. Before a release, review the generated
 SBOM and the license/NOTICE files from the resolved artifacts; dependency

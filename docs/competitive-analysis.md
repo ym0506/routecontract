@@ -1,6 +1,6 @@
 # Competitive analysis and claim boundary
 
-Last checked: 2026-08-11
+Last checked: 2026-08-12
 
 This document answers a narrow question: does an existing tool already provide RouteContract's proposed workflow for Apache ShardingSphere-JDBC 5.5.3? It is a source-based comparison, not a benchmark and not a claim that every related project on the Internet was exhaustively searched.
 
@@ -66,6 +66,8 @@ Agent is broader and stronger for operational telemetry than RouteContract. Its 
 
 Conclusion: Agent answers "what happened and how long did it take in an observed system?" RouteContract's proposed narrow question is "did this named test operation stay within its approved observed-execution contract?"
 
+That product distinction does not imply that Agent is always a complete oracle. A bounded, opt-in real-MySQL comparison now forces the two backing executions of each fan-out to overlap. In the latest local run, datasource-proxy and RouteContract each reported 60 backing attempts, while Agent exported 40 completed `/executeSQL/` spans: 20 correct serial controls and 20 survivors from 20 forced two-way fan-outs. The tagged Agent implementation stores its current span in one volatile attachment on the instrumented callback target. On the single-callback JDBC path used by this fixture, `JDBCExecutor` supplies `null` as `firstCallback`, so `ExecutorEngine` uses the remaining callback for both caller and worker groups. This is a source-backed explanation consistent with the observation, not proof of universal causality. See the [method, exact source links, result and limitations](empirical-agent-comparison.md). Public immutable workflow evidence is still pending, so this local result must not yet be promoted into the contest report.
+
 ### `SQLExecutionHook`: the foundation, not a competitor
 
 RouteContract does not invent the underlying callback. In ShardingSphere 5.5.3, `SQLExecutionHook.start` receives a data-source name, rewritten SQL, parameters, connection properties and a trunk-thread flag; terminal callbacks are `finishSuccess` and `finishFailure` ([tagged interface source](https://github.com/apache/shardingsphere/blob/5.5.3/infra/executor/src/main/java/org/apache/shardingsphere/infra/executor/sql/hook/SQLExecutionHook.java#L28-L51)). `SPISQLExecutionHook` discovers implementations with ShardingSphere's service loader and forwards those callbacks ([tagged dispatcher source](https://github.com/apache/shardingsphere/blob/5.5.3/infra/executor/src/main/java/org/apache/shardingsphere/infra/executor/sql/hook/SPISQLExecutionHook.java#L29-L51)).
@@ -105,6 +107,12 @@ datasource-assert wraps a data source in `ProxyTestDataSource` and provides JUni
 
 It is direct precedent for a fluent JDBC assertion API and therefore weakens any novelty claim based only on `assertThat(dataSource)`. The reviewed guide does not describe ShardingSphere hook-reported data-source names, worker correlation or a canonical record/verify manifest workflow. RouteContract needs to demonstrate those differences in code and MySQL evidence, not only in prose.
 
+### OpenTelemetry Java Agent plus Tracetest
+
+The standard [OpenTelemetry Java Agent](https://github.com/open-telemetry/opentelemetry-java-instrumentation) automatically instruments supported JDBC drivers and propagates trace context across supported executors. [Tracetest](https://docs.tracetest.io/) uses trace data as test specifications and supports span selectors and assertions in automated test workflows. A team can add an application-defined parent span, exporter, redaction/normalization and checked-in assertion definitions to assemble a capable alternative.
+
+Consequently, RouteContract must not claim that operation correlation, asynchronous context propagation, span counting, trace assertions or CI failure are uniquely possible with this project. The reviewed combination does not provide a documented, ready-made ShardingSphere 5.5.3 value-minimized manifest lifecycle, but that is a packaging/defaults distinction rather than an impossibility result. Its behavior on the exact forced-overlap fixture has not been empirically tested; until that comparison exists, the matrix below records a credible buildable composition rather than a measured win for either side.
+
 ## Adjacent database-regression precedent
 
 ### pg-plan-guard
@@ -126,6 +134,7 @@ pg-plan-guard is not a direct substitute for the scoped RouteContract product. I
 | Sniffy | JDBC driver/`DataSource` wrapper | Query/row/thread expectations | Not identified | Not identified | Close query-count competitor; head-to-head evidence required |
 | datasource-proxy | Proxied `DataSource` listeners | Metrics; custom assertions are buildable | Wrapper-defined data-source identity, not the hook field | Buildable with custom code; not identified as built-in workflow | Most credible DIY alternative |
 | datasource-assert | `ProxyTestDataSource` | Fluent execution/query assertions | Not identified | Not identified | Direct assertion-API precedent |
+| OpenTelemetry Java Agent + Tracetest | Auto-instrumented spans plus trace-based test selectors | Documented trace assertions and automated tests | Depends on emitted driver/Agent attributes and configuration | Buildable with application spans, normalization and checked-in specs | Strong composable alternative; exact ShardingSphere fixture remains untested |
 | pg-plan-guard | PostgreSQL planned `EXPLAIN` shape | CI check with configurable failure severity | No | Deterministic plan lock and structural diff | Adjacent database-regression precedent, not a ShardingSphere execution-attempt tool |
 | RouteContract v0.1 target | ShardingSphere 5.5.3 `SQLExecutionHook` within a named synchronous operation | Budgets, completeness, failures and approved manifest | Yes, exactly the hook argument | Target capability; see evidence matrix for current status | Narrow ShardingSphere-JDBC regression-testing package |
 
@@ -161,4 +170,4 @@ The project should be stopped or repositioned if any of the following occurs:
 
 Apache ShardingSphere issue [#38456](https://github.com/apache/shardingsphere/issues/38456) is a public example in which a subquery was reported to expand to many actual SQLs while an equivalent JOIN produced one. The issue is open at the time of this review. RouteContract's local corpus contains an **issue-inspired reduced and modified fixture**; it is not an exact reproduction of the upstream report and must not be described as one. The related kernel-fix [PR #39112](https://github.com/apache/shardingsphere/pull/39112) was opened by GitHub user `Develop-KIM` and closed without merge after review identified a cross-layer routing-contract problem. Until the participant's ownership of that account is confirmed, this repository does not claim the PR as participant prior work. In all cases, that public history supports the reality and subtlety of route regressions; it does **not** establish acceptance, endorsement or usage of RouteContract.
 
-As of 2026-08-11 there is no public RouteContract release, no external RouteContract user, no independent installation result and no upstream acceptance. Those items remain evidence gates, not report claims.
+As of 2026-08-12 there is no public RouteContract release, no external RouteContract user, no independent installation result and no upstream acceptance. Those items remain evidence gates, not report claims.
