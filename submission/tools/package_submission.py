@@ -585,6 +585,47 @@ def canonical_remote(url: str) -> tuple[str, str] | None:
     return None
 
 
+def validate_remote_tag_identity(
+    repository_root: Path, manifest: dict[str, Any]
+) -> None:
+    """Require origin to preserve the exact local annotated tag object and peel."""
+    project = manifest["project"]
+    local_tag_object = run(
+        ["git", "rev-parse", f"refs/tags/{project['tag']}"], cwd=repository_root
+    ).strip()
+    git_env = os.environ.copy()
+    git_env["GIT_TERMINAL_PROMPT"] = "0"
+    remote_tags = run(
+        [
+            "git",
+            "ls-remote",
+            "--tags",
+            "origin",
+            f"refs/tags/{project['tag']}",
+            f"refs/tags/{project['tag']}^{{}}",
+        ],
+        cwd=repository_root,
+        env=git_env,
+    )
+    remote_refs: dict[str, str] = {}
+    for line in remote_tags.splitlines():
+        fields = line.split()
+        if len(fields) != 2 or fields[1] in remote_refs:
+            raise GateError("origin returned an invalid or duplicate final-tag reference")
+        remote_refs[fields[1]] = fields[0]
+    base_ref = f"refs/tags/{project['tag']}"
+    peeled_ref = f"{base_ref}^{{}}"
+    if set(remote_refs) != {base_ref, peeled_ref}:
+        raise GateError("origin must publish the exact annotated final tag and peeled commit")
+    if (
+        remote_refs[base_ref] != local_tag_object
+        or remote_refs[peeled_ref] != project["commit"]
+    ):
+        raise GateError(
+            "origin final tag object or peeled commit does not match the local final tag"
+        )
+
+
 def validate_git_state(repository_root: Path, manifest: dict[str, Any]) -> None:
     project = manifest["project"]
     owner = manifest["github_owner"]
@@ -631,23 +672,7 @@ def validate_git_state(repository_root: Path, manifest: dict[str, Any]) -> None:
             f"tag/version mismatch or snapshot release: tag={project['tag']}, version={project_version}"
         )
 
-    git_env = os.environ.copy()
-    git_env["GIT_TERMINAL_PROMPT"] = "0"
-    remote_tags = run(
-        [
-            "git",
-            "ls-remote",
-            "--tags",
-            "origin",
-            f"refs/tags/{project['tag']}",
-            f"refs/tags/{project['tag']}^{{}}",
-        ],
-        cwd=repository_root,
-        env=git_env,
-    )
-    remote_commits = {line.split()[0] for line in remote_tags.splitlines() if line.split()}
-    if project["commit"] not in remote_commits:
-        raise GateError("the final tag/commit is not published on origin")
+    validate_remote_tag_identity(repository_root, manifest)
 
 
 def zip_flat_file_metadata(path: Path, label: str) -> dict[str, dict[str, Any]]:
@@ -1273,6 +1298,7 @@ def validate_public_evidence(
     local_video: dict[str, Any],
     evidence: dict[str, Any],
     evidence_dir: Path,
+    repository_root: Path,
 ) -> dict[str, Any]:
     project = manifest["project"]
     owner = manifest["github_owner"]
@@ -1372,6 +1398,9 @@ def validate_public_evidence(
                 raise GateError(f"downloaded GitHub Release checksum mismatch: {asset_name}")
 
     verify_release_attestations(manifest, evidence, evidence_dir)
+    # The immutable Release now prevents a later tag rewrite. Recheck origin
+    # after that public/attestation gate to close the earlier network TOCTOU.
+    validate_remote_tag_identity(repository_root, manifest)
 
     youtube = public_youtube_metadata(manifest["video"]["youtube_url"])
     if youtube["title"] != manifest["video"]["title"]:
@@ -1878,7 +1907,7 @@ def main() -> None:
     )
     video_metadata = validate_local_video(video_file, manifest)
     public_metadata = validate_public_evidence(
-        manifest, video_metadata, evidence_metadata, evidence_dir
+        manifest, video_metadata, evidence_metadata, evidence_dir, repository_root
     )
     official_filenames = manifest["official_submission_filenames"]
 

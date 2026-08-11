@@ -297,6 +297,88 @@ class ManifestTest(unittest.TestCase):
             package_submission.validate_manifest(manifest)
 
 
+class GitStateTest(unittest.TestCase):
+    COMMIT = "1" * 40
+    LOCAL_TAG_OBJECT = "a" * 40
+
+    def validate_with_remote_refs(self, root: Path, remote_refs: str) -> None:
+        manifest = package_submission.validate_manifest(valid_manifest())
+        (root / "build.gradle").write_text(
+            "group = 'io.github.example-owner.routecontract'\n"
+            "version = '0.1.0'\n",
+            encoding="utf-8",
+        )
+
+        def git_run(
+            command: list[str],
+            *,
+            cwd: Path | None = None,
+            env: dict[str, str] | None = None,
+        ) -> str:
+            self.assertEqual(root, cwd)
+            if command == ["git", "rev-parse", "--show-toplevel"]:
+                return f"{root}\n"
+            if command == ["git", "rev-parse", "HEAD"]:
+                return f"{self.COMMIT}\n"
+            if command == [
+                "git",
+                "status",
+                "--porcelain=v1",
+                "--untracked-files=all",
+            ]:
+                return ""
+            if command == ["git", "remote", "get-url", "origin"]:
+                return "https://github.com/example-owner/routecontract.git\n"
+            if command == ["git", "cat-file", "-t", "refs/tags/v0.1.0"]:
+                return "tag\n"
+            if command == ["git", "rev-parse", "refs/tags/v0.1.0^{commit}"]:
+                return f"{self.COMMIT}\n"
+            if command == ["git", "rev-parse", "refs/tags/v0.1.0"]:
+                return f"{self.LOCAL_TAG_OBJECT}\n"
+            if command == [
+                "git",
+                "ls-remote",
+                "--tags",
+                "origin",
+                "refs/tags/v0.1.0",
+                "refs/tags/v0.1.0^{}",
+            ]:
+                self.assertEqual("0", env.get("GIT_TERMINAL_PROMPT") if env else None)
+                return remote_refs
+            self.fail(f"unexpected command: {command}")
+
+        with patch.object(package_submission, "run", side_effect=git_run):
+            package_submission.validate_git_state(root, manifest)
+
+    def test_accepts_exact_remote_annotated_tag_object_and_peel(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            self.validate_with_remote_refs(
+                root,
+                f"{self.LOCAL_TAG_OBJECT}\trefs/tags/v0.1.0\n"
+                f"{self.COMMIT}\trefs/tags/v0.1.0^{{}}\n",
+            )
+
+    def test_rejects_remote_lightweight_tag_at_same_commit(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            with self.assertRaisesRegex(package_submission.GateError, "exact annotated"):
+                self.validate_with_remote_refs(
+                    root,
+                    f"{self.COMMIT}\trefs/tags/v0.1.0\n",
+                )
+
+    def test_rejects_different_remote_tag_object_with_same_peel(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            with self.assertRaisesRegex(package_submission.GateError, "tag object"):
+                self.validate_with_remote_refs(
+                    root,
+                    f"{'b' * 40}\trefs/tags/v0.1.0\n"
+                    f"{self.COMMIT}\trefs/tags/v0.1.0^{{}}\n",
+                )
+
+
 class ReportContractTest(unittest.TestCase):
     BASE = (
         "2026년 오픈소스 개발자대회 결과보고서 "
@@ -1109,21 +1191,36 @@ class PublicEvidenceTest(unittest.TestCase):
             "title": "RouteContract demo",
             "duration_seconds": 179.0,
         }
+        public_identity_events: list[str] = []
         with patch.object(
             package_submission, "request_json", side_effect=fake_json
         ), patch.object(
             package_submission, "public_youtube_metadata", return_value=youtube
         ), patch.object(
-            package_submission, "verify_release_attestations"
-        ) as verify_attestations:
+            package_submission,
+            "verify_release_attestations",
+            side_effect=lambda *_: public_identity_events.append("attestations"),
+        ) as verify_attestations, patch.object(
+            package_submission,
+            "validate_remote_tag_identity",
+            side_effect=lambda *_: public_identity_events.append("remote-tag-recheck"),
+        ) as verify_remote_tag:
             result = package_submission.validate_public_evidence(
-                manifest, {"duration_seconds": 179.5}, evidence, Path("/evidence")
+                manifest,
+                {"duration_seconds": 179.5},
+                evidence,
+                Path("/evidence"),
+                Path("/repository"),
             )
         self.assertEqual("success", result["ci_conclusion"])
         self.assertEqual("v0.1.0", result["release_tag"])
         self.assertIs(True, result["release_immutable"])
         verify_attestations.assert_called_once_with(
             manifest, evidence, Path("/evidence")
+        )
+        verify_remote_tag.assert_called_once_with(Path("/repository"), manifest)
+        self.assertEqual(
+            ["attestations", "remote-tag-recheck"], public_identity_events
         )
 
     def test_release_attestation_verifier_checks_release_and_every_asset(self) -> None:
@@ -1241,6 +1338,7 @@ class PublicEvidenceTest(unittest.TestCase):
                             {"duration_seconds": 179.5},
                             evidence,
                             Path("/evidence"),
+                            Path("/repository"),
                         )
 
     def test_rejects_artifact_for_non_tag_branch(self) -> None:
@@ -1287,6 +1385,7 @@ class PublicEvidenceTest(unittest.TestCase):
                     {"duration_seconds": 179.5},
                     evidence,
                     Path("/evidence"),
+                    Path("/repository"),
                 )
 
     def test_rejects_mutable_or_unreported_release_immutability(self) -> None:
@@ -1354,6 +1453,7 @@ class PublicEvidenceTest(unittest.TestCase):
                             {"duration_seconds": 179.5},
                             evidence,
                             Path("/evidence"),
+                            Path("/repository"),
                         )
 
     def test_rejects_release_run_for_different_commit(self) -> None:
@@ -1395,6 +1495,7 @@ class PublicEvidenceTest(unittest.TestCase):
                     {"duration_seconds": 179.5},
                     evidence,
                     Path("/evidence"),
+                    Path("/repository"),
                 )
 
 
