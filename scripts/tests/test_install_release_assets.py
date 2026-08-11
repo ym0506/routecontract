@@ -6,13 +6,15 @@ from __future__ import annotations
 import hashlib
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
 import xml.etree.ElementTree as ET
-from zipfile import ZIP_DEFLATED, ZipFile
+import stat
+from zipfile import ZIP_DEFLATED, ZIP_STORED, ZipFile, ZipInfo
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -21,6 +23,29 @@ RELEASE_CONSUMER = REPOSITORY_ROOT / "scripts" / "verify-release-assets-consumer
 ARTIFACT_ID = "routecontract-shardingsphere-5.5"
 GROUP_ID = "io.github.ym0506.routecontract"
 VERSION = "1.2.3"
+SOURCE_PUBLIC_API_PATH = (
+    "routecontract-shardingsphere-5.5/src/main/java/"
+    "io/github/ym0506/routecontract/RouteContract.java"
+)
+SOURCE_HOOK_PATH = (
+    "routecontract-shardingsphere-5.5/src/main/java/"
+    "io/github/ym0506/routecontract/internal/RouteContractSqlExecutionHook.java"
+)
+SOURCE_SERVICE_DESCRIPTOR_PATH = (
+    "routecontract-shardingsphere-5.5/src/main/resources/META-INF/services/"
+    "org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook"
+)
+SOURCE_REQUIRED_RELATIVE_PATHS = {
+    "README.md",
+    "LICENSE",
+    "build.gradle",
+    "settings.gradle",
+    "gradlew",
+    "scripts/install-release-assets.py",
+    SOURCE_PUBLIC_API_PATH,
+    SOURCE_HOOK_PATH,
+    SOURCE_SERVICE_DESCRIPTOR_PATH,
+}
 
 
 def sha256(path: Path) -> str:
@@ -32,12 +57,14 @@ def sha256(path: Path) -> str:
 
 
 class ReleaseFixture:
-    def __init__(self, root: Path) -> None:
+    def __init__(self, root: Path, version: str = VERSION) -> None:
         self.root = root
+        self.version = version
         self.pom_name = f"{ARTIFACT_ID}.pom"
-        self.main_jar_name = f"{ARTIFACT_ID}-{VERSION}.jar"
-        self.sources_jar_name = f"{ARTIFACT_ID}-{VERSION}-sources.jar"
-        self.javadoc_jar_name = f"{ARTIFACT_ID}-{VERSION}-javadoc.jar"
+        self.main_jar_name = f"{ARTIFACT_ID}-{version}.jar"
+        self.sources_jar_name = f"{ARTIFACT_ID}-{version}-sources.jar"
+        self.javadoc_jar_name = f"{ARTIFACT_ID}-{version}-javadoc.jar"
+        self.source_archive_name = f"routecontract-{version}-source.zip"
 
     def create(self) -> None:
         self.root.mkdir()
@@ -47,7 +74,7 @@ class ReleaseFixture:
   <modelVersion>4.0.0</modelVersion>
   <groupId>{GROUP_ID}</groupId>
   <artifactId>routecontract-shardingsphere-5.5</artifactId>
-  <version>1.2.3</version>
+  <version>{self.version}</version>
 </project>
 """,
             encoding="utf-8",
@@ -63,8 +90,8 @@ class ReleaseFixture:
                 archive.writestr("META-INF/LICENSE", "Apache-2.0 fixture")
                 archive.writestr("META-INF/NOTICE", "RouteContract fixture")
                 archive.writestr(member, "fixture")
+        self.write_source_archive()
         for name, content in (
-            (f"routecontract-{VERSION}-source.zip", b"source fixture"),
             (f"{ARTIFACT_ID}-cyclonedx.json", b"{}\n"),
             (f"{ARTIFACT_ID}-cyclonedx.xml", b"<bom/>\n"),
             ("routecontract-aggregate-cyclonedx.json", b"{}\n"),
@@ -102,8 +129,65 @@ class ReleaseFixture:
             archive.writestr("META-INF/LICENSE", "Apache-2.0 fixture")
             archive.writestr("META-INF/NOTICE", "RouteContract fixture")
 
+    def write_source_archive(
+        self,
+        *,
+        root_name: str | None = None,
+        extra_relative_entries: tuple[str, ...] = (),
+        omitted_relative_entries: tuple[str, ...] = (),
+        content_overrides: dict[str, str] | None = None,
+    ) -> None:
+        if root_name is None:
+            root_name = f"routecontract-{self.version}"
+        omitted = set(omitted_relative_entries)
+        source_content = {
+            SOURCE_PUBLIC_API_PATH: (
+                "package io.github.ym0506.routecontract;\n"
+                "public final class RouteContract {}\n"
+            ),
+            SOURCE_HOOK_PATH: (
+                "package io.github.ym0506.routecontract.internal;\n"
+                "public final class RouteContractSqlExecutionHook "
+                "implements SQLExecutionHook {}\n"
+            ),
+            SOURCE_SERVICE_DESCRIPTOR_PATH: (
+                "io.github.ym0506.routecontract.internal."
+                "RouteContractSqlExecutionHook\n"
+            ),
+        }
+        if content_overrides:
+            source_content.update(content_overrides)
+        with ZipFile(
+            self.root / self.source_archive_name, "w", ZIP_DEFLATED
+        ) as archive:
+            for relative in sorted(SOURCE_REQUIRED_RELATIVE_PATHS - omitted):
+                archive.writestr(
+                    f"{root_name}/{relative}",
+                    source_content.get(relative, "fixture"),
+                )
+            for relative in extra_relative_entries:
+                archive.writestr(
+                    f"{root_name}/{relative}",
+                    source_content.get(relative, "extra fixture"),
+                )
+
     def public_payloads(self) -> list[Path]:
         return sorted(path for path in self.root.iterdir() if path.name != "SHA256SUMS")
+
+    def append_source_entry(
+        self,
+        relative: str,
+        content: bytes | str = b"extra fixture",
+        *,
+        unix_mode: int | None = None,
+    ) -> None:
+        info = ZipInfo(f"routecontract-{self.version}/{relative}")
+        info.compress_type = ZIP_STORED if relative.endswith("/") else ZIP_DEFLATED
+        info.create_system = 3
+        if unix_mode is not None:
+            info.external_attr = unix_mode << 16
+        with ZipFile(self.root / self.source_archive_name, "a") as archive:
+            archive.writestr(info, content)
 
     def write_checksums(self, *, extra_lines: tuple[str, ...] = ()) -> None:
         lines = [f"{sha256(path)}  {path.name}" for path in self.public_payloads()]
@@ -173,6 +257,84 @@ class InstallReleaseAssetsTest(unittest.TestCase):
                 (coordinate / f"{ARTIFACT_ID}-{VERSION}.pom").read_bytes(),
             )
             self.assertFalse((fake_home / ".m2").exists())
+            self.assertIn(f"{GROUP_ID}:{ARTIFACT_ID}:{VERSION}", result.stdout)
+
+    def test_accepts_strict_release_candidate_coordinate(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            version = "1.2.3-rc1"
+            assets = root / "release"
+            fixture = ReleaseFixture(assets, version)
+            fixture.create()
+            repository = root / "consumer-maven"
+
+            result = self.run_installer(assets, repository, home=root / "home")
+
+            self.assertEqual(0, result.returncode, result.stderr)
+            coordinate = (
+                repository
+                / Path(*GROUP_ID.split("."))
+                / ARTIFACT_ID
+                / version
+            )
+            self.assertTrue(coordinate.is_dir())
+            self.assertIn(
+                f"{GROUP_ID}:{ARTIFACT_ID}:{version}", result.stdout
+            )
+
+    def test_consumer_verification_trust_is_exact_and_rc_aware(self) -> None:
+        metadata = ET.parse(
+            REPOSITORY_ROOT
+            / "examples/standalone-consumer/gradle/verification-metadata.xml"
+        )
+        rules = [
+            element
+            for element in metadata.getroot().iter()
+            if element.tag.rsplit("}", 1)[-1] == "trust"
+        ]
+        self.assertEqual(1, len(rules))
+        rule = rules[0]
+        self.assertEqual("true", rule.attrib.get("regex"))
+        self.assertEqual(
+            "^io[.]github[.]ym0506[.]routecontract$", rule.attrib.get("group")
+        )
+        self.assertEqual(
+            "^routecontract-shardingsphere-5[.]5$", rule.attrib.get("name")
+        )
+        version_pattern = rule.attrib["version"]
+        self.assertIsNotNone(re.fullmatch(version_pattern, "1.2.3"))
+        self.assertIsNotNone(re.fullmatch(version_pattern, "1.2.3-rc1"))
+        for rejected in ("1.2.3-SNAPSHOT", "1.2.3-rc0", "1.2.3-beta1"):
+            self.assertIsNone(re.fullmatch(version_pattern, rejected))
+
+    def test_accepts_current_git_archive_source_shape(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            assets = root / "release"
+            fixture = ReleaseFixture(assets)
+            fixture.create()
+            archive_result = subprocess.run(
+                [
+                    "git",
+                    "archive",
+                    "--format=zip",
+                    f"--prefix=routecontract-{VERSION}/",
+                    f"--output={assets / fixture.source_archive_name}",
+                    "HEAD",
+                ],
+                cwd=REPOSITORY_ROOT,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                check=False,
+            )
+            self.assertEqual(0, archive_result.returncode, archive_result.stdout)
+            fixture.write_checksums()
+            repository = root / "consumer-maven"
+
+            result = self.run_installer(assets, repository, home=root / "home")
+
+            self.assertEqual(0, result.returncode, result.stderr)
             self.assertIn(f"{GROUP_ID}:{ARTIFACT_ID}:{VERSION}", result.stdout)
 
     def test_rejects_checksum_mismatch_without_creating_repository(self) -> None:
@@ -248,6 +410,425 @@ class InstallReleaseAssetsTest(unittest.TestCase):
                 )
                 self.assertFalse(repository.exists())
 
+    def test_rejects_source_archive_with_wrong_versioned_root(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            assets = root / "release"
+            fixture = ReleaseFixture(assets)
+            fixture.create()
+            fixture.write_source_archive(root_name="routecontract-9.9.9")
+            fixture.write_checksums()
+            repository = root / "consumer-maven"
+
+            result = self.run_installer(assets, repository, home=root / "home")
+
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("exactly one versioned root", result.stderr)
+            self.assertFalse(repository.exists())
+
+    def test_rejects_alternate_package_namespace_in_source_archive(self) -> None:
+        unexpected_paths = (
+            "routecontract-shardingsphere-5.5/src/main/java/"
+            "io/github/developkim/routecontract/Legacy.java",
+            "routecontract-shardingsphere-5.5/src/main/java/"
+            "io/github/example-owner/routecontract/Legacy.java",
+            "routecontract-shardingsphere-5.5/src/main/java/"
+            "io/github/ym0506/routecontract/generated/"
+            "io/github/developkim/routecontract/Legacy.java",
+        )
+        for unexpected_path in unexpected_paths:
+            with (
+                self.subTest(path=unexpected_path),
+                tempfile.TemporaryDirectory() as raw,
+            ):
+                root = Path(raw)
+                assets = root / "release"
+                fixture = ReleaseFixture(assets)
+                fixture.create()
+                fixture.write_source_archive(
+                    extra_relative_entries=(unexpected_path,)
+                )
+                fixture.write_checksums()
+                repository = root / "consumer-maven"
+
+                result = self.run_installer(
+                    assets, repository, home=root / "home"
+                )
+
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn(
+                    "unexpected RouteContract package namespace", result.stderr
+                )
+                self.assertFalse(repository.exists())
+
+    def test_rejects_source_archive_missing_canonical_hook_source(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            assets = root / "release"
+            fixture = ReleaseFixture(assets)
+            fixture.create()
+            fixture.write_source_archive(
+                omitted_relative_entries=(
+                    "routecontract-shardingsphere-5.5/src/main/java/"
+                    "io/github/ym0506/routecontract/internal/"
+                    "RouteContractSqlExecutionHook.java",
+                )
+            )
+            fixture.write_checksums()
+            repository = root / "consumer-maven"
+
+            result = self.run_installer(assets, repository, home=root / "home")
+
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("missing canonical source paths", result.stderr)
+            self.assertFalse(repository.exists())
+
+    def test_rejects_source_archive_with_mismatched_canonical_text(self) -> None:
+        cases = (
+            (
+                SOURCE_PUBLIC_API_PATH,
+                "package io.github.developkim.routecontract;\n",
+                "public API has an unexpected package declaration",
+            ),
+            (
+                SOURCE_HOOK_PATH,
+                "package io.github.developkim.routecontract.internal;\n",
+                "hook has an unexpected package declaration",
+            ),
+            (
+                SOURCE_SERVICE_DESCRIPTOR_PATH,
+                "io.github.developkim.routecontract.internal.LegacyHook\n",
+                "unexpected SQLExecutionHook provider",
+            ),
+        )
+        for relative, content, expected_error in cases:
+            with (
+                self.subTest(path=relative),
+                tempfile.TemporaryDirectory() as raw,
+            ):
+                root = Path(raw)
+                assets = root / "release"
+                fixture = ReleaseFixture(assets)
+                fixture.create()
+                fixture.write_source_archive(
+                    content_overrides={relative: content}
+                )
+                fixture.write_checksums()
+                repository = root / "consumer-maven"
+
+                result = self.run_installer(
+                    assets, repository, home=root / "home"
+                )
+
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn(expected_error, result.stderr)
+                self.assertFalse(repository.exists())
+
+    def test_rejects_unsafe_source_names_and_special_unix_types(self) -> None:
+        cases = (
+            ("../escape.txt", None, "unsafe entry"),
+            ("docs\\secret.txt", None, "unsafe entry"),
+            ("link", stat.S_IFLNK | 0o777, "special or mismatched Unix entry"),
+            ("pipe", stat.S_IFIFO | 0o600, "special or mismatched Unix entry"),
+            ("typed-directory/", stat.S_IFREG | 0o644, "incompatible Unix type"),
+        )
+        for relative, unix_mode, expected_error in cases:
+            with self.subTest(relative=relative), tempfile.TemporaryDirectory() as raw:
+                root = Path(raw)
+                assets = root / "release"
+                fixture = ReleaseFixture(assets)
+                fixture.create()
+                fixture.append_source_entry(relative, unix_mode=unix_mode)
+                fixture.write_checksums()
+                repository = root / "consumer-maven"
+
+                result = self.run_installer(
+                    assets, repository, home=root / "home"
+                )
+
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn(expected_error, result.stderr)
+                self.assertFalse(repository.exists())
+
+    def test_rejects_source_directory_with_a_payload(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            assets = root / "release"
+            fixture = ReleaseFixture(assets)
+            fixture.create()
+            fixture.append_source_entry(
+                "padding/", b"not empty", unix_mode=stat.S_IFDIR | 0o755
+            )
+            fixture.write_checksums()
+            repository = root / "consumer-maven"
+
+            result = self.run_installer(assets, repository, home=root / "home")
+
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("directory contains a payload", result.stderr)
+            self.assertFalse(repository.exists())
+
+    def test_rejects_ambiguous_source_path_graphs(self) -> None:
+        cases = (
+            (("README.md/",), "duplicate logical path"),
+            (("docs", "docs/page.md"), "file/descendant path collision"),
+            (("Docs", "docs/page.md"), "case or Unicode-normalization file/descendant"),
+            (("Docs/Guide.md", "docs/guide.md"), "case or Unicode-normalization"),
+        )
+        for entries, expected_error in cases:
+            with self.subTest(entries=entries), tempfile.TemporaryDirectory() as raw:
+                root = Path(raw)
+                assets = root / "release"
+                fixture = ReleaseFixture(assets)
+                fixture.create()
+                for relative in entries:
+                    mode = stat.S_IFDIR | 0o755 if relative.endswith("/") else None
+                    content = b"" if relative.endswith("/") else b"extra"
+                    fixture.append_source_entry(relative, content, unix_mode=mode)
+                fixture.write_checksums()
+                repository = root / "consumer-maven"
+
+                result = self.run_installer(
+                    assets, repository, home=root / "home"
+                )
+
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn(expected_error, result.stderr)
+                self.assertFalse(repository.exists())
+
+    def test_rejects_nul_truncated_source_entry_name(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            assets = root / "release"
+            fixture = ReleaseFixture(assets)
+            fixture.create()
+            fixture.append_source_entry("nulXsuffix.txt")
+            archive_path = assets / fixture.source_archive_name
+            raw_archive = archive_path.read_bytes()
+            encoded_name = (
+                f"routecontract-{VERSION}/nulXsuffix.txt".encode("ascii")
+            )
+            self.assertEqual(2, raw_archive.count(encoded_name))
+            archive_path.write_bytes(
+                raw_archive.replace(encoded_name, encoded_name.replace(b"X", b"\x00"))
+            )
+            fixture.write_checksums()
+            repository = root / "consumer-maven"
+
+            result = self.run_installer(assets, repository, home=root / "home")
+
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("truncated or NUL-bearing entry name", result.stderr)
+            self.assertFalse(repository.exists())
+
+    def test_rejects_encrypted_source_archive_flag(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            assets = root / "release"
+            fixture = ReleaseFixture(assets)
+            fixture.create()
+            archive_path = assets / fixture.source_archive_name
+            raw_archive = bytearray(archive_path.read_bytes())
+            patched_headers = 0
+            for signature, flag_offset in ((b"PK\x03\x04", 6), (b"PK\x01\x02", 8)):
+                cursor = 0
+                while True:
+                    header = raw_archive.find(signature, cursor)
+                    if header < 0:
+                        break
+                    flags = int.from_bytes(
+                        raw_archive[header + flag_offset : header + flag_offset + 2],
+                        "little",
+                    )
+                    raw_archive[header + flag_offset : header + flag_offset + 2] = (
+                        flags | 0x1
+                    ).to_bytes(2, "little")
+                    patched_headers += 1
+                    cursor = header + 4
+            self.assertGreater(patched_headers, 1)
+            archive_path.write_bytes(raw_archive)
+            fixture.write_checksums()
+            repository = root / "consumer-maven"
+
+            result = self.run_installer(assets, repository, home=root / "home")
+
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("unsafe entry", result.stderr)
+            self.assertFalse(repository.exists())
+
+    def test_rejects_private_generated_and_credential_like_source_paths(self) -> None:
+        forbidden_paths = (
+            "private_codex/prompt.txt",
+            ".DS_Store",
+            "cache/result.pyc",
+            "out/generated.txt",
+            "submission/private",
+            ".env.local",
+            "keys/release.key",
+        )
+        for relative in forbidden_paths:
+            with self.subTest(relative=relative), tempfile.TemporaryDirectory() as raw:
+                root = Path(raw)
+                assets = root / "release"
+                fixture = ReleaseFixture(assets)
+                fixture.create()
+                fixture.append_source_entry(relative)
+                fixture.write_checksums()
+                repository = root / "consumer-maven"
+
+                result = self.run_installer(
+                    assets, repository, home=root / "home"
+                )
+
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn("private or generated path", result.stderr)
+                self.assertFalse(repository.exists())
+
+    def test_rejects_commented_package_decoy_in_canonical_source(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            assets = root / "release"
+            fixture = ReleaseFixture(assets)
+            fixture.create()
+            fixture.write_source_archive(
+                content_overrides={
+                    SOURCE_PUBLIC_API_PATH: (
+                        "/* package io.github.ym0506.routecontract; */\n"
+                        "package io.github.developkim.routecontract;\n"
+                        "public final class RouteContract {}\n"
+                    )
+                }
+            )
+            fixture.write_checksums()
+            repository = root / "consumer-maven"
+
+            result = self.run_installer(assets, repository, home=root / "home")
+
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("public API has an unexpected package declaration", result.stderr)
+            self.assertFalse(repository.exists())
+
+    def test_applies_java_unicode_escapes_before_package_validation(self) -> None:
+        escape_prefixes = (
+            "\r",
+            "\\u000a",
+            "\\u005c\\u000a",
+            "\\u000d",
+            "\\u005c\\u000d",
+        )
+        for escape_prefix in escape_prefixes:
+            with self.subTest(escape=escape_prefix), tempfile.TemporaryDirectory() as raw:
+                root = Path(raw)
+                assets = root / "release"
+                fixture = ReleaseFixture(assets)
+                fixture.create()
+                extra_java = (
+                    "routecontract-shardingsphere-5.5/src/test/java/"
+                    "io/github/ym0506/routecontract/Legacy.java"
+                )
+                fixture.write_source_archive(
+                    extra_relative_entries=(extra_java,),
+                    content_overrides={
+                        extra_java: (
+                            f"// {escape_prefix}package "
+                            "io.github.developkim.routecontract; /*\n"
+                            "package io.github.ym0506.routecontract; */\n"
+                            "final class Legacy {}\n"
+                        )
+                    },
+                )
+                fixture.write_checksums()
+                repository = root / "consumer-maven"
+
+                result = self.run_installer(
+                    assets, repository, home=root / "home"
+                )
+
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn("Java package does not match its path", result.stderr)
+                self.assertFalse(repository.exists())
+
+    def test_rejects_wrong_active_package_in_any_java_source(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            assets = root / "release"
+            fixture = ReleaseFixture(assets)
+            fixture.create()
+            extra_java = (
+                "routecontract-shardingsphere-5.5/src/test/java/"
+                "io/github/ym0506/routecontract/Legacy.java"
+            )
+            fixture.write_source_archive(
+                extra_relative_entries=(extra_java,),
+                content_overrides={
+                    extra_java: (
+                        "package io.github.developkim.routecontract;\n"
+                        "final class Legacy {}\n"
+                    )
+                },
+            )
+            fixture.write_checksums()
+            repository = root / "consumer-maven"
+
+            result = self.run_installer(assets, repository, home=root / "home")
+
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("Java package does not match its path", result.stderr)
+            self.assertFalse(repository.exists())
+
+    def test_rejects_hook_without_expected_top_level_provider_class(self) -> None:
+        invalid_declarations = (
+            (
+                "/* public final class RouteContractSqlExecutionHook "
+                "implements SQLExecutionHook {} */\n"
+                "final class DifferentHook {}\n"
+            ),
+            (
+                "public final class RouteContractSqlExecutionHook "
+                "implements SQLExecutionHook;\n"
+            ),
+        )
+        for declaration in invalid_declarations:
+            with self.subTest(declaration=declaration), tempfile.TemporaryDirectory() as raw:
+                root = Path(raw)
+                assets = root / "release"
+                fixture = ReleaseFixture(assets)
+                fixture.create()
+                fixture.write_source_archive(
+                    content_overrides={
+                        SOURCE_HOOK_PATH: (
+                            "package io.github.ym0506.routecontract.internal;\n"
+                            + declaration
+                        )
+                    }
+                )
+                fixture.write_checksums()
+                repository = root / "consumer-maven"
+
+                result = self.run_installer(
+                    assets, repository, home=root / "home"
+                )
+
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn("expected top-level SPI class", result.stderr)
+                self.assertFalse(repository.exists())
+
+    def test_rejects_non_zip_source_archive(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            assets = root / "release"
+            fixture = ReleaseFixture(assets)
+            fixture.create()
+            (assets / fixture.source_archive_name).write_bytes(b"not a ZIP")
+            fixture.write_checksums()
+            repository = root / "consumer-maven"
+
+            result = self.run_installer(assets, repository, home=root / "home")
+
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("source archive is not a valid ZIP", result.stderr)
+            self.assertFalse(repository.exists())
+
     def test_rejects_unexpected_checksum_entry(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
@@ -283,8 +864,37 @@ class InstallReleaseAssetsTest(unittest.TestCase):
             result = self.run_installer(assets, repository, home=root / "home")
 
             self.assertNotEqual(0, result.returncode)
-            self.assertIn("stable MAJOR.MINOR.PATCH", result.stderr)
+            self.assertIn("MAJOR.MINOR.PATCH or MAJOR.MINOR.PATCH-rcN", result.stderr)
             self.assertFalse(repository.exists())
+
+    def test_rejects_noncanonical_release_candidate_versions(self) -> None:
+        for version in ("1.2.3-rc0", "1.2.3-rc01", "1.2.3-beta1", "1.2.3-rc1-SNAPSHOT"):
+            with self.subTest(version=version), tempfile.TemporaryDirectory() as raw:
+                root = Path(raw)
+                assets = root / "release"
+                fixture = ReleaseFixture(assets)
+                fixture.create()
+                pom = assets / fixture.pom_name
+                pom.write_text(
+                    pom.read_text(encoding="utf-8").replace(
+                        f"<version>{VERSION}</version>",
+                        f"<version>{version}</version>",
+                    ),
+                    encoding="utf-8",
+                )
+                fixture.write_checksums()
+                repository = root / "consumer-maven"
+
+                result = self.run_installer(
+                    assets, repository, home=root / "home"
+                )
+
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn(
+                    "MAJOR.MINOR.PATCH or MAJOR.MINOR.PATCH-rcN",
+                    result.stderr,
+                )
+                self.assertFalse(repository.exists())
 
     def test_rejects_noncanonical_owner_group_before_writing(self) -> None:
         for unexpected_group in (
@@ -392,16 +1002,17 @@ class InstallReleaseAssetsTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
             assets = root / "release"
-            fixture = ReleaseFixture(assets)
+            release_version = "1.2.3-rc1"
+            fixture = ReleaseFixture(assets, release_version)
             fixture.create()
             for suffix in ("", "-sources", "-javadoc"):
                 shutil.copyfile(
                     module / "build/libs" / f"{ARTIFACT_ID}-{built_version}{suffix}.jar",
-                    assets / f"{ARTIFACT_ID}-{VERSION}{suffix}.jar",
+                    assets / f"{ARTIFACT_ID}-{release_version}{suffix}.jar",
                 )
             generated_pom = generated_pom.replace(
                 f"<version>{built_version}</version>",
-                f"<version>{VERSION}</version>",
+                f"<version>{release_version}</version>",
                 1,
             )
             (assets / fixture.pom_name).write_text(generated_pom, encoding="utf-8")
@@ -418,7 +1029,7 @@ class InstallReleaseAssetsTest(unittest.TestCase):
             self.assertEqual(0, result.returncode, result.stdout)
             self.assertIn(
                 "ROUTECONTRACT_RELEASE_ASSET_CONSUMER "
-                f"coordinate={GROUP_ID}:{ARTIFACT_ID}:{VERSION} "
+                f"coordinate={GROUP_ID}:{ARTIFACT_ID}:{release_version} "
                 "result=VERIFIED_MYSQL",
                 result.stdout,
             )

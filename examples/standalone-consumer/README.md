@@ -13,9 +13,10 @@ exclusive repository rule for the RouteContract group. The test verifies that:
 This standalone build has its own dependency lockfile and SHA-256 verification metadata because it
 does not inherit the root build's dependency controls.
 
-The verification metadata trusts only a stable RouteContract first-party
-group/artifact pattern because `install-release-assets.py` has already checked
-that JAR and POM against the public Release `SHA256SUMS`. Third-party
+The verification metadata trusts only the exact RouteContract first-party
+group/artifact and a non-SNAPSHOT stable or strict `-rcN` version because
+`install-release-assets.py` has already checked that JAR and POM against the
+public Release `SHA256SUMS`. Third-party
 dependencies remain checksum-verified; this exception does not disable Gradle
 dependency verification globally.
 
@@ -29,8 +30,8 @@ That command is same-checkout packaging evidence. It proves that the generated
 Maven publication can be consumed without a Gradle project dependency; it is
 not an external-user installation or adoption claim.
 
-After a stable GitHub Release exists, a fresh checkout can instead consume the
-exact final Release assets without Maven Central hosting. Download every public
+After a stable or strict `-rcN` GitHub Release exists, a fresh checkout can
+instead consume the exact assets without Maven Central hosting. Download every public
 asset from that Release—including the main/sources/Javadoc JARs, POM, source
 archive, direct and aggregate SBOMs, `test-summary.txt`, and `SHA256SUMS`—into
 one flat directory. Then use an explicit empty Maven repository:
@@ -42,12 +43,13 @@ python3 ../../scripts/install-release-assets.py \
 ```
 
 The offline installer verifies every downloaded public asset against
-`SHA256SUMS`, validates the stable POM coordinate and JAR structure, and copies
+`SHA256SUMS`, validates the non-SNAPSHOT POM coordinate and JAR structure, and copies
 the JARs plus versioned POM into the Maven layout. `SHA256SUMS` must list
 exactly the other public payloads (not itself) and no workflow-only logs. The installer does not
 read or modify `~/.m2`, and it refuses to overwrite an existing coordinate. A
 checksum does not authenticate the publisher, so the input directory must
-come from the final public GitHub Release.
+come from the public GitHub Release for the exact tag. A release candidate is
+prerelease evidence, not the stable artifact required by the final contest gate.
 
 To run this consumer directly, point it at a Maven repository containing the
 same RouteContract group and version as the root build:

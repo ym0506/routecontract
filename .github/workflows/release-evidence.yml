@@ -18,6 +18,7 @@ jobs:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Set up JDK 17
@@ -37,6 +38,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          test "$(git cat-file -t "refs/tags/${GITHUB_REF_NAME}")" = 'tag'
           project_version="$(./gradlew --no-daemon -q properties | awk '/^version:/ { print $2; exit }')"
           test "v${project_version}" = "${GITHUB_REF_NAME}"
 

@@ -34,8 +34,11 @@ credentials have been verified.
 ## Tag and collect evidence
 
 Create an annotated tag matching the Gradle project version, including the
-leading `v` (for example, project version `0.1.0` uses tag `v0.1.0`). Pushing
-that tag runs the read-only `Release evidence` workflow. The workflow:
+leading `v` (for example, project version `0.1.0-rc1` uses tag `v0.1.0-rc1`,
+and `0.1.0` uses `v0.1.0`). The release installer accepts only these stable or
+strict `-rcN` forms and rejects snapshots. The final contest package still
+requires the immutable stable `v0.1.0` release. Pushing a matching tag runs the
+read-only `Release evidence` workflow. The workflow:
 
 - validates the Wrapper and tag/version match;
 - runs unit and real MySQL integration tests without reusing cached task results;
@@ -51,6 +54,12 @@ that tag runs the read-only `Release evidence` workflow. The workflow:
 - creates a revision-bound source archive with one `routecontract-VERSION/`
   root; this archive is release evidence and a GitHub Release asset, not a
   separate contest-upload file;
+- validates that source archive's bounded and unambiguous ZIP structure, exact
+  versioned root, required project/hook sources, every Java path/package pair
+  under conventional `src/main/java` and `src/test/java` roots, canonical
+  `ym0506` provider namespace and absence of declared
+  private/generated or credential-like paths before installing any binary
+  artifact;
 - stages the exact public Release payload set and creates `SHA256SUMS` over
   those payloads only;
 - installs that checksummed set into an explicit empty file Maven repository,
@@ -73,6 +82,9 @@ revision-bound workflow artifact. The test summary is present in both places;
 the three workflow-only logs. The gate checks the public checksum set separately, then
 protects the entire public-plus-private evidence directory through the Actions
 artifact ID/digest, byte-identical extraction and exact flat-file allowlist.
+Mark an `-rcN` GitHub Release as a prerelease. The immutable final `v0.1.0`
+Release must be a new stable tag/revision/evidence run with `prerelease=false`;
+never retag or promote RC assets as if they were the final stable evidence.
 The v0.1 packaging gate requires no signature assets because no signing
 workflow or key-management policy is implemented. Add signing only in a future
 release with an explicit design and verification path. Do not imply SLSA
@@ -91,3 +103,8 @@ implemented and verified.
   not make the entire environment byte-for-byte reproducible.
 - Dependabot proposes updates; CI and human review still decide whether an
   update preserves compatibility and the project's evidence claims.
+- The release installer proves the downloaded source ZIP's checksum, bounded
+  structure, required paths, Java packages and provider namespace. It does not
+  by itself prove Git-tree identity; the final submission packaging gate
+  recreates `git archive` from the final commit and compares tracked paths,
+  content and executable permissions before accepting it.

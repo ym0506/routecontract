@@ -18,6 +18,7 @@ import shutil
 import stat
 import sys
 import tempfile
+import unicodedata
 import xml.etree.ElementTree as ET
 from zipfile import BadZipFile, ZipFile
 
@@ -42,16 +43,294 @@ SERVICE_DESCRIPTOR = (
     "org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook"
 )
 VERSION_PART = r"(?:0|[1-9][0-9]{0,8})"
-VERSION_PATTERN = re.compile(rf"{VERSION_PART}\.{VERSION_PART}\.{VERSION_PART}")
+RELEASE_VERSION_PATTERN = re.compile(
+    rf"{VERSION_PART}\.{VERSION_PART}\.{VERSION_PART}(?:-rc[1-9][0-9]{{0,5}})?"
+)
 CHECKSUM_LINE_PATTERN = re.compile(r"([0-9a-f]{64})  ([A-Za-z0-9][A-Za-z0-9._+-]*)")
+JAVA_IDENTIFIER_PATTERN = re.compile(r"[A-Za-z_$][A-Za-z0-9_$]*")
 MAX_POM_BYTES = 1024 * 1024
 MAX_CHECKSUM_BYTES = 1024 * 1024
 MAX_JAR_BYTES = 100 * 1024 * 1024
 MAX_JAR_UNCOMPRESSED_BYTES = 200 * 1024 * 1024
+MAX_SOURCE_ARCHIVE_BYTES = 100 * 1024 * 1024
+MAX_SOURCE_ARCHIVE_UNCOMPRESSED_BYTES = 200 * 1024 * 1024
+MAX_SOURCE_ARCHIVE_ENTRIES = 20_000
+MAX_SOURCE_TEXT_BYTES = 5 * 1024 * 1024
+SOURCE_PUBLIC_API_PATH = (
+    "routecontract-shardingsphere-5.5/src/main/java/"
+    "io/github/ym0506/routecontract/RouteContract.java"
+)
+SOURCE_HOOK_PATH = (
+    "routecontract-shardingsphere-5.5/src/main/java/"
+    "io/github/ym0506/routecontract/internal/"
+    "RouteContractSqlExecutionHook.java"
+)
+SOURCE_SERVICE_DESCRIPTOR_PATH = (
+    "routecontract-shardingsphere-5.5/src/main/resources/" + SERVICE_DESCRIPTOR
+)
+SOURCE_REQUIRED_PATHS = {
+    "README.md",
+    "LICENSE",
+    "build.gradle",
+    "settings.gradle",
+    "gradlew",
+    "scripts/install-release-assets.py",
+    SOURCE_PUBLIC_API_PATH,
+    SOURCE_HOOK_PATH,
+    SOURCE_SERVICE_DESCRIPTOR_PATH,
+}
+SOURCE_FORBIDDEN_PARTS = {
+    ".agents",
+    ".codex",
+    ".git",
+    ".gradle",
+    ".idea",
+    "__pycache__",
+    "build",
+    "out",
+    "private_codex",
+    "private_notes",
+}
+SOURCE_FORBIDDEN_PREFIXES = (
+    "submission/draft",
+    "submission/final",
+    "submission/package",
+    "submission/private",
+)
+SOURCE_FORBIDDEN_SUFFIXES = (".pyc", ".pyo", ".pem", ".key", ".p12", ".pfx", ".jks")
 
 
 class InstallError(RuntimeError):
     """A validation or safe-install failure suitable for a concise CLI error."""
+
+
+def forbidden_source_path(relative: str, parts: tuple[str, ...]) -> bool:
+    """Return whether a release source path is private, generated, or credential-like."""
+    if any(part in SOURCE_FORBIDDEN_PARTS for part in parts):
+        return True
+    if any(
+        relative == prefix or relative.startswith(f"{prefix}/")
+        for prefix in SOURCE_FORBIDDEN_PREFIXES
+    ):
+        return True
+    filename = parts[-1]
+    folded = filename.casefold()
+    if folded == ".ds_store":
+        return True
+    if folded == ".env" or (folded.startswith(".env.") and folded != ".env.example"):
+        return True
+    return folded.endswith(SOURCE_FORBIDDEN_SUFFIXES)
+
+
+def translate_java_unicode_escapes(source: str, path: str) -> str:
+    """Apply Java's pre-tokenization Unicode-escape translation once."""
+    translated: list[str] = []
+    index = 0
+    consecutive_backslashes = 0
+    while index < len(source):
+        character = source[index]
+        if character != "\\":
+            translated.append(character)
+            consecutive_backslashes = 0
+            index += 1
+            continue
+        eligible = consecutive_backslashes % 2 == 0
+        if eligible and index + 1 < len(source) and source[index + 1] == "u":
+            digits = index + 1
+            while digits < len(source) and source[digits] == "u":
+                digits += 1
+            escape = source[digits : digits + 4]
+            if len(escape) != 4 or any(
+                character not in "0123456789abcdefABCDEF" for character in escape
+            ):
+                raise InstallError(
+                    f"source archive Java file has a malformed Unicode escape: {path}"
+                )
+            character = chr(int(escape, 16))
+            translated.append(character)
+            index = digits + 4
+            # Eligibility is based on immediately preceding raw-input
+            # backslashes. This escape ended in hexadecimal digits, so a next
+            # raw backslash is eligible even when this escape produced "\\".
+            consecutive_backslashes = 0
+            continue
+        translated.append(character)
+        consecutive_backslashes += 1
+        index += 1
+    return "".join(translated)
+
+
+def java_tokens(source: str, path: str) -> list[str]:
+    """Tokenize enough Java syntax to validate packages and one top-level class."""
+    source = translate_java_unicode_escapes(source, path)
+    tokens: list[str] = []
+    index = 1 if source.startswith("\ufeff") else 0
+    while index < len(source):
+        character = source[index]
+        if character.isspace():
+            index += 1
+            continue
+        if source.startswith("//", index):
+            line_feed = source.find("\n", index + 2)
+            carriage_return = source.find("\r", index + 2)
+            endings = [position for position in (line_feed, carriage_return) if position >= 0]
+            if not endings:
+                index = len(source)
+                continue
+            line_end = min(endings)
+            index = line_end + 1
+            if source[line_end] == "\r" and index < len(source) and source[index] == "\n":
+                index += 1
+            continue
+        if source.startswith("/*", index):
+            end = source.find("*/", index + 2)
+            if end < 0:
+                raise InstallError(f"source archive Java file has an unterminated comment: {path}")
+            index = end + 2
+            continue
+        if source.startswith('"""', index):
+            index += 3
+            while True:
+                end = source.find('"""', index)
+                if end < 0:
+                    raise InstallError(
+                        f"source archive Java file has an unterminated text block: {path}"
+                    )
+                backslashes = 0
+                cursor = end - 1
+                while cursor >= index and source[cursor] == "\\":
+                    backslashes += 1
+                    cursor -= 1
+                if backslashes % 2 == 0:
+                    index = end + 3
+                    break
+                index = end + 3
+            tokens.append("<literal>")
+            continue
+        if character in {'"', "'"}:
+            quote = character
+            index += 1
+            while index < len(source):
+                if source[index] == "\\":
+                    index += 2
+                    continue
+                if source[index] == quote:
+                    index += 1
+                    break
+                index += 1
+            else:
+                raise InstallError(
+                    f"source archive Java file has an unterminated literal: {path}"
+                )
+            tokens.append("<literal>")
+            continue
+        identifier = JAVA_IDENTIFIER_PATTERN.match(source, index)
+        if identifier is not None:
+            tokens.append(identifier.group(0))
+            index = identifier.end()
+            continue
+        tokens.append(character)
+        index += 1
+    return tokens
+
+
+def declared_java_package(tokens: list[str], path: str) -> str | None:
+    """Read the active package declaration at the start of a Java compilation unit."""
+    filename = PurePosixPath(path).name
+    if filename == "module-info.java":
+        if not tokens or tokens[0] not in {"module", "open"}:
+            raise InstallError(
+                f"source archive module descriptor has unexpected leading syntax: {path}"
+            )
+        return None
+    if not tokens or tokens[0] != "package":
+        raise InstallError(
+            f"source archive Java file has no active leading package declaration: {path}"
+        )
+    segments: list[str] = []
+    index = 1
+    expect_identifier = True
+    while index < len(tokens):
+        token = tokens[index]
+        if expect_identifier:
+            if JAVA_IDENTIFIER_PATTERN.fullmatch(token) is None:
+                break
+            segments.append(token)
+            expect_identifier = False
+        elif token == ".":
+            expect_identifier = True
+        elif token == ";":
+            return ".".join(segments)
+        else:
+            break
+        index += 1
+    raise InstallError(f"source archive Java file has an invalid package declaration: {path}")
+
+
+def expected_java_package(path: str) -> str | None:
+    """Derive a Java package from a conventional Gradle source path."""
+    parts = PurePosixPath(path).parts
+    matches: list[int] = []
+    for index in range(len(parts) - 2):
+        if parts[index : index + 3] in (
+            ("src", "main", "java"),
+            ("src", "test", "java"),
+        ):
+            matches.append(index)
+    if not matches:
+        return None
+    if len(matches) != 1:
+        raise InstallError(f"source archive Java path has an ambiguous source root: {path}")
+    source_relative = parts[matches[0] + 3 :]
+    if len(source_relative) < 1 or not source_relative[-1].endswith(".java"):
+        raise InstallError(f"source archive Java path is malformed: {path}")
+    return ".".join(source_relative[:-1])
+
+
+def read_archive_text(
+    archive: ZipFile, archive_name: str, label: str, *, limit: int = MAX_SOURCE_TEXT_BYTES
+) -> str:
+    info = archive.getinfo(archive_name)
+    if info.file_size > limit:
+        raise InstallError(f"{label} exceeds the {limit}-byte text safety limit")
+    try:
+        return archive.read(info).decode("utf-8", errors="strict")
+    except UnicodeDecodeError as error:
+        raise InstallError(f"{label} is not valid UTF-8: {error}") from error
+
+
+def has_top_level_hook_class(tokens: list[str]) -> bool:
+    """Find the exact public SPI provider declaration at top-level brace depth."""
+    expected = (
+        "public",
+        "final",
+        "class",
+        "RouteContractSqlExecutionHook",
+        "implements",
+        "SQLExecutionHook",
+    )
+    depth = 0
+    for index, token in enumerate(tokens):
+        if token == "{":
+            depth += 1
+            continue
+        if token == "}":
+            depth = max(0, depth - 1)
+            continue
+        if depth == 0 and tuple(tokens[index : index + len(expected)]) == expected:
+            body = index + len(expected)
+            if body >= len(tokens) or tokens[body] != "{":
+                continue
+            body_depth = 1
+            for body_token in tokens[body + 1 :]:
+                if body_token == "{":
+                    body_depth += 1
+                elif body_token == "}":
+                    body_depth -= 1
+                    if body_depth == 0:
+                        return True
+            return False
+    return False
 
 
 def sha256(path: Path) -> str:
@@ -163,9 +442,9 @@ def parse_coordinate(path: Path) -> tuple[str, str]:
         raise InstallError(
             f"release POM artifactId must be exactly {ARTIFACT_ID}, got {artifact!r}"
         )
-    if VERSION_PATTERN.fullmatch(version) is None:
+    if RELEASE_VERSION_PATTERN.fullmatch(version) is None:
         raise InstallError(
-            "release POM version must be a stable MAJOR.MINOR.PATCH value"
+            "release POM version must be MAJOR.MINOR.PATCH or MAJOR.MINOR.PATCH-rcN"
         )
     if packaging not in (None, "jar"):
         raise InstallError("release POM packaging must be jar when specified")
@@ -328,6 +607,216 @@ def validate_jars(files: dict[str, Path], version: str) -> None:
     )
 
 
+def validate_source_archive(path: Path, version: str) -> None:
+    """Validate bounded source-archive structure, not Git-tree provenance."""
+    if path.stat().st_size > MAX_SOURCE_ARCHIVE_BYTES:
+        raise InstallError("source archive exceeds the 100 MiB safety limit")
+    expected_root = f"routecontract-{version}"
+    try:
+        with ZipFile(path) as archive:
+            infos = archive.infolist()
+            if not infos:
+                raise InstallError("source archive is empty")
+            if len(infos) > MAX_SOURCE_ARCHIVE_ENTRIES:
+                raise InstallError("source archive exceeds the 20000-entry safety limit")
+            logical_entries: dict[str, bool] = {}
+            portable_entries: dict[str, str] = {}
+            source_files: set[str] = set()
+            uncompressed = 0
+            unexpected_namespaces: list[str] = []
+            for info in infos:
+                original_name = getattr(info, "orig_filename", info.filename)
+                if original_name != info.filename or "\x00" in original_name:
+                    raise InstallError(
+                        "source archive contains a truncated or NUL-bearing entry name"
+                    )
+                if any(ord(character) < 32 or ord(character) == 127 for character in info.filename):
+                    raise InstallError(
+                        f"source archive contains a control character in an entry: {info.filename!r}"
+                    )
+                pure = PurePosixPath(info.filename)
+                unix_mode = info.external_attr >> 16
+                unix_type = stat.S_IFMT(unix_mode)
+                is_directory = info.is_dir()
+                if (
+                    not info.filename
+                    or "\\" in info.filename
+                    or pure.is_absolute()
+                    or ".." in pure.parts
+                    or info.flag_bits & 0x1
+                ):
+                    raise InstallError(
+                        f"source archive contains an unsafe entry: {info.filename}"
+                    )
+                canonical_name = PurePosixPath(*pure.parts).as_posix()
+                if is_directory:
+                    canonical_name += "/"
+                if canonical_name != info.filename:
+                    raise InstallError(
+                        f"source archive contains a non-canonical entry name: {info.filename}"
+                    )
+                if is_directory:
+                    if unix_type not in (0, stat.S_IFDIR):
+                        raise InstallError(
+                            f"source archive directory has an incompatible Unix type: {info.filename}"
+                        )
+                    if info.file_size != 0 or info.compress_size != 0:
+                        raise InstallError(
+                            f"source archive directory contains a payload: {info.filename}"
+                        )
+                elif unix_type not in (0, stat.S_IFREG):
+                    raise InstallError(
+                        f"source archive contains a special or mismatched Unix entry: {info.filename}"
+                    )
+                logical_name = canonical_name.rstrip("/")
+                if logical_name in logical_entries:
+                    raise InstallError(
+                        f"source archive contains a duplicate logical path: {logical_name}"
+                    )
+                logical_entries[logical_name] = is_directory
+                portable_name = unicodedata.normalize("NFC", logical_name).casefold()
+                previous = portable_entries.get(portable_name)
+                if previous is not None and previous != logical_name:
+                    raise InstallError(
+                        "source archive contains a case or Unicode-normalization path "
+                        f"collision: {previous!r}, {logical_name!r}"
+                    )
+                portable_entries[portable_name] = logical_name
+                uncompressed += info.file_size
+                if uncompressed > MAX_SOURCE_ARCHIVE_UNCOMPRESSED_BYTES:
+                    raise InstallError(
+                        "source archive exceeds the 200 MiB uncompressed safety limit"
+                    )
+                if not pure.parts or pure.parts[0] != expected_root:
+                    raise InstallError(
+                        "source archive must contain exactly one versioned root "
+                        f"{expected_root}/"
+                    )
+                relative_parts = pure.parts[1:]
+                if not relative_parts:
+                    if not is_directory:
+                        raise InstallError(
+                            "source archive root entry must be a directory"
+                        )
+                    continue
+                relative = PurePosixPath(*relative_parts).as_posix()
+                if forbidden_source_path(relative, relative_parts):
+                    raise InstallError(
+                        f"source archive contains a private or generated path: {relative}"
+                    )
+                package_namespaces = {
+                    match.group(0)
+                    for match in ROUTECONTRACT_PACKAGE_PATTERN.finditer(relative)
+                }
+                if package_namespaces - {EXPECTED_PACKAGE_PREFIX}:
+                    unexpected_namespaces.append(relative)
+                if is_directory:
+                    continue
+                source_files.add(relative)
+            for logical_name, is_directory in logical_entries.items():
+                parts = PurePosixPath(logical_name).parts
+                for length in range(1, len(parts)):
+                    ancestor = PurePosixPath(*parts[:length]).as_posix()
+                    if ancestor in logical_entries and not logical_entries[ancestor]:
+                        raise InstallError(
+                            "source archive contains a file/descendant path collision: "
+                            f"{ancestor!r}, {logical_name!r}"
+                        )
+            for portable_name, logical_name in portable_entries.items():
+                parts = PurePosixPath(portable_name).parts
+                for length in range(1, len(parts)):
+                    portable_ancestor = PurePosixPath(*parts[:length]).as_posix()
+                    ancestor_name = portable_entries.get(portable_ancestor)
+                    if (
+                        ancestor_name is not None
+                        and not logical_entries[ancestor_name]
+                    ):
+                        raise InstallError(
+                            "source archive contains a case or Unicode-normalization "
+                            "file/descendant collision: "
+                            f"{ancestor_name!r}, {logical_name!r}"
+                        )
+            if unexpected_namespaces:
+                raise InstallError(
+                    "source archive contains an unexpected RouteContract package "
+                    f"namespace: {sorted(unexpected_namespaces)}"
+                )
+            missing = SOURCE_REQUIRED_PATHS - source_files
+            if missing:
+                raise InstallError(
+                    f"source archive is missing canonical source paths: {sorted(missing)}"
+                )
+            java_token_map: dict[str, list[str]] = {}
+            for relative in sorted(source_files):
+                expected_package = expected_java_package(relative)
+                if expected_package is None:
+                    continue
+                archive_name = f"{expected_root}/{relative}"
+                source = read_archive_text(
+                    archive,
+                    archive_name,
+                    f"source archive Java file {relative}",
+                )
+                tokens = java_tokens(source, relative)
+                java_token_map[relative] = tokens
+                declared_package = declared_java_package(tokens, relative)
+                if PurePosixPath(relative).name == "module-info.java":
+                    if expected_package:
+                        raise InstallError(
+                            f"source archive module descriptor is not at a source root: {relative}"
+                        )
+                elif declared_package != expected_package:
+                    if relative == SOURCE_PUBLIC_API_PATH:
+                        raise InstallError(
+                            "source archive public API has an unexpected package declaration"
+                        )
+                    if relative == SOURCE_HOOK_PATH:
+                        raise InstallError(
+                            "source archive hook has an unexpected package declaration"
+                        )
+                    raise InstallError(
+                        "source archive Java package does not match its path: "
+                        f"{relative}"
+                    )
+            public_api_tokens = java_token_map[SOURCE_PUBLIC_API_PATH]
+            if declared_java_package(public_api_tokens, SOURCE_PUBLIC_API_PATH) != (
+                "io.github.ym0506.routecontract"
+            ):
+                raise InstallError(
+                    "source archive public API has an unexpected package declaration"
+                )
+            hook_tokens = java_token_map[SOURCE_HOOK_PATH]
+            if declared_java_package(hook_tokens, SOURCE_HOOK_PATH) != (
+                "io.github.ym0506.routecontract.internal"
+            ):
+                raise InstallError(
+                    "source archive hook has an unexpected package declaration"
+                )
+            if not has_top_level_hook_class(hook_tokens):
+                raise InstallError(
+                    "source archive hook does not declare the expected top-level SPI class"
+                )
+            source_providers = [
+                line.strip()
+                for line in read_archive_text(
+                    archive,
+                    f"{expected_root}/{SOURCE_SERVICE_DESCRIPTOR_PATH}",
+                    "source archive SQLExecutionHook descriptor",
+                    limit=64 * 1024,
+                ).splitlines()
+                if line.strip() and not line.lstrip().startswith("#")
+            ]
+            if source_providers != [EXPECTED_PROVIDER]:
+                raise InstallError(
+                    "source archive has an unexpected SQLExecutionHook provider"
+                )
+            bad_entry = archive.testzip()
+            if bad_entry is not None:
+                raise InstallError(f"source archive has a CRC failure in {bad_entry}")
+    except (BadZipFile, NotImplementedError) as error:
+        raise InstallError(f"source archive is not a valid ZIP: {error}") from error
+
+
 def paths_overlap(first: Path, second: Path) -> bool:
     return first == second or first in second.parents or second in first.parents
 
@@ -452,6 +941,9 @@ def run(argv: list[str]) -> int:
     validate_checksum_allowlist(checksums, public_payloads)
     for filename in sorted(public_payloads):
         verify_checksum(files[filename], checksums[filename])
+    validate_source_archive(
+        files[f"routecontract-{version}-source.zip"], version
+    )
     validate_jars(files, version)
 
     destination = install(files, checksums, group, version, repository)

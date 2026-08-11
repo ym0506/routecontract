@@ -52,7 +52,7 @@ SQL·parameter·connection 정보가 섞일 수 있는 하위 프로세스 원�
 
 ## 공개 Release 자산을 registry 없이 사용하기
 
-이 경로는 stable GitHub Release가 만들어진 뒤 사용할 수 있습니다. 해당 Release에 첨부된
+이 경로는 GitHub Release(`MAJOR.MINOR.PATCH` 또는 엄격한 `-rcN`)가 만들어진 뒤 사용할 수 있습니다. 해당 Release에 첨부된
 공개 자산 전체를 하나의 평평한 디렉터리에 내려받은 다음, `~/.m2`가 아닌 빈 절대경로를
 명시합니다.
 
@@ -62,17 +62,23 @@ python3 scripts/install-release-assets.py \
   --repository /absolute/path/to/routecontract-maven
 ```
 
-stable release version이 정해진 뒤, 설치기가 출력한 좌표를 테스트 의존성에 사용합니다.
+release version이 정해진 뒤, 설치기가 출력한 좌표를 테스트 의존성에 사용합니다.
 
 ```groovy
 testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:<release-version>")
 ```
 
-설치기는 네트워크를 사용하지 않습니다. 공개 자산의 정확한 파일 목록, `SHA256SUMS`, stable
-POM 좌표, JAR 구조를 먼저 검증한 후 main/sources/Javadoc JAR와 POM만 명시한 Maven
+설치기는 네트워크를 사용하지 않습니다. 공개 자산의 정확한 파일 목록, `SHA256SUMS`,
+non-SNAPSHOT POM 좌표, JAR 구조, source ZIP의 단일 버전 root와 관례적인 `src/main/java`·
+`src/test/java` 아래 모든 Java 파일의 경로-패키지 일치,
+canonical `ym0506` provider namespace를
+먼저 검증한 후 main/sources/Javadoc JAR와 POM만 명시한 Maven
 레이아웃에 복사합니다. 기존 좌표는 덮어쓰지 않으며 기본 Maven 저장소를 읽거나 수정하지
 않습니다. 체크섬은 다운로드 무결성을 확인할 뿐 게시자 신원을 인증하지 않으므로, 자산은
-반드시 최종 공개 Release에서 받아야 합니다.
+반드시 해당 tag의 공개 Release에서 받아야 합니다. 설치기의 source ZIP 검사는 구조·필수 경로·
+Java package/provider namespace 검사이며, release archive가 최종 tag의 tracked Git tree와
+내용·경로·실행 권한이 동일하다는
+증명은 최종 제출 packaging gate가 별도로 수행합니다.
 
 같은 source checkout에서 그 저장소만 RouteContract 전용 repository로 사용해 실제 MySQL
 소비자까지 검증하려면 별도의 빈 target으로 다음을 실행합니다. 이 검증은 release packaging

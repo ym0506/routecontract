@@ -55,7 +55,8 @@ The first command runs 50 core and MySQL-corpus tests on Java 17, ShardingSphere
 
 ## Consume public Release assets without a registry
 
-This path becomes usable after a stable GitHub Release exists. Download every
+This path becomes usable after a GitHub Release with a `MAJOR.MINOR.PATCH` or
+strict `-rcN` version exists. Download every
 public asset attached to that Release into one flat directory, then provide an
 empty absolute repository path rather than relying on `~/.m2`.
 
@@ -65,7 +66,7 @@ python3 scripts/install-release-assets.py \
   --repository /absolute/path/to/routecontract-maven
 ```
 
-After the stable release version is chosen, use the coordinate printed by
+After the release version is chosen, use the coordinate printed by
 the installer as the test dependency:
 
 ```groovy
@@ -73,12 +74,18 @@ testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-
 ```
 
 The installer performs no network access. Before writing, it validates the
-exact public-asset set, `SHA256SUMS`, stable POM coordinate, and JAR structure.
+exact public-asset set, `SHA256SUMS`, non-SNAPSHOT POM coordinate, JAR
+structure, the source ZIP's single versioned root, path-to-package agreement
+for every Java source under conventional `src/main/java` and `src/test/java`
+roots, and the canonical `ym0506` provider namespace.
 It copies only the main, sources, and Javadoc JARs plus the POM into the
 explicit Maven layout, refuses to overwrite an existing coordinate, and does
 not read or modify the default Maven repository. Checksums verify download
-integrity, not publisher identity, so obtain the assets from the final public
-Release.
+integrity, not publisher identity, so obtain the assets from the public Release
+for that exact tag. The installer checks source-archive structure, required
+paths, Java packages, and provider namespace; the final submission packaging
+gate separately proves that the release archive has the same tracked-file
+content, paths, and executable permissions as the final tagged Git tree.
 
 To exercise a real MySQL consumer from the same source checkout with that file
 repository as the exclusive RouteContract source, use a separate empty target:
