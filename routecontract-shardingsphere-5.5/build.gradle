@@ -1,0 +1,77 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+
+description = 'Operation-scoped contracts over physical JDBC execution attempts reported by Apache ShardingSphere-JDBC 5.5.3 SQLExecutionHook'
+
+dependencies {
+    compileOnly "org.apache.shardingsphere:shardingsphere-infra-executor:${shardingSphereVersion}"
+    implementation "com.alibaba:transmittable-thread-local:${transmittableThreadLocalVersion}"
+    implementation "tools.jackson.core:jackson-core:${jacksonVersion}"
+
+    testImplementation "org.apache.shardingsphere:shardingsphere-infra-executor:${shardingSphereVersion}"
+    testImplementation platform("org.junit:junit-bom:${junitVersion}")
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+    useJUnitPlatform {
+        excludeTags 'manifest-ci-failure-demo'
+    }
+}
+
+tasks.register('manifestCiFailureDemo', Test) {
+    group = 'verification'
+    description = 'Intentionally fails on the committed manifest regression example'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform {
+        includeTags 'manifest-ci-failure-demo'
+    }
+    systemProperty 'routecontract.repositoryRoot', rootProject.projectDir.absolutePath
+    testLogging {
+        showStandardStreams = true
+    }
+}
+
+jar {
+    manifest {
+        attributes('Automatic-Module-Name': 'io.github.ym0506.routecontract.shardingsphere55')
+    }
+}
+
+tasks.withType(Jar).configureEach {
+    from(rootProject.file('LICENSE')) {
+        into 'META-INF'
+    }
+    from(rootProject.file('NOTICE')) {
+        into 'META-INF'
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            pom {
+                name = 'RouteContract for ShardingSphere 5.5'
+                description = project.description
+                url = 'https://github.com/ym0506/routecontract'
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+                        distribution = 'repo'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:https://github.com/ym0506/routecontract.git'
+                    developerConnection = 'scm:git:ssh://git@github.com/ym0506/routecontract.git'
+                    url = 'https://github.com/ym0506/routecontract'
+                }
+            }
+        }
+    }
+}

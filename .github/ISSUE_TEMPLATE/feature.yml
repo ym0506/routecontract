@@ -1,0 +1,26 @@
+name: Feature proposal
+description: Propose a narrowly scoped, testable extension.
+title: "[proposal] "
+labels: [proposal, needs-design]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: User problem
+      description: Describe the concrete route-regression problem before proposing an API.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Reproduction or public evidence
+      description: Link an issue, fixture, or minimal example showing the gap.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria and non-scope
+      description: State deterministic tests, privacy limits, supported versions, and what the feature must not claim.
+    validations:
+      required: true

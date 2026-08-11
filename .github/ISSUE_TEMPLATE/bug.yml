@@ -1,0 +1,38 @@
+name: Product bug
+description: Report incorrect collection, verification, packaging, or documentation behavior.
+title: "[bug] "
+labels: [bug, needs-triage]
+body:
+  - type: input
+    id: versions
+    attributes:
+      label: Exact environment
+      placeholder: RouteContract version, ShardingSphere version, Java, OS, database
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual minimized behavior
+      description: Include stable diagnostic or RCM codes, but no raw SQL or values.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction command or repository
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy check
+      options:
+        - label: I removed credentials, SQL parameter values, customer identifiers, and private topology.
+          required: true

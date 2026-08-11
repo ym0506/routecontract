@@ -1,0 +1,39 @@
+plugins {
+    id 'java'
+}
+
+description = 'MySQL Testcontainers example and regression fixture for RouteContract'
+
+dependencies {
+    testImplementation project(':routecontract-shardingsphere-5.5')
+    testImplementation "org.apache.shardingsphere:shardingsphere-jdbc:${shardingSphereVersion}"
+    testRuntimeOnly "org.apache.shardingsphere:shardingsphere-infra-url-absolutepath:${shardingSphereVersion}"
+    testRuntimeOnly "org.apache.shardingsphere:shardingsphere-infra-data-source-pool-hikari:${shardingSphereVersion}"
+    testRuntimeOnly "org.apache.shardingsphere:shardingsphere-standalone-mode-repository-memory:${shardingSphereVersion}"
+    testRuntimeOnly "org.apache.shardingsphere:shardingsphere-sharding-core:${shardingSphereVersion}"
+    testRuntimeOnly "org.apache.shardingsphere:shardingsphere-parser-sql-engine-sql92:${shardingSphereVersion}"
+    testRuntimeOnly "org.apache.shardingsphere:shardingsphere-parser-sql-engine-mysql:${shardingSphereVersion}"
+    testRuntimeOnly "org.apache.shardingsphere:shardingsphere-authority-simple:${shardingSphereVersion}"
+    testRuntimeOnly "com.zaxxer:HikariCP:${hikariVersion}"
+    testRuntimeOnly("com.mysql:mysql-connector-j:${mysqlConnectorVersion}") {
+        exclude group: 'com.google.protobuf', module: 'protobuf-java'
+    }
+
+    testImplementation platform("org.junit:junit-bom:${junitVersion}")
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation "org.testcontainers:junit-jupiter:${testcontainersVersion}"
+    testImplementation "org.testcontainers:mysql:${testcontainersVersion}"
+    testImplementation "net.ttddyy:datasource-proxy:${datasourceProxyVersion}"
+    testImplementation "com.alibaba:transmittable-thread-local:${transmittableThreadLocalVersion}"
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testRuntimeOnly "org.slf4j:slf4j-simple:${slf4jVersion}"
+}
+
+tasks.named('test') {
+    maxParallelForks = 1
+    systemProperty 'api.version', '1.44'
+    systemProperty 'routecontract.repositoryRoot', rootProject.projectDir.absolutePath
+    testLogging {
+        showStandardStreams = true
+    }
+}

@@ -1,0 +1,100 @@
+plugins {
+    id 'java'
+}
+
+def routeContractGroup = providers.gradleProperty('routecontractGroup')
+        .orElse(providers.environmentVariable('ROUTECONTRACT_GROUP'))
+        .getOrNull()
+def routeContractVersion = providers.gradleProperty('routecontractVersion')
+        .orElse(providers.environmentVariable('ROUTECONTRACT_VERSION'))
+        .getOrNull()
+
+if (routeContractGroup == null || routeContractGroup.isBlank()
+        || routeContractVersion == null || routeContractVersion.isBlank()) {
+    throw new GradleException(
+            'Set ROUTECONTRACT_GROUP and ROUTECONTRACT_VERSION (or matching -P properties)')
+}
+
+group = "${routeContractGroup}.examples"
+version = routeContractVersion
+
+def publishedRepository = providers.gradleProperty('routecontractRepository')
+        .orElse(providers.environmentVariable('ROUTECONTRACT_REPOSITORY'))
+        .getOrNull()
+
+if (publishedRepository == null || publishedRepository.isBlank()) {
+    throw new GradleException(
+            'Set ROUTECONTRACT_REPOSITORY or -ProutecontractRepository to the Maven repository containing RouteContract')
+}
+
+repositories {
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'routeContractPublishedRepository'
+                url = uri(publishedRepository)
+            }
+        }
+        filter {
+            includeGroup routeContractGroup
+        }
+    }
+    mavenCentral()
+}
+
+dependencyLocking {
+    lockAllConfigurations()
+    // The first-party artifact is published into a checksum-verified temporary
+    // repository by the parent build and intentionally follows its release
+    // group/version. Third-party dependencies remain locked below.
+    ignoredDependencies.add("${routeContractGroup}:routecontract-shardingsphere-5.5")
+}
+
+dependencies {
+    testImplementation "${routeContractGroup}:routecontract-shardingsphere-5.5:${routeContractVersion}"
+    testImplementation 'org.apache.shardingsphere:shardingsphere-jdbc:5.5.3'
+
+    testRuntimeOnly 'org.apache.shardingsphere:shardingsphere-infra-url-absolutepath:5.5.3'
+    testRuntimeOnly 'org.apache.shardingsphere:shardingsphere-infra-data-source-pool-hikari:5.5.3'
+    testRuntimeOnly 'org.apache.shardingsphere:shardingsphere-standalone-mode-repository-memory:5.5.3'
+    testRuntimeOnly 'org.apache.shardingsphere:shardingsphere-sharding-core:5.5.3'
+    testRuntimeOnly 'org.apache.shardingsphere:shardingsphere-parser-sql-engine-sql92:5.5.3'
+    testRuntimeOnly 'org.apache.shardingsphere:shardingsphere-parser-sql-engine-mysql:5.5.3'
+    testRuntimeOnly 'org.apache.shardingsphere:shardingsphere-authority-simple:5.5.3'
+    testRuntimeOnly 'com.zaxxer:HikariCP:6.2.1'
+    testRuntimeOnly('com.mysql:mysql-connector-j:26.7.0') {
+        exclude group: 'com.google.protobuf', module: 'protobuf-java'
+    }
+
+    testImplementation platform('org.junit:junit-bom:5.14.3')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.testcontainers:junit-jupiter:1.21.4'
+    testImplementation 'org.testcontainers:mysql:1.21.4'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testRuntimeOnly 'org.slf4j:slf4j-simple:2.0.17'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 17
+    options.compilerArgs += ['-Xlint:all', '-Werror']
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+    maxParallelForks = 1
+    systemProperty 'api.version', '1.44'
+    systemProperty 'routecontract.artifactJarName',
+            "routecontract-shardingsphere-5.5-${routeContractVersion}.jar"
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+        exceptionFormat = 'full'
+        showStandardStreams = true
+    }
+}

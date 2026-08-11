@@ -1,0 +1,31 @@
+.gradle/
+build/
+**/build/
+.idea/
+*.iml
+.DS_Store
+out/
+__pycache__/
+*.py[cod]
+.env
+.env.*
+!.env.example
+.codex/
+.agents/
+private_codex/
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+
+# Submission outputs can contain team details, unpublished URLs, and the
+# organizer's filled report form. Keep only the reproducible builder, public
+# template content, figures, and storyboard under version control.
+submission/draft/
+submission/final/
+submission/private/
+submission/package/
+
+# Owner study notes and rehearsal answers are not project documentation.
+private_notes/

@@ -1,0 +1,176 @@
+name: Release evidence
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-release-evidence:
+    name: Build release evidence
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Validate and configure Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          dependency-graph: disabled
+          validate-wrappers: true
+
+      - name: Require tag and project versions to match
+        if: github.ref_type == 'tag'
+        shell: bash
+        run: |
+          set -euo pipefail
+          project_version="$(./gradlew --no-daemon -q properties | awk '/^version:/ { print $2; exit }')"
+          test "v${project_version}" = "${GITHUB_REF_NAME}"
+
+      - name: Test fail-closed contest packaging rules
+        run: |
+          python3 -m unittest discover -s submission/tools/tests -v
+          python3 -m unittest discover -s scripts/tests -v
+
+      - name: Test and build evidence
+        run: >-
+          ./gradlew --no-daemon --no-build-cache clean check prepareVerifiedSbom
+          :routecontract-shardingsphere-5.5:assemble
+          :routecontract-shardingsphere-5.5:generatePomFileForMavenJavaPublication
+
+      - name: Assert verified SBOM metadata in JSON and XML
+        shell: bash
+        run: |
+          set -euo pipefail
+          project_group="$(./gradlew --no-daemon -q properties | awk '/^group:/ { print $2; exit }')"
+          python3 scripts/finalize-sbom.py \
+            --first-party-group "${project_group}" \
+            --verify-pair \
+            build/reports/verified-sbom/aggregate/bom.json \
+            build/reports/verified-sbom/aggregate/bom.xml \
+            --verify-pair \
+            build/reports/verified-sbom/routecontract-shardingsphere-5.5/bom.json \
+            build/reports/verified-sbom/routecontract-shardingsphere-5.5/bom.xml \
+            --verify-pair \
+            build/reports/verified-sbom/mysql-example/bom.json \
+            build/reports/verified-sbom/mysql-example/bom.xml
+
+      - name: Create revision-bound privacy-minimized test summary
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/release-public
+          python3 scripts/summarize-test-results.py \
+            --revision "${GITHUB_SHA}" \
+            --results-dir routecontract-shardingsphere-5.5/build/test-results/test \
+            --results-dir examples/mysql/build/test-results/test \
+            --output build/release-public/test-summary.txt
+
+      - name: Stage exact public Release assets and checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          public_dir='build/release-public'
+          test "$(find routecontract-shardingsphere-5.5/build/libs -maxdepth 1 -type f -name '*.jar' | wc -l | tr -d ' ')" = '3'
+          cp routecontract-shardingsphere-5.5/build/libs/*.jar "${public_dir}/"
+          cp routecontract-shardingsphere-5.5/build/publications/mavenJava/pom-default.xml "${public_dir}/routecontract-shardingsphere-5.5.pom"
+          cp build/reports/verified-sbom/routecontract-shardingsphere-5.5/bom.json "${public_dir}/routecontract-shardingsphere-5.5-cyclonedx.json"
+          cp build/reports/verified-sbom/routecontract-shardingsphere-5.5/bom.xml "${public_dir}/routecontract-shardingsphere-5.5-cyclonedx.xml"
+          cp build/reports/verified-sbom/aggregate/bom.json "${public_dir}/routecontract-aggregate-cyclonedx.json"
+          cp build/reports/verified-sbom/aggregate/bom.xml "${public_dir}/routecontract-aggregate-cyclonedx.xml"
+          project_version="$(./gradlew --no-daemon -q properties | awk '/^version:/ { print $2; exit }')"
+          public_payloads=(
+            "routecontract-${project_version}-source.zip"
+            "routecontract-shardingsphere-5.5-${project_version}.jar"
+            "routecontract-shardingsphere-5.5-${project_version}-sources.jar"
+            "routecontract-shardingsphere-5.5-${project_version}-javadoc.jar"
+            'routecontract-shardingsphere-5.5.pom'
+            'routecontract-shardingsphere-5.5-cyclonedx.json'
+            'routecontract-shardingsphere-5.5-cyclonedx.xml'
+            'routecontract-aggregate-cyclonedx.json'
+            'routecontract-aggregate-cyclonedx.xml'
+            'test-summary.txt'
+          )
+          git archive \
+            --format=zip \
+            --prefix="routecontract-${project_version}/" \
+            --output="${public_dir}/routecontract-${project_version}-source.zip" \
+            "${GITHUB_SHA}"
+          test "$(find "${public_dir}" -maxdepth 1 -type f | wc -l | tr -d ' ')" = '10'
+          for payload in "${public_payloads[@]}"; do
+            test -f "${public_dir}/${payload}"
+          done
+          (
+            cd "${public_dir}"
+            sha256sum "${public_payloads[@]}" > SHA256SUMS
+          )
+          test "$(find "${public_dir}" -maxdepth 1 -type f | wc -l | tr -d ' ')" = '11'
+          test "$(wc -l < "${public_dir}/SHA256SUMS" | tr -d ' ')" = '10'
+
+      - name: Verify exact Release assets in a standalone MySQL consumer
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/release-evidence
+          test ! -e build/release-consumer-maven
+          ./scripts/verify-release-assets-consumer.sh \
+            "$PWD/build/release-public" \
+            "$PWD/build/release-consumer-maven" 2>&1 \
+            | tee build/release-evidence/standalone-consumer.txt
+          grep -Fq 'ROUTECONTRACT_RELEASE_ASSET_CONSUMER' \
+            build/release-evidence/standalone-consumer.txt
+
+      - name: Stage workflow-only environment evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          public_dir='build/release-public'
+          evidence_dir='build/release-evidence'
+          cp "${public_dir}"/* "${evidence_dir}/"
+          mysql_image_tag='mysql:8.4.11'
+          expected_mysql_digest='sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb'
+          resolved_mysql_image_id="$(docker image ls --no-trunc --format '{{.Repository}}|{{.Tag}}|{{.ID}}' \
+            | awk -F'|' '$1 == "mysql" && $2 == "8.4.11" { print $3; exit }')"
+          test -n "${resolved_mysql_image_id}"
+          {
+            echo "revision=${GITHUB_SHA}"
+            echo "runner_image_os=${ImageOS:-unknown}"
+            echo "runner_image_version=${ImageVersion:-unknown}"
+            echo "uname_m=$(uname -m)"
+            java -version
+            ./gradlew --version
+            docker version --format 'docker_client={{.Client.Version}} docker_server={{.Server.Version}}'
+          } > "${evidence_dir}/environment.txt" 2>&1
+          {
+            echo "image_reference=${mysql_image_tag}@${expected_mysql_digest}"
+            docker image inspect "${resolved_mysql_image_id}" --format 'image_id={{.Id}}'
+            docker image inspect "${resolved_mysql_image_id}" --format 'image_os={{.Os}}'
+            docker image inspect "${resolved_mysql_image_id}" --format 'image_architecture={{.Architecture}}'
+            docker image inspect "${resolved_mysql_image_id}" --format 'image_repo_digests={{json .RepoDigests}}'
+          } > "${evidence_dir}/mysql-image.txt"
+          grep -Fq 'image_id=sha256:' "${evidence_dir}/mysql-image.txt"
+          grep -Fq "${expected_mysql_digest}" "${evidence_dir}/mysql-image.txt"
+          ! grep -Eq '  (environment|mysql-image|standalone-consumer)\.txt$' \
+            "${evidence_dir}/SHA256SUMS"
+          test "$(find "${evidence_dir}" -maxdepth 1 -type f | wc -l | tr -d ' ')" = '14'
+
+      - name: Upload release evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: routecontract-release-evidence-${{ github.sha }}
+          path: build/release-evidence/
+          if-no-files-found: error
+          retention-days: 90

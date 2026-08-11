@@ -1,0 +1,131 @@
+import org.cyclonedx.model.License
+import org.cyclonedx.model.LicenseChoice
+
+plugins {
+    id 'base'
+    id 'org.cyclonedx.bom' version '3.4.0'
+}
+
+group = 'io.github.ym0506.routecontract'
+version = '0.1.0-SNAPSHOT'
+
+def apacheLicenseChoice = {
+    License license = new License()
+    license.id = 'Apache-2.0'
+    license.url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+    LicenseChoice choice = new LicenseChoice()
+    choice.addLicense(license)
+    return choice
+}
+
+def verifiedSbomDirectory = layout.buildDirectory.dir('reports/verified-sbom').get().asFile
+def aggregateSbomSourceDirectory = layout.buildDirectory.dir('reports/cyclonedx').get().asFile
+def librarySbomSourceDirectory = project(':routecontract-shardingsphere-5.5')
+        .layout.buildDirectory.dir('reports/cyclonedx-direct').get().asFile
+def mysqlSbomSourceDirectory = project(':mysql-example')
+        .layout.buildDirectory.dir('reports/cyclonedx-direct').get().asFile
+
+allprojects {
+    group = rootProject.group
+    version = rootProject.version
+
+    repositories {
+        mavenCentral()
+    }
+
+    dependencyLocking {
+        lockAllConfigurations()
+    }
+}
+
+subprojects {
+    plugins.withId('java') {
+        java {
+            toolchain {
+                languageVersion = JavaLanguageVersion.of(17)
+            }
+            withSourcesJar()
+            withJavadocJar()
+        }
+
+        tasks.withType(JavaCompile).configureEach {
+            options.encoding = 'UTF-8'
+            options.release = 17
+            options.compilerArgs += ['-Xlint:all', '-Werror']
+        }
+
+        tasks.withType(Test).configureEach {
+            useJUnitPlatform()
+            testLogging {
+                events 'passed', 'skipped', 'failed'
+                exceptionFormat = 'full'
+            }
+        }
+
+        tasks.withType(Javadoc).configureEach {
+            failOnError = true
+            options.addBooleanOption('Werror', true)
+        }
+
+        tasks.withType(AbstractArchiveTask).configureEach {
+            preserveFileTimestamps = false
+            reproducibleFileOrder = true
+        }
+    }
+}
+
+tasks.named('cyclonedxBom') {
+    // In plugin 3.4.0 this is the BOM document license at metadata.licenses.
+    // `prepareVerifiedSbom` separately adds the same license to first-party
+    // metadata.component and components entries.
+    licenseChoice = apacheLicenseChoice()
+}
+
+project(':routecontract-shardingsphere-5.5') {
+    tasks.named('cyclonedxDirectBom') {
+        includeConfigs = ['compileClasspath', 'runtimeClasspath']
+        skipConfigs = ['(?i).*test.*']
+        licenseChoice = apacheLicenseChoice()
+    }
+}
+
+project(':mysql-example') {
+    tasks.named('cyclonedxDirectBom') {
+        licenseChoice = apacheLicenseChoice()
+    }
+}
+
+tasks.register('prepareVerifiedSbom', Exec) {
+    group = 'verification'
+    description = 'Generate SBOMs and assert first-party and pinned MySQL license metadata.'
+    dependsOn tasks.named('cyclonedxBom')
+
+    inputs.file(layout.projectDirectory.file('scripts/finalize-sbom.py'))
+    inputs.files(
+            new File(aggregateSbomSourceDirectory, 'bom.json'),
+            new File(aggregateSbomSourceDirectory, 'bom.xml'),
+            new File(librarySbomSourceDirectory, 'bom.json'),
+            new File(librarySbomSourceDirectory, 'bom.xml'),
+            new File(mysqlSbomSourceDirectory, 'bom.json'),
+            new File(mysqlSbomSourceDirectory, 'bom.xml'))
+    outputs.dir(verifiedSbomDirectory)
+
+    commandLine(
+            'python3', layout.projectDirectory.file('scripts/finalize-sbom.py').asFile,
+            '--first-party-group', rootProject.group.toString(),
+            '--pair',
+            new File(aggregateSbomSourceDirectory, 'bom.json'),
+            new File(aggregateSbomSourceDirectory, 'bom.xml'),
+            new File(verifiedSbomDirectory, 'aggregate/bom.json'),
+            new File(verifiedSbomDirectory, 'aggregate/bom.xml'),
+            '--pair',
+            new File(librarySbomSourceDirectory, 'bom.json'),
+            new File(librarySbomSourceDirectory, 'bom.xml'),
+            new File(verifiedSbomDirectory, 'routecontract-shardingsphere-5.5/bom.json'),
+            new File(verifiedSbomDirectory, 'routecontract-shardingsphere-5.5/bom.xml'),
+            '--pair',
+            new File(mysqlSbomSourceDirectory, 'bom.json'),
+            new File(mysqlSbomSourceDirectory, 'bom.xml'),
+            new File(verifiedSbomDirectory, 'mysql-example/bom.json'),
+            new File(verifiedSbomDirectory, 'mysql-example/bom.xml'))
+}

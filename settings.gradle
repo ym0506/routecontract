@@ -1,0 +1,12 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
+rootProject.name = 'routecontract'
+
+include 'routecontract-shardingsphere-5.5'
+include 'mysql-example'
+project(':mysql-example').projectDir = file('examples/mysql')

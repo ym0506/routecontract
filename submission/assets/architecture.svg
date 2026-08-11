@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">RouteContract evidence-to-CI architecture</title>
+  <desc id="desc">A named operation capture is correlated through the official Apache ShardingSphere SQLExecutionHook. Hook-reported callbacks become a privacy-minimized snapshot, a canonical manifest, and a semantic diff that gates CI. Supported scope is Apache ShardingSphere-JDBC 5.5.3 synchronous PreparedStatement only.</desc>
+  <defs>
+    <style>
+      .font { font-family: "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; }
+      .title { font-size: 34px; font-weight: 700; fill: #153957; }
+      .subtitle { font-size: 20px; font-weight: 500; fill: #41637d; }
+      .zone { font-size: 17px; font-weight: 700; fill: #52738d; letter-spacing: 0.4px; }
+      .box-title { font-size: 22px; font-weight: 800; fill: #153957; }
+      .box-sub { font-size: 16px; font-weight: 600; fill: #42637c; }
+      .small { font-size: 15px; font-weight: 500; fill: #5c7385; }
+      .scope { font-size: 24px; font-weight: 800; fill: #153957; }
+      .boundary { font-size: 17px; font-weight: 500; fill: #526b7e; }
+    </style>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#153957" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="675" fill="#ffffff"/>
+  <rect x="0" y="0" width="1200" height="88" fill="#DAE9F7"/>
+  <rect x="0" y="0" width="14" height="88" fill="#6e9fc2"/>
+  <text class="font title" x="48" y="54">관측 증거를 재현 가능한 CI 계약으로</text>
+  <text class="font subtitle" x="1150" y="52" text-anchor="end">RouteContract architecture</text>
+
+  <rect x="45" y="126" width="568" height="320" rx="18" fill="#f7fbfe" stroke="#d0e2ef"/>
+  <rect x="625" y="126" width="530" height="320" rx="18" fill="#fbfdff" stroke="#d0e2ef"/>
+  <text class="font zone" x="73" y="162">RUNTIME OBSERVATION</text>
+  <text class="font zone" x="653" y="162">VERSIONED CONTRACT &amp; DELIVERY GATE</text>
+
+  <g filter="url(#shadow)">
+    <rect x="68" y="205" width="150" height="168" rx="16" fill="#DAE9F7" stroke="#8bb4d1" stroke-width="2"/>
+  </g>
+  <circle cx="143" cy="236" r="12" fill="#6e9fc2"/>
+  <path d="M143 218 V204 M143 268 V254 M125 236 H111 M175 236 H161" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+  <text class="font box-title" x="143" y="294" text-anchor="middle">capture</text>
+  <text class="font box-sub" x="143" y="320" text-anchor="middle">operationId</text>
+  <text class="font small" x="143" y="347" text-anchor="middle">named sync op</text>
+
+  <line x1="226" y1="289" x2="250" y2="289" stroke="#527fa1" stroke-width="4"/>
+  <path d="M250 281 L265 289 L250 297 Z" fill="#527fa1"/>
+
+  <g filter="url(#shadow)">
+    <rect x="274" y="205" width="174" height="168" rx="16" fill="#A5C9EB" stroke="#6e9fc2" stroke-width="2"/>
+  </g>
+  <path d="M322 232 H400 M322 244 H400 M322 256 H378" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/>
+  <text class="font box-title" x="361" y="293" text-anchor="middle">official</text>
+  <text class="font box-title" x="361" y="320" text-anchor="middle">SQLExecutionHook</text>
+  <text class="font small" x="361" y="347" text-anchor="middle">ShardingSphere SPI</text>
+
+  <line x1="456" y1="289" x2="480" y2="289" stroke="#527fa1" stroke-width="4"/>
+  <path d="M480 281 L495 289 L480 297 Z" fill="#527fa1"/>
+
+  <g filter="url(#shadow)">
+    <rect x="504" y="205" width="174" height="168" rx="16" fill="#f2f7fb" stroke="#8bb4d1" stroke-width="2"/>
+  </g>
+  <path d="M548 226 H634 V262 H548 Z M560 238 H622 M560 249 H609" fill="none" stroke="#6e9fc2" stroke-width="3" stroke-linecap="round"/>
+  <text class="font box-title" x="591" y="294" text-anchor="middle">privacy-minimized</text>
+  <text class="font box-title" x="591" y="321" text-anchor="middle">snapshot</text>
+  <text class="font small" x="591" y="347" text-anchor="middle">value-free shape</text>
+
+  <line x1="686" y1="289" x2="710" y2="289" stroke="#527fa1" stroke-width="4"/>
+  <path d="M710 281 L725 289 L710 297 Z" fill="#527fa1"/>
+
+  <g filter="url(#shadow)">
+    <rect x="734" y="205" width="154" height="168" rx="16" fill="#DAE9F7" stroke="#8bb4d1" stroke-width="2"/>
+  </g>
+  <path d="M777 222 H845 V266 H777 Z M788 235 H834 M788 247 H827 M788 259 H816" fill="none" stroke="#6e9fc2" stroke-width="3" stroke-linecap="round"/>
+  <text class="font box-title" x="811" y="302" text-anchor="middle">canonical</text>
+  <text class="font box-title" x="811" y="329" text-anchor="middle">manifest</text>
+  <text class="font small" x="811" y="352" text-anchor="middle">stable JSON</text>
+
+  <line x1="896" y1="289" x2="920" y2="289" stroke="#527fa1" stroke-width="4"/>
+  <path d="M920 281 L935 289 L920 297 Z" fill="#527fa1"/>
+
+  <g filter="url(#shadow)">
+    <rect x="944" y="205" width="142" height="168" rx="16" fill="#A5C9EB" stroke="#6e9fc2" stroke-width="2"/>
+  </g>
+  <path d="M978 229 H1001 M1029 229 H1052 M1001 229 L1014 216 L1029 229 L1014 242 Z" fill="none" stroke="#ffffff" stroke-width="3" stroke-linejoin="round"/>
+  <text class="font box-title" x="1015" y="302" text-anchor="middle">semantic</text>
+  <text class="font box-title" x="1015" y="329" text-anchor="middle">diff</text>
+  <text class="font small" x="1015" y="352" text-anchor="middle">stable RCM codes</text>
+
+  <line x1="1094" y1="289" x2="1103" y2="289" stroke="#527fa1" stroke-width="4"/>
+  <path d="M1103 281 L1118 289 L1103 297 Z" fill="#527fa1"/>
+  <rect x="1121" y="235" width="58" height="108" rx="13" fill="#153957"/>
+  <text class="font box-title" x="1150" y="279" text-anchor="middle" fill="#ffffff">CI</text>
+  <path d="M1137 301 L1147 311 L1165 290" fill="none" stroke="#bfe0f7" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M1139 326 L1162 303 M1162 326 L1139 303" fill="none" stroke="#f2bfc6" stroke-width="3" stroke-linecap="round" opacity="0.9"/>
+
+  <rect x="45" y="472" width="1110" height="100" rx="18" fill="#DAE9F7" stroke="#8bb4d1" stroke-width="2"/>
+  <text class="font subtitle" x="600" y="509" text-anchor="middle">SUPPORTED SCOPE</text>
+  <text class="font scope" x="600" y="548" text-anchor="middle">Apache ShardingSphere-JDBC · 5.5.3 sync PreparedStatement only</text>
+
+  <text class="font boundary" x="600" y="616" text-anchor="middle">관측 경계: SQLExecutionHook callback evidence — complete route/table plan 또는 transaction commit을 뜻하지 않음</text>
+  <text class="font small" x="600" y="646" text-anchor="middle">capture(operationId) → official hook → minimized snapshot → canonical manifest → semantic diff → CI</text>
+</svg>

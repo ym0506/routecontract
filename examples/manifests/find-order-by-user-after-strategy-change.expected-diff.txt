@@ -1,0 +1,2 @@
+RCM302 BLOCKING STRUCTURAL_ATTEMPT_ADDED: alias=orders-odd, fingerprint=0788cb631ab1c688853da32e0fe4f6652e69b091debde648c0dcf14c778b9979, parameterCount=2, parameterTypes=[java.lang.Long, java.lang.Long], outcome=CALLBACK_RETURNED, expectedMultiplicity=0, observedMultiplicity=1
+RCM301 BLOCKING STRUCTURAL_ATTEMPT_REMOVED: alias=orders-odd, fingerprint=b8b1f33ad62b87278f4f7623eb3d53e87b6f1fff88abf1415f14f2d4ceddd78b, parameterCount=1, parameterTypes=[java.lang.Long], outcome=CALLBACK_RETURNED, expectedMultiplicity=1, observedMultiplicity=0

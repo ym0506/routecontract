@@ -1,0 +1,47 @@
+name: Route regression
+description: Report a business-green change that alters observed physical JDBC executions.
+title: "[route-regression] "
+labels: [route-regression, needs-reproduction]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Remove credentials, raw parameter values, customer identifiers, and private topology before submitting.
+  - type: input
+    id: versions
+    attributes:
+      label: Exact versions
+      description: Include RouteContract, ShardingSphere, Java, database, driver, and OS versions.
+      placeholder: RouteContract 0.1.0-SNAPSHOT; ShardingSphere-JDBC 5.5.3; Java 17; MySQL 8.4.11
+    validations:
+      required: true
+  - type: textarea
+    id: operation
+    attributes:
+      label: Application operation and business assertion
+      description: Describe the named synchronous operation and the business result that still passes.
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: Expected and observed execution contract
+      description: Give minimized attempt counts, reviewed data-source aliases, and stable RCM codes. Do not paste raw SQL.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Link a public repository or provide a small deterministic fixture and one command.
+    validations:
+      required: true
+  - type: checkboxes
+    id: boundaries
+    attributes:
+      label: Claim and privacy checks
+      options:
+        - label: I am reporting physical JDBC execution attempts observed through ShardingSphere 5.5.3 SQLExecutionHook, not a complete route plan or transaction commit.
+          required: true
+        - label: I removed secrets, raw parameter values, customer data, and private topology.
+          required: true
