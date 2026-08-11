@@ -71,20 +71,44 @@ read-only `Release evidence` workflow. The workflow:
   environment, MySQL-image and final-asset-consumer logs as one workflow
   artifact.
 
-Download and inspect the workflow artifact before manually creating a GitHub
-Release or publishing anywhere. Attach the exact checksummed source archive,
+Before creating a public tag, verify through the repository API that release
+immutability is enabled; an HTTP success alone is insufficient, and the parsed
+response must contain `enabled: true`. After the annotated tag's exact revision
+has a green release-evidence run, download and inspect that run's artifact.
+
+Create a **draft** GitHub Release with `--verify-tag`. For an `-rcN` tag, mark
+that draft as a prerelease. While it is still a draft, attach an explicit list
+of exactly these eleven assets: the checksummed source archive,
 main/sources/Javadoc JARs, generated POM, direct and aggregate JSON/XML SBOMs,
-`test-summary.txt` and `SHA256SUMS` to the GitHub Release so the contest
-packaging gate can verify their public digests. The environment record,
-resolved MySQL image record and standalone-consumer log remain only in the
-revision-bound workflow artifact. The test summary is present in both places;
-`SHA256SUMS` declares exactly the other public payloads (not itself) and never
-the three workflow-only logs. The gate checks the public checksum set separately, then
-protects the entire public-plus-private evidence directory through the Actions
-artifact ID/digest, byte-identical extraction and exact flat-file allowlist.
-Mark an `-rcN` GitHub Release as a prerelease. The immutable final `v0.1.0`
-Release must be a new stable tag/revision/evidence run with `prerelease=false`;
-never retag or promote RC assets as if they were the final stable evidence.
+`test-summary.txt`, and `SHA256SUMS`. Do not use a broad filesystem glob. Before
+publication, verify all of the following against the tagged revision and the
+release-evidence run:
+
+- the annotated tag peels to the intended full commit and the run uses that
+  same `head_sha`;
+- the Release is still `draft: true`, has the intended prerelease flag, and
+  exposes exactly the eleven expected asset names, each fully uploaded;
+- every one of the ten payload hashes matches `SHA256SUMS`, and the separately
+  recorded SHA-256 of `SHA256SUMS` itself matches;
+- the source archive, SBOMs, test summary, POM/JAR identity, and standalone
+  release-asset consumer pass their documented verification gates.
+
+Only after every draft check passes may the draft be published. Immediately
+after publication, require the Release API to report `immutable: true`, run
+`gh release verify`, and run `gh release verify-asset` successfully for each of
+the eleven downloaded assets. If any prepublication or postpublication check
+fails, stop and create a new `-rcN` tag after fixing the cause; never replace an
+asset or retag an immutable public Release.
+
+The environment record, resolved MySQL image record and standalone-consumer
+log remain only in the revision-bound workflow artifact. The test summary is
+present in both places; `SHA256SUMS` declares exactly the other public payloads
+(not itself) and never the three workflow-only logs. The gate checks the public
+checksum set separately, then protects the entire public-plus-private evidence
+directory through the Actions artifact ID/digest, byte-identical extraction
+and exact flat-file allowlist. The immutable final `v0.1.0` Release must be a
+new stable tag/revision/evidence run with `prerelease=false`; never retag or
+promote RC assets as if they were the final stable evidence.
 The v0.1 packaging gate requires no signature assets because no signing
 workflow or key-management policy is implemented. Add signing only in a future
 release with an explicit design and verification path. Do not imply SLSA
