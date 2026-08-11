@@ -220,7 +220,8 @@ datasource-proxy can also observe 1→2 when wired per physical data source
 - `v0.1.0-rc1` 또는 최종 release와 tag
 - main/source/Javadoc JAR, POM, SBOM, SHA-256
 - 비작성자 quick-start 결과 Issue
-- 그 피드백으로 만든 실제 수정 PR
+- 실제 결함이 있었다면 그 피드백으로 만든 수정 PR과 새 RC 재검증. 결함이 없었다면
+  `no fix required` 기록
 - 공개 이슈 #38456과의 문제 연관성. upstream이 RouteContract를 승인했다는 표현은 금지한다.
 
 실행:
@@ -244,7 +245,7 @@ standalone_demo_exit     0
 
 내레이션:
 
-> 독립 consumer는 project dependency 없이 배포 JAR에서 SPI를 자동 발견해 실제 MySQL을 통과했습니다. 재현 가능한 CI, release asset, SBOM과 외부 quick-start 수정 이력은 공개 링크에서 확인할 수 있습니다.
+> 독립 consumer는 project dependency 없이 배포 JAR에서 SPI를 자동 발견해 실제 MySQL을 통과했습니다. 재현 가능한 CI, release asset, SBOM과 외부 quick-start 결과는 공개 링크에서 확인할 수 있습니다. 실제 결함이 발견된 경우에만 수정 PR과 새 RC 재검증을 함께 제시합니다.
 
 Maven Central에 실제 게시하지 않았다면 Maven Central을 언급하지 않는다.
 

@@ -10,7 +10,14 @@ Only the latest tagged `0.1.x` release will receive security fixes during the in
 
 ## Reporting a vulnerability
 
-Until a dedicated private reporting channel is published, do not open a public issue containing credentials, SQL parameter values, connection URLs or production topology. Contact the repository owner privately through the verified contact method on the public repository profile.
+GitHub Private Vulnerability Reporting is enabled for this repository. Do not open a public issue
+containing credentials, SQL parameter values, connection URLs, production topology, or
+vulnerability details. Use the repository's
+[private vulnerability report](https://github.com/ym0506/routecontract/security/advisories/new).
+Send only the minimum information needed to reproduce the issue; do not attach full logs or a
+production data dump. If the private channel is unavailable, do not send or retain full diagnostics;
+a public issue may state only that the private security channel is unavailable, without technical
+details.
 
 ## Data-handling boundary targeted by v0.1
 
