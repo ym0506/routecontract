@@ -7,6 +7,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import unicodedata
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
@@ -55,6 +56,14 @@ def valid_manifest() -> dict:
     return {
         "schema_version": 1,
         "official_notice_url": "https://osscontest.kr/notice/39",
+        "submission_identity": {
+            "receipt_number": "123",
+            "team_name": "홍길동전",
+            "registered_project_name": "RouteContract",
+            "team_size": "1명",
+            "division": "학생",
+            "task_type": "자유과제",
+        },
         "project": {
             "slug": "routecontract",
             "repository_url": "https://github.com/example-owner/routecontract",
@@ -131,9 +140,114 @@ class ManifestTest(unittest.TestCase):
 
         self.assertEqual(Path(sys.executable).resolve(), args.builder_python)
 
+    def test_accepts_standard_venv_final_python_symlink(self) -> None:
+        with tempfile.TemporaryDirectory(dir=SCRIPT.parents[2]) as raw:
+            root = Path(raw)
+            target = root / "python-target"
+            target.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+            target.chmod(0o755)
+            venv = root / "venv"
+            (venv / "bin").mkdir(parents=True)
+            interpreter = venv / "bin" / "python"
+            interpreter.symlink_to(target)
+
+            self.assertEqual(
+                interpreter,
+                package_submission.require_python_interpreter(
+                    interpreter, "report builder Python"
+                ),
+            )
+
+    def test_rejects_symlink_in_builder_python_parent_path(self) -> None:
+        with tempfile.TemporaryDirectory(dir=SCRIPT.parents[2]) as raw:
+            root = Path(raw)
+            real = root / "real"
+            real.mkdir()
+            interpreter = real / "python"
+            interpreter.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+            interpreter.chmod(0o755)
+            linked_parent = root / "linked"
+            linked_parent.symlink_to(real, target_is_directory=True)
+
+            with self.assertRaisesRegex(package_submission.GateError, "symlink component"):
+                package_submission.require_python_interpreter(
+                    linked_parent / "python", "report builder Python"
+                )
+
     def test_accepts_complete_manifest(self) -> None:
         checked = package_submission.validate_manifest(valid_manifest())
         self.assertEqual("example-owner", checked["github_owner"])
+        basename = "2026 오픈소스 개발자대회 결과보고서_123(홍길동전)"
+        self.assertEqual(
+            {
+                "basename": basename,
+                "docx": f"{basename}.docx",
+                "pdf": f"{basename}.pdf",
+                "zip": f"{basename}.zip",
+            },
+            checked["official_submission_filenames"],
+        )
+
+    def test_rejects_non_nfc_submission_identity(self) -> None:
+        manifest = valid_manifest()
+        manifest["submission_identity"]["team_name"] = unicodedata.normalize(
+            "NFD", "홍길동전"
+        )
+        with self.assertRaisesRegex(package_submission.GateError, "NFC"):
+            package_submission.validate_manifest(manifest)
+
+    def test_rejects_unsafe_submission_identity_components(self) -> None:
+        for unsafe in ("../123", "123/456", "123\\456", "123\n456", " 123"):
+            with self.subTest(unsafe=repr(unsafe)):
+                manifest = valid_manifest()
+                manifest["submission_identity"]["receipt_number"] = unsafe
+                with self.assertRaises(package_submission.GateError):
+                    package_submission.validate_manifest(manifest)
+
+    def test_rejects_official_filename_over_portable_byte_limit(self) -> None:
+        manifest = valid_manifest()
+        manifest["submission_identity"]["team_name"] = "가" * 80
+        with self.assertRaisesRegex(package_submission.GateError, "255 UTF-8 bytes"):
+            package_submission.validate_manifest(manifest)
+
+    def test_requires_exact_report_registration_identity_match(self) -> None:
+        manifest = package_submission.validate_manifest(valid_manifest())
+        metadata = {
+            "team_name": "홍길동전",
+            "project_name": "RouteContract",
+            "team_size": "1명",
+            "division": "학생",
+            "task_type": "자유과제",
+        }
+        package_submission.validate_submission_identity_matches_content(
+            {"metadata": metadata}, manifest
+        )
+        for key in metadata:
+            with self.subTest(key=key), self.assertRaisesRegex(
+                package_submission.GateError, "exactly match"
+            ):
+                changed = dict(metadata)
+                changed[key] += "-mismatch"
+                package_submission.validate_submission_identity_matches_content(
+                    {"metadata": changed}, manifest
+                )
+
+    def test_rejects_control_character_in_registration_identity(self) -> None:
+        manifest = valid_manifest()
+        manifest["submission_identity"]["registered_project_name"] = "Route\u200bContract"
+        with self.assertRaisesRegex(package_submission.GateError, "control or formatting"):
+            package_submission.validate_manifest(manifest)
+
+    def test_rejects_required_duplicate_form_until_official_source_is_validated(self) -> None:
+        manifest = valid_manifest()
+        manifest["duplicate_benefit_confirmation"] = {
+            "status": "required",
+            "sha256": digest("8"),
+        }
+        with self.assertRaisesRegex(package_submission.GateError, "exact source form"):
+            package_submission.validate_manifest(manifest)
+        with self.assertRaisesRegex(package_submission.GateError, "exact source form"):
+            package_submission.validate_duplicate_confirmation(Path("arbitrary.pdf"), manifest)
 
     def test_rejects_placeholder_before_packaging(self) -> None:
         manifest = valid_manifest()
@@ -190,6 +304,12 @@ class ReportContractTest(unittest.TestCase):
         "제품에는 AI 모델·학습/추론 코드·외부 AI API 호출이 없다 "
         "붙임1 SBOM(소프트웨어 자재명세서)"
     )
+    PORTRAIT = (595.0, 842.0)
+    LANDSCAPE = (842.0, 595.0)
+    SBOM_ROWS = [
+        {"name": "Alpha", "version": "1.0"},
+        {"name": "Omega", "version": "2.0"},
+    ]
 
     def test_accepts_sbom_and_development_ai_without_attachment_2(self) -> None:
         package_submission.validate_report_text_contract(self.BASE, self.BASE)
@@ -205,9 +325,128 @@ class ReportContractTest(unittest.TestCase):
             package_submission.validate_report_text_contract(text, text)
 
     def test_rejects_body_over_five_pages(self) -> None:
-        pages = ["body"] * 6 + ["붙임1 SBOM(소프트웨어 자재명세서)"]
+        pages = ["body"] * 6 + ["붙임1 SBOM(소프트웨어 자재명세서) Omega 2.0"]
+        sizes = [self.PORTRAIT] * 6 + [self.LANDSCAPE]
         with self.assertRaisesRegex(package_submission.GateError, "maximum is 5"):
-            package_submission.report_page_contract(pages)
+            package_submission.report_page_contract(pages, sizes, self.SBOM_ROWS)
+
+    def test_accepts_two_trailing_attachment_1_pages(self) -> None:
+        pages = [
+            "body page 1",
+            "body page 2",
+            "붙임1 SBOM(소프트웨어 자재명세서) Alpha 1.0",
+            "SBOM continued rows Omega 2.0",
+        ]
+        sizes = [self.PORTRAIT, self.PORTRAIT, self.LANDSCAPE, self.LANDSCAPE]
+        self.assertEqual(
+            {"body_pages": 2, "attachment_1_pages": 2, "total_pages": 4},
+            package_submission.report_page_contract(pages, sizes, self.SBOM_ROWS),
+        )
+
+    def test_rejects_wrong_body_or_attachment_orientation(self) -> None:
+        pages = ["body", "붙임1 SBOM(소프트웨어 자재명세서) Omega 2.0"]
+        for sizes, message in (
+            ([self.LANDSCAPE, self.LANDSCAPE], "body page 1 must be A4 portrait"),
+            ([self.PORTRAIT, self.PORTRAIT], "Attachment 1 page 2 must be A4 landscape"),
+        ):
+            with self.subTest(sizes=sizes), self.assertRaisesRegex(
+                package_submission.GateError, message
+            ):
+                package_submission.report_page_contract(pages, sizes, self.SBOM_ROWS)
+
+    def test_rejects_letter_or_legal_page_sizes(self) -> None:
+        pages = ["body", "붙임1 SBOM(소프트웨어 자재명세서) Omega 2.0"]
+        for sizes, message in (
+            ([(612.0, 792.0), self.LANDSCAPE], "A4 portrait"),
+            ([self.PORTRAIT, (1008.0, 612.0)], "A4 landscape"),
+        ):
+            with self.subTest(sizes=sizes), self.assertRaisesRegex(
+                package_submission.GateError, message
+            ):
+                package_submission.report_page_contract(pages, sizes, self.SBOM_ROWS)
+
+    def test_parses_real_poppler_a4_page_size_format(self) -> None:
+        info = (
+            "Pages:           2\n"
+            "Page    1 size:  595.304 x 841.89 pts (A4)\n"
+            "Page    2 size:  841.89 x 595.304 pts (A4)\n"
+            "File size:       12345 bytes\n"
+        )
+        self.assertEqual(
+            [(595.304, 841.89), (841.89, 595.304)],
+            package_submission.parse_pdf_page_sizes(info, 2),
+        )
+
+    def test_rejects_blank_or_unanchored_attachment_page(self) -> None:
+        sizes = [self.PORTRAIT, self.LANDSCAPE, self.LANDSCAPE]
+        for trailing, message in (
+            ("", "blank pages"),
+            ("continued without a declared component", "no declared SBOM row anchor"),
+        ):
+            pages = [
+                "body",
+                "붙임1 SBOM(소프트웨어 자재명세서) Alpha 1.0",
+                trailing,
+            ]
+            with self.subTest(trailing=trailing), self.assertRaisesRegex(
+                package_submission.GateError, message
+            ):
+                package_submission.report_page_contract(pages, sizes, self.SBOM_ROWS)
+
+    def test_requires_last_declared_row_on_final_attachment_page(self) -> None:
+        pages = [
+            "body",
+            "붙임1 SBOM(소프트웨어 자재명세서) Omega 2.0",
+            "continued Alpha 1.0",
+        ]
+        sizes = [self.PORTRAIT, self.LANDSCAPE, self.LANDSCAPE]
+        with self.assertRaisesRegex(package_submission.GateError, "last declared SBOM row"):
+            package_submission.report_page_contract(pages, sizes, self.SBOM_ROWS)
+
+    def test_recognizes_multiword_row_split_by_pdf_column_order(self) -> None:
+        row = {"name": "CycloneDX Gradle Plugin", "version": "3.4.0"}
+        page = "CycloneDX https://example.invalid 10 3.4.0 Gradle purpose Plugin"
+        self.assertTrue(package_submission.page_contains_sbom_row(page, row))
+
+
+class ReportContentSbomTest(unittest.TestCase):
+    def test_current_content_declares_exactly_ten_prioritized_rows(self) -> None:
+        content_path = SCRIPT.parents[1] / "report-content.ko.json"
+        with content_path.open(encoding="utf-8") as stream:
+            content = json.load(stream)
+
+        self.assertEqual(
+            [
+                "MySQL Connector/J",
+                "MySQL Server 컨테이너",
+                "Apache ShardingSphere",
+                "Alibaba TransmittableThreadLocal",
+                "Jackson Core",
+                "Testcontainers (JUnit·MySQL)",
+                "datasource-proxy",
+                "JUnit Jupiter/Launcher",
+                "Gradle Wrapper",
+                "CycloneDX Gradle Plugin",
+            ],
+            [row["name"] for row in content["sbom"]],
+        )
+
+    def test_report_builder_requirements_pin_the_complete_python_closure(self) -> None:
+        requirements_path = SCRIPT.parents[1] / "report-builder-requirements.txt"
+        requirements = {
+            line.strip()
+            for line in requirements_path.read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.startswith("#")
+        }
+        self.assertEqual(
+            {
+                "Pillow==12.3.0",
+                "lxml==6.1.1",
+                "python-docx==1.2.0",
+                "typing_extensions==4.16.0",
+            },
+            requirements,
+        )
 
 
 class PrivacyAndPathTest(unittest.TestCase):
@@ -333,10 +572,10 @@ class ZipAllowlistTest(unittest.TestCase):
             root = Path(raw)
             upload = root / "upload"
             upload.mkdir()
-            names = [
-                package_submission.REPORT_DOCX_NAME,
-                package_submission.REPORT_PDF_NAME,
+            filenames = package_submission.validate_manifest(valid_manifest())[
+                "official_submission_filenames"
             ]
+            names = [filenames["docx"], filenames["pdf"]]
             (upload / names[0]).write_bytes(b"docx")
             (upload / names[1]).write_bytes(b"pdf")
             first = root / "first.zip"
@@ -347,6 +586,19 @@ class ZipAllowlistTest(unittest.TestCase):
             with ZipFile(first) as archive:
                 self.assertEqual(names, archive.namelist())
                 self.assertFalse(any(name.endswith((".json", ".xml", ".mp4", ".jar")) for name in archive.namelist()))
+
+    def test_rejects_legacy_submission_filenames(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            upload = root / "upload"
+            upload.mkdir()
+            names = sorted(package_submission.LEGACY_SUBMISSION_FILENAMES)
+            for name in names:
+                (upload / name).write_bytes(b"legacy")
+            with self.assertRaisesRegex(package_submission.GateError, "legacy"):
+                package_submission.validate_upload_directory(upload, names)
+            with self.assertRaisesRegex(package_submission.GateError, "legacy"):
+                package_submission.build_upload_zip(upload, root / "legacy.zip", names)
 
 
 class ChecksumManifestTest(unittest.TestCase):

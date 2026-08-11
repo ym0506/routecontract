@@ -24,6 +24,11 @@ from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
 from lxml import etree
 
+try:
+    from .report_ooxml import mark_data_rows_cannot_split
+except ImportError:  # Direct script execution puts this directory on sys.path.
+    from report_ooxml import mark_data_rows_cannot_split
+
 
 EXPECTED_TEMPLATE_SHA256 = (
     "937679bac40cbfaced3457530c232c9d190a74f6b5d67c58b4bc33014a579195"
@@ -31,10 +36,11 @@ EXPECTED_TEMPLATE_SHA256 = (
 FONT_NAME = "Malgun Gothic"
 BODY_FONT_PT = 10
 REPORT_IMAGE_WIDTH_INCHES = 4.15
-# Attachment 1 uses the retained landscape grid. Compact nine-point cells keep
-# all ten organizer-requested direct/core rows on one readable page while the
-# result-report body remains the required 10 pt.
+# The organizer's supplemental guide caps the prioritized summary at ten rows.
+# Compact nine-point cells keep that landscape table readable while the body
+# remains the required 10 pt.
 SBOM_FONT_PT = 9
+SBOM_MAX_ROWS = 10
 PLACEHOLDER_RE = re.compile(r"\[\[[^\]]+\]\]")
 CORE_PROPERTY_NAMESPACES = {
     "cp": "http://schemas.openxmlformats.org/package/2006/metadata/core-properties",
@@ -88,8 +94,20 @@ def load_content(path: Path) -> dict[str, Any]:
     missing = sorted(required.difference(data))
     if missing:
         raise ValueError(f"content is missing keys: {', '.join(missing)}")
-    if len(data["sbom"]) != 10:
-        raise ValueError("the official Attachment 1 must contain exactly 10 SBOM rows")
+    rows = data["sbom"]
+    if not isinstance(rows, list) or not 1 <= len(rows) <= SBOM_MAX_ROWS:
+        raise ValueError(
+            f"the official Attachment 1 must contain 1 to {SBOM_MAX_ROWS} prioritized rows"
+        )
+    expected_row_keys = {"name", "version", "license", "url", "purpose"}
+    for index, row in enumerate(rows, start=1):
+        if not isinstance(row, dict) or set(row) != expected_row_keys:
+            raise ValueError(
+                f"SBOM row {index} must contain exactly: "
+                + ", ".join(sorted(expected_row_keys))
+            )
+        if any(not isinstance(row[key], str) or not row[key].strip() for key in row):
+            raise ValueError(f"SBOM row {index} values must be non-empty strings")
     return data
 
 
@@ -399,6 +417,7 @@ def fill_sbom(document: Document, rows: list[dict[str, str]]) -> None:
             set_cell_margins(cell, top=20, start=40, bottom=20, end=40)
             for paragraph in cell.paragraphs:
                 paragraph.paragraph_format.line_spacing = Pt(10.2)
+    mark_data_rows_cannot_split(sbom.rows[1:])
     remove_fixed_row_heights(sbom)
 
 

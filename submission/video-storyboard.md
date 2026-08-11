@@ -1,6 +1,6 @@
 # RouteContract 3분 시연 영상 스토리보드
 
-상태: 2분 55초 최종 촬영안. 공개 저장소·CI·릴리스·외부 사용자 게이트를 통과한 뒤 녹화한다.
+상태: 2분 52초 최종 촬영안. 안정 `v0.1.0`·제출 revision·외부 사용자 게이트를 통과한 뒤 녹화한다.
 
 핵심 문장:
 
@@ -38,9 +38,9 @@ observedAttempts=1               observedAttempts=2
 
 내레이션:
 
-> 두 쿼리는 같은 행을 반환해 기능 테스트를 모두 통과합니다. 하지만 오른쪽의 관측된 물리 JDBC 실행 시도는 한 번에서 두 번으로 늘었습니다.
+> 두 쿼리는 같은 행을 반환합니다. 그러나 물리 JDBC 실행 시도는 한 번에서 두 번으로 늘었습니다.
 
-## 0:08–0:22 — 정확한 제품 정의
+## 0:08–0:21 — 정확한 제품 정의
 
 화면:
 
@@ -51,11 +51,15 @@ observed JDBC attempts ≠ complete route plan ≠ transaction commit
 
 내레이션:
 
-> RouteContract는 지원되는 ShardingSphere-JDBC 동기 operation에서 공식 SQLExecutionHook이 보고한 물리 JDBC 실행 시도를 계약으로 고정합니다. 전체 route plan이나 transaction commit을 관측한다고 주장하지 않습니다.
+> RouteContract는 ShardingSphere hook이 보고한 JDBC 실행 시도를 계약으로 고정합니다. route plan이나 commit은 보지 않습니다.
 
-## 0:22–0:38 — 설치와 최소 API
+## 0:21–0:35 — 설치와 최소 API
 
 화면은 배포 JAR 좌표와 아래 코드만 크게 보여 준다.
+
+```gradle
+testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0")
+```
 
 ```java
 RouteSnapshot snapshot = RouteContract.capture(
@@ -63,9 +67,9 @@ RouteSnapshot snapshot = RouteContract.capture(
         () -> assertEquals(1, repository.findPaidOrders(request.userId())));
 
 RouteAssertions.assertThat(snapshot)
+        .hasCompleteCapture()
+        .hasNoReportedExecutionFailures()
         .hasExactlyObservedPhysicalAttempts(1);
-
-ManifestAssertions.assertMatched(result);
 ```
 
 아래 구조는 작은 오버레이로 표시한다.
@@ -77,9 +81,9 @@ capture → official SQLExecutionHook → minimized snapshot
 
 내레이션:
 
-> JAR의 SPI는 자동 발견되고, 기존 비즈니스 assertion은 그대로 유지됩니다. capture가 operation 경계를 정하고 trunk와 worker callback을 모아 최소정보 manifest와 CI assertion으로 연결합니다.
+> JAR의 SPI는 자동 발견됩니다. 기존 assertion은 유지하고, capture 결과를 최소정보 manifest와 CI assertion으로 연결합니다.
 
-## 0:38–1:08 — 실제 MySQL baseline
+## 0:35–1:10 — 실제 MySQL baseline과 candidate
 
 실행:
 
@@ -105,7 +109,7 @@ demo_exit               0
 
 내레이션:
 
-> digest로 고정한 MySQL 8.4.11 두 개와 정확히 ShardingSphere-JDBC 5.5.3을 실행합니다. 등호 조회는 주문 한 행을 반환하고, 한 data-source alias에서 한 번의 실행 시도가 관측됩니다. 이 결과가 검토된 승인 manifest입니다.
+> 고정한 MySQL 8.4.11 두 개와 ShardingSphere-JDBC 5.5.3을 실행합니다. 두 조건은 같은 한 행을 반환하지만 관측 시도와 data source는 한 개에서 두 개로 늘어 RCM201과 RCM202가 발생합니다.
 
 녹화 규칙:
 
@@ -113,25 +117,7 @@ demo_exit               0
 - 컨테이너 기동 대기만 8배속.
 - 화면에 `실제 실행 · 대기 구간 8×` 표시.
 
-## 1:08–1:40 — 같은 비즈니스 결과, candidate 2회
-
-화면:
-
-- 원문 SQL을 터미널에 출력하지 않는다. 편집 화면에서는 `equality predicate`와 `same-value range predicate`라는 설명용 라벨만 좌우 비교한다.
-- 양쪽 모두 `returnedRows = 1`을 표시한다. 구체적인 조회 값과 row 식별자는 표시하지 않는다.
-- candidate의 count와 alias diff만 확대한다.
-
-```text
-businessResult          UNCHANGED (one row in both captures)
-observedAttempts        1 -> 2
-observedDataSources     1 -> 2
-blockingCodes           [RCM201,RCM202]
-demo_exit               0
-```
-
-내레이션:
-
-> 같은 값 범위 조건으로 바꿔도 같은 주문 한 행이 반환됩니다. 그러나 관측 시도와 data-source 수는 각각 한 개에서 두 개로 늘어 RCM201과 RCM202가 발생합니다. 예상된 회귀를 테스트가 정확히 검증했으므로 재현 명령 자체는 0으로 종료됩니다.
+동일한 결과와 candidate diff는 한 흐름 안에서 확대한다. 원문 SQL 대신 `equality predicate`와 `same-value range predicate`라는 설명용 라벨만 사용하고, 구체적인 조회 값과 row 식별자는 표시하지 않는다. 재현 명령의 `demo_exit=0`은 회귀가 없다는 뜻이 아니라 예상한 회귀와 manifest bytes를 테스트가 정확히 검증했다는 뜻이다.
 
 manifest 화면 콜아웃:
 
@@ -141,7 +127,7 @@ manifest 화면 콜아웃:
 - `원문 SQL·바인드 값 미저장 · manifest에는 검토한 alias만 기록`
 - `alias는 비민감 이름 사용 · minimized ≠ anonymized`
 
-## 1:40–2:03 — 실제 non-zero CI gate
+## 1:10–1:34 — 실제 non-zero CI gate
 
 실행:
 
@@ -165,9 +151,9 @@ ci_exit                 1
 
 내레이션:
 
-> 같은 두 파일을 실제 CI assertion에 넣으면 시도 예산과 data-source 예산 위반을 stable code로 출력하고 build가 1로 실패합니다. 이 intentional-red task는 정상 check와 분리되어 있습니다.
+> 같은 두 manifest를 CI assertion에 넣으면 예산 위반을 stable code로 출력하고 build가 1로 실패합니다. 이 red task는 정상 check와 분리돼 있습니다.
 
-## 2:03–2:23 — count가 같아도 구조가 달라지면 차단
+## 1:34–1:55 — count가 같아도 구조가 달라지면 차단
 
 실행:
 
@@ -192,9 +178,9 @@ fingerprint_demo_exit   0
 
 내레이션:
 
-> 실행 수와 data source가 모두 같은 회귀도 있습니다. table strategy를 제거한 실험은 결과와 count가 같았지만 rewritten SQL fingerprint 구조가 달라졌고, strict contract가 RCM301과 RCM302로 차단했습니다. 따라서 단순 query counter에 머물지 않습니다.
+> 실행 수와 data source가 모두 같아도 rewritten SQL fingerprint 구조가 달라지면 strict contract가 RCM301과 RCM302로 차단합니다. 단순 query counter와 다른 지점입니다.
 
-## 2:23–2:39 — 재현성과 공정한 비교
+## 1:55–2:17 — 재현성과 지원 경계
 
 한 장의 검증 카드만 보여 준다.
 
@@ -208,47 +194,44 @@ datasource-proxy can also observe 1→2 when wired per physical data source
 
 내레이션:
 
-> 8개 사례를 20회씩 실행한 160 captures에서 사례별 signature는 하나였고, 서로 다른 caller thread에서 함께 시작한 operation scope 20쌍에서 섞인 capture는 0이었습니다. 이는 physical callback overlap 자체를 강제한 결과는 아닙니다. datasource-proxy도 물리 data source를 감싸면 1대2를 관측할 수 있지만, RouteContract는 correlation부터 manifest, diff, assertion까지 패키지화합니다.
+> 실제 MySQL 160회에서 사례별 signature는 하나였고, 동시에 시작한 caller operation 20쌍의 capture 혼합은 0이었습니다. physical callback overlap을 증명한 수치는 아닙니다.
 
 이 결과는 정상 반환하고 caller가 interrupt되지 않은 동기식 PreparedStatement 범위에만 적용된다. “동시 physical callback을 증명했다”라고 말하지 않는다.
 
-## 2:39–2:51 — 공개 OSS 증거
+## 2:17–2:28 — 공정한 기존 도구 비교
 
-다음이 실제로 공개된 뒤에만 이 구간을 녹화한다.
-
-- 제출 revision의 Ubuntu CI 성공
-- `v0.1.0-rc1` 또는 최종 release와 tag
-- main/source/Javadoc JAR, POM, SBOM, SHA-256
-- 비작성자 quick-start 결과 Issue
-- 그 피드백으로 만든 실제 수정 PR
-- 공개 이슈 #38456과의 문제 연관성. upstream이 RouteContract를 승인했다는 표현은 금지한다.
-
-실행:
-
-```bash
-./scripts/video-demo-session.sh standalone
-```
-
-이 명령은 기존 `verify-standalone-consumer.sh`의 원본 출력에서 published JAR·SPI 자동 발견·실제 MySQL marker를 검증하되, 실제 data-source 이름은 화면에 다시 내보내지 않는다. 화면:
+화면:
 
 ```text
-[PUBLISHED-JAR CONSUMER]
-artifact                 published-jar
-spi                      auto-discovered
-environment              MySQL 8.4.11 | ShardingSphere-JDBC 5.5.3
-observedAttempts         1
-observedDataSources      1 (name withheld from screen)
-privacy                  screen output allowlisted
-standalone_demo_exit     0
+datasource-proxy: per-physical-data-source wiring can also observe 1 -> 2
+RouteContract: operation correlation -> manifest -> reviewed diff -> CI assertion
 ```
 
 내레이션:
 
-> 독립 consumer는 project dependency 없이 배포 JAR에서 SPI를 자동 발견해 실제 MySQL을 통과했습니다. 재현 가능한 CI, release asset, SBOM과 외부 quick-start 수정 이력은 공개 링크에서 확인할 수 있습니다.
+> datasource-proxy도 1대2를 봅니다. RouteContract는 상관관계, 승인 manifest와 diff를 한 계약으로 묶습니다.
+
+## 2:28–2:44 — 공개 OSS 증거
+
+다음이 실제로 공개된 뒤에만 이 구간을 녹화한다.
+
+- 제출 revision의 Ubuntu CI 성공
+- main에 blocking contract check를 요구하는 branch rule/ruleset
+- 제출 revision과 같은 안정 `v0.1.0` release와 annotated tag
+- main/source/Javadoc JAR, POM, SBOM, SHA-256
+- 비작성자가 직접 남긴 첫 quick-start 결과 Issue
+- 실제 결함이 발견된 경우에만 그 결함을 수정한 PR
+- RouteContract-specific upstream 질문. 응답이나 승인을 받았다고 과장하지 않는다.
+
+화면은 로그아웃한 브라우저에서 최종 tag/SHA, green CI, exact Release assets, 외부 첫 결과, upstream 질문을 한 카드씩 보여 준다. 같은 checkout의 `standalone` fixture는 공개 패키징 검증이지 외부 채택 증거가 아니므로 본편에서 실행하지 않는다. 최종 Release 자산을 내려받아 빈 Maven 저장소에서 검증한 결과는 CI 링크로만 제시한다.
+
+내레이션:
+
+> 최종 revision의 CI와 checksummed Release, 비작성자의 첫 설치 결과, upstream 질문을 모두 공개 링크로 남겼습니다.
 
 Maven Central에 실제 게시하지 않았다면 Maven Central을 언급하지 않는다.
 
-## 2:51–2:55 — 결론
+## 2:44–2:52 — 결론
 
 화면:
 
@@ -260,18 +243,19 @@ ShardingSphere-JDBC 5.5.3 synchronous PreparedStatement only
 
 내레이션:
 
-> 같은 결과 뒤에 숨은 관측 실행 회귀를 RouteContract가 CI 계약으로 드러냅니다. required check로 연결하면 blocking diff를 merge 전에 실패시킬 수 있습니다.
+> 같은 결과 뒤의 실행 회귀를 CI에서 막습니다. 5.5.3 동기 실행만 지원합니다.
 
 ## 최종 녹화 게이트
 
 - [ ] 영상 속 revision과 제출 revision이 같다.
 - [ ] Ubuntu 공개 CI에서 root build와 standalone consumer가 성공했다.
+- [ ] main branch rule/ruleset이 blocking contract check를 required로 지정한다.
 - [ ] baseline/candidate marker와 `demo_exit=0`을 재확인했다.
 - [ ] intentional-red script가 RCM201·RCM202와 `ci_exit=1`을 출력한다.
 - [ ] RCM301·RCM302 화면도 최종 revision의 실제 결과다.
-- [ ] 세 촬영 명령의 stdout/stderr에서 `/Users/`, `jdbc:`, `localhost:포트`, `127.0.0.1:포트`, `SELECT`, `t_order`, `ds_0`, `ds_1`이 나오지 않는다.
-- [ ] release assets, SBOM, checksum이 공개되어 있다.
-- [ ] 실제 외부 사용자의 quick-start 결과가 공개되어 있다.
+- [ ] 세 핵심 촬영 명령(`mysql`, `ci`, `fingerprint`)의 화면 출력에서 `/Users/`, `jdbc:`, `localhost:포트`, `127.0.0.1:포트`, `SELECT`, `t_order`, `ds_0`, `ds_1`이 나오지 않는다.
+- [ ] 제출 SHA와 같은 안정 `v0.1.0` release assets, SBOM, checksum이 공개되어 있다.
+- [ ] 실제 비작성자의 첫 quick-start 결과가 본인 계정으로 공개되어 있다.
 - [ ] 영상 속 테스트 수가 최종 revision과 일치한다.
 - [ ] 로컬 경로, 토큰, Docker credential, 알림, 개인 메일이 보이지 않는다.
 - [ ] 1080p에서 terminal 글자가 읽히며 자막이 잘리지 않는다.

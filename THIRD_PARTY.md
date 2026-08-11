@@ -2,8 +2,9 @@
 
 RouteContract is licensed under Apache-2.0. The dependencies below keep their
 own licenses. This file is a human-readable inventory of the dependencies
-declared directly by this repository as of 2026-08-11; it is not a substitute
-for the machine-readable SBOM or the license text shipped by each dependency.
+declared directly by this repository, plus the pinned report-builder runtime
+closure, as of 2026-08-12; it is not a substitute for the machine-readable
+SBOM or the license text shipped by each dependency.
 
 RouteContract does not shade or copy these dependencies into its library JAR.
 The MySQL example's dependencies and container image are test-only and are not
@@ -44,6 +45,19 @@ specific build:
 |---|---:|---|---|
 | Gradle Wrapper | 8.14.4 | Reproducible build entry point | Apache-2.0 |
 | CycloneDX Gradle plugin | 3.4.0 | CycloneDX 1.6 JSON/XML SBOM generation | Apache-2.0 |
+
+## Contest report builder tooling
+
+These packages generate and validate the organizer DOCX report. They are not
+part of RouteContract's published JAR or product runtime. The exact install
+closure is pinned in `submission/report-builder-requirements.txt`.
+
+| Component | Version | Purpose | License |
+|---|---:|---|---|
+| python-docx | 1.2.0 | Retained DOCX template, table and image editing | MIT |
+| Pillow | 12.3.0 | PNG format and 1200×675 evidence-asset validation | MIT-CMU |
+| lxml | 6.1.1 | OOXML core-property parsing and deterministic sanitization | BSD-3-Clause |
+| typing_extensions | 4.16.0 | Runtime compatibility dependency required by python-docx | PSF-2.0 |
 
 License identifiers and names above were checked against the projects' Maven
 metadata or upstream license files. Before a release, review the generated

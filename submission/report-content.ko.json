@@ -188,11 +188,11 @@
       "purpose": "격리된 실제 MySQL 통합 테스트"
     },
     {
-      "name": "HikariCP",
-      "version": "6.2.1",
-      "license": "Apache-2.0",
-      "url": "https://github.com/brettwooldridge/HikariCP",
-      "purpose": "테스트 connection pool"
+      "name": "datasource-proxy",
+      "version": "1.11.0",
+      "license": "MIT",
+      "url": "https://github.com/jdbc-observations/datasource-proxy",
+      "purpose": "비교 실험용 JDBC 관측(testImplementation); 배포 JAR 미포함"
     },
     {
       "name": "JUnit Jupiter/Launcher",

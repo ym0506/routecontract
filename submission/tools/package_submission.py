@@ -31,12 +31,19 @@ from zipfile import BadZipFile, ZIP_DEFLATED, ZipFile, ZipInfo
 
 
 NOTICE_URL = "https://osscontest.kr/notice/39"
-UPLOAD_ZIP_NAME = "RouteContract_2026_OSS_Contest.zip"
-REPORT_DOCX_NAME = "01_RouteContract_Result_Report.docx"
-REPORT_PDF_NAME = "02_RouteContract_Result_Report.pdf"
+OFFICIAL_REPORT_FILENAME_PREFIX = "2026 오픈소스 개발자대회 결과보고서_"
+LEGACY_SUBMISSION_FILENAMES = {
+    "RouteContract_2026_OSS_Contest.zip",
+    "01_RouteContract_Result_Report.docx",
+    "02_RouteContract_Result_Report.pdf",
+}
 PACKAGE_METADATA_NAME = "PACKAGE-METADATA.json"
 CHECKSUMS_NAME = "SHA256SUMS"
 MAX_VIDEO_SECONDS = 180.0
+MAX_PORTABLE_FILENAME_BYTES = 255
+A4_SHORT_EDGE_POINTS = 595.3
+A4_LONG_EDGE_POINTS = 841.9
+PAGE_SIZE_TOLERANCE_POINTS = 1.0
 KST = timezone(timedelta(hours=9))
 SUBMISSION_DEADLINE = datetime(2026, 8, 27, 18, 0, 0, tzinfo=KST)
 ZIP_TIMESTAMP = (1980, 1, 1, 0, 0, 0)
@@ -64,6 +71,7 @@ REPOSITORY_RE = re.compile(
 YOUTUBE_RE = re.compile(
     r"https://www\.youtube\.com/watch\?v=(?P<id>[A-Za-z0-9_-]{11})"
 )
+PORTABLE_FILENAME_FORBIDDEN = frozenset('<>:"/\\|?*')
 
 
 class GateError(RuntimeError):
@@ -88,7 +96,7 @@ def parse_args() -> argparse.Namespace:
         # installer).  Canonicalize only this trusted current-interpreter
         # default so the later user-input symlink checks remain fail-closed.
         default=Path(sys.executable).resolve(),
-        help="Python with python-docx and Pillow; defaults to this interpreter",
+        help="Python with python-docx, Pillow and lxml; defaults to this interpreter",
     )
     parser.add_argument(
         "--repository-root",
@@ -137,6 +145,26 @@ def require_file(path: Path, label: str) -> Path:
     if not resolved.is_file():
         raise GateError(f"{label} is missing or not a regular file: {resolved}")
     return resolved
+
+
+def require_python_interpreter(path: Path, label: str) -> Path:
+    """Allow only the final symlink used by a standard virtual environment."""
+    absolute = absolute_without_resolving(path, label)
+    reject_symlink_components(absolute.parent, f"{label} parent")
+    try:
+        final_mode = os.lstat(absolute).st_mode
+    except FileNotFoundError:
+        raise GateError(f"{label} is missing: {absolute}") from None
+    if not (stat.S_ISREG(final_mode) or stat.S_ISLNK(final_mode)):
+        raise GateError(f"{label} is not a regular file or final symlink: {absolute}")
+    try:
+        target = absolute.resolve(strict=True)
+    except (OSError, RuntimeError) as error:
+        raise GateError(f"{label} final symlink cannot be resolved: {error}") from error
+    if not target.is_file() or not os.access(target, os.X_OK):
+        raise GateError(f"{label} target is not an executable regular file: {target}")
+    # Return the unresolved venv path: Python uses it to discover pyvenv.cfg.
+    return Path(os.path.abspath(absolute))
 
 
 def require_directory(path: Path, label: str) -> Path:
@@ -232,12 +260,95 @@ def parse_repository_url(url: Any) -> tuple[str, str, str]:
     return match.group("owner"), match.group("repo"), url
 
 
+def require_portable_filename_component(value: Any, label: str) -> str:
+    """Validate one registration value without silently changing it."""
+    if not isinstance(value, str) or not value:
+        raise GateError(f"{label} must be a non-empty string")
+    if value != unicodedata.normalize("NFC", value):
+        raise GateError(f"{label} must already use Unicode NFC normalization")
+    if value != value.strip():
+        raise GateError(f"{label} must not have leading or trailing whitespace")
+    if value in {".", ".."} or value.endswith((".", " ")):
+        raise GateError(f"{label} is not a portable filename component")
+    if any(
+        character in PORTABLE_FILENAME_FORBIDDEN
+        or unicodedata.category(character).startswith("C")
+        for character in value
+    ):
+        raise GateError(
+            f"{label} contains a control, path separator or non-portable filename character"
+        )
+    return value
+
+
+def require_registration_text(value: Any, label: str) -> str:
+    if not isinstance(value, str) or not value:
+        raise GateError(f"{label} must be a non-empty string")
+    if value != unicodedata.normalize("NFC", value):
+        raise GateError(f"{label} must already use Unicode NFC normalization")
+    if value != value.strip():
+        raise GateError(f"{label} must not have leading or trailing whitespace")
+    if any(unicodedata.category(character).startswith("C") for character in value):
+        raise GateError(f"{label} contains a control or formatting character")
+    return value
+
+
+def official_submission_filenames(identity: dict[str, Any]) -> dict[str, str]:
+    receipt_number = require_portable_filename_component(
+        identity["receipt_number"], "submission_identity.receipt_number"
+    )
+    team_name = require_portable_filename_component(
+        identity["team_name"], "submission_identity.team_name"
+    )
+    basename = f"{OFFICIAL_REPORT_FILENAME_PREFIX}{receipt_number}({team_name})"
+    filenames = {
+        "basename": basename,
+        "docx": f"{basename}.docx",
+        "pdf": f"{basename}.pdf",
+        "zip": f"{basename}.zip",
+    }
+    for label, filename in filenames.items():
+        if label == "basename":
+            continue
+        if PurePosixPath(filename).name != filename or "\\" in filename:
+            raise GateError(f"derived official {label} filename is not a safe basename")
+        if len(filename.encode("utf-8")) > MAX_PORTABLE_FILENAME_BYTES:
+            raise GateError(
+                f"derived official {label} filename exceeds "
+                f"{MAX_PORTABLE_FILENAME_BYTES} UTF-8 bytes"
+            )
+    return filenames
+
+
+def validate_submission_identity_matches_content(
+    content: dict[str, Any], manifest: dict[str, Any]
+) -> None:
+    metadata = content.get("metadata")
+    if not isinstance(metadata, dict):
+        raise GateError("report content metadata must be an object")
+    identity = manifest["submission_identity"]
+    field_map = {
+        "team_name": "team_name",
+        "registered_project_name": "project_name",
+        "team_size": "team_size",
+        "division": "division",
+        "task_type": "task_type",
+    }
+    for identity_key, metadata_key in field_map.items():
+        if metadata.get(metadata_key) != identity[identity_key]:
+            raise GateError(
+                f"report content metadata.{metadata_key} must exactly match "
+                f"submission_identity.{identity_key}"
+            )
+
+
 def validate_manifest(data: dict[str, Any]) -> dict[str, Any]:
     require_exact_keys(
         data,
         {
             "schema_version",
             "official_notice_url",
+            "submission_identity",
             "project",
             "report",
             "video",
@@ -252,6 +363,22 @@ def validate_manifest(data: dict[str, Any]) -> dict[str, Any]:
         raise GateError("manifest.schema_version must be 1")
     if data["official_notice_url"] != NOTICE_URL:
         raise GateError(f"official_notice_url must be {NOTICE_URL}")
+
+    identity = require_exact_keys(
+        data["submission_identity"],
+        {
+            "receipt_number",
+            "team_name",
+            "registered_project_name",
+            "team_size",
+            "division",
+            "task_type",
+        },
+        "submission_identity",
+    )
+    official_filenames = official_submission_filenames(identity)
+    for key in ("registered_project_name", "team_size", "division", "task_type"):
+        require_registration_text(identity[key], f"submission_identity.{key}")
 
     project = require_exact_keys(
         data["project"],
@@ -402,12 +529,16 @@ def validate_manifest(data: dict[str, Any]) -> dict[str, Any]:
         if duplicate["sha256"] is not None:
             raise GateError("duplicate-benefit SHA must be null when it is not applicable")
     else:
-        require_digest(duplicate["sha256"], "duplicate_benefit_confirmation.sha256")
+        raise GateError(
+            "duplicate-benefit status=required is disabled until the organizer's exact "
+            "source form and identity/title contract are locally validated"
+        )
 
     return {
         **data,
         "github_owner": owner,
         "github_repository": repository,
+        "official_submission_filenames": official_filenames,
     }
 
 
@@ -1313,7 +1444,26 @@ def validate_pdf_privacy(path: Path) -> None:
         raise GateError("PDF contains document-level JavaScript")
 
 
-def extract_pdf_pages(path: Path) -> list[str]:
+def parse_pdf_page_sizes(info: str, page_count: int) -> list[tuple[float, float]]:
+    size_matches = re.findall(
+        r"(?m)^Page\s+([0-9]+)\s+size:\s+([0-9.]+)\s+x\s+([0-9.]+)\s+pts"
+        r"(?:\s+\([^()\r\n]*\))?\s*$",
+        info,
+    )
+    expected_pages = set(range(1, page_count + 1))
+    observed_pages = [int(page) for page, _, _ in size_matches]
+    if len(size_matches) != page_count or set(observed_pages) != expected_pages:
+        raise GateError(
+            "pdfinfo did not report exactly one physical size for every PDF page"
+        )
+    sizes_by_page = {
+        int(page): (float(width), float(height))
+        for page, width, height in size_matches
+    }
+    return [sizes_by_page[index] for index in range(1, page_count + 1)]
+
+
+def extract_pdf_pages(path: Path) -> tuple[list[str], list[tuple[float, float]]]:
     pdftotext = shutil.which("pdftotext")
     pdfinfo = shutil.which("pdfinfo")
     if not pdftotext or not pdfinfo:
@@ -1331,11 +1481,27 @@ def extract_pdf_pages(path: Path) -> list[str]:
         raise GateError(
             f"PDF text page count mismatch: pdfinfo={page_count}, extracted={len(pages)}"
         )
-    return pages
+    box_info = run(
+        [pdfinfo, "-f", "1", "-l", str(page_count), "-box", str(path)]
+    )
+    return pages, parse_pdf_page_sizes(box_info, page_count)
 
 
 def normalize_visible_text(text: str) -> str:
     return re.sub(r"\s+", "", unicodedata.normalize("NFC", text))
+
+
+def page_contains_sbom_row(page: str, row: dict[str, str]) -> bool:
+    normalized_page = normalize_visible_text(page)
+    name_tokens = [
+        normalize_visible_text(token)
+        for token in re.split(r"\s+", row["name"].strip())
+        if token
+    ]
+    version = normalize_visible_text(row["version"])
+    return bool(name_tokens and version) and all(
+        token in normalized_page for token in (*name_tokens, version)
+    )
 
 
 def visible_report_values(content: dict[str, Any]) -> list[str]:
@@ -1391,7 +1557,16 @@ def validate_report_text_contract(docx_text: str, pdf_text: str) -> None:
             raise GateError(f"{label} is missing the development-AI/no-runtime-AI disclosure")
 
 
-def report_page_contract(pages: list[str]) -> dict[str, int]:
+def report_page_contract(
+    pages: list[str],
+    page_sizes: list[tuple[float, float]],
+    sbom_rows: list[dict[str, str]],
+) -> dict[str, int]:
+    if len(page_sizes) != len(pages):
+        raise GateError("PDF text and physical page-size counts do not match")
+    blank_pages = [index + 1 for index, page in enumerate(pages) if not page.strip()]
+    if blank_pages:
+        raise GateError(f"PDF contains blank pages: {blank_pages}")
     sbom_pages = [
         index
         for index, page in enumerate(pages)
@@ -1402,9 +1577,46 @@ def report_page_contract(pages: list[str]) -> dict[str, int]:
     body_pages = sbom_pages[0]
     if not 1 <= body_pages <= 5:
         raise GateError(f"result-report body has {body_pages} pages; official maximum is 5")
-    if sbom_pages[0] != len(pages) - 1:
-        raise GateError("project-specific Attachment 1 must remain a single final landscape page")
-    return {"body_pages": body_pages, "attachment_1_pages": 1, "total_pages": len(pages)}
+    attachment_1_pages = len(pages) - body_pages
+    if attachment_1_pages < 1:
+        raise GateError("Attachment 1 must contain at least one trailing page")
+
+    def is_a4(width: float, height: float, *, landscape: bool) -> bool:
+        expected = (
+            (A4_LONG_EDGE_POINTS, A4_SHORT_EDGE_POINTS)
+            if landscape
+            else (A4_SHORT_EDGE_POINTS, A4_LONG_EDGE_POINTS)
+        )
+        return all(
+            abs(actual - target) <= PAGE_SIZE_TOLERANCE_POINTS
+            for actual, target in zip((width, height), expected)
+        )
+
+    for index, (width, height) in enumerate(page_sizes):
+        if width <= 0 or height <= 0:
+            raise GateError(f"PDF page {index + 1} has an invalid physical size")
+        if index < body_pages and not is_a4(width, height, landscape=False):
+            raise GateError(f"result-report body page {index + 1} must be A4 portrait")
+        if index >= body_pages and not is_a4(width, height, landscape=True):
+            raise GateError(f"Attachment 1 page {index + 1} must be A4 landscape")
+
+    if not sbom_rows:
+        raise GateError("Attachment 1 has no declared SBOM rows")
+    for index in range(body_pages, len(pages)):
+        if not any(page_contains_sbom_row(pages[index], row) for row in sbom_rows):
+            raise GateError(
+                f"Attachment 1 page {index + 1} has no declared SBOM row anchor"
+            )
+    last_row = sbom_rows[-1]
+    if not page_contains_sbom_row(pages[-1], last_row):
+        raise GateError(
+            f"the last declared SBOM row is missing from final page: {last_row['name']}"
+        )
+    return {
+        "body_pages": body_pages,
+        "attachment_1_pages": attachment_1_pages,
+        "total_pages": len(pages),
+    }
 
 
 def validate_report(
@@ -1413,6 +1625,7 @@ def validate_report(
     content: dict[str, Any],
     manifest: dict[str, Any],
 ) -> dict[str, Any]:
+    validate_submission_identity_matches_content(content, manifest)
     docx_hash = sha256(docx_path)
     pdf_hash = sha256(pdf_path)
     if docx_hash != manifest["report"]["docx_sha256"]:
@@ -1427,7 +1640,7 @@ def validate_report(
     docx_text = extract_docx_text(docx_path)
     validate_docx_privacy(docx_path)
     validate_pdf_privacy(pdf_path)
-    pages = extract_pdf_pages(pdf_path)
+    pages, page_sizes = extract_pdf_pages(pdf_path)
     pdf_text = "\n".join(pages)
     validate_report_text_contract(docx_text, pdf_text)
 
@@ -1467,7 +1680,7 @@ def validate_report(
             f"final Maven install coordinate group is missing from DOCX/PDF: {expected_group}"
         )
 
-    page_metadata = report_page_contract(pages)
+    page_metadata = report_page_contract(pages, page_sizes, content["sbom"])
     return {
         "docx_sha256": docx_hash,
         "pdf_sha256": pdf_hash,
@@ -1484,6 +1697,11 @@ def zip_regular_file(archive: ZipFile, source: Path, arcname: str) -> None:
 
 
 def build_upload_zip(upload_dir: Path, output_zip: Path, expected_names: list[str]) -> None:
+    if any(name in LEGACY_SUBMISSION_FILENAMES for name in expected_names):
+        raise GateError("legacy RouteContract submission filenames are forbidden")
+    for name in expected_names:
+        if PurePosixPath(name).name != name or "\\" in name:
+            raise GateError(f"upload ZIP entry must be a safe basename: {name}")
     with ZipFile(output_zip, "w", compression=ZIP_DEFLATED, compresslevel=9) as archive:
         for name in expected_names:
             zip_regular_file(archive, upload_dir / name, name)
@@ -1496,6 +1714,17 @@ def build_upload_zip(upload_dir: Path, output_zip: Path, expected_names: list[st
                 raise GateError(f"upload ZIP byte verification failed: {name}")
 
 
+def validate_upload_directory(upload_dir: Path, expected_names: list[str]) -> None:
+    actual_names = sorted(path.name for path in upload_dir.iterdir())
+    legacy_names = sorted(set(actual_names).intersection(LEGACY_SUBMISSION_FILENAMES))
+    if legacy_names:
+        raise GateError(
+            f"legacy RouteContract submission filenames are forbidden: {legacy_names}"
+        )
+    if actual_names != sorted(expected_names):
+        raise GateError(f"official upload directory allowlist mismatch: {actual_names}")
+
+
 def validate_duplicate_confirmation(
     path: Path | None, manifest: dict[str, Any]
 ) -> tuple[Path | None, str | None]:
@@ -1506,15 +1735,10 @@ def validate_duplicate_confirmation(
                 "duplicate-benefit file was supplied while the manifest says not_applicable"
             )
         return None, None
-    if path is None:
-        raise GateError("duplicate-benefit confirmation is required but no file was supplied")
-    checked = require_file(path, "duplicate-benefit confirmation")
-    if checked.suffix.casefold() not in {".hwp", ".hwpx", ".doc", ".docx", ".pdf"}:
-        raise GateError("duplicate-benefit confirmation has an unsupported document extension")
-    actual_hash = sha256(checked)
-    if actual_hash != duplicate["sha256"]:
-        raise GateError("duplicate-benefit confirmation checksum does not match the manifest")
-    return checked, f"03_RouteContract_Duplicate_Benefit_Confirmation{checked.suffix.lower()}"
+    raise GateError(
+        "duplicate-benefit status=required is disabled until the organizer's exact "
+        "source form and identity/title contract are locally validated"
+    )
 
 
 def write_json(path: Path, value: Any) -> None:
@@ -1536,7 +1760,9 @@ def main() -> None:
     evidence_artifact = require_file(
         args.release_evidence_artifact, "downloaded release evidence artifact ZIP"
     )
-    builder_python = require_file(args.builder_python, "report builder Python")
+    builder_python = require_python_interpreter(
+        args.builder_python, "report builder Python"
+    )
     output = reject_symlink_components(
         args.output, "proposed package output", allow_missing_tail=True
     )
@@ -1548,6 +1774,7 @@ def main() -> None:
     validate_submission_deadline()
     content = load_json(content_path, "report content")
     reject_placeholders(content, "report content")
+    validate_submission_identity_matches_content(content, manifest)
     for path, label in (
         (manifest_path, "package manifest"),
         (content_path, "report content"),
@@ -1572,6 +1799,7 @@ def main() -> None:
     )
     video_metadata = validate_local_video(video_file, manifest)
     public_metadata = validate_public_evidence(manifest, video_metadata, evidence_metadata)
+    official_filenames = manifest["official_submission_filenames"]
 
     builder = repository_root / "submission" / "tools" / "build_official_report.py"
     assets_dir = repository_root / "submission" / "assets"
@@ -1580,7 +1808,7 @@ def main() -> None:
         staging = Path(temp) / output.name
         upload_dir = staging / "official-upload"
         upload_dir.mkdir(parents=True)
-        report_docx = upload_dir / REPORT_DOCX_NAME
+        report_docx = upload_dir / official_filenames["docx"]
         run(
             [
                 str(builder_python),
@@ -1597,21 +1825,17 @@ def main() -> None:
             ],
             cwd=repository_root,
         )
-        report_pdf_copy = upload_dir / REPORT_PDF_NAME
+        report_pdf_copy = upload_dir / official_filenames["pdf"]
         shutil.copy2(report_pdf, report_pdf_copy)
 
-        expected_names = [REPORT_DOCX_NAME, REPORT_PDF_NAME]
+        expected_names = [official_filenames["docx"], official_filenames["pdf"]]
         if duplicate_path and duplicate_name:
             shutil.copy2(duplicate_path, upload_dir / duplicate_name)
             expected_names.append(duplicate_name)
-        actual_upload_names = sorted(path.name for path in upload_dir.iterdir())
-        if actual_upload_names != sorted(expected_names):
-            raise GateError(
-                f"official upload directory allowlist mismatch: {actual_upload_names}"
-            )
+        validate_upload_directory(upload_dir, expected_names)
 
         report_metadata = validate_report(report_docx, report_pdf_copy, content, manifest)
-        upload_zip = staging / UPLOAD_ZIP_NAME
+        upload_zip = staging / official_filenames["zip"]
         build_upload_zip(upload_dir, upload_zip, expected_names)
 
         package_metadata = {
@@ -1619,7 +1843,7 @@ def main() -> None:
             "validated_at_utc": datetime.now(timezone.utc).isoformat(),
             "official_notice_url": NOTICE_URL,
             "official_deadline": SUBMISSION_DEADLINE.isoformat(),
-            "official_upload_zip": UPLOAD_ZIP_NAME,
+            "official_upload_zip": official_filenames["zip"],
             "official_upload_files": expected_names,
             "official_upload_file_count": len(expected_names),
             "source_video_sbom_are_not_separate_uploads": True,
@@ -1658,7 +1882,7 @@ def main() -> None:
         os.replace(staging, output)
 
     print(f"package={output}")
-    print(f"upload_zip={output / UPLOAD_ZIP_NAME}")
+    print(f"upload_zip={output / official_filenames['zip']}")
     print(f"upload_files={len(expected_names)}")
     print(f"report_pages={report_metadata['total_pages']}")
     print(f"video_seconds={video_metadata['duration_seconds']:.3f}")

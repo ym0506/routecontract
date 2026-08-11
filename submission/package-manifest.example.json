@@ -1,6 +1,14 @@
 {
   "schema_version": 1,
   "official_notice_url": "https://osscontest.kr/notice/39",
+  "submission_identity": {
+    "receipt_number": "[[APPLICATION_RECEIPT_NUMBER]]",
+    "team_name": "[[TEAM_NAME]]",
+    "registered_project_name": "[[REGISTERED_PROJECT_NAME]]",
+    "team_size": "[[TEAM_SIZE_FROM_APPLICATION]]",
+    "division": "학생",
+    "task_type": "자유과제"
+  },
   "project": {
     "slug": "routecontract",
     "repository_url": "https://github.com/ym0506/routecontract",
