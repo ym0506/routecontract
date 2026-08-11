@@ -3,7 +3,6 @@ name: Release evidence
 on:
   push:
     tags: ['v*']
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -34,11 +33,19 @@ jobs:
           validate-wrappers: true
 
       - name: Require tag and project versions to match
-        if: github.ref_type == 'tag'
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git cat-file -t "refs/tags/${GITHUB_REF_NAME}")" = 'tag'
+          test "${GITHUB_EVENT_NAME}" = 'push'
+          test "${GITHUB_REF_TYPE}" = 'tag'
+          test "${GITHUB_REF}" = "refs/tags/${GITHUB_REF_NAME}"
+          tag_ref="refs/tags/${GITHUB_REF_NAME}"
+          test "$(git cat-file -t "${tag_ref}")" = 'tag'
+          tagged_commit="$(git rev-parse "${tag_ref}^{commit}")"
+          test "${tagged_commit}" = "${GITHUB_SHA}"
+          main_commit="$(git ls-remote --exit-code origin refs/heads/main | awk 'NR == 1 { print $1 }')"
+          test -n "${main_commit}"
+          test "${tagged_commit}" = "${main_commit}"
           project_version="$(./gradlew --no-daemon -q properties | awk '/^version:/ { print $2; exit }')"
           test "v${project_version}" = "${GITHUB_REF_NAME}"
 

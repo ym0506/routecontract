@@ -45,8 +45,8 @@ python3 ../../scripts/install-release-assets.py \
 The offline installer verifies every downloaded public asset against
 `SHA256SUMS`, validates the non-SNAPSHOT POM coordinate and JAR structure, and copies
 the JARs plus versioned POM into the Maven layout. `SHA256SUMS` must list
-exactly the other public payloads (not itself) and no workflow-only logs. The installer does not
-read or modify `~/.m2`, and it refuses to overwrite an existing coordinate. A
+exactly the other public payloads (not itself) and no workflow-only logs. The installer rejects
+`~/.m2/repository` and every path below it, and it refuses to overwrite an existing coordinate. A
 checksum does not authenticate the publisher, so the input directory must
 come from the public GitHub Release for the exact tag. A release candidate is
 prerelease evidence, not the stable artifact required by the final contest gate.

@@ -79,8 +79,8 @@ structure, the source ZIP's single versioned root, path-to-package agreement
 for every Java source under conventional `src/main/java` and `src/test/java`
 roots, and the canonical `ym0506` provider namespace.
 It copies only the main, sources, and Javadoc JARs plus the POM into the
-explicit Maven layout, refuses to overwrite an existing coordinate, and does
-not read or modify the default Maven repository. Checksums verify download
+explicit Maven layout, refuses to overwrite an existing coordinate, and rejects
+the conventional `~/.m2/repository` and every path below it as its target. Checksums verify download
 integrity, not publisher identity, so obtain the assets from the public Release
 for that exact tag. The installer checks source-archive structure, required
 paths, Java packages, and provider namespace; the final submission packaging

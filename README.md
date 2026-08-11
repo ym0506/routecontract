@@ -73,8 +73,8 @@ non-SNAPSHOT POM 좌표, JAR 구조, source ZIP의 단일 버전 root와 관례�
 `src/test/java` 아래 모든 Java 파일의 경로-패키지 일치,
 canonical `ym0506` provider namespace를
 먼저 검증한 후 main/sources/Javadoc JAR와 POM만 명시한 Maven
-레이아웃에 복사합니다. 기존 좌표는 덮어쓰지 않으며 기본 Maven 저장소를 읽거나 수정하지
-않습니다. 체크섬은 다운로드 무결성을 확인할 뿐 게시자 신원을 인증하지 않으므로, 자산은
+레이아웃에 복사합니다. 기존 좌표는 덮어쓰지 않으며 관례적인 `~/.m2/repository`와 그 하위 경로를
+target으로 지정하면 거부합니다. 체크섬은 다운로드 무결성을 확인할 뿐 게시자 신원을 인증하지 않으므로, 자산은
 반드시 해당 tag의 공개 Release에서 받아야 합니다. 설치기의 source ZIP 검사는 구조·필수 경로·
 Java package/provider namespace 검사이며, release archive가 최종 tag의 tracked Git tree와
 내용·경로·실행 권한이 동일하다는

@@ -388,6 +388,10 @@ class InstallReleaseAssetsTest(unittest.TestCase):
     def test_rejects_legacy_package_namespace_in_base_and_multirelease_paths(self) -> None:
         for legacy_entry in (
             "io/github/developkim/routecontract/Legacy.class",
+            "io/github/developkim/nested/routecontract/Legacy.class",
+            "IO/GITHUB/developkim/routecontract/Legacy.class",
+            "IO/GITHUB/YM0506/routecontract/Legacy.class",
+            "io/github/routecontract/Legacy.class",
             "META-INF/versions/17/io/github/developkim/routecontract/Legacy.class",
         ):
             with self.subTest(entry=legacy_entry), tempfile.TemporaryDirectory() as raw:
@@ -428,15 +432,44 @@ class InstallReleaseAssetsTest(unittest.TestCase):
 
     def test_rejects_alternate_package_namespace_in_source_archive(self) -> None:
         unexpected_paths = (
-            "routecontract-shardingsphere-5.5/src/main/java/"
-            "io/github/developkim/routecontract/Legacy.java",
-            "routecontract-shardingsphere-5.5/src/main/java/"
-            "io/github/example-owner/routecontract/Legacy.java",
-            "routecontract-shardingsphere-5.5/src/main/java/"
-            "io/github/ym0506/routecontract/generated/"
-            "io/github/developkim/routecontract/Legacy.java",
+            (
+                "routecontract-shardingsphere-5.5/src/main/java/"
+                "io/github/developkim/routecontract/Legacy.java",
+                "unexpected RouteContract package namespace",
+            ),
+            (
+                "routecontract-shardingsphere-5.5/src/main/java/"
+                "io/github/example-owner/routecontract/Legacy.java",
+                "unexpected RouteContract package namespace",
+            ),
+            (
+                "routecontract-shardingsphere-5.5/src/main/java/"
+                "io/github/example-owner/nested/routecontract/Legacy.java",
+                "unexpected RouteContract package namespace",
+            ),
+            (
+                "routecontract-shardingsphere-5.5/src/main/java/"
+                "IO/GITHUB/example-owner/routecontract/Legacy.java",
+                "case or Unicode-normalization path collision",
+            ),
+            (
+                "routecontract-shardingsphere-5.5/src/main/java/"
+                "IO/GITHUB/YM0506/routecontract/Legacy.java",
+                "case or Unicode-normalization path collision",
+            ),
+            (
+                "routecontract-shardingsphere-5.5/src/main/java/"
+                "io/github/routecontract/Legacy.java",
+                "unexpected RouteContract package namespace",
+            ),
+            (
+                "routecontract-shardingsphere-5.5/src/main/java/"
+                "io/github/ym0506/routecontract/generated/"
+                "io/github/developkim/routecontract/Legacy.java",
+                "unexpected RouteContract package namespace",
+            ),
         )
-        for unexpected_path in unexpected_paths:
+        for unexpected_path, expected_error in unexpected_paths:
             with (
                 self.subTest(path=unexpected_path),
                 tempfile.TemporaryDirectory() as raw,
@@ -456,9 +489,7 @@ class InstallReleaseAssetsTest(unittest.TestCase):
                 )
 
                 self.assertNotEqual(0, result.returncode)
-                self.assertIn(
-                    "unexpected RouteContract package namespace", result.stderr
-                )
+                self.assertIn(expected_error, result.stderr)
                 self.assertFalse(repository.exists())
 
     def test_rejects_source_archive_missing_canonical_hook_source(self) -> None:
@@ -528,6 +559,16 @@ class InstallReleaseAssetsTest(unittest.TestCase):
         cases = (
             ("../escape.txt", None, "unsafe entry"),
             ("docs\\secret.txt", None, "unsafe entry"),
+            ("README.md.", None, "not portable across filesystems"),
+            ("docs/trailing. ", None, "not portable across filesystems"),
+            ("keys/release.key.", None, "not portable across filesystems"),
+            ("submission/private./identity.json", None, "not portable across filesystems"),
+            ("docs/.. /escape.txt", None, "not portable across filesystems"),
+            ("docs/. /inside.txt", None, "not portable across filesystems"),
+            ("docs/data:secret", None, "not portable across filesystems"),
+            ("CON.txt", None, "reserved Windows name"),
+            ("docs/COM1.log", None, "reserved Windows name"),
+            ("docs/LPT¹.log", None, "reserved Windows name"),
             ("link", stat.S_IFLNK | 0o777, "special or mismatched Unix entry"),
             ("pipe", stat.S_IFIFO | 0o600, "special or mismatched Unix entry"),
             ("typed-directory/", stat.S_IFREG | 0o644, "incompatible Unix type"),
@@ -572,8 +613,16 @@ class InstallReleaseAssetsTest(unittest.TestCase):
         cases = (
             (("README.md/",), "duplicate logical path"),
             (("docs", "docs/page.md"), "file/descendant path collision"),
-            (("Docs", "docs/page.md"), "case or Unicode-normalization file/descendant"),
+            (("Docs", "docs/page.md"), "case or Unicode-normalization path"),
+            (("Docs/", "docs/page.md"), "case or Unicode-normalization path"),
             (("Docs/Guide.md", "docs/guide.md"), "case or Unicode-normalization"),
+            (
+                (
+                    "routecontract-shardingsphere-5.5/src/",
+                    "routecontract-shardingsphere-5.5/SRC/main/java/Injected.java",
+                ),
+                "case or Unicode-normalization path",
+            ),
         )
         for entries, expected_error in cases:
             with self.subTest(entries=entries), tempfile.TemporaryDirectory() as raw:
@@ -659,10 +708,14 @@ class InstallReleaseAssetsTest(unittest.TestCase):
     def test_rejects_private_generated_and_credential_like_source_paths(self) -> None:
         forbidden_paths = (
             "private_codex/prompt.txt",
+            "PRIVATE_CODEX/prompt.txt",
+            "Private_Notes/prompt.txt",
             ".DS_Store",
             "cache/result.pyc",
             "out/generated.txt",
+            "Build/generated.txt",
             "submission/private",
+            "Submission/Private/identity.json",
             ".env.local",
             "keys/release.key",
         )
@@ -713,8 +766,10 @@ class InstallReleaseAssetsTest(unittest.TestCase):
             "\r",
             "\\u000a",
             "\\u005c\\u000a",
+            "\\u005c\\\\u000a",
             "\\u000d",
             "\\u005c\\u000d",
+            "\\u005c\\\\u000d",
         )
         for escape_prefix in escape_prefixes:
             with self.subTest(escape=escape_prefix), tempfile.TemporaryDirectory() as raw:
@@ -747,6 +802,97 @@ class InstallReleaseAssetsTest(unittest.TestCase):
                 self.assertNotEqual(0, result.returncode)
                 self.assertIn("Java package does not match its path", result.stderr)
                 self.assertFalse(repository.exists())
+
+    def test_rejects_malformed_eligible_unicode_escape_after_tandem_backslashes(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            assets = root / "release"
+            fixture = ReleaseFixture(assets)
+            fixture.create()
+            extra_java = (
+                "routecontract-shardingsphere-5.5/src/test/java/"
+                "io/github/ym0506/routecontract/Malformed.java"
+            )
+            fixture.write_source_archive(
+                extra_relative_entries=(extra_java,),
+                content_overrides={
+                    extra_java: (
+                        "// \\u005c\\\\u00G0\n"
+                        "package io.github.ym0506.routecontract;\n"
+                        "final class Malformed {}\n"
+                    )
+                },
+            )
+            fixture.write_checksums()
+            repository = root / "consumer-maven"
+
+            result = self.run_installer(assets, repository, home=root / "home")
+
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("malformed Unicode escape", result.stderr)
+            self.assertFalse(repository.exists())
+
+    def test_applies_tandem_unicode_escape_to_canonical_sources(self) -> None:
+        cases = (
+            (
+                SOURCE_PUBLIC_API_PATH,
+                (
+                    "// \\u005c\\\\u000apackage "
+                    "io.github.developkim.routecontract; /*\n"
+                    "package io.github.ym0506.routecontract; */\n"
+                    "public final class RouteContract {}\n"
+                ),
+                "public API has an unexpected package declaration",
+            ),
+            (
+                SOURCE_HOOK_PATH,
+                (
+                    "// \\u005c\\\\u000apackage "
+                    "io.github.developkim.routecontract.internal; /*\n"
+                    "package io.github.ym0506.routecontract.internal; */\n"
+                    "public final class RouteContractSqlExecutionHook "
+                    "implements SQLExecutionHook {}\n"
+                ),
+                "hook has an unexpected package declaration",
+            ),
+        )
+        for relative, content, expected_error in cases:
+            with (
+                self.subTest(path=relative),
+                tempfile.TemporaryDirectory() as raw,
+            ):
+                root = Path(raw)
+                assets = root / "release"
+                fixture = ReleaseFixture(assets)
+                fixture.create()
+                fixture.write_source_archive(content_overrides={relative: content})
+                fixture.write_checksums()
+                repository = root / "consumer-maven"
+
+                result = self.run_installer(
+                    assets, repository, home=root / "home"
+                )
+
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn(expected_error, result.stderr)
+                self.assertFalse(repository.exists())
+
+    def test_release_evidence_workflow_is_tag_push_only_and_main_bound(self) -> None:
+        workflow = (
+            REPOSITORY_ROOT / ".github/workflows/release-evidence.yml"
+        ).read_text(encoding="utf-8")
+
+        self.assertNotIn("workflow_dispatch:", workflow)
+        for required_contract in (
+            "test \"${GITHUB_EVENT_NAME}\" = 'push'",
+            "test \"${GITHUB_REF_TYPE}\" = 'tag'",
+            "test \"${tagged_commit}\" = \"${GITHUB_SHA}\"",
+            "git ls-remote --exit-code origin refs/heads/main",
+            "test \"${tagged_commit}\" = \"${main_commit}\"",
+        ):
+            self.assertIn(required_contract, workflow)
 
     def test_rejects_wrong_active_package_in_any_java_source(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
@@ -843,6 +989,69 @@ class InstallReleaseAssetsTest(unittest.TestCase):
             self.assertNotEqual(0, result.returncode)
             self.assertIn("checksum allowlist", result.stderr)
             self.assertFalse(repository.exists())
+
+    def test_rejects_non_utf8_pom_with_dtd_before_writing(self) -> None:
+        xml = f"""<?xml version="1.0" encoding="ENCODING"?>
+<!DOCTYPE project [<!ENTITY group "{GROUP_ID}">]>
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>&group;</groupId>
+  <artifactId>{ARTIFACT_ID}</artifactId>
+  <version>{VERSION}</version>
+</project>
+"""
+        for encoding in ("utf-16", "utf-32"):
+            with (
+                self.subTest(encoding=encoding),
+                tempfile.TemporaryDirectory() as raw,
+            ):
+                root = Path(raw)
+                assets = root / "release"
+                fixture = ReleaseFixture(assets)
+                fixture.create()
+                pom = assets / fixture.pom_name
+                pom.write_bytes(
+                    xml.replace("ENCODING", encoding.upper()).encode(encoding)
+                )
+                fixture.write_checksums()
+                repository = root / "consumer-maven"
+
+                result = self.run_installer(
+                    assets, repository, home=root / "home"
+                )
+
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn("valid UTF-8 XML", result.stderr)
+                self.assertFalse(repository.exists())
+
+    def test_rejects_utf8_pom_declaring_a_different_encoding(self) -> None:
+        for declared_encoding in ("UTF-16", "x-bogus"):
+            with (
+                self.subTest(encoding=declared_encoding),
+                tempfile.TemporaryDirectory() as raw,
+            ):
+                root = Path(raw)
+                assets = root / "release"
+                fixture = ReleaseFixture(assets)
+                fixture.create()
+                pom = assets / fixture.pom_name
+                text = pom.read_text(encoding="utf-8")
+                pom.write_bytes(
+                    text.replace(
+                        '<?xml version="1.0" encoding="UTF-8"?>',
+                        f'<?xml version="1.0" encoding="{declared_encoding}"?>',
+                    ).encode("utf-8")
+                )
+                fixture.write_checksums()
+                repository = root / "consumer-maven"
+
+                result = self.run_installer(
+                    assets, repository, home=root / "home"
+                )
+
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn("release POM is not valid XML", result.stderr)
+                self.assertFalse(repository.exists())
 
     def test_rejects_snapshot_coordinate_before_writing(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
@@ -947,6 +1156,33 @@ class InstallReleaseAssetsTest(unittest.TestCase):
             self.assertNotEqual(0, result.returncode)
             self.assertIn("already exists", result.stderr)
             self.assertEqual("preserve", sentinel.read_text(encoding="utf-8"))
+
+    def test_rejects_conventional_default_maven_repository(self) -> None:
+        for relative in (
+            Path(".m2/repository"),
+            Path(".m2/repository/isolated"),
+            Path(".M2/Repository"),
+            Path(".M2/Repository/isolated"),
+        ):
+            with (
+                self.subTest(relative=relative),
+                tempfile.TemporaryDirectory() as raw,
+            ):
+                root = Path(raw)
+                assets = root / "release"
+                fixture = ReleaseFixture(assets)
+                fixture.create()
+                home = root / "home"
+                home.mkdir()
+                repository = home / relative
+
+                result = self.run_installer(assets, repository, home=home)
+
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn(
+                    "must not be the conventional ~/.m2/repository", result.stderr
+                )
+                self.assertFalse(repository.exists())
 
     def test_rejects_symlink_target_repository(self) -> None:
         with tempfile.TemporaryDirectory() as raw:

@@ -33,7 +33,7 @@ EXPECTED_PROVIDER = (
 EXPECTED_GROUP_ID = "io.github.ym0506.routecontract"
 EXPECTED_PACKAGE_PREFIX = "io/github/ym0506/routecontract/"
 ROUTECONTRACT_PACKAGE_PATTERN = re.compile(
-    r"io/github/[^/]+/routecontract/"
+    r"io/github/(?:[^/]+/)*routecontract/"
 )
 MULTI_RELEASE_ENTRY_PATTERN = re.compile(
     r"META-INF/versions/[1-9][0-9]*/(.+)"
@@ -98,10 +98,51 @@ SOURCE_FORBIDDEN_PREFIXES = (
     "submission/private",
 )
 SOURCE_FORBIDDEN_SUFFIXES = (".pyc", ".pyo", ".pem", ".key", ".p12", ".pfx", ".jks")
+WINDOWS_FORBIDDEN_CHARACTERS = frozenset('<>:"|?*')
+WINDOWS_RESERVED_BASENAMES = {
+    "aux",
+    "clock$",
+    "con",
+    "conin$",
+    "conout$",
+    "nul",
+    "prn",
+    *(f"com{number}" for number in range(1, 10)),
+    *(f"lpt{number}" for number in range(1, 10)),
+    *(f"com{number}" for number in ("¹", "²", "³")),
+    *(f"lpt{number}" for number in ("¹", "²", "³")),
+}
 
 
 class InstallError(RuntimeError):
     """A validation or safe-install failure suitable for a concise CLI error."""
+
+
+def portable_source_parts(parts: tuple[str, ...], path: str) -> tuple[str, ...]:
+    """Return a Windows-portable NFC/casefold key or reject unsafe segments."""
+    result: list[str] = []
+    for part in parts:
+        normalized = unicodedata.normalize("NFC", part)
+        if normalized.endswith((".", " ")):
+            raise InstallError(
+                f"source archive path is not portable across filesystems: {path}"
+            )
+        if any(character in WINDOWS_FORBIDDEN_CHARACTERS for character in normalized):
+            raise InstallError(
+                f"source archive path is not portable across filesystems: {path}"
+            )
+        folded = normalized.casefold()
+        if folded in {"", ".", ".."}:
+            raise InstallError(
+                f"source archive path is not portable across filesystems: {path}"
+            )
+        basename = folded.split(".", 1)[0]
+        if basename in WINDOWS_RESERVED_BASENAMES:
+            raise InstallError(
+                f"source archive path uses a reserved Windows name: {path}"
+            )
+        result.append(folded)
+    return tuple(result)
 
 
 def forbidden_source_path(relative: str, parts: tuple[str, ...]) -> bool:
@@ -113,8 +154,7 @@ def forbidden_source_path(relative: str, parts: tuple[str, ...]) -> bool:
         for prefix in SOURCE_FORBIDDEN_PREFIXES
     ):
         return True
-    filename = parts[-1]
-    folded = filename.casefold()
+    folded = parts[-1]
     if folded == ".ds_store":
         return True
     if folded == ".env" or (folded.startswith(".env.") and folded != ".env.example"):
@@ -126,15 +166,20 @@ def translate_java_unicode_escapes(source: str, path: str) -> str:
     """Apply Java's pre-tokenization Unicode-escape translation once."""
     translated: list[str] = []
     index = 0
-    consecutive_backslashes = 0
+    last_output_from_unicode_escape = False
+    trailing_output_backslashes = 0
     while index < len(source):
         character = source[index]
         if character != "\\":
             translated.append(character)
-            consecutive_backslashes = 0
+            last_output_from_unicode_escape = False
+            trailing_output_backslashes = 0
             index += 1
             continue
-        eligible = consecutive_backslashes % 2 == 0
+        eligible = (
+            last_output_from_unicode_escape
+            or trailing_output_backslashes % 2 == 0
+        )
         if eligible and index + 1 < len(source) and source[index + 1] == "u":
             digits = index + 1
             while digits < len(source) and source[digits] == "u":
@@ -149,13 +194,14 @@ def translate_java_unicode_escapes(source: str, path: str) -> str:
             character = chr(int(escape, 16))
             translated.append(character)
             index = digits + 4
-            # Eligibility is based on immediately preceding raw-input
-            # backslashes. This escape ended in hexadecimal digits, so a next
-            # raw backslash is eligible even when this escape produced "\\".
-            consecutive_backslashes = 0
+            last_output_from_unicode_escape = True
+            trailing_output_backslashes = (
+                trailing_output_backslashes + 1 if character == "\\" else 0
+            )
             continue
         translated.append(character)
-        consecutive_backslashes += 1
+        last_output_from_unicode_escape = False
+        trailing_output_backslashes += 1
         index += 1
     return "".join(translated)
 
@@ -419,12 +465,18 @@ def parse_coordinate(path: Path) -> tuple[str, str]:
     if path.stat().st_size > MAX_POM_BYTES:
         raise InstallError("release POM exceeds the 1 MiB safety limit")
     raw = path.read_bytes()
-    uppercase = raw.upper()
-    if b"<!DOCTYPE" in uppercase or b"<!ENTITY" in uppercase:
+    try:
+        text = raw.decode("utf-8", errors="strict")
+    except UnicodeDecodeError as error:
+        raise InstallError("release POM must be valid UTF-8 XML") from error
+    uppercase = text.upper()
+    if "<!DOCTYPE" in uppercase or "<!ENTITY" in uppercase:
         raise InstallError("release POM must not contain a DTD or entity declaration")
     try:
+        # Parse the original bytes after the strict UTF-8 preflight so an XML
+        # declaration that claims another encoding cannot be silently ignored.
         root = ET.fromstring(raw)
-    except ET.ParseError as error:
+    except (ET.ParseError, LookupError) as error:
         raise InstallError(f"release POM is not valid XML: {error}") from error
     if root.tag.rsplit("}", 1)[-1] != "project":
         raise InstallError("release POM root element must be project")
@@ -546,9 +598,21 @@ def validate_archive(
             for name in names:
                 multi_release = MULTI_RELEASE_ENTRY_PATTERN.fullmatch(name)
                 package_path = multi_release.group(1) if multi_release else name
-                if (
-                    ROUTECONTRACT_PACKAGE_PATTERN.match(package_path)
-                    and not package_path.startswith(EXPECTED_PACKAGE_PREFIX)
+                portable_package_path = unicodedata.normalize(
+                    "NFC", package_path
+                ).casefold()
+                portable_candidates = list(
+                    ROUTECONTRACT_PACKAGE_PATTERN.finditer(portable_package_path)
+                )
+                exact_candidates = list(
+                    ROUTECONTRACT_PACKAGE_PATTERN.finditer(package_path)
+                )
+                if portable_candidates and (
+                    len(portable_candidates) != len(exact_candidates)
+                    or any(
+                        match.group(0) != EXPECTED_PACKAGE_PREFIX
+                        for match in exact_candidates
+                    )
                 ):
                     unexpected_namespaces.append(name)
             unexpected_namespaces.sort()
@@ -674,14 +738,25 @@ def validate_source_archive(path: Path, version: str) -> None:
                         f"source archive contains a duplicate logical path: {logical_name}"
                     )
                 logical_entries[logical_name] = is_directory
-                portable_name = unicodedata.normalize("NFC", logical_name).casefold()
-                previous = portable_entries.get(portable_name)
-                if previous is not None and previous != logical_name:
-                    raise InstallError(
-                        "source archive contains a case or Unicode-normalization path "
-                        f"collision: {previous!r}, {logical_name!r}"
-                    )
-                portable_entries[portable_name] = logical_name
+                portable_parts = portable_source_parts(
+                    PurePosixPath(logical_name).parts, logical_name
+                )
+                portable_name = PurePosixPath(*portable_parts).as_posix()
+                logical_parts = PurePosixPath(logical_name).parts
+                for length in range(1, len(logical_parts) + 1):
+                    logical_prefix = PurePosixPath(
+                        *logical_parts[:length]
+                    ).as_posix()
+                    portable_prefix = PurePosixPath(
+                        *portable_parts[:length]
+                    ).as_posix()
+                    previous = portable_entries.get(portable_prefix)
+                    if previous is not None and previous != logical_prefix:
+                        raise InstallError(
+                            "source archive contains a case or Unicode-normalization "
+                            f"path collision: {previous!r}, {logical_prefix!r}"
+                        )
+                    portable_entries[portable_prefix] = logical_prefix
                 uncompressed += info.file_size
                 if uncompressed > MAX_SOURCE_ARCHIVE_UNCOMPRESSED_BYTES:
                     raise InstallError(
@@ -700,15 +775,30 @@ def validate_source_archive(path: Path, version: str) -> None:
                         )
                     continue
                 relative = PurePosixPath(*relative_parts).as_posix()
-                if forbidden_source_path(relative, relative_parts):
+                portable_relative_parts = portable_parts[1:]
+                portable_relative = PurePosixPath(
+                    *portable_relative_parts
+                ).as_posix()
+                if forbidden_source_path(
+                    portable_relative, portable_relative_parts
+                ):
                     raise InstallError(
                         f"source archive contains a private or generated path: {relative}"
                     )
-                package_namespaces = {
-                    match.group(0)
-                    for match in ROUTECONTRACT_PACKAGE_PATTERN.finditer(relative)
-                }
-                if package_namespaces - {EXPECTED_PACKAGE_PREFIX}:
+                portable_relative = unicodedata.normalize("NFC", relative).casefold()
+                portable_candidates = list(
+                    ROUTECONTRACT_PACKAGE_PATTERN.finditer(portable_relative)
+                )
+                exact_candidates = list(
+                    ROUTECONTRACT_PACKAGE_PATTERN.finditer(relative)
+                )
+                if portable_candidates and (
+                    len(portable_candidates) != len(exact_candidates)
+                    or any(
+                        match.group(0) != EXPECTED_PACKAGE_PREFIX
+                        for match in exact_candidates
+                    )
+                ):
                     unexpected_namespaces.append(relative)
                 if is_directory:
                     continue
@@ -727,10 +817,7 @@ def validate_source_archive(path: Path, version: str) -> None:
                 for length in range(1, len(parts)):
                     portable_ancestor = PurePosixPath(*parts[:length]).as_posix()
                     ancestor_name = portable_entries.get(portable_ancestor)
-                    if (
-                        ancestor_name is not None
-                        and not logical_entries[ancestor_name]
-                    ):
+                    if logical_entries.get(ancestor_name) is False:
                         raise InstallError(
                             "source archive contains a case or Unicode-normalization "
                             "file/descendant collision: "
@@ -916,6 +1003,21 @@ def run(argv: list[str]) -> int:
         raise InstallError("target Maven repository must not be a symlink")
     assets = assets_argument.resolve(strict=True)
     repository = repository_argument.resolve(strict=False)
+    conventional_default_repository = (
+        Path.home() / ".m2" / "repository"
+    ).resolve(strict=False)
+    repository_key = tuple(
+        unicodedata.normalize("NFC", part).casefold() for part in repository.parts
+    )
+    conventional_default_key = tuple(
+        unicodedata.normalize("NFC", part).casefold()
+        for part in conventional_default_repository.parts
+    )
+    if repository_key[: len(conventional_default_key)] == conventional_default_key:
+        raise InstallError(
+            "target Maven repository must not be the conventional "
+            "~/.m2/repository or any path below it"
+        )
     if paths_overlap(assets, repository):
         raise InstallError("release assets and target Maven repository must not overlap")
 
@@ -950,7 +1052,7 @@ def run(argv: list[str]) -> int:
     print(f"Installed coordinate: {group}:{ARTIFACT_ID}:{version}")
     print(f"Explicit Maven repository: {repository}")
     print(f"Installed files: {destination}")
-    print("No default Maven repository was read or modified by this installer.")
+    print("No artifacts were installed under the conventional ~/.m2/repository.")
     return 0
 
 

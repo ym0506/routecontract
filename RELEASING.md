@@ -40,7 +40,9 @@ strict `-rcN` forms and rejects snapshots. The final contest package still
 requires the immutable stable `v0.1.0` release. Pushing a matching tag runs the
 read-only `Release evidence` workflow. The workflow:
 
-- validates the Wrapper and tag/version match;
+- accepts only a tag-push event, validates the Wrapper and annotated
+  tag/version match, and requires the peeled tag commit to equal both the
+  workflow revision and the current public `origin/main` head;
 - runs unit and real MySQL integration tests without reusing cached task results;
 - generates `test-summary.txt` from the resulting JUnit XML and fails unless
   the exact seven expected suites contain 50 passing, non-skipped tests; the
@@ -96,9 +98,12 @@ release-evidence run:
 Only after every draft check passes may the draft be published. Immediately
 after publication, require the Release API to report `immutable: true`, run
 `gh release verify`, and run `gh release verify-asset` successfully for each of
-the eleven downloaded assets. If any prepublication or postpublication check
-fails, stop and create a new `-rcN` tag after fixing the cause; never replace an
-asset or retag an immutable public Release.
+the eleven downloaded assets. If an RC prepublication or postpublication check
+fails, stop and create a new `-rcN` tag after fixing the cause. If an immutable
+stable release fails a postpublication check, stop using it as final evidence,
+fix the cause, create a new stable patch version and update the final manifest
+and documentation to that corrected release. Never replace an asset or retag
+an immutable public Release.
 
 The environment record, resolved MySQL image record and standalone-consumer
 log remain only in the revision-bound workflow artifact. The test summary is
