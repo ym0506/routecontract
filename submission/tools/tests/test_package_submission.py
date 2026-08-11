@@ -440,6 +440,7 @@ class ReportContentSbomTest(unittest.TestCase):
         }
         self.assertEqual(
             {
+                "certifi==2026.7.22",
                 "Pillow==12.3.0",
                 "lxml==6.1.1",
                 "python-docx==1.2.0",
@@ -953,6 +954,42 @@ class ReleaseEvidenceTest(unittest.TestCase):
 
 
 class PublicEvidenceTest(unittest.TestCase):
+    def test_tls_context_uses_the_pinned_certifi_bundle(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            ca_bundle = Path(raw) / "cacert.pem"
+            ca_bundle.write_text("test CA bundle", encoding="utf-8")
+            fake_certifi = type(
+                "FakeCertifi",
+                (),
+                {"where": staticmethod(lambda: str(ca_bundle))},
+            )
+            sentinel = object()
+            with patch.object(
+                package_submission.importlib,
+                "import_module",
+                return_value=fake_certifi,
+            ) as import_module, patch.object(
+                package_submission.ssl,
+                "create_default_context",
+                return_value=sentinel,
+            ) as create_context:
+                context = package_submission.verified_tls_context()
+
+            self.assertIs(sentinel, context)
+            import_module.assert_called_once_with("certifi")
+            create_context.assert_called_once_with(cafile=str(ca_bundle))
+
+    def test_tls_context_fails_without_certifi(self) -> None:
+        with patch.object(
+            package_submission.importlib,
+            "import_module",
+            side_effect=ModuleNotFoundError("certifi"),
+        ):
+            with self.assertRaisesRegex(
+                package_submission.GateError, "pinned certifi CA bundle"
+            ):
+                package_submission.verified_tls_context()
+
     def test_youtube_probe_ignores_local_config_and_playlists(self) -> None:
         url = "https://www.youtube.com/watch?v=abcdefghijk"
         commands: list[list[str]] = []
@@ -1002,6 +1039,9 @@ class PublicEvidenceTest(unittest.TestCase):
                     "status": "completed",
                     "conclusion": "success",
                     "head_sha": project["commit"],
+                    "head_branch": project["tag"],
+                    "event": "push",
+                    "path": ".github/workflows/release-evidence.yml",
                     "name": "Release evidence",
                     "repository": {"full_name": "example-owner/routecontract"},
                 }
@@ -1011,18 +1051,24 @@ class PublicEvidenceTest(unittest.TestCase):
                     "name": f"routecontract-release-evidence-{project['commit']}",
                     "expired": False,
                     "digest": f"sha256:{digest('a')}",
-                    "workflow_run": {"id": 123456, "head_sha": project["commit"]},
+                    "workflow_run": {
+                        "id": 123456,
+                        "head_sha": project["commit"],
+                        "head_branch": project["tag"],
+                    },
                 }
             if "/releases/tags/" in url:
                 return {
                     "id": 7,
                     "draft": False,
                     "prerelease": False,
+                    "immutable": True,
                     "tag_name": project["tag"],
                     "html_url": project["release_url"],
                     "assets": [
                         {
                             "name": evidence["source_archive_filename"],
+                            "state": "uploaded",
                             "size": 123,
                             "digest": f"sha256:{digest('5')}",
                         }
@@ -1041,17 +1087,256 @@ class PublicEvidenceTest(unittest.TestCase):
             "title": "RouteContract demo",
             "duration_seconds": 179.0,
         }
-        with patch.object(package_submission, "request_json", side_effect=fake_json), patch.object(
+        with patch.object(
+            package_submission, "request_json", side_effect=fake_json
+        ), patch.object(
             package_submission, "public_youtube_metadata", return_value=youtube
-        ):
+        ), patch.object(
+            package_submission, "verify_release_attestations"
+        ) as verify_attestations:
             result = package_submission.validate_public_evidence(
-                manifest, {"duration_seconds": 179.5}, evidence
+                manifest, {"duration_seconds": 179.5}, evidence, Path("/evidence")
             )
         self.assertEqual("success", result["ci_conclusion"])
         self.assertEqual("v0.1.0", result["release_tag"])
+        self.assertIs(True, result["release_immutable"])
+        verify_attestations.assert_called_once_with(
+            manifest, evidence, Path("/evidence")
+        )
+
+    def test_release_attestation_verifier_checks_release_and_every_asset(self) -> None:
+        manifest = package_submission.validate_manifest(valid_manifest())
+        evidence = {
+            "public_release_assets": {
+                "SHA256SUMS": {"sha256": digest("1"), "size": 1},
+                "routecontract-0.1.0-source.zip": {
+                    "sha256": digest("2"),
+                    "size": 1,
+                },
+            }
+        }
+        with tempfile.TemporaryDirectory() as raw:
+            evidence_dir = Path(raw)
+            for asset_name in evidence["public_release_assets"]:
+                (evidence_dir / asset_name).write_bytes(b"x")
+            commands: list[list[str]] = []
+
+            with patch.object(
+                package_submission.shutil, "which", return_value="/usr/local/bin/gh"
+            ), patch.object(
+                package_submission,
+                "run",
+                side_effect=lambda command: commands.append(command) or "",
+            ):
+                package_submission.verify_release_attestations(
+                    manifest, evidence, evidence_dir
+                )
+
+            repository = "example-owner/routecontract"
+            tag = manifest["project"]["tag"]
+            self.assertEqual(
+                [
+                    [
+                        "/usr/local/bin/gh",
+                        "release",
+                        "verify",
+                        tag,
+                        "--repo",
+                        repository,
+                    ],
+                    [
+                        "/usr/local/bin/gh",
+                        "release",
+                        "verify-asset",
+                        tag,
+                        str(evidence_dir / "SHA256SUMS"),
+                        "--repo",
+                        repository,
+                    ],
+                    [
+                        "/usr/local/bin/gh",
+                        "release",
+                        "verify-asset",
+                        tag,
+                        str(evidence_dir / "routecontract-0.1.0-source.zip"),
+                        "--repo",
+                        repository,
+                    ],
+                ],
+                commands,
+            )
+
+    def test_release_attestation_verifier_fails_without_github_cli(self) -> None:
+        manifest = package_submission.validate_manifest(valid_manifest())
+        with patch.object(package_submission.shutil, "which", return_value=None):
+            with self.assertRaisesRegex(package_submission.GateError, "GitHub CLI"):
+                package_submission.verify_release_attestations(
+                    manifest, {"public_release_assets": {}}, Path("/evidence")
+                )
+
+    def test_rejects_non_tag_push_release_evidence_run(self) -> None:
+        manifest = package_submission.validate_manifest(valid_manifest())
+        project = manifest["project"]
+        evidence = {"public_release_assets": {}}
+        base_run = {
+            "status": "completed",
+            "conclusion": "success",
+            "head_sha": project["commit"],
+            "head_branch": project["tag"],
+            "event": "push",
+            "path": ".github/workflows/release-evidence.yml",
+            "name": "Release evidence",
+            "repository": {"full_name": "example-owner/routecontract"},
+        }
+        cases = (
+            {"event": "workflow_dispatch"},
+            {"head_branch": "main"},
+            {"path": ".github/workflows/ci.yml"},
+            {"path": ".github/workflows/release-evidence.yml@evil.yaml"},
+        )
+        for override in cases:
+            with self.subTest(override=override):
+
+                def fake_json(url: str) -> dict:
+                    if "/actions/runs/" in url:
+                        return base_run | override
+                    if "/commits/" in url:
+                        return {"sha": project["commit"]}
+                    return {
+                        "private": False,
+                        "archived": False,
+                        "full_name": "example-owner/routecontract",
+                    }
+
+                with patch.object(
+                    package_submission, "request_json", side_effect=fake_json
+                ):
+                    with self.assertRaisesRegex(
+                        package_submission.GateError, "expected tag-push workflow"
+                    ):
+                        package_submission.validate_public_evidence(
+                            manifest,
+                            {"duration_seconds": 179.5},
+                            evidence,
+                            Path("/evidence"),
+                        )
+
+    def test_rejects_artifact_for_non_tag_branch(self) -> None:
+        manifest = package_submission.validate_manifest(valid_manifest())
+        project = manifest["project"]
+        evidence = {"public_release_assets": {}}
+
+        def fake_json(url: str) -> dict:
+            if "/actions/runs/" in url:
+                return {
+                    "status": "completed",
+                    "conclusion": "success",
+                    "head_sha": project["commit"],
+                    "head_branch": project["tag"],
+                    "event": "push",
+                    "path": ".github/workflows/release-evidence.yml",
+                    "name": "Release evidence",
+                    "repository": {"full_name": "example-owner/routecontract"},
+                }
+            if "/actions/artifacts/" in url:
+                return {
+                    "id": 987654,
+                    "name": f"routecontract-release-evidence-{project['commit']}",
+                    "expired": False,
+                    "digest": f"sha256:{digest('a')}",
+                    "workflow_run": {
+                        "id": 123456,
+                        "head_sha": project["commit"],
+                        "head_branch": "main",
+                    },
+                }
+            if "/commits/" in url:
+                return {"sha": project["commit"]}
+            return {
+                "private": False,
+                "archived": False,
+                "full_name": "example-owner/routecontract",
+            }
+
+        with patch.object(package_submission, "request_json", side_effect=fake_json):
+            with self.assertRaisesRegex(package_submission.GateError, "artifact ID/digest"):
+                package_submission.validate_public_evidence(
+                    manifest,
+                    {"duration_seconds": 179.5},
+                    evidence,
+                    Path("/evidence"),
+                )
+
+    def test_rejects_mutable_or_unreported_release_immutability(self) -> None:
+        manifest = package_submission.validate_manifest(valid_manifest())
+        project = manifest["project"]
+        evidence = {"public_release_assets": {}}
+        for immutable in (False, None):
+            with self.subTest(immutable=immutable):
+
+                def fake_json(url: str) -> dict:
+                    if "/actions/runs/" in url:
+                        return {
+                            "status": "completed",
+                            "conclusion": "success",
+                            "head_sha": project["commit"],
+                            "head_branch": project["tag"],
+                            "event": "push",
+                            "path": ".github/workflows/release-evidence.yml",
+                            "name": "Release evidence",
+                            "repository": {
+                                "full_name": "example-owner/routecontract"
+                            },
+                        }
+                    if "/actions/artifacts/" in url:
+                        return {
+                            "id": 987654,
+                            "name": (
+                                "routecontract-release-evidence-"
+                                f"{project['commit']}"
+                            ),
+                            "expired": False,
+                            "digest": f"sha256:{digest('a')}",
+                            "workflow_run": {
+                                "id": 123456,
+                                "head_sha": project["commit"],
+                                "head_branch": project["tag"],
+                            },
+                        }
+                    if "/releases/tags/" in url:
+                        return {
+                            "id": 7,
+                            "draft": False,
+                            "prerelease": False,
+                            "immutable": immutable,
+                            "tag_name": project["tag"],
+                            "html_url": project["release_url"],
+                            "assets": [],
+                        }
+                    if "/commits/" in url:
+                        return {"sha": project["commit"]}
+                    return {
+                        "private": False,
+                        "archived": False,
+                        "full_name": "example-owner/routecontract",
+                    }
+
+                with patch.object(
+                    package_submission, "request_json", side_effect=fake_json
+                ):
+                    with self.assertRaisesRegex(
+                        package_submission.GateError, "not immutable"
+                    ):
+                        package_submission.validate_public_evidence(
+                            manifest,
+                            {"duration_seconds": 179.5},
+                            evidence,
+                            Path("/evidence"),
+                        )
 
     def test_rejects_release_run_for_different_commit(self) -> None:
         manifest = package_submission.validate_manifest(valid_manifest())
+        project = manifest["project"]
         evidence = {
             "source_archive_filename": "routecontract-0.1.0-source.zip",
             "source_archive_sha256": digest("5"),
@@ -1067,6 +1352,9 @@ class PublicEvidenceTest(unittest.TestCase):
                     "status": "completed",
                     "conclusion": "success",
                     "head_sha": "0" * 40,
+                    "head_branch": project["tag"],
+                    "event": "push",
+                    "path": ".github/workflows/release-evidence.yml",
                     "name": "Release evidence",
                     "repository": {"full_name": "example-owner/routecontract"},
                 }
@@ -1081,7 +1369,10 @@ class PublicEvidenceTest(unittest.TestCase):
         with patch.object(package_submission, "request_json", side_effect=fake_json):
             with self.assertRaisesRegex(package_submission.GateError, "not green"):
                 package_submission.validate_public_evidence(
-                    manifest, {"duration_seconds": 179.5}, evidence
+                    manifest,
+                    {"duration_seconds": 179.5},
+                    evidence,
+                    Path("/evidence"),
                 )
 
 

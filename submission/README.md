@@ -14,7 +14,8 @@ submission/private/report-builder-venv/bin/python -m pip install \
 ```
 
 `--no-deps` is intentional: the requirements file pins the complete runtime
-closure, including python-docx's `typing_extensions` dependency. Build the
+closure, including python-docx's `typing_extensions` dependency and the
+`certifi` CA bundle used by the final public-evidence HTTPS checks. Build the
 draft with that interpreter:
 
 ```bash
@@ -87,8 +88,9 @@ the old fixed English report and ZIP filenames are rejected.
 
 Before the final run, install the pinned report-builder environment above and
 confirm these host tools: Poppler's `pdfinfo`, `pdfdetach`, and `pdftotext`;
-`ffprobe` (or macOS `mdls`) for the local video; and `yt-dlp` for the public
-YouTube duration check. A missing verifier is a hard failure, not a skipped
+`ffprobe` (or macOS `mdls`) for the local video; `yt-dlp` for the public
+YouTube duration check; and GitHub CLI with `gh release verify` and
+`gh release verify-asset`. A missing verifier is a hard failure, not a skipped
 check. If duplicate-benefit status is required, obtain and retain the exact
 organizer form and implement its title/identity/placeholder validation before
 enabling that path; do not substitute an arbitrary document.
@@ -107,7 +109,10 @@ cp submission/package-manifest.example.json \
 Replace every `[[...]]` gate in those private copies, export the PDF from the
 strictly generated DOCX, and set every participant attestation to `true` only
 after checking it. The final tag must be an annotated, stable `vMAJOR.MINOR.PATCH`
-tag and its GitHub Release must be public, non-draft and non-prerelease.
+tag and its GitHub Release must be public, non-draft, non-prerelease and
+immutable. The selected Actions evidence must be a successful push run for that
+exact tag and revision; the gate cryptographically verifies the Release and
+every one of its attached public assets with GitHub's release attestations.
 
 Set `submission_identity.receipt_number`, `team_name`,
 `registered_project_name`, `team_size`, `division` and `task_type` to the exact
@@ -141,7 +146,8 @@ Actions artifact ID/digest, byte-identical extraction and exact evidence
 allowlist. Then run:
 
 ```bash
-python3 submission/tools/package_submission.py \
+submission/private/report-builder-venv/bin/python \
+  submission/tools/package_submission.py \
   --manifest submission/private/package-manifest.final.json \
   --template /absolute/path/to/official-result-report-template.docx \
   --content submission/private/report-content.final.ko.json \

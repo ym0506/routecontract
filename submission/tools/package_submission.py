@@ -11,10 +11,12 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib
 import json
 import os
 import re
 import shutil
+import ssl
 import stat
 import subprocess
 import sys
@@ -1116,17 +1118,41 @@ def validate_local_video(path: Path, manifest: dict[str, Any]) -> dict[str, Any]
     return metadata
 
 
+def verified_tls_context() -> ssl.SSLContext:
+    """Build a TLS context from the version-pinned certifi CA bundle."""
+    try:
+        certifi = importlib.import_module("certifi")
+    except ModuleNotFoundError as error:
+        raise GateError(
+            "the pinned certifi CA bundle is required; run this gate with the "
+            "report-builder virtual environment"
+        ) from error
+    try:
+        ca_bundle = Path(certifi.where())
+    except (AttributeError, TypeError) as error:
+        raise GateError("certifi did not provide a usable CA bundle path") from error
+    if ca_bundle.is_symlink() or not ca_bundle.is_file():
+        raise GateError("certifi CA bundle is not a regular file")
+    try:
+        return ssl.create_default_context(cafile=str(ca_bundle))
+    except (OSError, ssl.SSLError) as error:
+        raise GateError(f"could not load the certifi CA bundle: {error}") from error
+
+
 def request_bytes(url: str, *, accept: str | None = None, limit: int | None = None) -> bytes:
     headers = {"User-Agent": "RouteContract-contest-submission-verifier/1"}
     if accept:
         headers["Accept"] = accept
     token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
-    if token and "api.github.com" in urllib.parse.urlparse(url).netloc:
-        headers["Authorization"] = f"Bearer {token}"
-        headers["X-GitHub-Api-Version"] = "2022-11-28"
+    if urllib.parse.urlparse(url).netloc == "api.github.com":
+        headers["X-GitHub-Api-Version"] = "2026-03-10"
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
     request = urllib.request.Request(url, headers=headers)
     try:
-        with urllib.request.urlopen(request, timeout=20) as response:
+        with urllib.request.urlopen(
+            request, timeout=20, context=verified_tls_context()
+        ) as response:
             data = response.read() if limit is None else response.read(limit + 1)
     except (urllib.error.URLError, TimeoutError) as error:
         raise GateError(f"public URL is unavailable: {url}: {error}") from error
@@ -1151,7 +1177,9 @@ def hash_remote_file(url: str, expected_size: int) -> str:
     headers = {"User-Agent": "RouteContract-contest-submission-verifier/1"}
     request = urllib.request.Request(url, headers=headers)
     try:
-        with urllib.request.urlopen(request, timeout=30) as response:
+        with urllib.request.urlopen(
+            request, timeout=30, context=verified_tls_context()
+        ) as response:
             for chunk in iter(lambda: response.read(1024 * 1024), b""):
                 total += len(chunk)
                 if total > expected_size:
@@ -1209,8 +1237,42 @@ def public_youtube_metadata(url: str) -> dict[str, Any]:
     return {"id": video_id, "title": title, "duration_seconds": duration}
 
 
+def verify_release_attestations(
+    manifest: dict[str, Any], evidence: dict[str, Any], evidence_dir: Path
+) -> None:
+    """Verify the immutable Release and every attached asset with GitHub attestations."""
+    gh = shutil.which("gh")
+    if gh is None:
+        raise GateError(
+            "GitHub CLI with release verify/verify-asset support is required"
+        )
+    project = manifest["project"]
+    repository = f"{manifest['github_owner']}/{manifest['github_repository']}"
+    run([gh, "release", "verify", project["tag"], "--repo", repository])
+    for asset_name in sorted(evidence["public_release_assets"]):
+        asset_path = evidence_dir / asset_name
+        if asset_path.is_symlink() or not asset_path.is_file():
+            raise GateError(
+                f"release attestation input is not a regular file: {asset_name}"
+            )
+        run(
+            [
+                gh,
+                "release",
+                "verify-asset",
+                project["tag"],
+                str(asset_path),
+                "--repo",
+                repository,
+            ]
+        )
+
+
 def validate_public_evidence(
-    manifest: dict[str, Any], local_video: dict[str, Any], evidence: dict[str, Any]
+    manifest: dict[str, Any],
+    local_video: dict[str, Any],
+    evidence: dict[str, Any],
+    evidence_dir: Path,
 ) -> dict[str, Any]:
     project = manifest["project"]
     owner = manifest["github_owner"]
@@ -1237,6 +1299,15 @@ def validate_public_evidence(
         or run_data.get("name") != "Release evidence"
     ):
         raise GateError("public Release evidence workflow is not green for the final commit")
+    expected_workflow_path = ".github/workflows/release-evidence.yml"
+    if (
+        run_data.get("event") != "push"
+        or run_data.get("head_branch") != project["tag"]
+        or run_data.get("path") != expected_workflow_path
+    ):
+        raise GateError(
+            "public Release evidence run is not the expected tag-push workflow"
+        )
     run_repo = (run_data.get("repository") or {}).get("full_name", "")
     if str(run_repo).casefold() != f"{owner}/{repository}".casefold():
         raise GateError("Actions run belongs to a different repository")
@@ -1253,6 +1324,7 @@ def validate_public_evidence(
         != f"sha256:{manifest['release_evidence']['workflow_artifact_sha256']}"
         or artifact_run.get("id") != int(run_id)
         or artifact_run.get("head_sha") != project["commit"]
+        or artifact_run.get("head_branch") != project["tag"]
     ):
         raise GateError(
             "public workflow artifact ID/digest/run/revision does not match local release evidence"
@@ -1267,6 +1339,8 @@ def validate_public_evidence(
         or release_data.get("tag_name") != project["tag"]
     ):
         raise GateError("final GitHub Release is draft/prerelease or has the wrong tag")
+    if release_data.get("immutable") is not True:
+        raise GateError("final GitHub Release is not immutable")
     if release_data.get("html_url") != project["release_url"]:
         raise GateError("public GitHub Release URL does not match the manifest")
     release_assets_by_name: dict[str, list[dict[str, Any]]] = {}
@@ -1284,6 +1358,8 @@ def validate_public_evidence(
         if len(matching_assets) != 1:
             raise GateError(f"GitHub Release must contain exactly one {asset_name} asset")
         asset = matching_assets[0]
+        if asset.get("state") != "uploaded":
+            raise GateError(f"GitHub Release asset is not fully uploaded: {asset_name}")
         if asset.get("size") != expected["size"]:
             raise GateError(f"GitHub Release asset size mismatch: {asset_name}")
         published_digest = asset.get("digest")
@@ -1294,6 +1370,8 @@ def validate_public_evidence(
             remote_hash = hash_remote_file(asset["browser_download_url"], expected["size"])
             if remote_hash != expected["sha256"]:
                 raise GateError(f"downloaded GitHub Release checksum mismatch: {asset_name}")
+
+    verify_release_attestations(manifest, evidence, evidence_dir)
 
     youtube = public_youtube_metadata(manifest["video"]["youtube_url"])
     if youtube["title"] != manifest["video"]["title"]:
@@ -1317,6 +1395,7 @@ def validate_public_evidence(
         ],
         "release_id": release_data.get("id"),
         "release_tag": release_data["tag_name"],
+        "release_immutable": release_data["immutable"],
         "youtube_video_id": youtube["id"],
         "youtube_title": youtube["title"],
         "youtube_duration_seconds": youtube["duration_seconds"],
@@ -1798,7 +1877,9 @@ def main() -> None:
         evidence_dir, evidence_artifact, manifest, repository_root
     )
     video_metadata = validate_local_video(video_file, manifest)
-    public_metadata = validate_public_evidence(manifest, video_metadata, evidence_metadata)
+    public_metadata = validate_public_evidence(
+        manifest, video_metadata, evidence_metadata, evidence_dir
+    )
     official_filenames = manifest["official_submission_filenames"]
 
     builder = repository_root / "submission" / "tools" / "build_official_report.py"

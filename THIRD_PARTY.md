@@ -58,6 +58,7 @@ closure is pinned in `submission/report-builder-requirements.txt`.
 | Pillow | 12.3.0 | PNG format and 1200×675 evidence-asset validation | MIT-CMU |
 | lxml | 6.1.1 | OOXML core-property parsing and deterministic sanitization | BSD-3-Clause |
 | typing_extensions | 4.16.0 | Runtime compatibility dependency required by python-docx | PSF-2.0 |
+| certifi | 2026.7.22 | Pinned Mozilla CA bundle for final public-evidence HTTPS verification | MPL-2.0 |
 
 License identifiers and names above were checked against the projects' Maven
 metadata or upstream license files. Before a release, review the generated
