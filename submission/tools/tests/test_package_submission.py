@@ -410,6 +410,28 @@ class ReportContractTest(unittest.TestCase):
 
 
 class ReportContentSbomTest(unittest.TestCase):
+    def test_report_comparison_figure_excludes_fixture_identifiers(self) -> None:
+        submission_root = SCRIPT.parents[1]
+        svg = (submission_root / "assets" / "baseline-candidate.svg").read_text(
+            encoding="utf-8"
+        )
+        content = (submission_root / "report-content.ko.json").read_text(
+            encoding="utf-8"
+        )
+        combined = svg + "\n" + content
+
+        for forbidden in ("user_id", "row 201", "= 3", "BETWEEN 3"):
+            with self.subTest(forbidden=forbidden):
+                self.assertNotIn(forbidden, combined)
+        self.assertIn("one synthetic fixture row", svg)
+        self.assertIn("동일한 단일 fixture 행", content)
+
+        png = (submission_root / "assets" / "baseline-candidate.png").read_bytes()
+        self.assertEqual(
+            "f4e94a5d64c7fde85aae58c36435a4a49ba5929fe67d6ccaf06ac64d2913b537",
+            hashlib.sha256(png).hexdigest(),
+        )
+
     def test_current_content_declares_exactly_ten_prioritized_rows(self) -> None:
         content_path = SCRIPT.parents[1] / "report-content.ko.json"
         with content_path.open(encoding="utf-8") as stream:

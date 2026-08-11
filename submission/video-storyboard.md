@@ -55,7 +55,13 @@ observed JDBC attempts ≠ complete route plan ≠ transaction commit
 
 ## 0:21–0:35 — 설치와 최소 API
 
-화면은 배포 JAR 좌표와 아래 코드만 크게 보여 준다.
+화면은 먼저 아래 설치 경계를 보여 준 뒤 좌표와 코드를 크게 보여 준다. Maven Central에
+게시된 것처럼 보이면 안 된다.
+
+```text
+immutable GitHub Release assets → SHA-256 / attestation verification
+→ explicit isolated Maven repository · not published to Maven Central
+```
 
 ```gradle
 testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0")
@@ -81,7 +87,7 @@ capture → ShardingSphere-JDBC 5.5.3 SQLExecutionHook → minimized snapshot
 
 내레이션:
 
-> JAR의 SPI는 자동 발견됩니다. 기존 assertion은 유지하고, capture 결과를 최소정보 manifest와 CI assertion으로 연결합니다.
+> 검증한 GitHub Release 자산을 명시한 격리 Maven 저장소에 설치하면 JAR의 SPI가 자동 발견됩니다. 기존 assertion은 유지하고, capture 결과를 최소정보 manifest와 CI assertion으로 연결합니다.
 
 ## 0:35–1:10 — 실제 MySQL baseline과 candidate
 
@@ -103,13 +109,14 @@ approvedAliases         [orders-odd]
 candidateAliases        [orders-even,orders-odd]
 verificationStatus      POLICY_VIOLATION
 blockingCodes           [RCM201,RCM202]
-privacy                 MINIMIZED | screen output allowlisted
+privacy                 raw child output withheld | raw SQL/binds not retained
+aliases                 reviewed aliases remain | minimized != anonymized
 demo_exit               0
 ```
 
 내레이션:
 
-> 고정한 MySQL 8.4.11 두 개와 ShardingSphere-JDBC 5.5.3을 실행합니다. 두 조건은 같은 한 행을 반환하지만 관측 시도와 data source는 한 개에서 두 개로 늘어 RCM201과 RCM202가 발생합니다.
+> 고정한 MySQL 8.4.11 두 개와 ShardingSphere-JDBC 5.5.3을 실행합니다. 두 조건은 같은 한 행을 반환하지만 hook이 보고한 시도와 관측 alias 수는 한 개에서 두 개로 늘어 RCM201과 RCM202가 발생합니다.
 
 녹화 규칙:
 
@@ -172,7 +179,8 @@ observedAliases         [orders-odd] -> [orders-odd]
 fingerprintMultiset     CHANGED
 verificationStatus      DRIFT
 blockingCodes           [RCM301,RCM302]
-privacy                 MINIMIZED | screen output allowlisted
+privacy                 raw child output withheld | raw SQL/binds not retained
+aliases                 reviewed aliases remain | minimized != anonymized
 fingerprint_demo_exit   0
 ```
 
@@ -238,22 +246,23 @@ Maven Central에 실제 게시하지 않았다면 Maven Central을 언급하지 
 ```text
 same result · hidden execution regression · blocking CI contract
 CALLBACK_RETURNED ≠ JDBC completion ≠ COMMIT
-ShardingSphere-JDBC 5.5.3 synchronous PreparedStatement only
+5.5.3 · normal return · caller not interrupted at close
+synchronous non-batch PreparedStatement only
 ```
 
 내레이션:
 
-> 같은 결과 뒤의 실행 회귀를 CI에서 막습니다. 5.5.3 동기 실행만 지원합니다.
+> 같은 결과 뒤에서 hook이 보고한 실행 회귀를 assertion으로 막습니다. 지원 범위는 5.5.3의 정상 반환 동기식 non-batch PreparedStatement이며 capture 종료 시 caller가 interrupt되지 않은 경우입니다.
 
 ## 최종 녹화 게이트
 
 - [ ] 영상 속 revision과 제출 revision이 같다.
 - [ ] Ubuntu 공개 CI에서 root build와 standalone consumer가 성공했다.
-- [ ] main branch rule/ruleset이 blocking contract check를 required로 지정한다.
+- [ ] main ruleset이 `Java 17 / MySQL integration / SBOM`과 `Dependency review`를 required로 지정하고, 전자 job이 contract assertion semantics를 테스트한다. intentional-red task 자체를 required check라고 말하지 않는다.
 - [ ] baseline/candidate marker와 `demo_exit=0`을 재확인했다.
 - [ ] intentional-red script가 RCM201·RCM202와 `ci_exit=1`을 출력한다.
 - [ ] RCM301·RCM302 화면도 최종 revision의 실제 결과다.
-- [ ] 세 핵심 촬영 명령(`mysql`, `ci`, `fingerprint`)의 화면 출력에서 `/Users/`, `jdbc:`, `localhost:포트`, `127.0.0.1:포트`, `SELECT`, `t_order`, `ds_0`, `ds_1`이 나오지 않는다.
+- [ ] 세 핵심 촬영 명령과 삽입 그림의 화면 출력에서 `/Users/`, `jdbc:`, `localhost:포트`, `127.0.0.1:포트`, `SELECT`, `t_order`, `ds_0`, `ds_1`, `user_id`, `row 201`, `= 3`, `BETWEEN 3`이 나오지 않는다.
 - [ ] 제출 SHA와 같은 안정 `v0.1.0` release assets, SBOM, checksum이 공개되어 있다.
 - [ ] 실제 비작성자의 첫 quick-start 결과가 본인 계정으로 공개되어 있다.
 - [ ] 영상 속 테스트 수가 최종 revision과 일치한다.

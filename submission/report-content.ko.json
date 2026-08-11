@@ -15,7 +15,7 @@
     },
     "baseline_candidate": {
       "filename": "baseline-candidate.png",
-      "caption": "그림 2. 동일한 row 201을 반환한 approved equality와 candidate BETWEEN의 실제 MySQL 관측 diff"
+      "caption": "그림 2. 동일한 단일 fixture 행을 반환한 approved equality와 candidate same-value range의 실제 MySQL 관측 diff"
     }
   },
   "project_intro": [
@@ -85,7 +85,7 @@
     },
     {
       "lead": "3. 실제 MySQL business-green / contract-red",
-      "text": "equality→같은 값 BETWEEN 변경은 같은 row 201을 반환했지만 관측 시도와 data source가 각각 1→2로 늘어 RCM201·RCM202로 차단됐다. #38456에서 착안한 축소·변형 fixture는 같은 COUNT=1에서 1→8, strategy 제거는 동일 시도 수에서도 fingerprint drift를 보였다."
+      "text": "equality→같은 값 range 변경은 동일한 단일 fixture 행을 반환했지만 관측 시도와 data source가 각각 1→2로 늘어 RCM201·RCM202로 차단됐다. #38456에서 착안한 축소·변형 fixture는 같은 COUNT=1에서 1→8, strategy 제거는 동일 시도 수에서도 fingerprint drift를 보였다."
     },
     {
       "lead": "4. 결정성·격리",

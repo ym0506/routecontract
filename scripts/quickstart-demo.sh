@@ -129,6 +129,7 @@ RCM201                 ATTEMPT_BUDGET_EXCEEDED: maximum=1, observed=2
 RCM202                 DATA_SOURCE_BUDGET_EXCEEDED: maximum=1, observed=2
 realMysqlDemoExit      0
 intentionalCiGateExit  1 (expected build rejection)
-privacy                MINIMIZED | raw child output withheld
+privacy                raw child output withheld | raw SQL/binds not retained
+aliases                reviewed aliases remain | minimized != anonymized
 quickstartExit         0
 EOF
