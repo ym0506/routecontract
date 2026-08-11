@@ -11,7 +11,7 @@
   "assets": {
     "architecture": {
       "filename": "architecture.png",
-      "caption": "그림 1. 공식 SQLExecutionHook 관측을 최소정보 manifest와 CI 계약으로 연결하는 v0.1 구조"
+      "caption": "그림 1. ShardingSphere-JDBC 5.5.3 SQLExecutionHook 관측을 최소정보 manifest와 CI 계약으로 연결하는 v0.1 구조"
     },
     "baseline_candidate": {
       "filename": "baseline-candidate.png",
@@ -63,7 +63,7 @@
   "architecture": [
     {
       "lead": "관측·계약 흐름",
-      "text": "호출자가 정한 capture(operationId) 경계에서 공식 SQLExecutionHook callback을 모아 최소정보 snapshot과 canonical manifest로 만들고, semantic diff를 CI gate에 연결한다."
+      "text": "호출자가 정한 capture(operationId) 경계에서 ShardingSphere-JDBC 5.5.3 SQLExecutionHook callback을 모아 최소정보 snapshot과 canonical manifest로 만들고, semantic diff를 CI gate에 연결한다."
     },
     {
       "lead": "상관관계·Fail-closed",

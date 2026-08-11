@@ -80,7 +80,7 @@ The orientation allocates six points to each item. The table maps what a reviewe
 
 ## Mandatory submission ledger
 
-The public contest page lists result report, source code and a demonstration video of up to three minutes for the August 27 submission ([official schedule](https://www.oss.kr/pages/2)). The organizer-supplied orientation adds the following controls for this submission:
+The public contest page lists result report, source code and a demonstration video of up to three minutes for the August 27 submission ([official schedule](https://www.oss.kr/pages/2)). The organizer-supplied orientation and later [official submission guide](https://osscontest.kr/notice/39) add the following controls for this submission:
 
 | Deliverable/control | Current status | Exit condition |
 |---|---|---|
@@ -89,7 +89,7 @@ The public contest page lists result report, source code and a demonstration vid
 | Public YouTube demonstration, at most 3:00 | `pending` | Duration checked after upload; URL works without login; captions and 1080p text legibility checked |
 | SBOM | `artifact-ready` | The current public revision has a digest-identified aggregate JSON/XML Actions artifact; regenerate, verify, checksum and submit it from the final public release revision. This inventory is not a security scan or legal conclusion |
 | Source archive/checksum | `pending` | Archive rebuilds, checksum recorded, no credentials or private material |
-| Deadline | active constraint | Submit before **2026-08-27 18:00 KST**; internal freeze is August 26 |
+| Deadline | active constraint | The official submission guide states **2026-08-27 18:00**; the package gate models the Korean contest cutoff as KST (+09:00). Submit by the internal 15:00 target; internal freeze is August 26 |
 
 Missing report, source or video is an exclusion risk according to the supplied orientation. Do not wait for the final hour to discover an upload, visibility or codec problem.
 

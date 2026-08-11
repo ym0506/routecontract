@@ -75,7 +75,7 @@ RouteAssertions.assertThat(snapshot)
 아래 구조는 작은 오버레이로 표시한다.
 
 ```text
-capture → official SQLExecutionHook → minimized snapshot
+capture → ShardingSphere-JDBC 5.5.3 SQLExecutionHook → minimized snapshot
         → canonical manifest → semantic diff → CI assertion
 ```
 
