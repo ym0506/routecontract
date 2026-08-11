@@ -32,6 +32,20 @@ exit `0` from the quickstart means that rejection was verified. A preflight or
 verification failure exits `2`. The wrapper does not echo raw child-process
 output that could contain SQL, parameters, or connection details.
 
+After a stable Release exists, a ShardingSphere-JDBC 5.5.3 consumer test should
+align the Jackson 2 compatibility modules before declaring RouteContract:
+
+```groovy
+testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))
+testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:<release-version>")
+```
+
+RouteContract is a thin JAR. Its module-level `compileOnly` ShardingSphere/BOM
+declarations are not published as consumer version constraints. This BOM
+aligns only the `com.fasterxml.jackson` 2.x compatibility graph used by
+ShardingSphere 5.5.3. It does not replace or downgrade RouteContract's separate
+product runtime, `tools.jackson.core:jackson-core:3.1.5`.
+
 ## Verified core scenarios
 
 | Scenario | Verified result |
@@ -65,12 +79,9 @@ python3 scripts/install-release-assets.py \
   --repository /absolute/path/to/routecontract-maven
 ```
 
-After the stable release version is chosen, use the coordinate printed by
-the installer as the test dependency:
-
-```groovy
-testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:<release-version>")
-```
+After the stable release version is chosen, use the coordinate printed by the
+installer as the test dependency after the Jackson 2 BOM shown in Quick Start.
+The thin POM does not align the consumer's ShardingSphere/Jackson versions.
 
 The installer performs no network access. Before writing, it validates the
 exact public-asset set, `SHA256SUMS`, stable POM coordinate, and JAR structure.

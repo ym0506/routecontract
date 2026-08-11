@@ -13,6 +13,21 @@ exclusive repository rule for the RouteContract group. The test verifies that:
 This standalone build has its own dependency lockfile and SHA-256 verification metadata because it
 does not inherit the root build's dependency controls.
 
+It also declares the ShardingSphere 5.5.3 Jackson 2 compatibility alignment explicitly:
+
+```groovy
+testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))
+testImplementation("${routeContractGroup}:routecontract-shardingsphere-5.5:${routeContractVersion}")
+testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:5.5.3")
+```
+
+The published RouteContract artifact is a thin JAR. Its module-level
+`compileOnly` ShardingSphere/BOM declarations are not published as consumer
+version constraints, so the standalone consumer owns the alignment. The BOM
+affects ShardingSphere's `com.fasterxml.jackson` 2.x compatibility modules
+only; it does not replace or downgrade RouteContract's separate
+`tools.jackson.core:jackson-core:3.1.5` product runtime.
+
 The verification metadata trusts only a stable RouteContract first-party
 group/artifact pattern because `install-release-assets.py` has already checked
 that JAR and POM against the public Release `SHA256SUMS`. Third-party

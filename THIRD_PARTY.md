@@ -2,7 +2,7 @@
 
 RouteContract is licensed under Apache-2.0. The dependencies below keep their
 own licenses. This file is a human-readable inventory of the dependencies
-declared directly by this repository as of 2026-08-11; it is not a substitute
+declared directly by this repository as of 2026-08-12; it is not a substitute
 for the machine-readable SBOM or the license text shipped by each dependency.
 
 RouteContract does not shade or copy these dependencies into its library JAR.
@@ -13,9 +13,15 @@ part of the published library artifact.
 
 | Component | Version | Gradle scope | License |
 |---|---:|---|---|
+| Jackson 2 compatibility BOM (`com.fasterxml.jackson`) | 2.18.9 | `compileOnly` (also `testImplementation`) | Apache-2.0 |
 | Apache ShardingSphere `shardingsphere-infra-executor` | 5.5.3 | `compileOnly` (also `testImplementation`) | Apache-2.0 |
 | Alibaba TransmittableThreadLocal | 2.14.2 | `implementation` | Apache-2.0 |
 | Jackson Core (`tools.jackson.core`) | 3.1.5 | `implementation` | Apache-2.0 |
+
+The `compileOnly` Jackson 2 BOM aligns this module's compatibility/test graph;
+it is not published as a consumer version constraint. Consumers using
+ShardingSphere 5.5.3 must declare their own Jackson 2 alignment. It does not
+replace the separate `tools.jackson` 3.1.5 runtime dependency.
 
 ## Tests and MySQL example
 
@@ -24,6 +30,7 @@ part of the published library artifact.
 | Apache ShardingSphere JDBC and explicitly declared runtime modules | 5.5.3 | `testImplementation` / `testRuntimeOnly` | Apache-2.0 |
 | JUnit Jupiter and JUnit Platform Launcher (managed by JUnit BOM) | 5.14.3 / 1.14.3 | `testImplementation` / `testRuntimeOnly` | EPL-2.0 |
 | Testcontainers JUnit Jupiter and MySQL modules | 1.21.4 | `testImplementation` | MIT |
+| Apache Commons Compress | 1.26.0 | `testImplementation` constraint | Apache-2.0 |
 | datasource-proxy | 1.11.0 | `testImplementation` (empirical comparison only) | MIT |
 | HikariCP | 6.2.1 | `testRuntimeOnly` | Apache-2.0 |
 | MySQL Connector/J | 26.7.0 | `testRuntimeOnly` | `GPL-2.0-only WITH Universal-FOSS-exception-1.0` |

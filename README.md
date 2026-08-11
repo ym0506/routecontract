@@ -29,6 +29,20 @@ Gradle과 Maven Central 의존성을 내려받기 위한 네트워크가 필요�
 정확히 검증했다는 뜻입니다. preflight나 검증이 실패하면 quickstart는 `2`로 종료하며, 원문
 SQL·parameter·connection 정보가 섞일 수 있는 하위 프로세스 원문은 화면에 다시 출력하지 않습니다.
 
+stable Release 이후 ShardingSphere-JDBC 5.5.3 소비자 테스트에 추가할 때는 Jackson 2 호환성
+모듈을 먼저 정렬한 뒤 RouteContract를 선언합니다.
+
+```groovy
+testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))
+testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:<release-version>")
+```
+
+RouteContract는 의존성을 내장하지 않는 thin JAR이고, 모듈의 `compileOnly`
+ShardingSphere/BOM 선언은 공개 POM에서 소비자 버전 제약으로 전달되지 않습니다. 위 BOM은
+ShardingSphere 5.5.3이 사용하는 `com.fasterxml.jackson` 2.x 호환성 그래프만 정렬합니다.
+RouteContract가 직접 사용하는 별도 `tools.jackson.core:jackson-core:3.1.5` 제품 런타임을
+대체하거나 낮추는 설정이 아닙니다.
+
 ## 검증된 핵심 시나리오
 
 | 시나리오 | 실제 검증 결과 |
@@ -62,11 +76,9 @@ python3 scripts/install-release-assets.py \
   --repository /absolute/path/to/routecontract-maven
 ```
 
-stable release version이 정해진 뒤, 설치기가 출력한 좌표를 테스트 의존성에 사용합니다.
-
-```groovy
-testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:<release-version>")
-```
+stable release version이 정해진 뒤, 설치기가 출력한 좌표를 위 Quick Start의 Jackson 2 BOM
+다음에 테스트 의존성으로 사용합니다. thin POM이 소비자의 ShardingSphere/Jackson 버전을
+정렬해 주지는 않습니다.
 
 설치기는 네트워크를 사용하지 않습니다. 공개 자산의 정확한 파일 목록, `SHA256SUMS`, stable
 POM 좌표, JAR 구조를 먼저 검증한 후 main/sources/Javadoc JAR와 POM만 명시한 Maven

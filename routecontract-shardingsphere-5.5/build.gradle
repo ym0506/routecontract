@@ -6,10 +6,15 @@ plugins {
 description = 'Operation-scoped contracts over physical JDBC execution attempts reported by Apache ShardingSphere-JDBC 5.5.3 SQLExecutionHook'
 
 dependencies {
+    // ShardingSphere 5.5.3 brings the legacy com.fasterxml.jackson 2.x line.
+    // Align that compatibility graph to the patched family without changing
+    // RouteContract's separate tools.jackson 3.x runtime dependency.
+    compileOnly platform("com.fasterxml.jackson:jackson-bom:${shardingSphereJacksonVersion}")
     compileOnly "org.apache.shardingsphere:shardingsphere-infra-executor:${shardingSphereVersion}"
     implementation "com.alibaba:transmittable-thread-local:${transmittableThreadLocalVersion}"
     implementation "tools.jackson.core:jackson-core:${jacksonVersion}"
 
+    testImplementation platform("com.fasterxml.jackson:jackson-bom:${shardingSphereJacksonVersion}")
     testImplementation "org.apache.shardingsphere:shardingsphere-infra-executor:${shardingSphereVersion}"
     testImplementation platform("org.junit:junit-bom:${junitVersion}")
     testImplementation 'org.junit.jupiter:junit-jupiter'
