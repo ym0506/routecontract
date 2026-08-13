@@ -10,7 +10,7 @@ body:
 
         **Security stop:** if the attempt may involve a credential, raw SQL or bind value, private topology, customer data, an absolute private path, or a possible vulnerability, stop before opening this public issue. Follow the [security policy](https://github.com/ym0506/routecontract/security/policy) and use [private vulnerability reporting](https://github.com/ym0506/routecontract/security/advisories/new). Even there, begin with the minimum information and never request, send, or retain full logs, diagnostics, or data dumps.
 
-        Until both first outcomes are recorded, use only the fixed activation record, exact tagged protocol/README, public RC assets, and any public official prerequisite documentation recorded below. Submit before rescue. Do not edit first outcomes; record recovery as timestamped comments.
+        Until both first outcomes are recorded, use only the fixed activation record, exact tagged protocol/README, public RC assets, and any public official prerequisite documentation recorded below. Task A does not require Python; optional Task B does. Submit before rescue. Do not edit first outcomes; record recovery as timestamped comments.
 
         Do not upload files or screenshots. Remove unnecessary personal data such as a real name, email, school, employer, city, username/home path, IP/device identifier, Docker context/registry/proxy, environment dump, or Git configuration.
 
@@ -47,7 +47,11 @@ body:
           required: true
         - label: I used no private/unreleased artifact, maintainer cache, maintainer Docker daemon, or maintainer-provided setup.
           required: true
-        - label: Before recording both first outcomes, I used no RouteContract-specific AI/search advice or private help. Any general prerequisite help came only from public official Java, Docker, Git, Python, or shell documentation and is linked below.
+        - label: Before both first outcomes, I used no RouteContract-specific AI/search advice or private help; general prerequisite help came only from the linked official Java, Docker, Git, Bash/POSIX, OS, shell, or Task-B Python documentation.
+          required: true
+        - label: Any private invitation I received contained neutral logistics only, with no RouteContract command, expected output, classification, setup guidance, or troubleshooting.
+          required: true
+        - label: I was not offered money, a gift, a reciprocal favor, contest support, or another benefit for this attempt; I was not asked to star or follow the project; and I was not asked or expected to pass, endorse, report a positive result, or use favorable wording.
           required: true
         - label: I will preserve every started eligible attempt, including failures, and disclose any prior relationship or compensation without publishing private identity details.
           required: true
@@ -56,15 +60,15 @@ body:
     id: environment
     attributes:
       label: Environment, prerequisites, and prior exposure
-      description: Record OS/arch, shell/tools, Git, Python 3, Java 17, Docker, network, per-task cache/clean state, prior exposure, relationship/compensation, and official prerequisite URLs. Omit paths/hostnames.
+      description: Record OS/arch; Task A Git/Bash/POSIX/Java 17/Docker/network; and Python 3 only for Task B. Include clean/cache state, exposure, relationship, and official help URLs. Omit paths/hostnames.
       placeholder: |
-        OS/arch/shell: ...
-        Git/Python/Bash or POSIX tools: ...
+        OS/arch: ...
+        Task A — Git/Bash/POSIX tools: ...
         JDK: ...
         Docker client/server: ...
         Network: available
         Task A: new GRADLE_USER_HOME; MySQL image cache cold|warm
-        Task B: new flat download directory; initially empty Maven target
+        Task B: NOT_RUN|Python 3 <version>; new flat download directory; initially empty Maven target
         Prior RouteContract exposure: none|public README only|...
         Relationship/compensation: none|non-identifying disclosure
         Official prerequisite help URLs: none|https://...

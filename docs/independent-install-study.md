@@ -79,13 +79,31 @@ The participant must be a human who:
 - has no private or unpublished artifact;
 - receives no RouteContract-specific AI/search advice, private explanation, screen share, or
   maintainer help before both first outcomes are recorded;
+- was not offered money, a gift, a reciprocal favor, contest support, or another benefit for this
+  attempt; was not asked to star or follow the project; and was not asked or expected to pass,
+  endorse, report a positive result, or use favorable wording;
 - records every started eligible attempt instead of repeating privately until one passes.
 
 General prerequisite help before the first outcome is limited to public official documentation for
-Java, Docker, Git, Python, Bash/POSIX tools, the operating system, or the shell. Record each URL and
-its purpose. Public tagged RouteContract documentation is allowed. Prior exposure, a personal
-relationship, or compensation must be disclosed in non-identifying terms; none automatically makes
-the result invalid, but hidden involvement does.
+Java, Docker, Git, Bash/POSIX tools, the operating system, or the shell; Python documentation is
+also allowed when Task B is attempted. Record each URL and its purpose. Public tagged RouteContract
+documentation is allowed. Prior exposure, a personal relationship, or compensation must be
+disclosed in non-identifying terms. Prior exposure or a personal relationship does not automatically
+make the result invalid, but hidden involvement does.
+Any money, gift, reciprocal favor, contest support, or other benefit offered for this attempt makes
+it ineligible as independent-user evidence even when disclosed; preserve the result only as
+contextual feedback.
+
+A private invitation may contain only neutral logistics: the fixed activation-record permalink,
+general prerequisites and administrative time limit, and the statement that refusal, failure,
+withdrawal, or a negative usefulness assessment is acceptable. It must not restate RouteContract
+commands, expected output, classifications, setup guidance, or troubleshooting. Those details must
+come only from the fixed public activation record and exact-tag public documentation.
+
+A public recruitment announcement may explain the high-level problem and supported scope and link
+the same fixed activation record. It must not provide a second set of commands, expected-output
+answers, result classifications, or troubleshooting outside the fixed public record. A participant
+records that announcement as prior public exposure; it is not private setup help.
 
 Preferred coverage is two eligible participants on materially different environments. One honest
 participant is useful qualitative evidence, not a statistical usability study. Do not report an
@@ -95,8 +113,10 @@ average, success rate, or “five-minute install” claim from one or two partic
 
 Record the following without publishing a hostname or absolute path:
 
-- operating system/version, CPU architecture, and supported shell;
-- Git, Python 3, Bash or equivalent POSIX tools, and network availability;
+- operating system/version and CPU architecture;
+- for Task A: Git, Bash, the required POSIX tools, network availability, Java 17, and a usable Docker
+  daemon;
+- for optional Task B: the Task A prerequisites plus Python 3 and direct Release-asset download;
 - JDK vendor and complete Java 17 version;
 - Docker client and server versions and usable daemon state;
 - Task A's new `GRADLE_USER_HOME` and whether the pinned MySQL image cache was cold or warm;
