@@ -16,6 +16,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "package_submission.py"
+REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 SPEC = importlib.util.spec_from_file_location("package_submission", SCRIPT)
 assert SPEC is not None and SPEC.loader is not None
 package_submission = importlib.util.module_from_spec(SPEC)
@@ -112,6 +113,56 @@ def valid_manifest() -> dict:
             "sha256": None,
         },
     }
+
+
+class SubmissionClaimTextTest(unittest.TestCase):
+    def test_storyboard_supports_qualified_and_zero_external_result_branches(
+        self,
+    ) -> None:
+        storyboard = (
+            REPOSITORY_ROOT / "submission" / "video-storyboard.md"
+        ).read_text(encoding="utf-8")
+
+        for required in (
+            "**qualified-result 분기:**",
+            "Issue #9의 모든 acceptance criteria",
+            "사람 비작성자·비협업자",
+            "정확히 활성화된 immutable RC",
+            "first outcomes 전 비공개 설정 도움 없음",
+            "원본 first-outcome dedicated independent-install Issue",
+            "adoption·실사용 증거로 부르지 않는다.",
+            "**0-result 분기:**",
+            "Issue #9의 activation/protocol",
+            "qualified non-author first outcomes: 0",
+            "independent external validation not obtained before cutoff",
+            "게시하지 않았다면 카드와 내레이션에서 제외",
+            "0건이어서 외부 검증 미확보를 그대로 표시했습니다.",
+        ):
+            self.assertIn(required, storyboard)
+
+        for unconditional_claim in (
+            "비작성자가 직접 남긴 첫 quick-start 결과 Issue",
+            "최종 revision의 CI와 checksummed Release, 비작성자의 첫 설치 "
+            "결과, upstream 질문을 모두 공개 링크로 남겼습니다.",
+            "- [ ] 실제 비작성자의 첫 quick-start 결과가 본인 계정으로 "
+            "공개되어 있다.",
+        ):
+            self.assertNotIn(unconditional_claim, storyboard)
+
+    def test_report_roadmap_does_not_promise_external_result(self) -> None:
+        report = json.loads(
+            (REPOSITORY_ROOT / "submission" / "report-content.ko.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        roadmap = next(
+            item["text"] for item in report["other"] if item["lead"] == "로드맵"
+        )
+
+        self.assertIn("Issue #9 기준을 충족한 비작성자 독립 설치 결과", roadmap)
+        self.assertIn("확보된 경우만 기록", roadmap)
+        self.assertIn("qualified 결과가 0건이면 외부 검증 미확보", roadmap)
+        self.assertNotIn("외부 설치 기록·license/security 재검토를 완료", roadmap)
 
 
 class ManifestTest(unittest.TestCase):

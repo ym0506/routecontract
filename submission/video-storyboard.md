@@ -1,6 +1,6 @@
 # RouteContract 3분 시연 영상 스토리보드
 
-상태: 2분 52초 최종 촬영안. 안정 `v0.1.0`·제출 revision·외부 사용자 게이트를 통과한 뒤 녹화한다.
+상태: 2분 52초 촬영안. 안정 `v0.1.0`·제출 revision을 동결하고, 외부 결과는 증거 cutoff의 실제 상태(qualified result 또는 0건)로 확정한 뒤 녹화한다.
 
 핵심 문장:
 
@@ -221,21 +221,28 @@ RouteContract: operation correlation -> manifest -> reviewed diff -> CI assertio
 
 ## 2:28–2:44 — 공개 OSS 증거
 
-다음이 실제로 공개된 뒤에만 이 구간을 녹화한다.
+다음 공통 증거가 실제로 공개된 뒤에 이 구간을 녹화한다.
 
 - 제출 revision의 Ubuntu CI 성공
 - main에 blocking contract check를 요구하는 branch rule/ruleset
 - 제출 revision과 같은 안정 `v0.1.0` release와 annotated tag
 - main/source/Javadoc JAR, POM, SBOM, SHA-256
-- 비작성자가 직접 남긴 첫 quick-start 결과 Issue
-- 실제 결함이 발견된 경우에만 그 결함을 수정한 PR
-- RouteContract-specific upstream 질문. 응답이나 승인을 받았다고 과장하지 않는다.
 
-화면은 로그아웃한 브라우저에서 최종 tag/SHA, green CI, exact Release assets, 외부 첫 결과, upstream 질문을 한 카드씩 보여 준다. 같은 checkout의 `standalone` fixture는 공개 패키징 검증이지 외부 채택 증거가 아니므로 본편에서 실행하지 않는다. 최종 Release 자산을 내려받아 빈 Maven 저장소에서 검증한 결과는 CI 링크로만 제시한다.
+외부 결과는 증거 cutoff에 다음 중 정확히 하나의 상태로 동결한다.
+
+- **qualified-result 분기:** Issue #9의 모든 acceptance criteria(사람 비작성자·비협업자, 정확히 활성화된 immutable RC, first outcomes 전 비공개 설정 도움 없음)를 충족한 참가자가 본인 계정과 환경으로 남긴 원본 first-outcome dedicated independent-install Issue를 보여 준다. 이를 `독립 clean-install 첫 결과`로만 표시하고 adoption·실사용 증거로 부르지 않는다.
+- **0-result 분기:** Issue #9의 activation/protocol, 공개 모집 시작·cutoff, `qualified non-author first outcomes: 0`, `independent external validation not obtained before cutoff`를 보여 준다. author·AI·clone 결과를 외부 결과로 대체하지 않는다.
+
+실제 결함이 발견된 경우에만 그 결함을 수정한 PR을 보여 준다. RouteContract-specific upstream 질문은 실제로 게시한 경우에만 질문과 현재 상태를 보여 준다. 게시하지 않았다면 카드와 내레이션에서 제외하고 upstream 확인이 없음을 유지한다. 응답이나 승인을 받았다고 과장하지 않는다.
+
+화면은 로그아웃한 브라우저에서 최종 tag/SHA, green CI, exact Release assets와 두 외부 분기 중 하나의 상태 카드를 보여 준다. upstream 카드는 실제 질문이 있는 경우에만 추가한다. 같은 checkout의 `standalone` fixture는 공개 패키징 검증이지 외부 채택 증거가 아니므로 본편에서 실행하지 않는다. 최종 Release 자산을 내려받아 빈 Maven 저장소에서 검증한 결과는 CI 링크로만 제시한다.
 
 내레이션:
 
-> 최종 revision의 CI와 checksummed Release, 비작성자의 첫 설치 결과, upstream 질문을 모두 공개 링크로 남겼습니다.
+- qualified-result 분기: “최종 revision의 CI와 checksummed Release를 공개했고, 비작성자 독립 clean-install 첫 결과 1건을 adoption과 구분해 링크했습니다.”
+- 0-result 분기: “최종 revision의 CI와 checksummed Release를 공개했습니다. 공개 모집 cutoff까지 qualified 비작성자 첫 결과는 0건이어서 외부 검증 미확보를 그대로 표시했습니다.”
+
+upstream 질문을 게시했다면 “upstream 질문과 현재 공개 상태도 링크했습니다.”라고만 이어서 말한다. 게시하지 않았다면 이 문장을 말하지 않는다.
 
 Maven Central에 실제 게시하지 않았다면 Maven Central을 언급하지 않는다.
 
@@ -264,7 +271,7 @@ synchronous non-batch PreparedStatement only
 - [ ] RCM301·RCM302 화면도 최종 revision의 실제 결과다.
 - [ ] 세 핵심 촬영 명령과 삽입 그림의 화면 출력에서 `/Users/`, `jdbc:`, `localhost:포트`, `127.0.0.1:포트`, `SELECT`, `t_order`, `ds_0`, `ds_1`, `user_id`, `row 201`, `= 3`, `BETWEEN 3`이 나오지 않는다.
 - [ ] 제출 SHA와 같은 안정 `v0.1.0` release assets, SBOM, checksum이 공개되어 있다.
-- [ ] 실제 비작성자의 첫 quick-start 결과가 본인 계정으로 공개되어 있다.
+- [ ] 외부 결과 카드는 실제 qualified Issue 또는 공개 모집기간·cutoff·0건·외부 검증 미확보 중 정확히 하나를 표시하며, author·AI·clone을 외부 결과로 세지 않는다.
 - [ ] 영상 속 테스트 수가 최종 revision과 일치한다.
 - [ ] 로컬 경로, 토큰, Docker credential, 알림, 개인 메일이 보이지 않는다.
 - [ ] 1080p에서 terminal 글자가 읽히며 자막이 잘리지 않는다.

@@ -137,7 +137,7 @@
     },
     {
       "lead": "로드맵",
-      "text": "제출 전 공개 Ubuntu CI·v0.1.0/checksum·외부 설치 기록·license/security 재검토를 완료하고, 이후 검증된 범위부터 adapter와 reporter를 확장한다."
+      "text": "제출 전 공개 Ubuntu CI·v0.1.0/checksum·license/security 재검토를 완료한다. Issue #9 기준을 충족한 비작성자 독립 설치 결과는 cutoff에 확보된 경우만 기록하고, qualified 결과가 0건이면 외부 검증 미확보를 한계로 남긴 뒤 모집을 계속한다."
     },
     {
       "lead": "개발 소감",
