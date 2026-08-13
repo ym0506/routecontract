@@ -87,6 +87,7 @@ SENSITIVE_VIDEO_METADATA_TAGS = frozenset(
         "comment",
         "description",
         "device",
+        "gpscoordinates",
         "location",
         "location-eng",
         "make",
@@ -96,9 +97,13 @@ SENSITIVE_VIDEO_METADATA_TAGS = frozenset(
         "com.apple.quicktime.comment",
         "com.apple.quicktime.description",
         "com.apple.quicktime.location.iso6709",
+        "com.apple.quicktime.location.name",
         "com.apple.quicktime.make",
         "com.apple.quicktime.model",
     }
+)
+SENSITIVE_VIDEO_METADATA_PREFIXES = (
+    "com.apple.quicktime.location.",
 )
 
 
@@ -1121,7 +1126,10 @@ def validate_video_metadata_tags(value: Any, label: str) -> int:
         if not isinstance(key, str) or not isinstance(tag_value, str):
             raise GateError(f"ffprobe {label} metadata tags must contain only strings")
         normalized_key = key.strip().casefold()
-        if normalized_key in SENSITIVE_VIDEO_METADATA_TAGS:
+        if normalized_key in SENSITIVE_VIDEO_METADATA_TAGS or any(
+            normalized_key.startswith(prefix)
+            for prefix in SENSITIVE_VIDEO_METADATA_PREFIXES
+        ):
             raise GateError(
                 f"local demonstration file contains sensitive metadata tag: {key}"
             )

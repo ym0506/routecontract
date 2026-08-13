@@ -690,6 +690,34 @@ class LocalVideoEvidenceTest(unittest.TestCase):
                 ):
                     self.probe(payload)
 
+    def test_rejects_normalized_gps_and_quicktime_location_namespace_tags(self) -> None:
+        for tag in (
+            " GPSCOORDINATES ",
+            " com.apple.quicktime.location.name ",
+            "COM.APPLE.QUICKTIME.LOCATION.BODY",
+            "com.apple.quicktime.location.role",
+        ):
+            payload = valid_ffprobe_video()
+            payload["format"]["tags"][tag] = "private location fixture"
+            with self.subTest(tag=tag), self.assertRaisesRegex(
+                package_submission.GateError, "sensitive metadata tag"
+            ):
+                self.probe(payload)
+
+    def test_does_not_broadly_reject_non_location_namespace_tag_names(self) -> None:
+        payload = valid_ffprobe_video()
+        payload["format"]["tags"].update(
+            {
+                "application_name": "RouteContract",
+                "encoder_location_hint": "portable encoder fixture",
+                "com.apple.quicktime.displayname": "RouteContract demo",
+            }
+        )
+
+        result = self.probe(payload)
+
+        self.assertEqual(8, result["metadata_tag_count"])
+
     def test_rejects_sensitive_chapter_and_program_metadata_tags(self) -> None:
         for scope in ("chapters", "programs"):
             payload = valid_ffprobe_video()
