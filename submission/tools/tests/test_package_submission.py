@@ -1238,60 +1238,216 @@ class PublicEvidenceTest(unittest.TestCase):
             evidence_dir = Path(raw)
             for asset_name in evidence["public_release_assets"]:
                 (evidence_dir / asset_name).write_bytes(b"x")
-            commands: list[list[str]] = []
-
-            with patch.object(
-                package_submission.shutil, "which", return_value="/usr/local/bin/gh"
-            ), patch.object(
-                package_submission,
-                "run",
-                side_effect=lambda command: commands.append(command) or "",
-            ):
-                package_submission.verify_release_attestations(
-                    manifest, evidence, evidence_dir
-                )
-
             repository = "example-owner/routecontract"
             tag = manifest["project"]["tag"]
-            self.assertEqual(
+            expected_commands = [
+                ["/usr/local/bin/gh", "version"],
                 [
-                    [
-                        "/usr/local/bin/gh",
-                        "release",
-                        "verify",
-                        tag,
-                        "--repo",
-                        repository,
-                    ],
-                    [
-                        "/usr/local/bin/gh",
-                        "release",
-                        "verify-asset",
-                        tag,
-                        str(evidence_dir / "SHA256SUMS"),
-                        "--repo",
-                        repository,
-                    ],
-                    [
-                        "/usr/local/bin/gh",
-                        "release",
-                        "verify-asset",
-                        tag,
-                        str(evidence_dir / "routecontract-0.1.0-source.zip"),
-                        "--repo",
-                        repository,
-                    ],
+                    "/usr/local/bin/gh",
+                    "release",
+                    "verify",
+                    tag,
+                    "--repo",
+                    repository,
                 ],
-                commands,
-            )
+                [
+                    "/usr/local/bin/gh",
+                    "release",
+                    "verify-asset",
+                    tag,
+                    str(evidence_dir / "SHA256SUMS"),
+                    "--repo",
+                    repository,
+                ],
+                [
+                    "/usr/local/bin/gh",
+                    "release",
+                    "verify-asset",
+                    tag,
+                    str(evidence_dir / "routecontract-0.1.0-source.zip"),
+                    "--repo",
+                    repository,
+                ],
+            ]
+            for version_output in (
+                (
+                    "gh version 2.93.0 (2026-05-27)\n"
+                    "https://github.com/cli/cli/releases/tag/v2.93.0\n"
+                ),
+                (
+                    "gh version 2.97.0 (2026-07-31)\n"
+                    "https://github.com/cli/cli/releases/tag/v2.97.0\n"
+                ),
+            ):
+                with self.subTest(version_output=version_output):
+                    commands: list[list[str]] = []
 
-    def test_release_attestation_verifier_fails_without_github_cli(self) -> None:
+                    def fake_subprocess_run(
+                        command: list[str], **_: object
+                    ) -> subprocess.CompletedProcess[str]:
+                        commands.append(command)
+                        return subprocess.CompletedProcess(
+                            command,
+                            0,
+                            stdout=version_output,
+                            stderr="",
+                        )
+
+                    def fake_run(command: list[str]) -> str:
+                        commands.append(command)
+                        return ""
+
+                    with patch.object(
+                        package_submission.shutil,
+                        "which",
+                        return_value="/usr/local/bin/gh",
+                    ), patch.object(
+                        package_submission.subprocess,
+                        "run",
+                        side_effect=fake_subprocess_run,
+                    ), patch.object(
+                        package_submission, "run", side_effect=fake_run
+                    ):
+                        package_submission.verify_release_attestations(
+                            manifest, evidence, evidence_dir
+                        )
+
+                    self.assertEqual(expected_commands, commands)
+
+    def test_release_attestation_verifier_rejects_affected_github_cli_before_verify(self) -> None:
         manifest = package_submission.validate_manifest(valid_manifest())
-        with patch.object(package_submission.shutil, "which", return_value=None):
+
+        for rendered_version in ("0.0.0", "2.87.3", "2.92.0"):
+            with self.subTest(version=rendered_version):
+                commands: list[list[str]] = []
+
+                def fake_subprocess_run(
+                    command: list[str], **_: object
+                ) -> subprocess.CompletedProcess[str]:
+                    commands.append(command)
+                    return subprocess.CompletedProcess(
+                        command,
+                        0,
+                        stdout=f"gh version {rendered_version}\n",
+                        stderr="",
+                    )
+
+                with patch.object(
+                    package_submission.shutil,
+                    "which",
+                    return_value="/usr/local/bin/gh",
+                ), patch.object(
+                    package_submission.subprocess,
+                    "run",
+                    side_effect=fake_subprocess_run,
+                ), patch.object(package_submission, "run") as verify_command:
+                    with self.assertRaises(package_submission.GateError) as caught:
+                        package_submission.verify_release_attestations(
+                            manifest,
+                            {"public_release_assets": {}},
+                            Path("/evidence"),
+                        )
+
+                message = str(caught.exception)
+                self.assertIn("2.93.0 or newer", message)
+                self.assertIn("GHSA-8xvp-7hj6-mcj9", message)
+                self.assertIn(rendered_version, message)
+                self.assertEqual([["/usr/local/bin/gh", "version"]], commands)
+                verify_command.assert_not_called()
+
+    def test_release_attestation_verifier_rejects_malformed_github_cli_version(self) -> None:
+        manifest = package_submission.validate_manifest(valid_manifest())
+        malformed_outputs = (
+            "",
+            "GitHub CLI current\n",
+            "gh version 02.093.000 (2026-05-27)\n",
+            " gh version 2.93.0 (2026-05-27)\n",
+            "gh version 2.93.0 (2026-05-27) \n",
+            "gh version 2.93.0-rc.1 (2026-05-27)\n",
+            "gh version 2.93.0\ngh version 2.97.0\n",
+            (
+                "gh version 2.93.0 (2026-05-27)\n"
+                "https://github.com/cli/cli/releases/tag/v2.97.0\n"
+            ),
+            "gh version 2.93.0\nunexpected extra line\n",
+        )
+
+        for malformed_output in malformed_outputs:
+            with self.subTest(output=malformed_output):
+                commands: list[list[str]] = []
+
+                def fake_subprocess_run(
+                    command: list[str], **_: object
+                ) -> subprocess.CompletedProcess[str]:
+                    commands.append(command)
+                    return subprocess.CompletedProcess(
+                        command,
+                        0,
+                        stdout=malformed_output,
+                        stderr="",
+                    )
+
+                with patch.object(
+                    package_submission.shutil,
+                    "which",
+                    return_value="/usr/local/bin/gh",
+                ), patch.object(
+                    package_submission.subprocess,
+                    "run",
+                    side_effect=fake_subprocess_run,
+                ), patch.object(package_submission, "run") as verify_command:
+                    with self.assertRaisesRegex(
+                        package_submission.GateError,
+                        "not an unambiguous stable version",
+                    ):
+                        package_submission.verify_release_attestations(
+                            manifest,
+                            {"public_release_assets": {}},
+                            Path("/evidence"),
+                        )
+
+                self.assertEqual([["/usr/local/bin/gh", "version"]], commands)
+                verify_command.assert_not_called()
+
+    def test_release_attestation_verifier_fails_without_or_with_failed_github_cli(self) -> None:
+        manifest = package_submission.validate_manifest(valid_manifest())
+        with patch.object(
+            package_submission.shutil, "which", return_value=None
+        ), patch.object(package_submission.subprocess, "run") as version_command, patch.object(
+            package_submission, "run"
+        ) as verify_command:
             with self.assertRaisesRegex(package_submission.GateError, "GitHub CLI"):
                 package_submission.verify_release_attestations(
                     manifest, {"public_release_assets": {}}, Path("/evidence")
                 )
+        version_command.assert_not_called()
+        verify_command.assert_not_called()
+
+        failed = subprocess.CompletedProcess(
+            ["/usr/local/bin/gh", "version"],
+            1,
+            stdout="synthetic-sensitive-stdout",
+            stderr="synthetic-sensitive-stderr",
+        )
+        with patch.object(
+            package_submission.shutil,
+            "which",
+            return_value="/usr/local/bin/gh",
+        ), patch.object(
+            package_submission.subprocess, "run", return_value=failed
+        ) as version_command, patch.object(
+            package_submission, "run"
+        ) as verify_command:
+            with self.assertRaisesRegex(
+                package_submission.GateError,
+                "GitHub CLI version check failed",
+            ) as caught:
+                package_submission.verify_release_attestations(
+                    manifest, {"public_release_assets": {}}, Path("/evidence")
+                )
+        self.assertNotIn("synthetic-sensitive", str(caught.exception))
+        version_command.assert_called_once()
+        verify_command.assert_not_called()
 
     def test_rejects_non_tag_push_release_evidence_run(self) -> None:
         manifest = package_submission.validate_manifest(valid_manifest())

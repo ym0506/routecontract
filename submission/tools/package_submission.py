@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import importlib
+import importlib.util
 import json
 import os
 import re
@@ -78,6 +79,25 @@ PORTABLE_FILENAME_FORBIDDEN = frozenset('<>:"/\\|?*')
 
 class GateError(RuntimeError):
     """A final-submission invariant was not satisfied."""
+
+
+def load_github_cli_release_safety() -> Any:
+    """Load the repository's single fail-closed GitHub CLI safety module."""
+    path = Path(__file__).resolve().parents[2] / "scripts/gh_cli_release_safety.py"
+    spec = importlib.util.spec_from_file_location(
+        "routecontract_gh_cli_release_safety", path
+    )
+    if spec is None or spec.loader is None:
+        raise GateError("could not load the GitHub CLI release-safety module")
+    module = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(module)
+    except (OSError, ImportError, SyntaxError):
+        raise GateError("could not load the GitHub CLI release-safety module") from None
+    return module
+
+
+GITHUB_CLI_RELEASE_SAFETY = load_github_cli_release_safety()
 
 
 def parse_args() -> argparse.Namespace:
@@ -1262,15 +1282,20 @@ def public_youtube_metadata(url: str) -> dict[str, Any]:
     return {"id": video_id, "title": title, "duration_seconds": duration}
 
 
+def require_safe_github_cli_release_verification() -> str:
+    """Return the exact ``gh`` path accepted by the shared safety preflight."""
+    try:
+        executable, _ = GITHUB_CLI_RELEASE_SAFETY.require_safe_github_cli()
+    except GITHUB_CLI_RELEASE_SAFETY.GithubCliSafetyError as error:
+        raise GateError(str(error)) from None
+    return executable
+
+
 def verify_release_attestations(
     manifest: dict[str, Any], evidence: dict[str, Any], evidence_dir: Path
 ) -> None:
     """Verify the immutable Release and every attached asset with GitHub attestations."""
-    gh = shutil.which("gh")
-    if gh is None:
-        raise GateError(
-            "GitHub CLI with release verify/verify-asset support is required"
-        )
+    gh = require_safe_github_cli_release_verification()
     project = manifest["project"]
     repository = f"{manifest['github_owner']}/{manifest['github_repository']}"
     run([gh, "release", "verify", project["tag"], "--repo", repository])

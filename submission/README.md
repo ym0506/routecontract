@@ -61,9 +61,9 @@ The organizer's 2026 submission notice is the packaging authority:
 
 - the upload ZIP contains the original report (`.docx`) and its PDF export;
 - the notice requires a duplicate-benefit confirmation when it applies, but
-  this gate currently refuses `status=required`: the organizer's exact source
-  form is not retained locally, so its title, identity fields and placeholders
-  cannot yet be verified safely;
+  this gate currently refuses `status=required`: the organizer's exact form is
+  retained outside tracked source, while its title, identity fields,
+  placeholders and ZIP path are not yet implemented and validated here;
 - source code is represented by exactly one public repository URL in the
   report;
 - the demonstration is represented by a public YouTube URL in the report and
@@ -89,11 +89,20 @@ the old fixed English report and ZIP filenames are rejected.
 Before the final run, install the pinned report-builder environment above and
 confirm these host tools: Poppler's `pdfinfo`, `pdfdetach`, and `pdftotext`;
 `ffprobe` (or macOS `mdls`) for the local video; `yt-dlp` for the public
-YouTube duration check; and GitHub CLI with `gh release verify` and
-`gh release verify-asset`. A missing verifier is a hard failure, not a skipped
-check. If duplicate-benefit status is required, obtain and retain the exact
-organizer form and implement its title/identity/placeholder validation before
-enabling that path; do not substitute an arbitrary document.
+YouTube duration check; and GitHub CLI 2.93.0 or newer with
+`gh release verify` and `gh release verify-asset`. The advisory also covers
+`gh attestation` commands. Versions through 2.92.0 are refused before any
+affected verification command because they are affected by
+[GHSA-8xvp-7hj6-mcj9](https://github.com/cli/cli/security/advisories/GHSA-8xvp-7hj6-mcj9).
+A missing, malformed-version, or outdated verifier is a hard failure, not a
+skipped check. Upgrade from an official GitHub CLI distribution before
+continuing. Repository remediation is tracked in
+[issue #21](https://github.com/ym0506/routecontract/issues/21). If an affected
+command may already have run, stop and follow the advisory's owner-only token
+remediation and log-review guidance; never paste authentication or audit details
+into public evidence. If duplicate-benefit status is required, obtain and
+retain the exact organizer form and implement its title/identity/placeholder
+validation before enabling that path; do not substitute an arbitrary document.
 
 Do not put personal final values in the public content template. Copy the
 templates to ignored paths first:
