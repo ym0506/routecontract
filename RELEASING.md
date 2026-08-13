@@ -70,9 +70,10 @@ packaging gate can verify their public digests. The environment record,
 resolved MySQL image record and standalone-consumer log remain only in the
 revision-bound workflow artifact. The test summary is present in both places;
 `SHA256SUMS` declares exactly the other public payloads (not itself) and never
-the three workflow-only logs. The gate checks the public checksum set separately, then
-protects the entire public-plus-private evidence directory through the Actions
-artifact ID/digest, byte-identical extraction and exact flat-file allowlist.
+the three workflow-only logs. The gate checks the public
+checksum set separately, then protects the entire public-plus-private evidence
+directory through the Actions artifact ID/digest, byte-identical extraction
+and exact flat-file allowlist.
 The v0.1 packaging gate requires no signature assets because no signing
 workflow or key-management policy is implemented. Add signing only in a future
 release with an explicit design and verification path. Do not imply SLSA
@@ -91,3 +92,9 @@ implemented and verified.
   not make the entire environment byte-for-byte reproducible.
 - Dependabot proposes updates; CI and human review still decide whether an
   update preserves compatibility and the project's evidence claims.
+- An experimental checksum-pinned offline OSV policy runner exists under
+  `scripts/`, but the v0.1 Release evidence workflow and final-package exact
+  allowlist do not invoke or retain it. Its local output is development audit
+  data, not release or contest evidence. Integrate it only in a separate
+  reviewed change that updates the workflow, artifact schema and packaging
+  verifier together.

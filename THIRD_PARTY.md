@@ -55,6 +55,12 @@ specific build:
 |---|---:|---|---|
 | Gradle Wrapper | 8.14.4 | Reproducible build entry point | Apache-2.0 |
 | CycloneDX Gradle plugin | 3.4.0 | CycloneDX 1.6 JSON/XML SBOM generation | Apache-2.0 |
+| OSV-Scanner | 2.5.0 | Pinned offline vulnerability scan of the verified aggregate SBOM | Apache-2.0 |
+
+OSV-Scanner and its pinned vulnerability database are optional local audit
+inputs. The current Release evidence workflow does not invoke or retain them;
+they are not embedded in the library JAR or included in the public GitHub
+Release payload.
 
 License identifiers and names above were checked against the projects' Maven
 metadata or upstream license files. Before a release, review the generated

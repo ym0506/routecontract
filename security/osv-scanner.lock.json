@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "scanner": {
+    "name": "OSV-Scanner",
+    "version": "2.5.0",
+    "commit": "a258868211a57052da6bd323f758b8388dee02bb",
+    "scalibrVersion": "0.4.5",
+    "platforms": {
+      "darwin-arm64": {
+        "sha256": "fff5a2e351b7f0a60001e87cbf862e82fb82e2792d368b533fec7a5865a73da2",
+        "size": 55383970,
+        "url": "https://github.com/google/osv-scanner/releases/download/v2.5.0/osv-scanner_darwin_arm64"
+      },
+      "linux-x86_64": {
+        "sha256": "edcfc41d257db36148f065055655fe3fcfc434b0b423ea67468a84c207524e0c",
+        "size": 57630882,
+        "url": "https://github.com/google/osv-scanner/releases/download/v2.5.0/osv-scanner_linux_amd64"
+      }
+    }
+  },
+  "database": {
+    "ecosystem": "Maven",
+    "generation": "1786244630674600",
+    "lastModified": "2026-08-09T03:03:50.782Z",
+    "sha256": "7a32d87163a9170e3fd457230d2e89df2ccac657d083fd08ab0ef73b3a4d3da0",
+    "size": 9953332,
+    "url": "https://osv-vulnerabilities.storage.googleapis.com/Maven/all.zip?generation=1786244630674600"
+  }
+}

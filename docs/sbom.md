@@ -52,6 +52,102 @@ Other third-party component metadata remains as emitted by the plugin.
 5. Save the source revision, Gradle/JDK versions, command, SBOM SHA-256, and CI
    run URL alongside the submitted SBOM.
 
+## Experimental local vulnerability and license audit
+
+The optional local supply-chain audit starts from the exact clean source
+revision and generates every inventory it checks itself:
+
+```text
+clean revision
+  -> fresh aggregate, published-module and MySQL-example SBOMs
+  -> fresh generated published POM
+  -> checksum-pinned OSV-Scanner and Maven database
+  -> offline OSV scan
+  -> strict local vulnerability/license policy
+  -> local sanitized audit summary
+```
+
+Run the gate from a clean checkout with the exact 40-character source
+revision:
+
+```bash
+./scripts/run-final-supply-chain-scan.sh --revision <40-hex>
+```
+
+The runner requires that revision to be the checked-out `HEAD`, rejects staged,
+tracked or untracked worktree changes, records both the commit and its exact Git
+tree, rejects existing final-scan evidence before generation, deletes only the
+three enumerated JSON/XML SBOM pairs and publication POM after non-symlink
+checks, and
+then regenerates those inputs with no build cache and rerun tasks before any
+scanner download. It copies the seven generated inputs into a new
+mode-restricted directory, adds a read-only copy of the tracked published-module
+dependency lock, generates the scanner inventory from those copies, and
+fingerprints the sources, copies, lock and inventory before the scan. It checks
+that fingerprint before and after the scanner and again after policy
+verification. It also repeats the clean-revision check after generation and
+before publishing either result file. This makes ignored prior build output
+ineligible for rebinding to a newer revision without using a broad clean that
+could erase unrelated evidence. The v0.1 Release evidence workflow and
+packaging verifier do not invoke or retain this audit, so its output is not
+public immutable evidence.
+
+This local runner assumes a cooperative, single-user release process in a
+trusted checkout. It fails closed against stale inputs, adjacent ignored
+scanner configuration, ordinary file mutation, symbolic-link redirection and
+destination replacement, and it records hashes for the artifacts it checks.
+Those checks are not an operating-system isolation boundary and do not claim
+cryptographic immutability against a malicious same-UID process that can alter
+files or process state while the scanner is running. Run it without concurrent
+writers in a fresh, access-restricted checkout; final-tag CI integration must
+provide the immutable release binding.
+
+`security/osv-scanner.lock.json` pins the scanner release and platform binary
+checksums plus one generation-pinned Maven database snapshot. Downloads are
+verified before the scanner executes offline. The runner passes the tracked,
+exactly empty `security/osv-scanner.toml` by absolute `--config` path, so an
+ignored configuration beside the derived lockfile cannot suppress a finding.
+`security/supply-chain-policy.json` and
+`scripts/verify-supply-chain-policy.py` then fail closed unless scanned Maven
+package identities exactly match canonical Maven purls in the aggregate BOM,
+the aggregate third-party set exactly equals the union of the two direct
+profiles, every component has explicit license metadata allowed by policy, and
+every finding has an exact, unexpired exception. An unexpected, expired or
+unused exception is also an error; the policy is not a severity-only threshold.
+
+The direct published-module BOM must mark every dependency as non-test, its
+dependency graph must be complete and root-reachable, and every literal
+runtime dependency in the generated POM must be exactly the runtime-locked,
+direct JAR subset. The POM-seeded transitive closure must exactly equal the
+tracked `runtimeClasspath` lock set.
+The MySQL example BOM must mark every dependency as test. A test-only
+vulnerability exception is rejected if its canonical purl appears anywhere in
+the published-module profile, even if the aggregate BOM's collapsed property
+says `test=true`. A license exception marked `test-runtime` is likewise
+checked against all three SBOM roles. The MySQL `test-container` exception
+additionally requires a `container` component with `scope=excluded` and the
+checked-in `routecontract:usage=test-only` property. A human-written scope
+string alone is never accepted.
+
+The only allowed vulnerability findings are:
+
+- `commons-lang:commons-lang:2.4` / `GHSA-j288-q9x7-2f5v`;
+- `net.minidev:json-smart:2.5.0` / `GHSA-pq2g-wx69-c263`;
+- `org.apache.calcite:calcite-core:1.40.0` / `GHSA-c2rv-hwqm-wjpg`.
+
+They are test/example-only transitive dependencies reached through
+ShardingSphere 5.5.3's SQL Federation modules, not dependencies declared by the
+published RouteContract POM. SQL Federation coverage is outside v0.1 scope.
+Each exception expires on 2026-08-27 and must then be removed, renewed with new
+review evidence, or allowed to fail the gate.
+
+The raw result at `build/reports/security/osv-raw.json` and generated sanitized
+summary at `build/reports/security/supply-chain-evidence.json` are intentionally
+local. Neither is uploaded by the current workflow or accepted by the final
+package artifact allowlist. Do not cite them as release or contest evidence.
+Workflow integration is deferred until one focused change can update the
+workflow, artifact schema and package verifier together.
+
 The verification fails closed if a first-party component already declares a
 different license, if no first-party component exists, if Connector/J has an
 unexpected version or incomplete license expression, if a MySQL example BOM
@@ -65,6 +161,8 @@ Example checksum command:
 shasum -a 256 build/reports/verified-sbom/aggregate/bom.json
 ```
 
-An SBOM is an inventory, not a vulnerability scan or legal conclusion. The
-project license remains `LICENSE`; third-party components remain governed by
-their own licenses.
+An SBOM by itself is an inventory, not a vulnerability scan or legal
+conclusion. The offline gate is a point-in-time database and policy check, not
+a guarantee that dependencies are vulnerability-free or legally suitable.
+The project license remains `LICENSE`; third-party components remain governed
+by their own licenses.
