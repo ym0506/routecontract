@@ -78,8 +78,13 @@ workflow. The workflow:
 
 Before creating a public tag, verify through the repository API that release
 immutability is enabled; an HTTP success alone is insufficient, and the parsed
-response must contain `enabled: true`. After the annotated tag's exact revision
-has a green release-evidence run, download and inspect that run's artifact.
+response must contain `enabled: true`. Record `enforced_by_owner` too: `false`
+does not negate the enabled setting, but means owner-level enforcement is not
+protecting the future-release setting. Immediately before the tag push, record
+the current public `main`; do not advance `main` until the workflow's identity
+step has compared it to the peeled tag commit. After the annotated tag's exact
+revision has a green release-evidence run, re-read `main`, the peeled tag commit
+and the run `head_sha`, then download and inspect that run's artifact.
 
 Create a **draft** GitHub Release with `--verify-tag`. For an `-rcN` tag, mark
 that draft as a prerelease. While it is still a draft, attach an explicit list
@@ -98,8 +103,33 @@ release-evidence run:
 - the source archive, SBOMs, test summary, POM/JAR identity, and standalone
   release-asset consumer pass their documented verification gates.
 
-Only after every draft check passes may the draft be published. Immediately
-after publication, require the Release API to report `immutable: true`, run
+Only after every draft check passes may the draft be published. Re-read the
+repository immutable-releases API immediately before publication and again
+require `enabled: true`; the earlier tag-time result is not a permanent setting
+lock. Before running any GitHub CLI attestation or release-verification command,
+run the repository's shared local-only preflight:
+
+```bash
+python3 scripts/gh_cli_release_safety.py
+```
+
+It fails closed unless the installed stable GitHub CLI is at least `2.93.0`.
+Versions through `2.92.0` are affected by
+[GHSA-8xvp-7hj6-mcj9](https://github.com/cli/cli/security/advisories/GHSA-8xvp-7hj6-mcj9):
+the affected `gh attestation`, `gh release verify`, and
+`gh release verify-asset` commands could send authentication tokens to hosts
+that should not receive them. Do not run those commands on an affected or
+unparseable version. Upgrade through an official GitHub CLI distribution. If
+an affected command was already run or the history is uncertain, stop the
+release; the repository owner must revoke the authentication credential used
+by GitHub CLI, upgrade `gh`, authenticate again with a replacement credential,
+and review the personal security log plus relevant organization or enterprise
+audit logs. These credential and account-review actions are owner attestations,
+not steps that this repository automates. Implementation is tracked in
+[#21](https://github.com/ym0506/routecontract/issues/21).
+
+After the preflight passes, publish the verified draft. Immediately after
+publication, require the Release API to report `immutable: true`, run
 `gh release verify`, and run `gh release verify-asset` successfully for each of
 the eleven downloaded assets. If an RC prepublication or postpublication check
 fails, stop and create a new `-rcN` tag after fixing the cause. If an immutable
