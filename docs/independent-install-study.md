@@ -9,7 +9,7 @@ useful feedback and remains in the record.
 
 The project must not count an AI run, the maintainer's second computer or VM, a same-checkout
 packaging test, an unpublished artifact, or a person who helped prepare the tested release as
-independent-user evidence.
+independent-install evidence.
 
 Task A is the primary clean-Quick-Start study. Task B is optional evidence for the exact RC's public
 asset installation path. The two first outcomes are always classified separately.
@@ -91,7 +91,7 @@ documentation is allowed. Prior exposure, a personal relationship, or compensati
 disclosed in non-identifying terms. Prior exposure or a personal relationship does not automatically
 make the result invalid, but hidden involvement does.
 Any money, gift, reciprocal favor, contest support, or other benefit offered for this attempt makes
-it ineligible as independent-user evidence even when disclosed; preserve the result only as
+it ineligible as independent-install evidence even when disclosed; preserve the result only as
 contextual feedback.
 
 A private invitation may contain only neutral logistics: the fixed activation-record permalink,
@@ -309,5 +309,5 @@ reported as Task B only. Never collapse partial outcomes into a combined pass.
 
 RC evidence cannot be promoted to final `v0.1.0`. A final-release non-author claim requires a new
 eligible run against the final annotated tag, Release, assets, and documentation. The project may
-separately report final maintainer CI/package verification, but it must not label RC user evidence as
-final user validation.
+separately report final maintainer CI/package verification, but it must not label RC
+independent-install evidence as final independent-install validation.

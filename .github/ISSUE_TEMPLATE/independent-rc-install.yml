@@ -39,7 +39,7 @@ body:
     id: independence
     attributes:
       label: Eligibility and independence
-      description: If any statement is false, preserve the attempt as ineligible context rather than independent-user evidence.
+      description: If any statement is false, preserve the attempt as ineligible context rather than independent-install evidence.
       options:
         - label: I am a human tester and not the RouteContract author, an AI agent, or a person operating the maintainer's machine or VM.
           required: true

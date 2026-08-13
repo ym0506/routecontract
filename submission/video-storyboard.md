@@ -1,6 +1,6 @@
 # RouteContract 3분 시연 영상 스토리보드
 
-상태: 2분 55초 최종 촬영안. 공개 저장소·CI·릴리스·외부 사용자 게이트를 통과한 뒤 녹화한다.
+상태: 2분 55초 최종 촬영안. 공개 저장소·CI·릴리스·비작성자 설치 검증 게이트를 통과한 뒤 녹화한다.
 
 핵심 문장:
 
@@ -272,7 +272,7 @@ ShardingSphere-JDBC 5.5.3 synchronous PreparedStatement only
 - [ ] RCM301·RCM302 화면도 최종 revision의 실제 결과다.
 - [ ] 세 촬영 명령의 stdout/stderr에서 `/Users/`, `jdbc:`, `localhost:포트`, `127.0.0.1:포트`, `SELECT`, `t_order`, `ds_0`, `ds_1`이 나오지 않는다.
 - [ ] release assets, SBOM, checksum이 공개되어 있다.
-- [ ] 실제 외부 사용자의 quick-start 결과가 공개되어 있다.
+- [ ] 비작성자의 exact-release quick-start 첫 설치 결과가 공개되어 있다.
 - [ ] 영상 속 테스트 수가 최종 revision과 일치한다.
 - [ ] 로컬 경로, 토큰, Docker credential, 알림, 개인 메일이 보이지 않는다.
 - [ ] 1080p에서 terminal 글자가 읽히며 자막이 잘리지 않는다.
