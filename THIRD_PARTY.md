@@ -18,9 +18,13 @@ part of the published library artifact.
 | Alibaba TransmittableThreadLocal | 2.14.2 | `implementation` | Apache-2.0 |
 | Jackson Core (`tools.jackson.core`) | 3.1.5 | `implementation` | Apache-2.0 |
 
-The `compileOnly` Jackson 2 BOM aligns this module's compatibility/test graph;
-it is not published as a consumer version constraint. Consumers using
-ShardingSphere 5.5.3 must declare their own Jackson 2 alignment. It does not
+In the verified Gradle compatibility/test graph, the `compileOnly` Jackson 2 BOM
+resolves core, databind, datatype-jdk8, and datatype-jsr310 to 2.18.9; it is not
+published as a consumer version constraint. In the verified combined test
+runtime, the annotations artifact shared with Jackson 3 resolves to 2.21.
+Consumers using ShardingSphere 5.5.3
+must supply, or already have, an equivalent Jackson 2 alignment to reproduce
+the verified 2.18.9 graph; RouteContract's POM does not provide it. It does not
 replace the separate `tools.jackson` 3.1.5 runtime dependency.
 
 ## Tests and MySQL example

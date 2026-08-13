@@ -41,10 +41,13 @@ testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-
 ```
 
 RouteContract is a thin JAR. Its module-level `compileOnly` ShardingSphere/BOM
-declarations are not published as consumer version constraints. This BOM
-aligns only the `com.fasterxml.jackson` 2.x compatibility graph used by
-ShardingSphere 5.5.3. It does not replace or downgrade RouteContract's separate
-product runtime, `tools.jackson.core:jackson-core:3.1.5`.
+declarations are not published as consumer version constraints. In the verified
+Gradle test/runtime graph, the Jackson 2 core, databind, datatype-jdk8, and
+datatype-jsr310 modules in ShardingSphere 5.5.3's compatibility graph resolve to
+2.18.9. In the runtime that also contains Jackson 3.1.5, the shared
+`jackson-annotations` artifact resolves to 2.21 through the Jackson 3 BOM. This
+does not replace or downgrade RouteContract's separate product runtime,
+`tools.jackson.core:jackson-core:3.1.5`.
 
 ## Verified core scenarios
 

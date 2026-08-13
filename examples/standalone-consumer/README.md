@@ -24,8 +24,10 @@ testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:5.5.3")
 The published RouteContract artifact is a thin JAR. Its module-level
 `compileOnly` ShardingSphere/BOM declarations are not published as consumer
 version constraints, so the standalone consumer owns the alignment. The BOM
-affects ShardingSphere's `com.fasterxml.jackson` 2.x compatibility modules
-only; it does not replace or downgrade RouteContract's separate
+resolves ShardingSphere's Jackson 2 core, databind, datatype-jdk8, and
+datatype-jsr310 compatibility modules to 2.18.9 in this verified Gradle test
+graph. In this verified runtime, the annotations artifact shared with Jackson 3
+resolves to 2.21. The BOM does not replace or downgrade RouteContract's separate
 `tools.jackson.core:jackson-core:3.1.5` product runtime.
 
 The verification metadata trusts only a stable RouteContract first-party

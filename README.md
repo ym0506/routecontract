@@ -38,10 +38,13 @@ testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-
 ```
 
 RouteContract는 의존성을 내장하지 않는 thin JAR이고, 모듈의 `compileOnly`
-ShardingSphere/BOM 선언은 공개 POM에서 소비자 버전 제약으로 전달되지 않습니다. 위 BOM은
-ShardingSphere 5.5.3이 사용하는 `com.fasterxml.jackson` 2.x 호환성 그래프만 정렬합니다.
-RouteContract가 직접 사용하는 별도 `tools.jackson.core:jackson-core:3.1.5` 제품 런타임을
-대체하거나 낮추는 설정이 아닙니다.
+ShardingSphere/BOM 선언은 공개 POM에서 소비자 버전 제약으로 전달되지 않습니다. 검증된
+Gradle test/runtime graph에서는 위 BOM에 따라 ShardingSphere 5.5.3 호환성 그래프의
+Jackson 2 core·databind·datatype-jdk8·datatype-jsr310 모듈이 2.18.9로 해석됩니다. 단, Jackson
+3.1.5도 함께 있는 runtime에서는 두 계열이 공유하는
+`jackson-annotations`가 Jackson 3 BOM에 따라 2.21로 해석됩니다. 이 설정은 RouteContract가
+직접 사용하는 별도 `tools.jackson.core:jackson-core:3.1.5` 제품 런타임을 대체하거나
+낮추지 않습니다.
 
 ## 검증된 핵심 시나리오
 
