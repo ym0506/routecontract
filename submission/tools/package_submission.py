@@ -14,6 +14,7 @@ import hashlib
 import importlib
 import importlib.util
 import json
+import math
 import os
 import re
 import shutil
@@ -43,6 +44,9 @@ LEGACY_SUBMISSION_FILENAMES = {
 PACKAGE_METADATA_NAME = "PACKAGE-METADATA.json"
 CHECKSUMS_NAME = "SHA256SUMS"
 MAX_VIDEO_SECONDS = 180.0
+MIN_VIDEO_WIDTH = 1920
+MIN_VIDEO_HEIGHT = 1080
+MIN_PUBLIC_VIDEO_HEIGHT = 1080
 MAX_PORTABLE_FILENAME_BYTES = 255
 A4_SHORT_EDGE_POINTS = 595.3
 A4_LONG_EDGE_POINTS = 841.9
@@ -75,6 +79,27 @@ YOUTUBE_RE = re.compile(
     r"https://www\.youtube\.com/watch\?v=(?P<id>[A-Za-z0-9_-]{11})"
 )
 PORTABLE_FILENAME_FORBIDDEN = frozenset('<>:"/\\|?*')
+SENSITIVE_VIDEO_METADATA_TAGS = frozenset(
+    {
+        "album_artist",
+        "artist",
+        "author",
+        "comment",
+        "description",
+        "device",
+        "location",
+        "location-eng",
+        "make",
+        "model",
+        "com.apple.quicktime.artist",
+        "com.apple.quicktime.author",
+        "com.apple.quicktime.comment",
+        "com.apple.quicktime.description",
+        "com.apple.quicktime.location.iso6709",
+        "com.apple.quicktime.make",
+        "com.apple.quicktime.model",
+    }
+)
 
 
 class GateError(RuntimeError):
@@ -1086,63 +1111,164 @@ def validate_release_evidence(
     }
 
 
+def validate_video_metadata_tags(value: Any, label: str) -> int:
+    if value is None:
+        return 0
+    if not isinstance(value, dict):
+        raise GateError(f"ffprobe {label} metadata tags must be an object")
+    normalized: dict[str, str] = {}
+    for key, tag_value in value.items():
+        if not isinstance(key, str) or not isinstance(tag_value, str):
+            raise GateError(f"ffprobe {label} metadata tags must contain only strings")
+        normalized_key = key.strip().casefold()
+        if normalized_key in SENSITIVE_VIDEO_METADATA_TAGS:
+            raise GateError(
+                f"local demonstration file contains sensitive metadata tag: {key}"
+            )
+        normalized[key] = tag_value
+    reject_sensitive_metadata(
+        json.dumps(normalized, ensure_ascii=False, sort_keys=True),
+        f"local demonstration {label} metadata",
+    )
+    return len(normalized)
+
+
 def local_video_metadata(path: Path) -> dict[str, Any]:
     ffprobe = shutil.which("ffprobe")
-    if ffprobe:
-        output = run(
-            [
-                ffprobe,
-                "-v",
-                "error",
-                "-show_entries",
-                "format=duration:stream=codec_type,width,height",
-                "-of",
-                "json",
-                str(path),
-            ]
+    if not ffprobe:
+        raise GateError(
+            "ffprobe is required to verify duration, 1080p dimensions, audio, "
+            "and privacy-safe video metadata"
         )
-        try:
-            data = json.loads(output)
-            duration = float(data["format"]["duration"])
-            video_streams = [
-                stream for stream in data.get("streams", []) if stream.get("codec_type") == "video"
-            ]
-        except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
-            raise GateError(f"ffprobe returned incomplete video metadata: {error}") from error
-        if not video_streams:
-            raise GateError("local demonstration file has no video stream")
-        return {
-            "duration_seconds": duration,
-            "width": video_streams[0].get("width"),
-            "height": video_streams[0].get("height"),
-            "probe": "ffprobe",
-        }
+    output = run(
+        [
+            ffprobe,
+            "-v",
+            "error",
+            "-show_entries",
+            "format=duration:format_tags:stream=index,codec_type,width,height:stream_tags:stream_disposition=default,attached_pic,still_image:chapter=id:chapter_tags:program=id:program_tags",
+            "-of",
+            "json",
+            str(path),
+        ]
+    )
+    try:
+        data = json.loads(output)
+        if not isinstance(data, dict):
+            raise TypeError("top-level value is not an object")
+        format_metadata = data["format"]
+        streams = data["streams"]
+        if not isinstance(format_metadata, dict):
+            raise TypeError("format is not an object")
+        if not isinstance(streams, list):
+            raise TypeError("streams is not an array")
+        chapters = data.get("chapters", [])
+        programs = data.get("programs", [])
+        if not isinstance(chapters, list) or any(
+            not isinstance(chapter, dict) for chapter in chapters
+        ):
+            raise TypeError("chapters is not an array of objects")
+        if not isinstance(programs, list) or any(
+            not isinstance(program, dict) for program in programs
+        ):
+            raise TypeError("programs is not an array of objects")
+        duration_value = format_metadata["duration"]
+        if isinstance(duration_value, bool):
+            raise TypeError("duration is boolean")
+        duration = float(duration_value)
+        if not math.isfinite(duration) or duration <= 0:
+            raise ValueError("duration is not a positive finite number")
+        if any(not isinstance(stream, dict) for stream in streams):
+            raise TypeError("a stream is not an object")
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
+        raise GateError(f"ffprobe returned incomplete video metadata: {error}") from error
 
-    mdls = shutil.which("mdls")
-    if mdls:
-        keys = (
-            "kMDItemDurationSeconds",
-            "kMDItemPixelWidth",
-            "kMDItemPixelHeight",
+    metadata_tag_count = validate_video_metadata_tags(
+        format_metadata.get("tags"), "format"
+    )
+    for stream in streams:
+        metadata_tag_count += validate_video_metadata_tags(
+            stream.get("tags"), f"stream {stream.get('index', '?')}"
         )
-        values: list[float] = []
-        for key in keys:
-            raw = run([mdls, "-raw", "-name", key, str(path)]).strip()
-            if re.fullmatch(r"[0-9]+(?:\.[0-9]+)?", raw) is None:
-                values = []
-                break
-            values.append(float(raw))
-        if len(values) != 3:
-            raise GateError(
-                "could not obtain duration/dimensions with mdls; install ffmpeg/ffprobe"
+    for scope, entries in (("chapter", chapters), ("program", programs)):
+        for entry in entries:
+            metadata_tag_count += validate_video_metadata_tags(
+                entry.get("tags"), f"{scope} {entry.get('id', '?')}"
             )
-        return {
-            "duration_seconds": values[0],
-            "width": int(values[1]),
-            "height": int(values[2]),
-            "probe": "mdls",
-        }
-    raise GateError("ffprobe is required to verify the 180-second video limit")
+
+    video_streams = [
+        stream for stream in streams if stream.get("codec_type") == "video"
+    ]
+    audio_streams = [
+        stream for stream in streams if stream.get("codec_type") == "audio"
+    ]
+    if not video_streams:
+        raise GateError("local demonstration file has no video stream")
+    if not audio_streams:
+        raise GateError("local demonstration file must contain at least one audio stream")
+
+    playable_video_streams: list[dict[str, Any]] = []
+    for stream in video_streams:
+        width = stream.get("width")
+        height = stream.get("height")
+        if (
+            isinstance(width, bool)
+            or not isinstance(width, int)
+            or isinstance(height, bool)
+            or not isinstance(height, int)
+            or width <= 0
+            or height <= 0
+        ):
+            raise GateError("ffprobe returned invalid video stream dimensions")
+        disposition = stream.get("disposition")
+        if not isinstance(disposition, dict) or any(
+            type(disposition.get(key)) is not int
+            or disposition[key] not in {0, 1}
+            for key in ("default", "attached_pic", "still_image")
+        ):
+            raise GateError("ffprobe returned invalid video stream disposition")
+        if disposition["attached_pic"] == 0 and disposition["still_image"] == 0:
+            playable_video_streams.append(stream)
+    if not playable_video_streams:
+        raise GateError("local demonstration file has no playable motion video stream")
+
+    stream_indexes = [stream.get("index") for stream in playable_video_streams]
+    if any(type(index) is not int or index < 0 for index in stream_indexes) or len(
+        set(stream_indexes)
+    ) != len(stream_indexes):
+        raise GateError("ffprobe returned invalid or duplicate motion video stream indexes")
+    default_video_streams = [
+        stream
+        for stream in playable_video_streams
+        if stream["disposition"]["default"] == 1
+    ]
+    if len(default_video_streams) > 1:
+        raise GateError("local demonstration file has multiple default motion video streams")
+    selected_video = (
+        default_video_streams[0]
+        if default_video_streams
+        else min(playable_video_streams, key=lambda stream: stream["index"])
+    )
+    width = selected_video["width"]
+    height = selected_video["height"]
+    if width < MIN_VIDEO_WIDTH or height < MIN_VIDEO_HEIGHT:
+        raise GateError(
+            "local demonstration video must be at least "
+            f"{MIN_VIDEO_WIDTH}x{MIN_VIDEO_HEIGHT}; got {width}x{height}"
+        )
+    return {
+        "duration_seconds": duration,
+        "width": width,
+        "height": height,
+        "video_stream_count": len(video_streams),
+        "audio_stream_count": len(audio_streams),
+        "selected_video_stream_index": selected_video.get("index"),
+        "selected_video_is_default": bool(
+            selected_video["disposition"]["default"]
+        ),
+        "metadata_tag_count": metadata_tag_count,
+        "probe": "ffprobe",
+    }
 
 
 def validate_local_video(path: Path, manifest: dict[str, Any]) -> dict[str, Any]:
@@ -1250,36 +1376,139 @@ def public_youtube_metadata(url: str) -> dict[str, Any]:
         raise GateError("YouTube oEmbed response has no public title")
 
     yt_dlp = shutil.which("yt-dlp")
-    duration: float | None = None
-    if yt_dlp:
-        output = run(
-            [
-                yt_dlp,
-                "--ignore-config",
-                "--no-playlist",
-                "--dump-single-json",
-                "--skip-download",
-                "--",
-                url,
-            ]
-        )
-        try:
-            metadata = json.loads(output)
-            if metadata.get("id") != video_id:
-                raise GateError("yt-dlp returned a different YouTube video ID")
-            duration = float(metadata["duration"])
-        except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
-            raise GateError(f"yt-dlp returned incomplete public video metadata: {error}") from error
-    else:
-        page = request_bytes(url, limit=12_000_000).decode("utf-8", errors="replace")
-        duration_match = re.search(r'"lengthSeconds"\s*:\s*"?([0-9]+)"?', page)
-        if duration_match:
-            duration = float(duration_match.group(1))
-    if duration is None:
+    if not yt_dlp:
         raise GateError(
-            "could not verify the public YouTube duration; install yt-dlp and rerun"
+            "yt-dlp is required to verify public availability, non-live status, "
+            "age limit, duration, and downloadable 1080p formats"
         )
-    return {"id": video_id, "title": title, "duration_seconds": duration}
+    output = run(
+        [
+            yt_dlp,
+            "--ignore-config",
+            "--no-playlist",
+            "--check-all-formats",
+            "--dump-single-json",
+            "--skip-download",
+            "--",
+            url,
+        ]
+    )
+    try:
+        metadata = json.loads(output)
+        if not isinstance(metadata, dict):
+            raise TypeError("top-level value is not an object")
+        if metadata.get("id") != video_id:
+            raise GateError("yt-dlp returned a different YouTube video ID")
+        duration_value = metadata["duration"]
+        if isinstance(duration_value, bool):
+            raise TypeError("duration is boolean")
+        duration = float(duration_value)
+        if not math.isfinite(duration) or duration <= 0:
+            raise ValueError("duration is not a positive finite number")
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
+        raise GateError(
+            f"yt-dlp returned incomplete public video duration metadata: {error}"
+        ) from error
+
+    availability = metadata.get("availability")
+    if availability != "public":
+        raise GateError(
+            "YouTube availability must be public; "
+            f"yt-dlp reported {availability!r}"
+        )
+    live_status = metadata.get("live_status")
+    if live_status != "not_live":
+        raise GateError(
+            "YouTube demonstration must be a non-live upload; "
+            f"yt-dlp reported live_status={live_status!r}"
+        )
+    if "age_limit" not in metadata:
+        raise GateError("YouTube age_limit must be 0 or null; yt-dlp omitted it")
+    age_limit = metadata["age_limit"]
+    if age_limit is not None and (
+        isinstance(age_limit, bool)
+        or not isinstance(age_limit, (int, float))
+        or not math.isfinite(float(age_limit))
+        or float(age_limit) != 0.0
+    ):
+        raise GateError(
+            "YouTube age_limit must be 0 or null for logged-out playback; "
+            f"yt-dlp reported {age_limit!r}"
+        )
+
+    formats = metadata.get("formats")
+    if not isinstance(formats, list) or any(
+        not isinstance(item, dict) for item in formats
+    ):
+        raise GateError("yt-dlp format metadata must be an array of objects")
+    downloadable_video_heights: list[int] = []
+    for item in formats:
+        height = item.get("height")
+        vcodec = item.get("vcodec")
+        format_url = item.get("url")
+        has_drm = item.get("has_drm")
+        if height is not None and (
+            isinstance(height, bool)
+            or not isinstance(height, (int, float))
+            or not math.isfinite(float(height))
+            or float(height) <= 0
+        ):
+            raise GateError("yt-dlp format metadata contains an invalid height")
+        if vcodec is not None and not isinstance(vcodec, str):
+            raise GateError("yt-dlp format metadata contains an invalid vcodec")
+        if format_url is not None and not isinstance(format_url, str):
+            raise GateError("yt-dlp format metadata contains an invalid URL")
+        if has_drm is not None and not isinstance(has_drm, bool):
+            raise GateError("yt-dlp format metadata contains an invalid DRM flag")
+        parsed_url = (
+            urllib.parse.urlparse(format_url)
+            if isinstance(format_url, str) and format_url
+            else None
+        )
+        if (
+            height is not None
+            and float(height) >= MIN_PUBLIC_VIDEO_HEIGHT
+            and isinstance(vcodec, str)
+            and bool(vcodec.strip())
+            and vcodec.strip().casefold() != "none"
+            and parsed_url is not None
+            and parsed_url.scheme in {"http", "https"}
+            and bool(parsed_url.netloc)
+            and has_drm is False
+        ):
+            downloadable_video_heights.append(int(height))
+    if not downloadable_video_heights:
+        raise GateError(
+            "YouTube has no downloadable video format at 1080p or higher"
+        )
+    return {
+        "id": video_id,
+        "title": title,
+        "duration_seconds": duration,
+        "availability": availability,
+        "live_status": live_status,
+        "age_limit": age_limit,
+        "max_video_height": max(downloadable_video_heights),
+    }
+
+
+def validate_public_youtube_contract(
+    manifest: dict[str, Any],
+    local_video: dict[str, Any],
+    youtube: dict[str, Any],
+) -> None:
+    if youtube["title"] != manifest["video"]["title"]:
+        raise GateError(
+            f"public YouTube title mismatch: expected {manifest['video']['title']!r}, "
+            f"got {youtube['title']!r}"
+        )
+    if youtube["duration_seconds"] > MAX_VIDEO_SECONDS:
+        raise GateError("public YouTube video exceeds the official 180-second maximum")
+    if abs(
+        float(youtube["duration_seconds"])
+        - float(local_video["duration_seconds"])
+    ) > 1.0:
+        raise GateError("public YouTube duration does not match the checksummed local video")
 
 
 def require_safe_github_cli_release_verification() -> str:
@@ -1428,15 +1657,7 @@ def validate_public_evidence(
     validate_remote_tag_identity(repository_root, manifest)
 
     youtube = public_youtube_metadata(manifest["video"]["youtube_url"])
-    if youtube["title"] != manifest["video"]["title"]:
-        raise GateError(
-            f"public YouTube title mismatch: expected {manifest['video']['title']!r}, "
-            f"got {youtube['title']!r}"
-        )
-    if youtube["duration_seconds"] > MAX_VIDEO_SECONDS:
-        raise GateError("public YouTube video exceeds the official 180-second maximum")
-    if abs(float(youtube["duration_seconds"]) - float(local_video["duration_seconds"])) > 1.0:
-        raise GateError("public YouTube duration does not match the checksummed local video")
+    validate_public_youtube_contract(manifest, local_video, youtube)
 
     return {
         "repository_full_name": repository_data["full_name"],
@@ -1453,6 +1674,10 @@ def validate_public_evidence(
         "youtube_video_id": youtube["id"],
         "youtube_title": youtube["title"],
         "youtube_duration_seconds": youtube["duration_seconds"],
+        "youtube_availability": youtube["availability"],
+        "youtube_live_status": youtube["live_status"],
+        "youtube_age_limit": youtube["age_limit"],
+        "youtube_max_video_height": youtube["max_video_height"],
     }
 
 

@@ -274,8 +274,10 @@ synchronous non-batch PreparedStatement only
 - [ ] 외부 결과 카드는 실제 qualified Issue 또는 공개 모집기간·cutoff·0건·외부 검증 미확보 중 정확히 하나를 표시하며, author·AI·clone을 외부 결과로 세지 않는다.
 - [ ] 영상 속 테스트 수가 최종 revision과 일치한다.
 - [ ] 로컬 경로, 토큰, Docker credential, 알림, 개인 메일이 보이지 않는다.
+- [ ] 최종 로컬 파일은 `ffprobe` 기준 1920×1080 이상이고 audio stream이 1개 이상이며, 허용된 일반 encoder/language/handler tag 외에 명시적으로 금지한 identity·location·device metadata tag가 없다.
 - [ ] 1080p에서 terminal 글자가 읽히며 자막이 잘리지 않는다.
-- [ ] YouTube 재생시간이 2:50~2:55이고 로그인 없이 재생된다.
+- [ ] YouTube는 공개·non-live·연령 제한 없음 상태이고 다운로드 가능한 1080p 이상 format이 처리됐으며, 재생시간이 2:50~2:55이고 로그인 없이 재생된다.
+- [ ] 자동 gate가 판독하지 않는 음량·clipping·내레이션 진실성·화면 가독성은 owner가 로컬 파일과 로그아웃 공개 1080p 영상을 처음부터 끝까지 직접 듣고 보며 확인했다.
 
 ## 금지 표현
 

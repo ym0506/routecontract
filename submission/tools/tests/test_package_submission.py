@@ -115,7 +115,99 @@ def valid_manifest() -> dict:
     }
 
 
+def valid_ffprobe_video() -> dict:
+    return {
+        "format": {
+            "duration": "179.500000",
+            "tags": {
+                "encoder": "Lavf test fixture",
+            },
+        },
+        "streams": [
+            {
+                "index": 0,
+                "codec_type": "video",
+                "width": 1920,
+                "height": 1080,
+                "disposition": {
+                    "default": 1,
+                    "attached_pic": 0,
+                    "still_image": 0,
+                },
+                "tags": {
+                    "language": "und",
+                    "handler_name": "VideoHandler",
+                },
+            },
+            {
+                "index": 1,
+                "codec_type": "audio",
+                "tags": {
+                    "language": "kor",
+                    "handler_name": "SoundHandler",
+                },
+            },
+        ],
+    }
+
+
+def valid_youtube_probe() -> dict:
+    return {
+        "id": "abcdefghijk",
+        "duration": 179,
+        "availability": "public",
+        "live_status": "not_live",
+        "age_limit": 0,
+        "formats": [
+            {
+                "format_id": "140",
+                "height": None,
+                "vcodec": "none",
+                "acodec": "mp4a.40.2",
+                "url": "https://example.invalid/audio",
+            },
+            {
+                "format_id": "137",
+                "height": 1080,
+                "vcodec": "avc1.640028",
+                "acodec": "none",
+                "url": "https://example.invalid/video",
+                "has_drm": False,
+            },
+        ],
+    }
+
+
 class SubmissionClaimTextTest(unittest.TestCase):
+    def test_video_delivery_docs_separate_machine_and_owner_qc(self) -> None:
+        readme = (REPOSITORY_ROOT / "submission" / "README.md").read_text(
+            encoding="utf-8"
+        )
+        storyboard = (
+            REPOSITORY_ROOT / "submission" / "video-storyboard.md"
+        ).read_text(encoding="utf-8")
+
+        for required in (
+            "at least 1920x1080",
+            "at least one audio stream",
+            "public, non-live, age-unrestricted",
+            "downloadable 1080p",
+            "checks all reported formats",
+            "does not grade narration",
+            "loudness, clipping, or visual readability",
+            "owner must still watch and listen",
+            "download the entire public video",
+        ):
+            self.assertIn(required, readme)
+        for required in (
+            "1920×1080 이상",
+            "audio stream이 1개 이상",
+            "공개·non-live·연령 제한 없음",
+            "1080p 이상 format",
+            "음량·clipping·내레이션 진실성·화면 가독성",
+        ):
+            self.assertIn(required, storyboard)
+
     def test_storyboard_supports_qualified_and_zero_external_result_branches(
         self,
     ) -> None:
@@ -346,6 +438,332 @@ class ManifestTest(unittest.TestCase):
         ]
         with self.assertRaisesRegex(package_submission.GateError, "must be empty"):
             package_submission.validate_manifest(manifest)
+
+
+class LocalVideoEvidenceTest(unittest.TestCase):
+    VIDEO = Path("/private/final-video.mp4")
+
+    def probe(self, payload: object) -> dict:
+        with patch.object(
+            package_submission.shutil,
+            "which",
+            side_effect=lambda name: "/usr/local/bin/ffprobe"
+            if name == "ffprobe"
+            else None,
+        ), patch.object(
+            package_submission,
+            "run",
+            return_value=json.dumps(payload),
+        ) as run:
+            result = package_submission.local_video_metadata(self.VIDEO)
+
+        run.assert_called_once_with(
+            [
+                "/usr/local/bin/ffprobe",
+                "-v",
+                "error",
+                "-show_entries",
+                "format=duration:format_tags:stream=index,codec_type,width,height:stream_tags:stream_disposition=default,attached_pic,still_image:chapter=id:chapter_tags:program=id:program_tags",
+                "-of",
+                "json",
+                str(self.VIDEO),
+            ]
+        )
+        return result
+
+    def test_accepts_1080p_audio_and_normal_container_tags(self) -> None:
+        result = self.probe(valid_ffprobe_video())
+
+        self.assertEqual(179.5, result["duration_seconds"])
+        self.assertEqual(1920, result["width"])
+        self.assertEqual(1080, result["height"])
+        self.assertEqual(1, result["video_stream_count"])
+        self.assertEqual(1, result["audio_stream_count"])
+        self.assertEqual("ffprobe", result["probe"])
+
+    def test_accepts_larger_video_and_multiple_audio_streams(self) -> None:
+        payload = valid_ffprobe_video()
+        payload["streams"][0]["width"] = 3840
+        payload["streams"][0]["height"] = 2160
+        payload["streams"].append(
+            {
+                "index": 2,
+                "codec_type": "audio",
+                "tags": {"language": "eng", "handler_name": "SoundHandler"},
+            }
+        )
+
+        result = self.probe(payload)
+
+        self.assertEqual(3840, result["width"])
+        self.assertEqual(2160, result["height"])
+        self.assertEqual(2, result["audio_stream_count"])
+
+    def test_uses_default_motion_video_instead_of_larger_alternate(self) -> None:
+        payload = valid_ffprobe_video()
+        alternate = dict(payload["streams"][0])
+        alternate["index"] = 2
+        alternate["width"] = 3840
+        alternate["height"] = 2160
+        alternate["disposition"] = dict(
+            payload["streams"][0]["disposition"], default=0
+        )
+        payload["streams"].append(alternate)
+
+        result = self.probe(payload)
+
+        self.assertEqual(1920, result["width"])
+        self.assertEqual(1080, result["height"])
+        self.assertEqual(0, result["selected_video_stream_index"])
+        self.assertTrue(result["selected_video_is_default"])
+
+    def test_rejects_720p_default_even_with_4k_nondefault_alternate(self) -> None:
+        payload = valid_ffprobe_video()
+        payload["streams"][0]["width"] = 1280
+        payload["streams"][0]["height"] = 720
+        alternate = dict(payload["streams"][0])
+        alternate["index"] = 2
+        alternate["width"] = 3840
+        alternate["height"] = 2160
+        alternate["disposition"] = dict(
+            payload["streams"][0]["disposition"], default=0
+        )
+        payload["streams"].append(alternate)
+
+        with self.assertRaisesRegex(package_submission.GateError, "got 1280x720"):
+            self.probe(payload)
+
+    def test_rejects_cover_art_or_still_image_as_resolution_evidence(self) -> None:
+        for excluded_disposition in ("attached_pic", "still_image"):
+            payload = valid_ffprobe_video()
+            payload["streams"][0]["width"] = 1280
+            payload["streams"][0]["height"] = 720
+            cover = dict(payload["streams"][0])
+            cover["index"] = 2
+            cover["width"] = 1920
+            cover["height"] = 1080
+            cover["disposition"] = {
+                "default": 0,
+                "attached_pic": 0,
+                "still_image": 0,
+                excluded_disposition: 1,
+            }
+            payload["streams"].append(cover)
+
+            with self.subTest(disposition=excluded_disposition), self.assertRaisesRegex(
+                package_submission.GateError, "got 1280x720"
+            ):
+                self.probe(payload)
+
+    def test_without_default_uses_first_motion_stream_not_larger_secondary(self) -> None:
+        payload = valid_ffprobe_video()
+        payload["streams"][0]["width"] = 1280
+        payload["streams"][0]["height"] = 720
+        payload["streams"][0]["disposition"]["default"] = 0
+        secondary = dict(payload["streams"][0])
+        secondary["index"] = 2
+        secondary["width"] = 3840
+        secondary["height"] = 2160
+        secondary["disposition"] = dict(
+            payload["streams"][0]["disposition"]
+        )
+        payload["streams"].append(secondary)
+
+        with self.assertRaisesRegex(package_submission.GateError, "got 1280x720"):
+            self.probe(payload)
+
+    def test_rejects_multiple_default_motion_video_streams(self) -> None:
+        payload = valid_ffprobe_video()
+        secondary = dict(payload["streams"][0])
+        secondary["index"] = 2
+        secondary["disposition"] = dict(
+            payload["streams"][0]["disposition"], default=1
+        )
+        payload["streams"].append(secondary)
+
+        with self.assertRaisesRegex(package_submission.GateError, "multiple default"):
+            self.probe(payload)
+
+    def test_rejects_missing_or_duplicate_motion_video_stream_index(self) -> None:
+        payload = valid_ffprobe_video()
+        del payload["streams"][0]["index"]
+        with self.assertRaisesRegex(package_submission.GateError, "stream indexes"):
+            self.probe(payload)
+
+        payload = valid_ffprobe_video()
+        secondary = dict(payload["streams"][0])
+        secondary["disposition"] = dict(
+            payload["streams"][0]["disposition"], default=0
+        )
+        payload["streams"].append(secondary)
+        with self.assertRaisesRegex(package_submission.GateError, "stream indexes"):
+            self.probe(payload)
+
+    def test_rejects_only_cover_art_or_still_image_video(self) -> None:
+        for excluded_disposition in ("attached_pic", "still_image"):
+            payload = valid_ffprobe_video()
+            payload["streams"][0]["disposition"][excluded_disposition] = 1
+            with self.subTest(disposition=excluded_disposition), self.assertRaisesRegex(
+                package_submission.GateError, "no playable motion video stream"
+            ):
+                self.probe(payload)
+
+    def test_rejects_missing_or_malformed_video_disposition(self) -> None:
+        for disposition in (None, {}, {"default": False, "attached_pic": 0, "still_image": 0}):
+            payload = valid_ffprobe_video()
+            if disposition is None:
+                del payload["streams"][0]["disposition"]
+            else:
+                payload["streams"][0]["disposition"] = disposition
+            with self.subTest(disposition=disposition), self.assertRaisesRegex(
+                package_submission.GateError, "video stream disposition"
+            ):
+                self.probe(payload)
+
+    def test_requires_ffprobe_instead_of_incomplete_mdls_fallback(self) -> None:
+        with patch.object(package_submission.shutil, "which", return_value=None):
+            with self.assertRaisesRegex(package_submission.GateError, "ffprobe is required"):
+                package_submission.local_video_metadata(self.VIDEO)
+
+    def test_rejects_invalid_or_incomplete_ffprobe_output(self) -> None:
+        invalid_payloads = (
+            "not-an-object",
+            {},
+            {"format": {}, "streams": []},
+            {"format": {"duration": "NaN"}, "streams": []},
+            {"format": {"duration": "179"}, "streams": "not-a-list"},
+        )
+        for payload in invalid_payloads:
+            with self.subTest(payload=payload), self.assertRaisesRegex(
+                package_submission.GateError, "ffprobe returned incomplete video metadata"
+            ):
+                self.probe(payload)
+
+    def test_rejects_missing_audio_stream(self) -> None:
+        payload = valid_ffprobe_video()
+        payload["streams"] = [payload["streams"][0]]
+
+        with self.assertRaisesRegex(package_submission.GateError, "audio stream"):
+            self.probe(payload)
+
+    def test_rejects_missing_video_stream(self) -> None:
+        payload = valid_ffprobe_video()
+        payload["streams"] = [payload["streams"][1]]
+
+        with self.assertRaisesRegex(package_submission.GateError, "no video stream"):
+            self.probe(payload)
+
+    def test_rejects_video_below_1920_by_1080(self) -> None:
+        for width, height in ((1919, 1080), (1920, 1079), (1280, 720)):
+            payload = valid_ffprobe_video()
+            payload["streams"][0]["width"] = width
+            payload["streams"][0]["height"] = height
+            with self.subTest(width=width, height=height), self.assertRaisesRegex(
+                package_submission.GateError, "at least 1920x1080"
+            ):
+                self.probe(payload)
+
+    def test_rejects_malformed_video_dimensions(self) -> None:
+        for width, height in (("1920", 1080), (1920, None), (True, 1080)):
+            payload = valid_ffprobe_video()
+            payload["streams"][0]["width"] = width
+            payload["streams"][0]["height"] = height
+            with self.subTest(width=width, height=height), self.assertRaisesRegex(
+                package_submission.GateError, "dimensions"
+            ):
+                self.probe(payload)
+
+    def test_rejects_every_explicit_sensitive_tag_at_format_and_stream_scope(
+        self,
+    ) -> None:
+        for tag in package_submission.SENSITIVE_VIDEO_METADATA_TAGS:
+            for scope in ("format", "stream"):
+                payload = valid_ffprobe_video()
+                target = (
+                    payload["format"]["tags"]
+                    if scope == "format"
+                    else payload["streams"][0]["tags"]
+                )
+                target[f" {tag.swapcase()} "] = "private fixture value"
+                with self.subTest(tag=tag, scope=scope), self.assertRaisesRegex(
+                    package_submission.GateError, "sensitive metadata tag"
+                ):
+                    self.probe(payload)
+
+    def test_rejects_sensitive_chapter_and_program_metadata_tags(self) -> None:
+        for scope in ("chapters", "programs"):
+            payload = valid_ffprobe_video()
+            payload[scope] = [{"id": 1, "tags": {"author": "private fixture"}}]
+            with self.subTest(scope=scope), self.assertRaisesRegex(
+                package_submission.GateError, "sensitive metadata tag"
+            ):
+                self.probe(payload)
+
+    def test_rejects_malformed_tag_objects(self) -> None:
+        for scope in ("format", "stream"):
+            payload = valid_ffprobe_video()
+            if scope == "format":
+                payload["format"]["tags"] = ["encoder"]
+            else:
+                payload["streams"][0]["tags"] = ["language"]
+            with self.subTest(scope=scope), self.assertRaisesRegex(
+                package_submission.GateError, "metadata tags"
+            ):
+                self.probe(payload)
+
+    def test_rejects_private_path_or_email_in_otherwise_allowed_tag(self) -> None:
+        for leaked_value in (
+            "/Users/person/private/final.mov",
+            "owner@example.com",
+        ):
+            payload = valid_ffprobe_video()
+            payload["format"]["tags"]["encoder"] = leaked_value
+            with self.subTest(value=leaked_value), self.assertRaisesRegex(
+                package_submission.GateError, "private path/identity metadata"
+            ):
+                self.probe(payload)
+
+    def test_validate_local_video_preserves_hash_and_duration_gates(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            video = Path(raw) / "final.mp4"
+            video.write_bytes(b"final video fixture")
+            manifest = valid_manifest()
+            manifest["video"]["local_file_sha256"] = hashlib.sha256(
+                video.read_bytes()
+            ).hexdigest()
+
+            with patch.object(
+                package_submission,
+                "local_video_metadata",
+                return_value={
+                    "duration_seconds": 179.5,
+                    "width": 1920,
+                    "height": 1080,
+                    "video_stream_count": 1,
+                    "audio_stream_count": 1,
+                    "probe": "ffprobe",
+                },
+            ):
+                accepted = package_submission.validate_local_video(video, manifest)
+            self.assertEqual(manifest["video"]["local_file_sha256"], accepted["sha256"])
+
+            changed = valid_manifest()
+            with self.assertRaisesRegex(package_submission.GateError, "SHA-256 mismatch"):
+                package_submission.validate_local_video(video, changed)
+
+            with patch.object(
+                package_submission,
+                "local_video_metadata",
+                return_value={"duration_seconds": 180.001},
+            ), self.assertRaisesRegex(package_submission.GateError, "official maximum"):
+                package_submission.validate_local_video(video, manifest)
+
+            with patch.object(
+                package_submission,
+                "local_video_metadata",
+                return_value={"duration_seconds": 179.0},
+            ), self.assertRaisesRegex(package_submission.GateError, "differs from manifest"):
+                package_submission.validate_local_video(video, manifest)
 
 
 class GitStateTest(unittest.TestCase):
@@ -1109,6 +1527,45 @@ class ReleaseEvidenceTest(unittest.TestCase):
 
 
 class PublicEvidenceTest(unittest.TestCase):
+    def test_public_youtube_contract_preserves_title_and_duration_gates(self) -> None:
+        manifest = package_submission.validate_manifest(valid_manifest())
+        local_video = {"duration_seconds": 179.5}
+        youtube = {
+            "title": "RouteContract demo",
+            "duration_seconds": 179.0,
+        }
+        package_submission.validate_public_youtube_contract(
+            manifest, local_video, youtube
+        )
+
+        changed_title = dict(youtube, title="Different title")
+        with self.assertRaisesRegex(package_submission.GateError, "title mismatch"):
+            package_submission.validate_public_youtube_contract(
+                manifest, local_video, changed_title
+            )
+
+        over_limit = dict(youtube, duration_seconds=180.001)
+        with self.assertRaisesRegex(package_submission.GateError, "180-second maximum"):
+            package_submission.validate_public_youtube_contract(
+                manifest, local_video, over_limit
+            )
+
+        different_upload = dict(youtube, duration_seconds=178.499)
+        with self.assertRaisesRegex(
+            package_submission.GateError, "checksummed local video"
+        ):
+            package_submission.validate_public_youtube_contract(
+                manifest, local_video, different_upload
+            )
+
+    def test_public_youtube_contract_accepts_exact_one_second_rounding(self) -> None:
+        manifest = package_submission.validate_manifest(valid_manifest())
+        package_submission.validate_public_youtube_contract(
+            manifest,
+            {"duration_seconds": 179.5},
+            {"title": "RouteContract demo", "duration_seconds": 178.5},
+        )
+
     def test_tls_context_uses_the_pinned_certifi_bundle(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             ca_bundle = Path(raw) / "cacert.pem"
@@ -1151,7 +1608,7 @@ class PublicEvidenceTest(unittest.TestCase):
 
         def fake_run(command: list[str]) -> str:
             commands.append(command)
-            return json.dumps({"id": "abcdefghijk", "duration": 179})
+            return json.dumps(valid_youtube_probe())
 
         with patch.object(
             package_submission,
@@ -1163,11 +1620,16 @@ class PublicEvidenceTest(unittest.TestCase):
             result = package_submission.public_youtube_metadata(url)
 
         self.assertEqual(179.0, result["duration_seconds"])
+        self.assertEqual("public", result["availability"])
+        self.assertEqual("not_live", result["live_status"])
+        self.assertEqual(0, result["age_limit"])
+        self.assertEqual(1080, result["max_video_height"])
         self.assertEqual(
             [
                 "/usr/local/bin/yt-dlp",
                 "--ignore-config",
                 "--no-playlist",
+                "--check-all-formats",
                 "--dump-single-json",
                 "--skip-download",
                 "--",
@@ -1175,6 +1637,202 @@ class PublicEvidenceTest(unittest.TestCase):
             ],
             commands[0],
         )
+
+    def youtube_probe(self, metadata: object) -> dict:
+        url = "https://www.youtube.com/watch?v=abcdefghijk"
+        with patch.object(
+            package_submission,
+            "request_json",
+            return_value={"title": "RouteContract demo"},
+        ), patch.object(
+            package_submission.shutil, "which", return_value="/usr/local/bin/yt-dlp"
+        ), patch.object(
+            package_submission, "run", return_value=json.dumps(metadata)
+        ):
+            return package_submission.public_youtube_metadata(url)
+
+    def test_youtube_probe_accepts_none_age_limit_and_4k_video(self) -> None:
+        metadata = valid_youtube_probe()
+        metadata["age_limit"] = None
+        metadata["formats"][1]["height"] = 2160
+
+        result = self.youtube_probe(metadata)
+
+        self.assertIsNone(result["age_limit"])
+        self.assertEqual(2160, result["max_video_height"])
+
+        metadata["age_limit"] = 0.0
+        result = self.youtube_probe(metadata)
+        self.assertEqual(0.0, result["age_limit"])
+
+    def test_youtube_probe_requires_yt_dlp_for_public_format_evidence(self) -> None:
+        with patch.object(
+            package_submission,
+            "request_json",
+            return_value={"title": "RouteContract demo"},
+        ), patch.object(package_submission.shutil, "which", return_value=None):
+            with self.assertRaisesRegex(package_submission.GateError, "yt-dlp is required"):
+                package_submission.public_youtube_metadata(
+                    "https://www.youtube.com/watch?v=abcdefghijk"
+                )
+
+    def test_youtube_probe_rejects_non_public_or_missing_availability(self) -> None:
+        for availability in (None, "unlisted", "private", "needs_auth"):
+            metadata = valid_youtube_probe()
+            if availability is None:
+                del metadata["availability"]
+            else:
+                metadata["availability"] = availability
+            with self.subTest(availability=availability), self.assertRaisesRegex(
+                package_submission.GateError, "availability must be public"
+            ):
+                self.youtube_probe(metadata)
+
+    def test_youtube_probe_rejects_live_upcoming_or_unknown_status(self) -> None:
+        for live_status in (
+            None,
+            "is_live",
+            "is_upcoming",
+            "post_live",
+            "was_live",
+        ):
+            metadata = valid_youtube_probe()
+            if live_status is None:
+                del metadata["live_status"]
+            else:
+                metadata["live_status"] = live_status
+            with self.subTest(live_status=live_status), self.assertRaisesRegex(
+                package_submission.GateError, "must be a non-live upload"
+            ):
+                self.youtube_probe(metadata)
+
+    def test_youtube_probe_rejects_restricted_or_malformed_age_limit(self) -> None:
+        for age_limit in (18, 1, -1, "0", False):
+            metadata = valid_youtube_probe()
+            metadata["age_limit"] = age_limit
+            with self.subTest(age_limit=age_limit), self.assertRaisesRegex(
+                package_submission.GateError, "age_limit must be 0 or null"
+            ):
+                self.youtube_probe(metadata)
+
+        missing = valid_youtube_probe()
+        del missing["age_limit"]
+        with self.assertRaisesRegex(
+            package_submission.GateError, "age_limit must be 0 or null"
+        ):
+            self.youtube_probe(missing)
+
+    def test_youtube_probe_rejects_missing_or_low_resolution_video_formats(
+        self,
+    ) -> None:
+        invalid_formats = (
+            [],
+            [
+                {
+                    "format_id": "136",
+                    "height": 720,
+                    "vcodec": "avc1.4d401f",
+                    "url": "https://example.invalid/720p",
+                }
+            ],
+            [
+                {
+                    "format_id": "140",
+                    "height": 1080,
+                    "vcodec": "none",
+                    "url": "https://example.invalid/audio",
+                }
+            ],
+            [
+                {
+                    "format_id": "137",
+                    "height": 1080,
+                    "vcodec": "avc1.640028",
+                    "url": "",
+                    "has_drm": False,
+                }
+            ],
+            [
+                {
+                    "format_id": "137",
+                    "height": 1080,
+                    "vcodec": "avc1.640028",
+                    "url": "https://example.invalid/drm",
+                    "has_drm": True,
+                }
+            ],
+            [
+                {
+                    "format_id": "137",
+                    "height": 1080,
+                    "vcodec": "avc1.640028",
+                    "url": "https://example.invalid/missing-drm-status",
+                }
+            ],
+            [
+                {
+                    "format_id": "137",
+                    "height": 1080,
+                    "vcodec": "avc1.640028",
+                    "url": "https://example.invalid/unknown-drm-status",
+                    "has_drm": None,
+                }
+            ],
+        )
+        for formats in invalid_formats:
+            metadata = valid_youtube_probe()
+            metadata["formats"] = formats
+            with self.subTest(formats=formats), self.assertRaisesRegex(
+                package_submission.GateError, "downloadable video format at 1080p"
+            ):
+                self.youtube_probe(metadata)
+
+    def test_youtube_probe_rejects_malformed_format_evidence(self) -> None:
+        malformed_formats = (
+            None,
+            {},
+            ["not-an-object"],
+            [{"height": True}],
+            [{"has_drm": "false"}],
+        )
+        for formats in malformed_formats:
+            metadata = valid_youtube_probe()
+            metadata["formats"] = formats
+            with self.subTest(formats=formats), self.assertRaisesRegex(
+                package_submission.GateError, "format metadata"
+            ):
+                self.youtube_probe(metadata)
+
+    def test_youtube_probe_rejects_empty_or_none_like_video_codec(self) -> None:
+        for vcodec in ("", "   ", "none", "NONE", " None "):
+            metadata = valid_youtube_probe()
+            metadata["formats"][1]["vcodec"] = vcodec
+            with self.subTest(vcodec=vcodec), self.assertRaisesRegex(
+                package_submission.GateError, "downloadable video format at 1080p"
+            ):
+                self.youtube_probe(metadata)
+
+    def test_youtube_probe_preserves_exact_id_and_finite_duration(self) -> None:
+        wrong_id = valid_youtube_probe()
+        wrong_id["id"] = "zyxwvutsrqp"
+        with self.assertRaisesRegex(package_submission.GateError, "different YouTube video ID"):
+            self.youtube_probe(wrong_id)
+
+        for duration in (None, True, 0, -1, float("nan"), float("inf")):
+            metadata = valid_youtube_probe()
+            if duration is None:
+                del metadata["duration"]
+            else:
+                metadata["duration"] = duration
+            with self.subTest(duration=duration), self.assertRaisesRegex(
+                package_submission.GateError, "duration"
+            ):
+                self.youtube_probe(metadata)
+
+        with self.assertRaisesRegex(
+            package_submission.GateError, "incomplete public video duration metadata"
+        ):
+            self.youtube_probe("not-an-object")
 
     def test_accepts_matching_public_revision_release_and_video(self) -> None:
         manifest = package_submission.validate_manifest(valid_manifest())
@@ -1241,6 +1899,10 @@ class PublicEvidenceTest(unittest.TestCase):
             "id": "abcdefghijk",
             "title": "RouteContract demo",
             "duration_seconds": 179.0,
+            "availability": "public",
+            "live_status": "not_live",
+            "age_limit": 0,
+            "max_video_height": 1080,
         }
         public_identity_events: list[str] = []
         with patch.object(
@@ -1266,6 +1928,13 @@ class PublicEvidenceTest(unittest.TestCase):
         self.assertEqual("success", result["ci_conclusion"])
         self.assertEqual("v0.1.0", result["release_tag"])
         self.assertIs(True, result["release_immutable"])
+        self.assertEqual("abcdefghijk", result["youtube_video_id"])
+        self.assertEqual("RouteContract demo", result["youtube_title"])
+        self.assertEqual(179.0, result["youtube_duration_seconds"])
+        self.assertEqual("public", result["youtube_availability"])
+        self.assertEqual("not_live", result["youtube_live_status"])
+        self.assertEqual(0, result["youtube_age_limit"])
+        self.assertEqual(1080, result["youtube_max_video_height"])
         verify_attestations.assert_called_once_with(
             manifest, evidence, Path("/evidence")
         )

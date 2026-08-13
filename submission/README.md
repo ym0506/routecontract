@@ -67,7 +67,10 @@ The organizer's 2026 submission notice is the packaging authority:
 - source code is represented by exactly one public repository URL in the
   report;
 - the demonstration is represented by a public YouTube URL in the report and
-  must be no longer than 180 seconds;
+  must be no longer than 180 seconds. This project's final gate also requires
+  a local video at least 1920x1080 with at least one audio stream, and a
+  public, non-live, age-unrestricted YouTube upload with a downloadable 1080p
+  or higher video format;
 - Attachment 1 SBOM stays inside the report;
 - Attachment 2 is removed because RouteContract has no runtime AI model or AI
   API path; development-time ChatGPT/Codex use remains disclosed in the main
@@ -78,7 +81,9 @@ The organizer's 2026 submission notice is the packaging authority:
 
 `package_submission.py` implements those rules as a fail-closed final gate. It
 rebuilds the DOCX with `build_official_report.py --strict-final`, checks the PDF
-content and page boundary, checks the local video with `ffprobe`, verifies the
+content and page boundary, checks the local video's duration, default playable
+motion-stream dimensions, audio-stream presence, and narrow privacy-sensitive
+format/stream/chapter/program metadata denylist with `ffprobe`, verifies the
 exact Git revision/tag/public repository/green release-evidence run/GitHub
 Release, verifies the release artifact checksums and aggregate SBOM, and emits
 an exact two-file ZIP by default. It derives the DOCX, PDF and ZIP names from
@@ -88,8 +93,10 @@ the old fixed English report and ZIP filenames are rejected.
 
 Before the final run, install the pinned report-builder environment above and
 confirm these host tools: Poppler's `pdfinfo`, `pdfdetach`, and `pdftotext`;
-`ffprobe` (or macOS `mdls`) for the local video; `yt-dlp` for the public
-YouTube duration check; and GitHub CLI 2.93.0 or newer with
+`ffprobe` for the local video; `yt-dlp --check-all-formats` for public
+availability, non-live and age-unrestricted status, duration, and downloadable
+1080p format evidence (the verifier checks all reported formats first);
+and GitHub CLI 2.93.0 or newer with
 `gh release verify` and `gh release verify-asset`. The advisory also covers
 `gh attestation` commands. Versions through 2.92.0 are refused before any
 affected verification command because they are affected by
@@ -103,6 +110,13 @@ remediation and log-review guidance; never paste authentication or audit details
 into public evidence. If duplicate-benefit status is required, obtain and
 retain the exact organizer form and implement its title/identity/placeholder
 validation before enabling that path; do not substitute an arbitrary document.
+
+The video gate does not require a particular codec and does not grade narration
+loudness, clipping, or visual readability. The owner must still watch and listen
+to the checksummed local file and the logged-out public 1080p playback from
+start to finish before setting `final_video_watchthrough_completed=true`.
+The `yt-dlp` result is downloadable-format inventory evidence; the gate does not
+download the entire public video or replace that owner playback review.
 
 Do not put personal final values in the public content template. Copy the
 templates to ignored paths first:
