@@ -3,7 +3,7 @@ import org.cyclonedx.model.LicenseChoice
 
 plugins {
     id 'base'
-    id 'org.cyclonedx.bom' version '3.4.0'
+    id 'org.cyclonedx.bom' version '3.4.1'
 }
 
 group = 'io.github.ym0506.routecontract'
