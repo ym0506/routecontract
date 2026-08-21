@@ -36,6 +36,10 @@ Tests passing alone is not completion. A claim also needs a reproducible command
 - `unverified`
 - `planned`
 
+These labels describe the environment and verification boundary of a technical claim. Artifact
+maturity terms in `docs/evidence-matrix.md` (for example `artifact-ready` or `pending`) are a
+separate axis and must not replace the applicable evidence label.
+
 H2 evidence never proves MySQL behavior.
 
 ## v0.1 non-scope

@@ -1,5 +1,5 @@
 name: Route regression
-description: Report a business-green change that alters observed physical JDBC executions.
+description: Report a business-green change that alters ShardingSphere-JDBC 5.5.3 SQLExecutionHook-reported physical JDBC execution attempts.
 title: "[route-regression] "
 labels: [route-regression, needs-reproduction]
 body:
@@ -12,7 +12,7 @@ body:
     attributes:
       label: Exact versions
       description: Include RouteContract, ShardingSphere, Java, database, driver, and OS versions.
-      placeholder: RouteContract 0.1.0-SNAPSHOT; ShardingSphere-JDBC 5.5.3; Java 17; MySQL 8.4.11
+      placeholder: RouteContract 0.1.0-rc1; ShardingSphere-JDBC 5.5.3; Java 17; MySQL 8.4.11
     validations:
       required: true
   - type: textarea

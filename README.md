@@ -4,18 +4,37 @@
 
 [![CI](https://github.com/ym0506/routecontract/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ym0506/routecontract/actions/workflows/ci.yml?query=branch%3Amain)
 
-> CI contracts for observed physical JDBC executions
+> CI contracts for ShardingSphere-JDBC 5.5.3 `SQLExecutionHook`-reported physical JDBC execution attempts
 
 RouteContract는 Apache ShardingSphere-JDBC 애플리케이션에서 하나의 application operation 동안 `SQLExecutionHook`으로 **관측된 물리 JDBC 실행 시도**를 결정적인 manifest로 만들고, SQL·설정 변경으로 생긴 관측 실행 확장과 실행 구조 변화를 CI에서 차단하는 Java 테스트 라이브러리입니다.
 
 비즈니스 결과만 검사하면 같은 행을 정상 반환하면서도 hook이 보고한 관측 실행 시도가 `1 → 2` 또는 `1 → 8`로 늘어난 변경을 놓칠 수 있습니다. RouteContract는 operation별 실행 예산, 관측 data-source 이름, rewritten-SQL fingerprint의 구조적 diff를 별도의 회귀 계약으로 검증합니다.
 
-현재 상태는 `v0.1.0-SNAPSHOT` 개발본입니다. 공개 소스와 Ubuntu CI는 준비됐지만 공개 릴리스와 외부 사용자 검증은 아직 없습니다. 아래 50개 정상 테스트와 독립 소비자 테스트 1개는 [revision `54f1c92`의 공개 main CI](https://github.com/ym0506/routecontract/actions/runs/31501026857)에서도 실패·오류·skip 0건으로 확인됐습니다. 자세한 환경·원시 artifact·한계는 [공개 CI 증거 기록](docs/public-ci-evidence.md)에 있습니다. 이는 수상·운영환경 지원·일반적 성능이나 외부 채택을 뜻하지 않습니다.
+코드 지도:
+
+- 제품 라이브러리: `routecontract-shardingsphere-5.5/src/main`
+- 재현·검증 예제와 제품 테스트: `examples/`, `routecontract-shardingsphere-5.5/src/test`
+- 데모·설치·릴리스·증거 검증 자동화: `scripts/` — 제품 runtime API가 아님
+- 대회 보고서·패키징 전용 도구: `submission/` — 제품 runtime API가 아님
+
+이 소스의 project version은 prerelease candidate `0.1.0-rc1`이며 대응 tag 이름은
+`v0.1.0-rc1`입니다. 버전 문자열이나 checkout만으로 annotated tag, 공개·불변 prerelease,
+동일 revision의 release-evidence run 또는 외부 사용자 결과를 증명하지는 않습니다. 공개 RC로
+사용하기 전에는 [독립 설치 연구의 activation gate](docs/independent-install-study.md#activation-gate--do-not-recruit-early)를
+통과한 고정 activation record를 검증해야 합니다.
+
+아래 50개 정상 테스트와 같은 checkout의 격리 소비자 테스트 1개는 [이전 공개 main revision
+`54f1c92`의 CI](https://github.com/ym0506/routecontract/actions/runs/31501026857)에서
+실패·오류·skip 0건으로 확인됐습니다. 이 과거 run은 RC1 revision이나 Release 자산을 검증하지
+않으며, 격리 소비자 결과도 외부 채택 증거가 아닙니다. 자세한 환경·원시 artifact·한계는
+[공개 CI 증거 기록](docs/public-ci-evidence.md)에 있습니다. 이는 수상·운영환경 지원·일반적
+성능을 뜻하지 않습니다.
 
 ## Quick Start
 
-필수 조건은 Java 17, 실행 중인 Docker daemon, 실행 가능한 Gradle Wrapper입니다. 최초 실행은
-Gradle과 Maven Central 의존성을 내려받기 위한 네트워크가 필요할 수 있습니다.
+필수 조건은 Java 17, 실행 중인 Docker daemon, Bash/POSIX 도구와 실행 가능한 Gradle
+Wrapper입니다. 최초 실행은 Gradle·Maven Central 의존성과 로컬에 없는 digest-pinned MySQL
+container image를 내려받기 위한 네트워크가 필요할 수 있습니다.
 
 ```bash
 ./scripts/quickstart-demo.sh
@@ -29,6 +48,24 @@ Gradle과 Maven Central 의존성을 내려받기 위한 네트워크가 필요�
 정확히 검증했다는 뜻입니다. preflight나 검증이 실패하면 quickstart는 `2`로 종료하며, 원문
 SQL·parameter·connection 정보가 섞일 수 있는 하위 프로세스 원문은 화면에 다시 출력하지 않습니다.
 
+activation gate를 통과한 RC1 Release 자산 또는 같은 checkout에서 생성한 Maven publication을
+ShardingSphere-JDBC 5.5.3 소비자 테스트에 추가할 때는 Jackson 2 호환성 모듈을 먼저 정렬한
+뒤 다음 exact coordinate를 선언합니다. RC1은 Maven Central 게시를 주장하지 않습니다.
+
+```groovy
+testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))
+testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0-rc1")
+```
+
+RouteContract는 의존성을 내장하지 않는 thin JAR이고, 모듈의 `compileOnly`
+ShardingSphere/BOM 선언은 공개 POM에서 소비자 버전 제약으로 전달되지 않습니다. 검증된
+Gradle test/runtime graph에서는 위 BOM에 따라 ShardingSphere 5.5.3 호환성 그래프의
+Jackson 2 core·databind·datatype-jdk8·datatype-jsr310 모듈이 2.18.9로 해석됩니다. 단, Jackson
+3.1.5도 함께 있는 runtime에서는 두 계열이 공유하는
+`jackson-annotations`가 Jackson 3 BOM에 따라 2.21로 해석됩니다. 이 설정은 RouteContract가
+직접 사용하는 별도 `tools.jackson.core:jackson-core:3.1.5` 제품 런타임을 대체하거나
+낮추지 않습니다.
+
 ## 검증된 핵심 시나리오
 
 | 시나리오 | 실제 검증 결과 |
@@ -39,7 +76,7 @@ SQL·parameter·connection 정보가 섞일 수 있는 하위 프로세스 원�
 | 결정성 | corpus 8개를 각 20회 실행한 160 captures에서 case별 구조 signature 1개 |
 | 동시에 열린 caller-operation scope | single-attempt/multi-attempt scope 20쌍에서 교차 귀속 0건; 물리 callback의 시간상 중첩은 강제하거나 측정하지 않음 |
 | 범용 JDBC 도구 비교 | datasource-proxy 외부 배치는 callback `1 → 1`, 물리 DS별 배치는 `1 → 2`, RouteContract도 `1 → 2` |
-| 격리된 소비자 빌드 | 같은 checkout에서 임시 Maven 저장소에 게시한 JAR만 사용하는 standalone consumer에서 SPI 자동 발견과 MySQL 실행 통과. 외부 채택 증거는 아님 |
+| 격리된 소비자 빌드 | 같은 checkout에서 임시 Maven 저장소에 생성한 JAR와 POM만 사용하는 standalone consumer에서 SPI 자동 발견과 MySQL 실행 통과. 외부 채택 증거는 아님 |
 
 전체 50-test 검증:
 
@@ -52,7 +89,9 @@ SQL·parameter·connection 정보가 섞일 수 있는 하위 프로세스 원�
 
 ## 공개 Release 자산을 registry 없이 사용하기
 
-이 경로는 stable GitHub Release가 만들어진 뒤 사용할 수 있습니다. 해당 Release에 첨부된
+이 경로는 고정 activation record가 가리키는 annotated `v0.1.0-rc1` tag, 공개·불변
+prerelease, 동일 revision의 성공한 release-evidence run과 정확한 자산 집합이 모두 존재한
+뒤 사용할 수 있습니다. 해당 Release에 첨부된
 공개 자산 전체를 하나의 평평한 디렉터리에 내려받은 다음, `~/.m2`가 아닌 빈 절대경로를
 명시합니다.
 
@@ -62,17 +101,25 @@ python3 scripts/install-release-assets.py \
   --repository /absolute/path/to/routecontract-maven
 ```
 
-stable release version이 정해진 뒤, 설치기가 출력한 좌표를 테스트 의존성에 사용합니다.
+설치기가 출력한 exact RC1 좌표를 위 Quick Start의 Jackson 2 BOM 다음에 테스트 의존성으로
+사용합니다. thin POM이 소비자의 ShardingSphere/Jackson 버전을 정렬해 주지는 않습니다.
 
 ```groovy
-testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:<release-version>")
+testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0-rc1")
 ```
 
-설치기는 네트워크를 사용하지 않습니다. 공개 자산의 정확한 파일 목록, `SHA256SUMS`, stable
-POM 좌표, JAR 구조를 먼저 검증한 후 main/sources/Javadoc JAR와 POM만 명시한 Maven
-레이아웃에 복사합니다. 기존 좌표는 덮어쓰지 않으며 기본 Maven 저장소를 읽거나 수정하지
-않습니다. 체크섬은 다운로드 무결성을 확인할 뿐 게시자 신원을 인증하지 않으므로, 자산은
-반드시 최종 공개 Release에서 받아야 합니다.
+설치기는 네트워크를 사용하지 않습니다. 공개 자산의 정확한 파일 목록, `SHA256SUMS`,
+sanitized supply-chain evidence와 공개 SBOM/POM의 hash 결합, non-SNAPSHOT POM 좌표,
+JAR 구조, source ZIP의 단일 버전 root, `LICENSE`·`NOTICE`와 관례적인 `src/main/java`·
+`src/test/java` 아래 모든 Java 파일의 경로-패키지 일치,
+canonical `ym0506` provider namespace를
+먼저 검증한 후 main/sources/Javadoc JAR와 POM만 명시한 Maven
+레이아웃에 복사합니다. 기존 좌표는 덮어쓰지 않으며 관례적인 `~/.m2/repository`와 그 하위 경로를
+target으로 지정하면 거부합니다. 체크섬은 다운로드 무결성을 확인할 뿐 게시자 신원을 인증하지 않으므로, 자산은
+반드시 해당 tag의 공개 Release에서 받아야 합니다. 설치기의 source ZIP 검사는 구조·필수 경로·
+Java package/provider namespace 검사이며, release archive가 최종 tag의 tracked Git tree와
+내용·경로·실행 권한이 동일하다는
+증명은 최종 제출 packaging gate가 별도로 수행합니다.
 
 같은 source checkout에서 그 저장소만 RouteContract 전용 repository로 사용해 실제 MySQL
 소비자까지 검증하려면 별도의 빈 target으로 다음을 실행합니다. 이 검증은 release packaging
@@ -175,7 +222,7 @@ RouteContract는 ShardingSphere의 관측 기능이나 일반 JDBC 도구가 “
 - ShardingSphere-Proxy의 `PREVIEW SQL`, 그리고 ShardingSphere의 `sql-show`·Agent는 계획·로그·운영 telemetry를 제공합니다.
 - ShardingSphere Audit는 built-in 알고리즘 기준으로 인식 가능한 sharding condition의 존재를 검사합니다.
 - Sniffy와 datasource-proxy는 SQL 수 검증 또는 사용자 정의 JDBC 수집을 제공합니다.
-- RouteContract가 추가하는 것은 **caller가 정한 application-operation 경계**, ShardingSphere worker까지의 상관관계, 최소정보 canonical manifest, 승인 workflow, stable semantic diff, CI assertion, 실제 회귀 corpus입니다.
+- RouteContract가 추가하는 것은 **caller가 정한 application-operation 경계**, ShardingSphere worker까지의 상관관계, 최소정보 canonical manifest, 승인 workflow, stable structural manifest diff, CI assertion, 실제 회귀 corpus입니다.
 
 근거와 한계까지 포함한 비교는 [competitive-analysis.md](docs/competitive-analysis.md)에 있습니다.
 
@@ -235,7 +282,7 @@ manifest match를 통과시키지 않습니다.
 - [datasource-proxy 실증 비교](docs/empirical-comparison.md)
 - [대회 증거 매트릭스](docs/evidence-matrix.md)
 - [8월 27일까지 개발 계획](docs/development-plan.md)
-- [독립 published-JAR consumer](examples/standalone-consumer/README.md)
+- [격리된 same-checkout Maven-publication consumer](examples/standalone-consumer/README.md)
 - [SBOM 생성과 검토](docs/sbom.md)
 - [출품 전 작업과 ShardLens 경계](ORIGIN_AND_PRIOR_WORK.md)
 - [AI 보조 사용 공개](AI_ASSISTANCE.md)

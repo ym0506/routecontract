@@ -1,4 +1,4 @@
-# Standalone published-artifact consumer
+# Standalone generated-Maven-publication consumer
 
 This Gradle build is intentionally outside RouteContract's multi-project build. It has its own
 `settings.gradle`, resolves RouteContract only by the published Maven coordinate, and uses an
@@ -13,9 +13,27 @@ exclusive repository rule for the RouteContract group. The test verifies that:
 This standalone build has its own dependency lockfile and SHA-256 verification metadata because it
 does not inherit the root build's dependency controls.
 
-The verification metadata trusts only a stable RouteContract first-party
-group/artifact pattern because `install-release-assets.py` has already checked
-that JAR and POM against the public Release `SHA256SUMS`. Third-party
+It also declares the ShardingSphere 5.5.3 Jackson 2 compatibility alignment explicitly:
+
+```groovy
+testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))
+testImplementation("${routeContractGroup}:routecontract-shardingsphere-5.5:${routeContractVersion}")
+testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:5.5.3")
+```
+
+The published RouteContract artifact is a thin JAR. Its module-level
+`compileOnly` ShardingSphere/BOM declarations are not published as consumer
+version constraints, so the standalone consumer owns the alignment. The BOM
+resolves ShardingSphere's Jackson 2 core, databind, datatype-jdk8, and
+datatype-jsr310 compatibility modules to 2.18.9 in this verified Gradle test
+graph. In this verified runtime, the annotations artifact shared with Jackson 3
+resolves to 2.21. The BOM does not replace or downgrade RouteContract's separate
+`tools.jackson.core:jackson-core:3.1.5` product runtime.
+
+The verification metadata trusts only the exact RouteContract first-party
+group/artifact and a non-SNAPSHOT stable or strict `-rcN` version because
+`install-release-assets.py` has already checked that JAR and POM against the
+public Release `SHA256SUMS`. Third-party
 dependencies remain checksum-verified; this exception does not disable Gradle
 dependency verification globally.
 
@@ -29,10 +47,12 @@ That command is same-checkout packaging evidence. It proves that the generated
 Maven publication can be consumed without a Gradle project dependency; it is
 not an external-user installation or adoption claim.
 
-After a stable GitHub Release exists, a fresh checkout can instead consume the
-exact final Release assets without Maven Central hosting. Download every public
+After the fixed RC1 activation record verifies the exact public prerelease, a fresh checkout can
+consume its exact assets without Maven Central hosting. A version string alone is not publication
+evidence. Download every public
 asset from that Release—including the main/sources/Javadoc JARs, POM, source
-archive, direct and aggregate SBOMs, `test-summary.txt`, and `SHA256SUMS`—into
+archive, direct and aggregate SBOMs, `supply-chain-evidence.json`,
+`test-summary.txt`, and `SHA256SUMS`—into
 one flat directory. Then use an explicit empty Maven repository:
 
 ```bash
@@ -42,12 +62,14 @@ python3 ../../scripts/install-release-assets.py \
 ```
 
 The offline installer verifies every downloaded public asset against
-`SHA256SUMS`, validates the stable POM coordinate and JAR structure, and copies
+`SHA256SUMS`, validates the sanitized scan summary's hashes against the public
+SBOM/POM assets, validates the non-SNAPSHOT POM coordinate and JAR structure, and copies
 the JARs plus versioned POM into the Maven layout. `SHA256SUMS` must list
-exactly the other public payloads (not itself) and no workflow-only logs. The installer does not
-read or modify `~/.m2`, and it refuses to overwrite an existing coordinate. A
+exactly the other public payloads (not itself) and no workflow-only logs. The installer rejects
+`~/.m2/repository` and every path below it, and it refuses to overwrite an existing coordinate. A
 checksum does not authenticate the publisher, so the input directory must
-come from the final public GitHub Release.
+come from the public GitHub Release for the exact tag. A release candidate is
+prerelease evidence, not the stable artifact required by the final contest gate.
 
 To run this consumer directly, point it at a Maven repository containing the
 same RouteContract group and version as the root build:
@@ -55,7 +77,7 @@ same RouteContract group and version as the root build:
 ```bash
 ROUTECONTRACT_REPOSITORY=/absolute/path/to/maven-repository \
 ROUTECONTRACT_GROUP=io.github.ym0506.routecontract \
-ROUTECONTRACT_VERSION=0.1.0 \
+ROUTECONTRACT_VERSION=0.1.0-rc1 \
   ../../gradlew --no-daemon --refresh-dependencies -p . clean test
 ```
 

@@ -4,7 +4,7 @@ Last checked: 2026-08-11
 
 This comparison asks one narrow question: on the same synchronous
 ShardingSphere-JDBC 5.5.3/MySQL operation whose application result stays at one
-row while its observed physical JDBC executions change from one to two, what
+row while its `SQLExecutionHook`-reported physical JDBC execution attempts change from one to two, what
 does a strong generic JDBC interception library provide directly, and what
 application code is still required to create an operation contract?
 

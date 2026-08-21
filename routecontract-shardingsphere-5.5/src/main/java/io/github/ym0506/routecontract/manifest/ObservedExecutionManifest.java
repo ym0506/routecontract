@@ -25,7 +25,7 @@ import java.util.TreeSet;
  * no callback failures or unknown outcomes is eligible for contract matching.</p>
  *
  * @param schemaVersion manifest schema version
- * @param operationId opaque caller-supplied application-operation identifier
+ * @param operationId non-blank caller identifier, at most 200 Java UTF-16 code units
  * @param captureStatus completeness classification copied from the source snapshot
  * @param policy explicit budgets and structural enforcement policy
  * @param counts redundant counts validated against canonical attempts
@@ -46,7 +46,7 @@ public record ObservedExecutionManifest(
      * Creates and validates a canonical observed-execution manifest.
      *
      * @param schemaVersion positive manifest schema version
-     * @param operationId non-blank opaque operation identifier
+     * @param operationId non-blank opaque identifier, at most 200 Java UTF-16 code units
      * @param captureStatus source capture completeness classification
      * @param policy explicit verification policy
      * @param counts counts that must equal the recomputed canonical-attempt counts
@@ -56,7 +56,7 @@ public record ObservedExecutionManifest(
         if (schemaVersion <= 0) {
             throw new IllegalArgumentException("schemaVersion must be positive");
         }
-        operationId = requireNonBlank(operationId, "operationId");
+        operationId = requireOperationId(operationId);
         captureStatus = Objects.requireNonNull(captureStatus, "captureStatus");
         policy = Objects.requireNonNull(policy, "policy");
         counts = Objects.requireNonNull(counts, "counts");
@@ -172,5 +172,15 @@ public record ObservedExecutionManifest(
             throw new IllegalArgumentException(label + " must not be blank");
         }
         return value;
+    }
+
+    private static String requireOperationId(final String value) {
+        String result = requireNonBlank(value, "operationId");
+        if (result.length() > RouteContract.MAX_OPERATION_ID_UTF16_CODE_UNITS) {
+            throw new IllegalArgumentException("operationId must not exceed "
+                    + RouteContract.MAX_OPERATION_ID_UTF16_CODE_UNITS
+                    + " Java UTF-16 code units");
+        }
+        return result;
     }
 }

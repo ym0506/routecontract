@@ -8,38 +8,49 @@
     "repository_url": "https://github.com/ym0506/routecontract",
     "video_url": "[[PUBLIC_YOUTUBE_URL]]"
   },
+  "external_evidence": {
+    "branch": "[[EXTERNAL_EVIDENCE_BRANCH: rc_only|zero]]",
+    "final_stable_tag": "[[EXTERNAL_EVIDENCE_FINAL_STABLE_TAG]]",
+    "tested_tag": "[[EXTERNAL_EVIDENCE_TESTED_TAG]]",
+    "qualified_result_count": "[[EXTERNAL_EVIDENCE_QUALIFIED_RESULT_COUNT]]",
+    "result_issue_url": "[[EXTERNAL_EVIDENCE_RESULT_ISSUE_URL_OR_NULL]]",
+    "activation_record_url": "[[EXTERNAL_EVIDENCE_ACTIVATION_RECORD_URL_OR_NULL]]",
+    "recruitment_record_url": "[[EXTERNAL_EVIDENCE_RECRUITMENT_RECORD_URL_OR_NULL]]",
+    "protocol_issue_url": "https://github.com/ym0506/routecontract/issues/9",
+    "cutoff_utc": "[[EXTERNAL_EVIDENCE_CUTOFF_UTC]]"
+  },
   "assets": {
     "architecture": {
       "filename": "architecture.png",
-      "caption": "그림 1. 공식 SQLExecutionHook 관측을 최소정보 manifest와 CI 계약으로 연결하는 v0.1 구조"
+      "caption": "그림 1. ShardingSphere-JDBC 5.5.3 SQLExecutionHook 관측을 최소정보 manifest와 CI 계약으로 연결하는 v0.1 구조"
     },
     "baseline_candidate": {
       "filename": "baseline-candidate.png",
-      "caption": "그림 2. 동일한 row 201을 반환한 approved equality와 candidate BETWEEN의 실제 MySQL 관측 diff"
+      "caption": "그림 2. 동일한 단일 fixture 행을 반환한 approved equality와 candidate same-value range의 실제 MySQL 관측 diff"
     }
   },
   "project_intro": [
     {
       "lead": "한 문장 소개",
-      "text": "Apache ShardingSphere-JDBC 애플리케이션에서 한 application operation 동안 관측된 물리 JDBC 실행 시도를 결정적인 manifest로 만들고, SQL·설정 변경으로 생긴 관측 실행 확장과 실행 구조 drift를 CI에서 차단하는 Java 테스트 라이브러리이다."
+      "text": "RouteContract는 ShardingSphere-JDBC를 쓰는 Java 개발자가 기능 테스트 결과는 같아도 SQL 조건 변경으로 Hook이 보고한 물리 JDBC 실행 시도가 1회에서 2회로 늘어난 회귀를 승인 기준과 비교해 CI에서 차단하도록 돕는 테스트 라이브러리다."
     }
   ],
   "background": [
     {
       "lead": "문제",
-      "text": "기존 기능 테스트는 반환값이 같은지만 확인하므로, 같은 행이나 같은 COUNT를 반환하면서 물리 실행이 여러 data source로 늘어나는 회귀를 놓칠 수 있다. 이는 지연·DB 부하·비용 증가 위험의 신호지만, 이번 실험은 그 영향량을 측정하지 않았다."
+      "text": "실제 MySQL fixture에서 두 조건은 같은 한 행을 반환했지만 ShardingSphere-JDBC 5.5.3 SQLExecutionHook이 보고한 물리 JDBC 실행 시도와 data source는 1개에서 2개로 늘었다. 반환값 중심 기능 테스트는 이 차이를 놓쳤으며, 이번 실험은 지연·부하·비용 영향량을 측정하지 않았다."
     },
     {
       "lead": "공개 문제 근거",
-      "text": "Apache ShardingSphere 공개 이슈 #38456에서 착안한 축소·변형 JOIN/subquery fixture에서, 비즈니스 결과 COUNT=1은 같지만 hook이 보고한 실행 시도가 1회와 8회로 달라지는 사례를 확인했다. 원 이슈의 전체 환경을 그대로 재현했다는 뜻은 아니다."
+      "text": "Apache ShardingSphere 공개 이슈 #38456에서 착안한 축소·변형 JOIN/subquery fixture에서, 비즈니스 결과 COUNT=1은 같지만 SQLExecutionHook이 보고한 물리 JDBC 실행 시도가 1회와 8회로 달라지는 사례를 확인했다. 원 이슈의 전체 환경을 그대로 재현했다는 뜻은 아니다."
     },
     {
       "lead": "목표",
-      "text": "호출자가 정한 operation 경계에서 callback을 수집하고, 승인본과 후보본의 시도 수·data source·SQL 구조 signature를 stable RCM code로 비교한다. CI required check로 연결하면 의도하지 않은 변경을 merge 전에 실패시킬 수 있다."
+      "text": "호출자가 정한 operation 경계에서 callback을 수집하고, 승인본과 후보본의 시도 수·data source·SQL 구조 signature를 stable RCM code로 비교한다. 실제 회귀 fixture는 RCM201·RCM202와 build exit 1로 거부된다."
     },
     {
-      "lead": "독립성",
-      "text": "문제의식은 개인 포트폴리오 ShardLens의 미구현 Route Guard 설계에서 출발했지만, 애플리케이션 코드를 옮기지 않고 SPI adapter·manifest·diff·MySQL 회귀 corpus를 독립 프로젝트로 새로 구현했다. 경계는 ORIGIN_AND_PRIOR_WORK.md에 공개한다."
+      "lead": "핵심 결과",
+      "text": "같은 한 행을 반환한 1→2 관측 확장은 RCM201·RCM202로, 같은 1회 실행 안의 rewritten-SQL fingerprint 변화는 RCM301·RCM302로 차단됐다. 승인본은 자동 갱신되지 않는다."
     }
   ],
   "environment": [
@@ -63,7 +74,7 @@
   "architecture": [
     {
       "lead": "관측·계약 흐름",
-      "text": "호출자가 정한 capture(operationId) 경계에서 공식 SQLExecutionHook callback을 모아 최소정보 snapshot과 canonical manifest로 만들고, semantic diff를 CI gate에 연결한다."
+      "text": "호출자가 정한 capture(operationId) 경계에서 ShardingSphere-JDBC 5.5.3 SQLExecutionHook callback을 모아 최소정보 snapshot과 canonical manifest로 만들고, manifest 필드의 구조 diff를 CI gate에 연결한다."
     },
     {
       "lead": "상관관계·Fail-closed",
@@ -77,27 +88,27 @@
   "features": [
     {
       "lead": "1. Operation 단위 관측 계약",
-      "text": "기존 비즈니스 assertion을 유지한 채 capture 블록으로 감싸고 관측 실행 수·data-source 집합·수집 완전성·reported failure를 추가 검증한다."
+      "text": "기존 비즈니스 assertion을 유지한 채 capture 블록으로 감싸고 SQLExecutionHook이 보고한 물리 JDBC 실행 시도 수·data-source 집합·수집 완전성·reported failure를 추가 검증한다."
     },
     {
-      "lead": "2. 승인 manifest와 semantic diff",
-      "text": "비결정적 필드가 없는 canonical JSON을 만들고 시도 수, alias 집합, callback outcome, SQL/parameter 구조 drift를 stable RCM code로 보고한다. strict는 exact 구조 변경을 차단하고 budgetOnly는 예산 안의 구조 변경을 REVIEW_REQUIRED로 남기므로, semantic equivalence를 자동 판정한다고 주장하지 않는다. candidate는 approved를 자동 덮어쓰지 않는다."
+      "lead": "2. 승인 manifest와 구조 diff",
+      "text": "canonical JSON의 시도 수·alias·callback outcome·exact rewritten-SQL fingerprint와 parameter 구조 변화를 stable RCM code로 보고한다. strict는 exact 변경을 차단하고 budgetOnly는 예산 안 변화를 REVIEW_REQUIRED로 남긴다. SQL 의미 동치를 판정하거나 candidate가 approved를 덮어쓰지 않는다."
     },
     {
       "lead": "3. 실제 MySQL business-green / contract-red",
-      "text": "equality→같은 값 BETWEEN 변경은 같은 row 201을 반환했지만 관측 시도와 data source가 각각 1→2로 늘어 RCM201·RCM202로 차단됐다. #38456에서 착안한 축소·변형 fixture는 같은 COUNT=1에서 1→8, strategy 제거는 동일 시도 수에서도 fingerprint drift를 보였다."
+      "text": "equality→같은 값 range 변경은 동일한 단일 fixture 행을 반환했지만 관측 시도와 data source가 각각 1→2로 늘어 RCM201·RCM202로 차단됐다. #38456에서 착안한 축소·변형 fixture는 같은 COUNT=1에서 1→8, strategy 제거는 동일 시도 수에서도 fingerprint drift를 보였다."
     },
     {
-      "lead": "4. 결정성·격리",
-      "text": "로컬 실제 MySQL corpus 8개를 각 20회 실행한 160 captures에서 case별 구조 signature는 1개였고, 서로 다른 caller thread에서 함께 시작한 single-attempt/multi-attempt operation 20쌍에서 capture 혼합은 0건이었다. physical callback overlap 자체를 강제한 실험은 아니며, 이는 정상 반환·비-interrupt 동기식 PreparedStatement 경계의 결과이다."
+      "lead": "4. 재현 관측·격리(검증 범위)",
+      "text": "실제 MySQL corpus 8개×20회=160 captures에서 사례별 signature는 1개, 함께 시작한 caller operation 20쌍의 capture 혼합은 0건이었다. 같은 schema·operationId·status·policy·retained-attempt multiset은 완료 순서와 무관하게 같은 canonical bytes가 된다. physical callback overlap을 강제한 결과는 아니며 정상 반환·비-interrupt 동기식 PreparedStatement 범위다."
     },
     {
       "lead": "5. 재현과 패키징",
-      "text": "./gradlew --no-daemon --no-build-cache clean check assemble prepareVerifiedSbom 로 로컬 50개 테스트와 JAR/Javadoc/SBOM을 검증했고, 별도 임시 Maven 저장소에서 published-JAR consumer 1개가 SPI 자동 발견과 실제 MySQL 실행을 통과했다. [[PUBLIC_CI_RUN_URL_REQUIRED_BEFORE_SUBMISSION]]"
+      "text": "./gradlew --no-daemon --no-build-cache clean check assemble prepareVerifiedSbom 로 로컬 테스트 50건·JAR·Javadoc·SBOM을 검증했고, 같은 checkout publication의 별도 consumer가 SPI 자동 발견·실제 MySQL을 통과했다. [[PUBLIC_CI_RUN_URL_REQUIRED_BEFORE_SUBMISSION]]"
     },
     {
       "lead": "시연",
-      "text": "./scripts/quickstart-demo.sh 는 실제 MySQL 1→2 회귀와 의도된 CI 종료 코드 1을 내부 검증한 뒤 전체 흐름은 0으로 종료한다. fingerprint demo는 같은 1 attempt/1 alias 안의 구조 drift를 RCM301·RCM302로 보여 준다."
+      "text": "./scripts/quickstart-demo.sh는 실제 MySQL 1→2 회귀와 의도된 CI exit 1을 내부 검증하고 전체 흐름은 0으로 끝낸다. fingerprint demo는 1 attempt/1 alias의 구조 drift를 RCM301·RCM302로 보인다."
     },
     {
       "lead": "설치·릴리스",
@@ -107,37 +118,41 @@
   "effects": [
     {
       "lead": "개발 효과",
-      "text": "반환값과 별도로 관측 실행 구조를 version-controlled contract로 만들어 SQL·sharding 설정·라이브러리 변경을 리뷰한다. blocking diff는 required check로 연결할 수 있고, stable code와 candidate-only workflow는 우연한 baseline 갱신을 줄인다."
+      "text": "기능 테스트가 놓친 시도 수·data source·signature 변화를 RCM code와 구조 diff로 merge 전에 드러내 승인·baseline 갱신 근거를 남긴다."
     },
     {
       "lead": "활용 후보",
-      "text": "일차 적용 대상은 ShardingSphere-JDBC 통합 테스트와 CI이다. shard migration 검증과 회귀 원인 축소는 외부 fixture 검증 전 roadmap이며, 운영 성능 향상을 보장하지 않는다."
+      "text": "ShardingSphere-JDBC 통합 테스트·CI가 대상이다. shard migration·회귀 축소는 외부 검증 전 roadmap이며 성능은 보장하지 않는다."
     },
     {
       "lead": "확장 방향",
-      "text": "adapter 경계를 유지하며 검증된 후속 버전·DB fixture·reporter·build-tool 통합을 단계적으로 추가한다."
+      "text": "공개 수요가 확인된 adapter·fixture·reporter만 확장한다."
     }
   ],
   "other": [
     {
       "lead": "차별성",
-      "text": "PREVIEW SQL·sql-show·Agent·Audit와 Sniffy·datasource-proxy의 기존 기능을 인정한다. RouteContract의 차이는 caller operation 경계, worker 상관관계, 최소정보 manifest, 사람 승인 baseline, stable diff와 CI assertion을 ShardingSphere-JDBC 테스트 계약으로 결합한 데 있다."
+      "text": "PREVIEW SQL·sql-show·Agent·Audit·Sniffy·datasource-proxy와 달리 caller/worker 상관관계·최소정보 manifest·승인 baseline·stable diff·CI assertion을 묶었다. ShardLens의 미구현 설계에서 출발했으나 코드는 독립 구현했고 출처를 공개했다."
     },
     {
       "lead": "비교 실험",
-      "text": "동일 MySQL mutation에서 datasource-proxy는 외부 배치 1→1, 물리 data source별 배치 1→2였고 RouteContract도 1→2였다. 범용 도구의 불가능이 아니라 전용 패키징·상관관계·승인 workflow를 비교한 결과다."
+      "text": "같은 MySQL mutation에서 datasource-proxy와 RouteContract 모두 1→2를 관측했다. RouteContract는 상관관계·승인 workflow까지 묶는다."
     },
     {
       "lead": "현재 한계",
-      "text": "정상 반환하고 종료 시 caller가 interrupt되지 않은 동기식 PreparedStatement와 ShardingSphere-JDBC 5.5.3만 지원한다. Proxy, batch, reactive, application @Async, 모든 SQL Federation 경로는 범위 밖이다. 전체 route plan·정확한 물리 table 수·transaction commit·비즈니스 성공을 관측한다고 주장하지 않는다."
+      "text": "5.5.3 정상 반환·비-interrupt 동기식 non-batch PreparedStatement만 지원한다. Proxy·reactive·@Async·SQL Federation, route plan·물리 table 수·commit·비즈니스 성공은 범위 밖이다. MySQL image·JTS NOTICE 수동 검토 2건이 남았고 SBOM은 법률 검토가 아니다."
     },
     {
-      "lead": "공개·외부 검증 gate",
-      "text": "[[PUBLIC_REPOSITORY_REVISION_AND_RELEASE]] / [[INDEPENDENT_USER_QUICKSTART_RESULT]] / [[PUBLIC_ISSUE_PR_COMMUNITY_FEEDBACK]]. 이 항목들은 실제 공개 링크와 결과가 생기기 전까지 완료형으로 바꾸지 않는다."
+      "lead": "공개 증거 gate",
+      "text": "[[PUBLIC_REPOSITORY_REVISION_AND_RELEASE]] / [[PUBLIC_ISSUE_PR_COMMUNITY_FEEDBACK]]. 실제 링크 전에는 완료형으로 쓰지 않는다."
+    },
+    {
+      "lead": "외부 검증",
+      "text": "[[EXTERNAL_EVIDENCE_SUMMARY: generated]]"
     },
     {
       "lead": "로드맵",
-      "text": "제출 전 공개 Ubuntu CI·v0.1.0/checksum·외부 설치 기록·license/security 재검토를 완료하고, 이후 검증된 범위부터 adapter와 reporter를 확장한다."
+      "text": "RC blocker 반영 후 v0.1.0 동결, 수요 기반 확장."
     },
     {
       "lead": "개발 소감",
@@ -155,9 +170,9 @@
     {
       "name": "MySQL Server 컨테이너",
       "version": "8.4.11",
-      "license": "GPL-2.0-only",
-      "url": "https://github.com/mysql/mysql-server",
-      "purpose": "Testcontainers 별도 프로세스; JAR 미포함; digest b3b90af2...857fd3fb"
+      "license": "Image-wide conclusion not asserted; manual review required",
+      "url": "https://dev.mysql.com/doc/refman/8.4/en/preface.html",
+      "purpose": "Testcontainers 별도 프로세스; JAR 미포함; Oracle Linux·MySQL Server/Shell 등 포함; digest b3b90af2...857fd3fb"
     },
     {
       "name": "Apache ShardingSphere",
@@ -188,11 +203,11 @@
       "purpose": "격리된 실제 MySQL 통합 테스트"
     },
     {
-      "name": "HikariCP",
-      "version": "6.2.1",
-      "license": "Apache-2.0",
-      "url": "https://github.com/brettwooldridge/HikariCP",
-      "purpose": "테스트 connection pool"
+      "name": "datasource-proxy",
+      "version": "1.11.0",
+      "license": "MIT",
+      "url": "https://github.com/jdbc-observations/datasource-proxy",
+      "purpose": "비교 실험용 JDBC 관측(testImplementation); 배포 JAR 미포함"
     },
     {
       "name": "JUnit Jupiter/Launcher",

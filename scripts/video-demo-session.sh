@@ -71,7 +71,8 @@ verificationStatus      POLICY_VIOLATION
 blockingCodes           [RCM201,RCM202]
 RCM201                  ATTEMPT_BUDGET_EXCEEDED: maximum=1, observed=2
 RCM202                  DATA_SOURCE_BUDGET_EXCEEDED: maximum=1, observed=2
-privacy                 MINIMIZED | screen output allowlisted
+privacy                 raw child output withheld | raw SQL/binds not retained
+aliases                 reviewed aliases remain | minimized != anonymized
 demo_exit               0
 EOF
 }
@@ -112,7 +113,8 @@ observedAliases         [orders-odd] -> [orders-odd]
 fingerprintMultiset     CHANGED
 verificationStatus      DRIFT
 blockingCodes           [RCM301,RCM302]
-privacy                 MINIMIZED | screen output allowlisted
+privacy                 raw child output withheld | raw SQL/binds not retained
+aliases                 reviewed aliases remain | minimized != anonymized
 fingerprint_demo_exit   0
 EOF
 }
@@ -190,7 +192,7 @@ spi                      auto-discovered
 environment              MySQL 8.4.11 | ShardingSphere-JDBC 5.5.3
 observedAttempts         1
 observedDataSources      1 (name withheld from screen)
-privacy                  screen output allowlisted
+privacy                  raw child output withheld | actual data-source name withheld
 standalone_demo_exit     0
 EOF
 }

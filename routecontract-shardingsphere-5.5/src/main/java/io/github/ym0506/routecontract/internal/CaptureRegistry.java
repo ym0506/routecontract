@@ -1,6 +1,7 @@
 package io.github.ym0506.routecontract.internal;
 
 import com.alibaba.ttl.TransmittableThreadLocal;
+import io.github.ym0506.routecontract.RouteContract;
 import io.github.ym0506.routecontract.RouteSnapshot;
 import io.github.ym0506.routecontract.ThreadRole;
 
@@ -19,7 +20,6 @@ import java.util.concurrent.ConcurrentMap;
  */
 public final class CaptureRegistry {
 
-    private static final int MAX_OPERATION_ID_LENGTH = 200;
     /*
      * ShardingSphere wraps submitted work with TtlExecutors. We need that
      * submission-time propagation, but not the one-time InheritableThreadLocal
@@ -35,7 +35,7 @@ public final class CaptureRegistry {
     /**
      * Opens one internal capture scope after exact-runtime and SPI preflight checks.
      *
-     * @param operationId non-blank opaque identifier, at most 200 characters
+     * @param operationId non-blank opaque identifier, at most 200 Java UTF-16 code units
      * @return lifecycle scope that must be closed by the library entry point
      * @throws IllegalArgumentException when the identifier is blank or too long
      * @throws IllegalStateException when preflight fails or the current thread already owns a capture
@@ -159,8 +159,9 @@ public final class CaptureRegistry {
         if (operationId.isBlank()) {
             throw new IllegalArgumentException("operationId must not be blank");
         }
-        if (operationId.length() > MAX_OPERATION_ID_LENGTH) {
-            throw new IllegalArgumentException("operationId must not exceed " + MAX_OPERATION_ID_LENGTH + " characters");
+        if (operationId.length() > RouteContract.MAX_OPERATION_ID_UTF16_CODE_UNITS) {
+            throw new IllegalArgumentException("operationId must not exceed "
+                    + RouteContract.MAX_OPERATION_ID_UTF16_CODE_UNITS + " Java UTF-16 code units");
         }
     }
 

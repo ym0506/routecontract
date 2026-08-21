@@ -4,19 +4,38 @@
 
 [![CI](https://github.com/ym0506/routecontract/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ym0506/routecontract/actions/workflows/ci.yml?query=branch%3Amain)
 
-> CI contracts for observed physical JDBC executions
+> CI contracts for ShardingSphere-JDBC 5.5.3 `SQLExecutionHook`-reported physical JDBC execution attempts
 
 RouteContract is a Java testing library for Apache ShardingSphere-JDBC applications. During one application operation, it turns the **physical JDBC execution attempts observed through `SQLExecutionHook`** into a deterministic manifest, then lets CI block observed execution expansion and structural changes caused by SQL or configuration changes.
 
 Business-result assertions alone can stay green even when the hook-reported observed attempts increase from `1 → 2` or `1 → 8` while returning the same row. RouteContract adds a separate regression contract for per-operation execution budgets, hook-reported data-source names, and structural diffs of rewritten-SQL fingerprints.
 
-The current version is a `v0.1.0-SNAPSHOT` development build. Public source and Ubuntu CI now exist, but there is no public release or independent external-user validation yet. The 50 normal tests and one isolated consumer test below also passed with zero failures, errors, or skips in the [public main CI for revision `54f1c92`](https://github.com/ym0506/routecontract/actions/runs/31501026857). See the [public CI evidence record](docs/public-ci-evidence.md) for the environment, raw artifacts, and limitations. This does not imply an award outcome, production support, general performance, or external adoption.
+Code map:
+
+- Product library: `routecontract-shardingsphere-5.5/src/main`
+- Reproduction examples and product tests: `examples/`, `routecontract-shardingsphere-5.5/src/test`
+- Demo, installation, release, and evidence-validation automation: `scripts/` — not a product runtime API
+- Contest report and packaging tooling: `submission/` — not a product runtime API
+
+This source declares prerelease-candidate project version `0.1.0-rc1` and corresponding tag name
+`v0.1.0-rc1`. A version string or checkout does not prove that an annotated tag, public immutable
+prerelease, same-revision release-evidence run, or external-user result exists. Before using it as a
+public RC, verify the fixed activation record required by the [independent-installation activation
+gate](docs/independent-install-study.md#activation-gate--do-not-recruit-early).
+
+The 50 normal tests and one same-checkout isolated consumer test below passed with zero failures,
+errors, or skips in the [CI for earlier public-main revision
+`54f1c92`](https://github.com/ym0506/routecontract/actions/runs/31501026857). That historical run
+does not verify the RC1 revision or Release assets, and the isolated consumer is not external
+adoption evidence. See the [public CI evidence record](docs/public-ci-evidence.md) for its environment,
+raw artifacts, and limitations. None of these results implies an award outcome, production support,
+or general performance.
 
 ## Quick Start
 
-Prerequisites are Java 17, a running Docker daemon, and the executable Gradle
-Wrapper. The first run may need network access to download Gradle and Maven
-Central dependencies.
+Prerequisites are Java 17, a running Docker daemon, Bash/POSIX tools, and the executable Gradle
+Wrapper. The first run may need network access to download Gradle, Maven Central dependencies, and
+the digest-pinned MySQL container image when it is not already available locally.
 
 ```bash
 ./scripts/quickstart-demo.sh
@@ -32,6 +51,24 @@ exit `0` from the quickstart means that rejection was verified. A preflight or
 verification failure exits `2`. The wrapper does not echo raw child-process
 output that could contain SQL, parameters, or connection details.
 
+When consuming either activated RC1 Release assets or a Maven publication generated from the same
+checkout, a ShardingSphere-JDBC 5.5.3 consumer test should align the Jackson 2 compatibility modules
+before declaring the exact coordinate below. RC1 is not claimed to exist on Maven Central.
+
+```groovy
+testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))
+testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0-rc1")
+```
+
+RouteContract is a thin JAR. Its module-level `compileOnly` ShardingSphere/BOM
+declarations are not published as consumer version constraints. In the verified
+Gradle test/runtime graph, the Jackson 2 core, databind, datatype-jdk8, and
+datatype-jsr310 modules in ShardingSphere 5.5.3's compatibility graph resolve to
+2.18.9. In the runtime that also contains Jackson 3.1.5, the shared
+`jackson-annotations` artifact resolves to 2.21 through the Jackson 3 BOM. This
+does not replace or downgrade RouteContract's separate product runtime,
+`tools.jackson.core:jackson-core:3.1.5`.
+
 ## Verified core scenarios
 
 | Scenario | Verified result |
@@ -42,7 +79,7 @@ output that could contain SQL, parameters, or connection details.
 | Determinism | Across 160 captures—8 corpus cases repeated 20 times—each case produced exactly one structural signature |
 | Concurrently open caller-operation scopes | Across 20 single-attempt/multi-attempt scope pairs, no events were attributed across operations; temporal overlap of physical callbacks was neither forced nor measured |
 | Generic JDBC-tool comparison | With datasource-proxy outside ShardingSphere, callbacks stay `1 → 1`; with wrappers around physical data sources, they become `1 → 2`; RouteContract also observes `1 → 2` |
-| Isolated consumer build | In the same checkout, a standalone consumer using only a JAR published to a temporary Maven repository passed SPI auto-discovery and a MySQL execution test; this is not evidence of external adoption |
+| Isolated consumer build | In the same checkout, a standalone consumer using only the generated JAR and POM in a temporary Maven repository passed SPI auto-discovery and a MySQL execution test; this is not evidence of external adoption |
 
 Run the full 50-test verification:
 
@@ -55,7 +92,9 @@ The first command runs 50 core and MySQL-corpus tests on Java 17, ShardingSphere
 
 ## Consume public Release assets without a registry
 
-This path becomes usable after a stable GitHub Release exists. Download every
+This path becomes usable only after the fixed activation record identifies an annotated
+`v0.1.0-rc1` tag, a public immutable prerelease, a successful same-revision release-evidence run,
+and the exact asset set. Download every
 public asset attached to that Release into one flat directory, then provide an
 empty absolute repository path rather than relying on `~/.m2`.
 
@@ -65,20 +104,28 @@ python3 scripts/install-release-assets.py \
   --repository /absolute/path/to/routecontract-maven
 ```
 
-After the stable release version is chosen, use the coordinate printed by
-the installer as the test dependency:
+Use the exact RC1 coordinate printed by the installer as the test dependency after the Jackson 2
+BOM shown in Quick Start.
+The thin POM does not align the consumer's ShardingSphere/Jackson versions.
 
 ```groovy
-testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:<release-version>")
+testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0-rc1")
 ```
 
 The installer performs no network access. Before writing, it validates the
-exact public-asset set, `SHA256SUMS`, stable POM coordinate, and JAR structure.
+exact public-asset set, `SHA256SUMS`, the sanitized supply-chain summary's
+hash binding to the public SBOM/POM assets, non-SNAPSHOT POM coordinate, JAR
+structure, the source ZIP's single versioned root, required `LICENSE` and `NOTICE`, path-to-package agreement
+for every Java source under conventional `src/main/java` and `src/test/java`
+roots, and the canonical `ym0506` provider namespace.
 It copies only the main, sources, and Javadoc JARs plus the POM into the
-explicit Maven layout, refuses to overwrite an existing coordinate, and does
-not read or modify the default Maven repository. Checksums verify download
-integrity, not publisher identity, so obtain the assets from the final public
-Release.
+explicit Maven layout, refuses to overwrite an existing coordinate, and rejects
+the conventional `~/.m2/repository` and every path below it as its target. Checksums verify download
+integrity, not publisher identity, so obtain the assets from the public Release
+for that exact tag. The installer checks source-archive structure, required
+paths, Java packages, and provider namespace; the final submission packaging
+gate separately proves that the release archive has the same tracked-file
+content, paths, and executable permissions as the final tagged Git tree.
 
 To exercise a real MySQL consumer from the same source checkout with that file
 repository as the exclusive RouteContract source, use a separate empty target:
@@ -181,7 +228,7 @@ RouteContract does not claim that ShardingSphere observability facilities or gen
 - ShardingSphere-Proxy `PREVIEW SQL`, together with ShardingSphere `sql-show` and Agent, provides planning, logging, and operational telemetry.
 - ShardingSphere Audit checks whether built-in algorithms recognize a sharding condition.
 - Sniffy and datasource-proxy support SQL-count assertions or custom JDBC collection.
-- RouteContract packages a **caller-defined application-operation boundary**, correlation into ShardingSphere workers, a value-minimized canonical manifest, an approval workflow, stable semantic diffs, CI assertions, and a real regression corpus.
+- RouteContract packages a **caller-defined application-operation boundary**, correlation into ShardingSphere workers, a value-minimized canonical manifest, an approval workflow, stable structural manifest diffs, CI assertions, and a real regression corpus.
 
 datasource-proxy is a credible do-it-yourself alternative, not a strawman. By wrapping every physical data source and adding application-owned correlation, minimization, canonicalization, diff, and assertion code, it can implement a comparable narrow check. RouteContract's scoped contribution is packaging that workflow for ShardingSphere-JDBC 5.5.3 without requiring every physical data source to be wrapped.
 
@@ -241,7 +288,7 @@ Snapshots and manifests do not store raw SQL, parameter values, connection prope
 - [Empirical datasource-proxy comparison](docs/empirical-comparison.md)
 - [Contest evidence matrix](docs/evidence-matrix.md)
 - [Development plan through August 27](docs/development-plan.md)
-- [Independent published-JAR consumer](examples/standalone-consumer/README.md)
+- [Isolated same-checkout Maven-publication consumer](examples/standalone-consumer/README.md)
 - [SBOM generation and review](docs/sbom.md)
 - [Pre-submission work and ShardLens boundary](ORIGIN_AND_PRIOR_WORK.md)
 - [AI-assistance disclosure](AI_ASSISTANCE.md)

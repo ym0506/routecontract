@@ -172,7 +172,7 @@ class OperationCorrelationMySqlTest {
 
     @Test
     @Order(2)
-    void fanOutSnapshotIsDeterministicAcrossTwentyCaptures() throws Exception {
+    void fanOutStructuralExecutionSignatureIsStableAcrossTwentyCaptures() throws Exception {
         Set<String> signatures = new HashSet<>();
         for (int iteration = 0; iteration < 20; iteration++) {
             RouteSnapshot snapshot = RouteContract.capture(
@@ -183,7 +183,7 @@ class OperationCorrelationMySqlTest {
             assertEquals(1, snapshot.workerThreadFlagCount());
             signatures.add(canonicalSignature(snapshot));
         }
-        assertEquals(1, signatures.size(), "all twenty semantic snapshots must be identical");
+        assertEquals(1, signatures.size(), "all twenty structural execution signatures must match");
         System.out.println("ROUTECONTRACT_DETERMINISM repetitions=20 uniqueSignatures=" + signatures.size());
     }
 

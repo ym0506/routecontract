@@ -1,0 +1,44 @@
+{
+  "issueFormFilename": "[[VERSION_DERIVED_ISSUE_FORM_FILENAME]]",
+  "issueFormPermalink": "https://github.com/ym0506/routecontract/blob/[[TAG_COMMIT_40_HEX]]/.github/ISSUE_TEMPLATE/[[VERSION_DERIVED_ISSUE_FORM_FILENAME]]",
+  "issueFormUrl": "https://github.com/ym0506/routecontract/issues/new?template=[[VERSION_DERIVED_ISSUE_FORM_FILENAME]]",
+  "publicAssets": [
+    "routecontract-[[RC_VERSION_WITHOUT_V]]-source.zip",
+    "routecontract-shardingsphere-5.5-[[RC_VERSION_WITHOUT_V]].jar",
+    "routecontract-shardingsphere-5.5-[[RC_VERSION_WITHOUT_V]]-sources.jar",
+    "routecontract-shardingsphere-5.5-[[RC_VERSION_WITHOUT_V]]-javadoc.jar",
+    "routecontract-shardingsphere-5.5.pom",
+    "routecontract-shardingsphere-5.5-cyclonedx.json",
+    "routecontract-shardingsphere-5.5-cyclonedx.xml",
+    "routecontract-aggregate-cyclonedx.json",
+    "routecontract-aggregate-cyclonedx.xml",
+    "supply-chain-evidence.json",
+    "test-summary.txt",
+    "SHA256SUMS"
+  ],
+  "releaseEvidence": {
+    "artifactDigest": "[[WORKFLOW_ARTIFACT_SHA256_WITH_SHA256_PREFIX]]",
+    "artifactFileCount": 17,
+    "artifactId": 0,
+    "headSha": "[[TAG_COMMIT_40_HEX]]",
+    "runId": 0,
+    "runUrl": "https://github.com/ym0506/routecontract/actions/runs/[[POSITIVE_RELEASE_EVIDENCE_RUN_ID]]"
+  },
+  "releaseImmutability": {
+    "enabled": true,
+    "enforcedByOwner": false
+  },
+  "releaseState": {
+    "draft": false,
+    "immutable": true,
+    "prerelease": true
+  },
+  "releaseUrl": "https://github.com/ym0506/routecontract/releases/tag/[[STRICT_RC_TAG]]",
+  "repository": "https://github.com/ym0506/routecontract",
+  "schemaVersion": 2,
+  "sha256sumsSha256": "[[SHA256SUMS_SHA256]]",
+  "tag": "[[STRICT_RC_TAG]]",
+  "tagCommit": "[[TAG_COMMIT_40_HEX]]",
+  "taggedProtocolUrl": "https://github.com/ym0506/routecontract/blob/[[STRICT_RC_TAG]]/docs/independent-install-study.md",
+  "taggedReadmeUrl": "https://github.com/ym0506/routecontract/blob/[[STRICT_RC_TAG]]/README.md"
+}

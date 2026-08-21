@@ -47,7 +47,7 @@ The runner evidence records:
 | [test and environment evidence](https://github.com/ym0506/routecontract/actions/runs/31501026857/artifacts/9105129708) | Eight JUnit XML files plus the runner environment | `sha256:0f1942a89f438797e720f9e8f451d99535091e8671da441f531ac39fe2d4f03c` | 2026-11-09 |
 | [aggregate SBOM](https://github.com/ym0506/routecontract/actions/runs/31501026857/artifacts/9105129364) | Verified CycloneDX JSON and XML | `sha256:15920eba5724df010c575cce12dfcd0bdbcac09f870e173bbff6d1cc6f2661e5` | 2026-11-09 |
 
-These Actions artifacts have 90-day retention and are therefore development evidence, not the final archival distribution. The final `v0.1.0` release must regenerate and publish revision-bound source, JAR, POM, SBOM, test summary and checksums as permanent release assets.
+These Actions artifacts have 90-day retention and are therefore development evidence, not the final archival distribution. The final `v0.1.0` release must regenerate and publish revision-bound source, JAR, POM, SBOM, sanitized supply-chain summary, test summary and checksums as permanent release assets. The raw OSV report is not a release asset.
 
 To reproduce the 50-test summary after downloading the test artifact with GitHub CLI:
 

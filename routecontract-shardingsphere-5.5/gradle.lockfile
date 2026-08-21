@@ -4,11 +4,11 @@
 com.alibaba:transmittable-thread-local:2.14.2=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 com.cedarsoftware:java-util:4.90.0=compileClasspath,testCompileClasspath,testRuntimeClasspath
 com.fasterxml.jackson.core:jackson-annotations:2.21=compileClasspath,testCompileClasspath,testRuntimeClasspath
-com.fasterxml.jackson.core:jackson-core:2.16.1=compileClasspath,testCompileClasspath,testRuntimeClasspath
-com.fasterxml.jackson.core:jackson-databind:2.16.1=compileClasspath,testCompileClasspath,testRuntimeClasspath
-com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.16.1=compileClasspath,testCompileClasspath,testRuntimeClasspath
-com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.16.1=compileClasspath,testCompileClasspath,testRuntimeClasspath
-com.fasterxml.jackson:jackson-bom:2.16.1=compileClasspath,testCompileClasspath,testRuntimeClasspath
+com.fasterxml.jackson.core:jackson-core:2.18.9=compileClasspath,testCompileClasspath,testRuntimeClasspath
+com.fasterxml.jackson.core:jackson-databind:2.18.9=compileClasspath,testCompileClasspath,testRuntimeClasspath
+com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.18.9=compileClasspath,testCompileClasspath,testRuntimeClasspath
+com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.9=compileClasspath,testCompileClasspath,testRuntimeClasspath
+com.fasterxml.jackson:jackson-bom:2.18.9=compileClasspath,testCompileClasspath,testRuntimeClasspath
 com.github.ben-manes.caffeine:caffeine:2.9.3=compileClasspath,testCompileClasspath,testRuntimeClasspath
 com.google.errorprone:error_prone_annotations:2.36.0=compileClasspath,testCompileClasspath,testRuntimeClasspath
 com.google.guava:failureaccess:1.0.3=compileClasspath,testCompileClasspath,testRuntimeClasspath
