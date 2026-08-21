@@ -1,10 +1,15 @@
 # RouteContract v0.1 specification
 
-Status: implemented draft; public-release and independent-user evidence pending
+Status: v0.1 functional contract. Artifact maturity is tracked separately in the
+[evidence matrix](evidence-matrix.md); this specification does not assert that a tag, GitHub
+Release, immutable asset set, release-evidence run, or independent-user result exists.
 
 ## 1. User-visible problem
 
-A repository or ORM test can keep returning the expected rows while a SQL or sharding-rule change expands one observed physical JDBC execution into several data sources. Ordinary result assertions stay green, so the change can reach production with higher database load or an unintended target.
+A repository or ORM test can keep returning the expected rows while a SQL or sharding-rule change
+changes one ShardingSphere-JDBC 5.5.3 `SQLExecutionHook`-reported physical JDBC execution attempt
+on one data source into multiple reported attempts across data sources. Ordinary result assertions
+stay green, so the change can reach production with higher database load or an unintended target.
 
 The v0.1 user is a Java developer testing an application that embeds Apache ShardingSphere-JDBC 5.5.3.
 
@@ -22,14 +27,15 @@ contract.
 
 ## 3. Input
 
-- non-blank `operationId`;
-- a synchronous action;
-- optional route budget;
-- optional approved manifest path.
+- non-null, non-blank `operationId` of at most 200 Java UTF-16 code units;
+- a synchronous action.
+
+Route budgets and approved-manifest paths are post-capture verification/workflow inputs; they are
+not arguments to the capture API.
 
 ## 4. Output
 
-A deterministic `RouteSnapshot` containing:
+An immutable, deterministically ordered diagnostic `RouteSnapshot` containing:
 
 - schema version;
 - operation ID;
@@ -41,10 +47,11 @@ A deterministic `RouteSnapshot` containing:
 - collector error codes without secrets.
 
 `RouteSnapshot` is in-memory diagnostic evidence and includes the observed data-source names,
-trunk/worker flags and reported exception class. The canonical manifest replaces data-source names
-with caller-reviewed aliases, groups equivalent attempts, and excludes thread flags and failure
-class because they are either scheduling-dependent or diagnostic-only. No timestamp, UUID, thread
-ID or event arrival order is written to the canonical manifest.
+trunk/worker flags and reported exception class. Thread-role assignment may depend on scheduling,
+so the complete snapshot is not claimed to be identical across runs. The canonical manifest
+replaces data-source names with caller-reviewed aliases, groups equivalent attempts, and excludes
+thread flags and failure class because they are either scheduling-dependent or diagnostic-only. No
+timestamp, UUID, thread ID or event arrival order is written to the canonical manifest.
 
 ## 5. Event semantics
 
@@ -67,16 +74,20 @@ is not inferred for another ShardingSphere version or a mixed-version graph.
 
 ```text
 OPEN
-  -> CLOSED_COMPLETE
-  -> CLOSED_REPORTED_EXECUTION_FAILURE
-  -> CLOSED_INCOMPLETE
+  -> COMPLETE
+  -> REPORTED_EXECUTION_FAILURE
+  -> INCOMPLETE
 ```
 
-- `CLOSED_COMPLETE`: every observed start has a terminal callback and the collector recorded no diagnostic.
-- `CLOSED_REPORTED_EXECUTION_FAILURE`: at least one observed attempt ended in `finishFailure`.
+- `COMPLETE`: every retained attempt is `CALLBACK_RETURNED`, with zero callback failures, zero
+  unknown outcomes and no collector diagnostic.
+- `REPORTED_EXECUTION_FAILURE`: at least one observed attempt ended in `finishFailure`, with no
+  collector diagnostic or unknown outcome. A diagnostic or unknown outcome takes precedence and
+  produces `INCOMPLETE` instead.
   This is diagnostic-only because the exact 5.5.3 parallel executor can leave other submitted
   workers unjoined after an execution failure.
-- `CLOSED_INCOMPLETE`: an attempt lacks a terminal callback, the collector failed internally, or ownership is ambiguous.
+- `INCOMPLETE`: at least one attempt lacks a terminal callback or the collector recorded a
+  diagnostic, including internal failure or ambiguous ownership.
 
 An incomplete capture must never be treated as a passing contract.
 A reported-execution-failure capture must also never be treated as a passing contract or approved
@@ -90,7 +101,8 @@ manifest.
   physical callbacks overlapped in time.
 - RC-03: a closed capture does not receive events from a later operation.
 - RC-04: callback code never propagates an internal RouteContract exception into the application SQL path.
-- RC-05: every reported start is classified as callback-returned, callback-failure or unknown outcome.
+- RC-05: every retained start is classified as callback-returned, callback-failure or unknown
+  outcome; RC-10 defines the bounded behavior after the retention limit.
 - RC-06: canonical output is identical for the same semantic event multiset regardless of worker completion order.
 - RC-07: raw parameter values and connection properties are never retained.
 - RC-08: a contract violation fails after the application operation, not inside the JDBC callback.
@@ -103,23 +115,31 @@ manifest.
 
 The in-memory snapshot stores:
 
+- schema version, caller-provided `operationId`, capture status and aggregate counts;
 - hook-reported data-source name;
-- SHA-256 fingerprint of the exact hook SQL `String` encoded as UTF-8;
+- SHA-256 fingerprint of a non-null exact hook SQL `String` encoded as UTF-8; a null SQL is hashed
+  as the fail-closed `"<null-sql>"` sentinel and records `RC_NULL_SQL`;
 - parameter count and Java type names;
 - trunk/worker flag;
-- callback outcome and reported exception class name.
+- callback outcome and reported exception class name;
+- collector diagnostic codes.
 
 The canonical manifest stores:
 
+- schema version, caller-provided `operationId` and capture status;
+- the reviewed policy and aggregate counts;
 - caller-provided, reviewed alias for the hook-reported data-source name;
 - the same SQL fingerprint;
 - parameter count and Java type names;
 - callback outcome and structural multiplicity.
 
-It does not store parameter values, connection properties or exception messages. Aliases must be
-static and non-sensitive; using a raw data-source name as the alias exposes that name. Human-readable
-SQL templates are outside the default v0.1 manifest until a safe opt-in policy is implemented and
-tested.
+It does not store parameter values, connection properties or exception messages. Capture input and
+hand-authored snapshots/manifests enforce the same non-blank 200-Java-UTF-16-code-unit operation-ID
+limit. Operation IDs remain clear text. Aliases must be static and non-sensitive; using a raw
+data-source name as the alias exposes that name. The unsalted SQL fingerprint is pseudonymous and
+may be guessable from a small candidate set; it is not anonymization. Operation IDs, aliases and
+Java type names must also be reviewed for sensitivity. Human-readable SQL templates are outside the
+default v0.1 manifest until a safe opt-in policy is implemented and tested.
 
 ## 9. Contract policies
 
@@ -161,11 +181,13 @@ Before concurrency support is published:
 
 - MySQL single route and fan-out route;
 - trunk and worker events share the correct capture;
-- 20 identical repetitions produce the same manifest;
+- 20 repetitions produce one identical structural execution signature after excluding operation
+  identity; this is not a byte-identical canonical-manifest claim;
 - two concurrently open caller operations remain isolated for their observed callbacks; the test
   must state separately whether physical callback overlap was forced or measured;
 - worker reuse does not leak a closed capture;
-- callback fault injection does not break the SQL result;
+- an injected collector runtime exception does not escape the direct hook callback and makes the
+  capture `INCOMPLETE`; this `verified - unit` gate does not claim an unchanged SQL result;
 - Java 17 Linux CI passes on the exact supported dependency set.
 
 The concurrency claim is limited to normally returned, non-interrupted synchronous

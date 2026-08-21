@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 3,
+  "allowedLicenseIds": [
+    "Apache-2.0",
+    "BSD-3-Clause",
+    "EPL-1.0",
+    "EPL-2.0",
+    "MIT"
+  ],
+  "licenseExceptions": [
+    {
+      "kind": "expression",
+      "license": "EPL-2.0 OR (GPL-2.0-only WITH Classpath-exception-2.0)",
+      "purl": "pkg:maven/jakarta.transaction/jakarta.transaction-api@1.3.3",
+      "scope": "test-runtime",
+      "url": null
+    },
+    {
+      "kind": "expression",
+      "license": "GPL-2.0-only WITH Universal-FOSS-exception-1.0",
+      "purl": "pkg:maven/com.mysql/mysql-connector-j@26.7.0",
+      "scope": "test-runtime",
+      "url": null
+    },
+    {
+      "kind": "expression",
+      "license": "(Apache-2.0 OR LGPL-2.1-or-later) AND MIT",
+      "purl": "pkg:maven/net.java.dev.jna/jna@5.13.0",
+      "scope": "test-runtime",
+      "url": null
+    },
+    {
+      "kind": "expression",
+      "license": "EPL-2.0 OR BSD-3-Clause",
+      "purl": "pkg:maven/org.locationtech.jts/jts-core@1.19.0",
+      "scope": "test-runtime",
+      "url": null
+    },
+    {
+      "kind": "expression",
+      "license": "(EPL-2.0 OR BSD-3-Clause) AND Apache-2.0",
+      "purl": "pkg:maven/org.locationtech.jts.io/jts-io-common@1.19.0",
+      "scope": "test-runtime",
+      "url": null
+    }
+  ],
+  "licenseReviewExceptions": [
+    {
+      "action": "resolve, renew with new evidence, or remove the MySQL OCI package-level license review before the 2026-08-27 expiry",
+      "componentName": "mysql",
+      "componentVersion": "8.4.11",
+      "documentationUrl": "https://dev.mysql.com/doc/refman/8.4/en/preface.html",
+      "expires": "2026-08-27",
+      "owner": "RouteContract maintainers",
+      "purl": "pkg:oci/mysql@sha256%3Ab3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb?repository_url=registry-1.docker.io&tag=8.4.11",
+      "rationaleCode": "MYSQL_OCI_PACKAGE_LICENSE_CONCLUSION_INCOMPLETE",
+      "reviewedAt": "2026-08-13",
+      "scope": "test-container",
+      "sha256": "b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb",
+      "status": "manual-review-required"
+    },
+    {
+      "action": "resolve and document the JTS I/O Common redistribution NOTICE treatment before the 2026-08-27 expiry",
+      "componentName": "jts-io-common",
+      "componentVersion": "1.19.0",
+      "expires": "2026-08-27",
+      "expression": "(EPL-2.0 OR BSD-3-Clause) AND Apache-2.0",
+      "owner": "RouteContract maintainers",
+      "provenance": {
+        "binarySha256": "e0f0c62024d4282f5f905de1abd2cc96f975a51d9e8d98254234fa14b16bbe9b",
+        "classFileSha256": "7760a6e6eb7534e26617813c7b381196d0fb42e84ff0a3e6474991431384440a",
+        "mahoutLicensePath": "mahout-distribution-0.8/LICENSE.txt",
+        "mahoutLicenseSha256": "daef6fbe58ad49cd519848a5e60a1c9e5720f861c11878fde9f99fb55c62f62f",
+        "mahoutNoticePath": "mahout-distribution-0.8/NOTICE.txt",
+        "mahoutNoticeSha256": "5e81cc7357b3c9a710860c4b66ac09c3322b2ac5ae914f4e07bfc36896e13c47",
+        "mahoutSourceArchiveSha256": "0ff823d5c898880f0a00df52f72f0a9af1d2fc502700780eef20e91b4161504b",
+        "mahoutSourceArchiveUrl": "https://archive.apache.org/dist/mahout/0.8/mahout-distribution-0.8-src.tar.gz",
+        "mahoutVarintPath": "mahout-distribution-0.8/core/src/main/java/org/apache/mahout/math/Varint.java",
+        "mahoutVarintSha256": "650b57209bcb6f54e394d241d9f680485608a1c3686d767ef0a864cdc4212b32",
+        "pomSha256": "c569979c50228a25be237b3084b55da600b538037743a2936f983b18163042a8",
+        "sourceArtifactSha256": "c367d87dc525a5d9b85e2751e3b0e14ea018165b45aef3d2642c857d49f53804",
+        "sourceFileSha256": "66a92610c5073c3eff40b327cf162829cf90f1fbeb827a5e7aceb7240ccdb0da",
+        "tagCommit": "574698c4bc4fe06eb7ed46576a605626d5a5e486",
+        "upstreamLicenseUrl": "https://github.com/locationtech/jts/blob/574698c4bc4fe06eb7ed46576a605626d5a5e486/LICENSES.md",
+        "upstreamSourceUrl": "https://github.com/locationtech/jts/blob/574698c4bc4fe06eb7ed46576a605626d5a5e486/modules/io/common/src/main/java/org/locationtech/jts/io/twkb/Varint.java"
+      },
+      "purl": "pkg:maven/org.locationtech.jts.io/jts-io-common@1.19.0",
+      "rationaleCode": "JTS_IO_COMMON_REDISTRIBUTION_NOTICE_TREATMENT_UNCONFIRMED",
+      "reviewedAt": "2026-08-13",
+      "scope": "test-runtime",
+      "status": "manual-review-required"
+    }
+  ],
+  "vulnerabilityExceptions": [
+    {
+      "advisory": "GHSA-j288-q9x7-2f5v",
+      "exceptionId": "OSV-001",
+      "expires": "2026-08-27",
+      "fixedVersion": null,
+      "owner": "RouteContract maintainers",
+      "purl": "pkg:maven/commons-lang/commons-lang@2.4",
+      "rationaleCode": "SHARDINGSPHERE_5_5_3_TEST_GRAPH",
+      "reviewedAt": "2026-08-12",
+      "scope": "aggregate-test-only",
+      "severity": "MODERATE"
+    },
+    {
+      "advisory": "GHSA-pq2g-wx69-c263",
+      "exceptionId": "OSV-002",
+      "expires": "2026-08-27",
+      "fixedVersion": "2.5.2",
+      "owner": "RouteContract maintainers",
+      "purl": "pkg:maven/net.minidev/json-smart@2.5.0",
+      "rationaleCode": "SHARDINGSPHERE_5_5_3_TEST_GRAPH",
+      "reviewedAt": "2026-08-12",
+      "scope": "aggregate-test-only",
+      "severity": "HIGH"
+    },
+    {
+      "advisory": "GHSA-c2rv-hwqm-wjpg",
+      "exceptionId": "OSV-003",
+      "expires": "2026-08-27",
+      "fixedVersion": "1.42.0",
+      "owner": "RouteContract maintainers",
+      "purl": "pkg:maven/org.apache.calcite/calcite-core@1.40.0",
+      "rationaleCode": "SHARDINGSPHERE_5_5_3_TEST_GRAPH",
+      "reviewedAt": "2026-08-12",
+      "scope": "aggregate-test-only",
+      "severity": "MODERATE"
+    }
+  ]
+}

@@ -42,8 +42,13 @@ jobs:
           python3 -m unittest discover -s submission/tools/tests -v
           python3 -m unittest discover -s scripts/tests -v
 
-      - name: Test, assemble artifacts, and generate verified CycloneDX SBOM
-        run: ./gradlew --no-daemon --no-build-cache clean check assemble prepareVerifiedSbom
+      - name: Test, assemble artifacts, and validate all CycloneDX SBOMs
+        run: >-
+          ./gradlew --no-daemon --no-build-cache clean check assemble
+          validateOfficialCycloneDxSbom
+
+      - name: Verify the documented real-MySQL Quick Start
+        run: ./scripts/quickstart-demo.sh
 
       - name: Verify same-checkout Maven publication consumer
         run: ./scripts/verify-standalone-consumer.sh

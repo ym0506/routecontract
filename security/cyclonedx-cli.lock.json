@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "tool": {
+    "name": "CycloneDX CLI",
+    "releaseTag": "v0.33.1",
+    "sourceCommit": "b3cfa4b0edc356dad07e0b6e7ab6da0a94af0246",
+    "sourceRepository": "https://github.com/CycloneDX/cyclonedx-cli",
+    "version": "0.33.1",
+    "platforms": {
+      "darwin-arm64": {
+        "asset": "cyclonedx-osx-arm64",
+        "sha256": "750c148780154833f6401f9067d08c5a4c31567b6ee3c26c062c3a95c62d741c",
+        "size": 86373536,
+        "url": "https://github.com/CycloneDX/cyclonedx-cli/releases/download/v0.33.1/cyclonedx-osx-arm64"
+      },
+      "darwin-x86_64": {
+        "asset": "cyclonedx-osx-x64",
+        "sha256": "0ea92306fc7d7c30ed112a7463781a200585a3bf1cdaf77229181c5aabd1d4b6",
+        "size": 79598282,
+        "url": "https://github.com/CycloneDX/cyclonedx-cli/releases/download/v0.33.1/cyclonedx-osx-x64"
+      },
+      "linux-x86_64": {
+        "asset": "cyclonedx-linux-x64",
+        "sha256": "bfc8b2538da86fe239bc53658bbb63c1c8c510a293c1e6891aa5bea5d3c58746",
+        "size": 80337458,
+        "url": "https://github.com/CycloneDX/cyclonedx-cli/releases/download/v0.33.1/cyclonedx-linux-x64"
+      }
+    }
+  }
+}

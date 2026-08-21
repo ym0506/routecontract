@@ -3,7 +3,6 @@ name: Release evidence
 on:
   push:
     tags: ['v*']
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -12,12 +11,13 @@ jobs:
   build-release-evidence:
     name: Build release evidence
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 35
 
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Set up JDK 17
@@ -33,11 +33,25 @@ jobs:
           validate-wrappers: true
 
       - name: Require tag and project versions to match
-        if: github.ref_type == 'tag'
         shell: bash
         run: |
           set -euo pipefail
+          test "${GITHUB_EVENT_NAME}" = 'push'
+          test "${GITHUB_REF_TYPE}" = 'tag'
+          test "${GITHUB_REF}" = "refs/tags/${GITHUB_REF_NAME}"
+          tag_ref="refs/tags/${GITHUB_REF_NAME}"
+          test "$(git cat-file -t "${tag_ref}")" = 'tag'
+          tagged_commit="$(git rev-parse "${tag_ref}^{commit}")"
+          test "${tagged_commit}" = "${GITHUB_SHA}"
+          main_commit="$(git ls-remote --exit-code origin refs/heads/main | awk 'NR == 1 { print $1 }')"
+          test -n "${main_commit}"
+          test "${tagged_commit}" = "${main_commit}"
           project_version="$(./gradlew --no-daemon -q properties | awk '/^version:/ { print $2; exit }')"
+          release_version_pattern='^(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})(-rc[1-9][0-9]{0,5})?$'
+          if [[ ! "${project_version}" =~ ${release_version_pattern} ]]; then
+            echo "Project version is not a stable or strict RC release version: ${project_version}" >&2
+            exit 1
+          fi
           test "v${project_version}" = "${GITHUB_REF_NAME}"
 
       - name: Test fail-closed contest packaging rules
@@ -47,7 +61,8 @@ jobs:
 
       - name: Test and build evidence
         run: >-
-          ./gradlew --no-daemon --no-build-cache clean check prepareVerifiedSbom
+          ./gradlew --no-daemon --no-build-cache clean check
+          validateOfficialCycloneDxSbom
           :routecontract-shardingsphere-5.5:assemble
           :routecontract-shardingsphere-5.5:generatePomFileForMavenJavaPublication
 
@@ -67,6 +82,14 @@ jobs:
             --verify-pair \
             build/reports/verified-sbom/mysql-example/bom.json \
             build/reports/verified-sbom/mysql-example/bom.xml
+
+      - name: Produce exact-revision sanitized supply-chain evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./scripts/run-final-supply-chain-scan.sh --revision "${GITHUB_SHA}"
+          test -f build/reports/security/supply-chain-evidence.json
+          test ! -L build/reports/security/supply-chain-evidence.json
 
       - name: Create revision-bound privacy-minimized test summary
         shell: bash
@@ -91,6 +114,7 @@ jobs:
           cp build/reports/verified-sbom/routecontract-shardingsphere-5.5/bom.xml "${public_dir}/routecontract-shardingsphere-5.5-cyclonedx.xml"
           cp build/reports/verified-sbom/aggregate/bom.json "${public_dir}/routecontract-aggregate-cyclonedx.json"
           cp build/reports/verified-sbom/aggregate/bom.xml "${public_dir}/routecontract-aggregate-cyclonedx.xml"
+          cp build/reports/security/supply-chain-evidence.json "${public_dir}/supply-chain-evidence.json"
           project_version="$(./gradlew --no-daemon -q properties | awk '/^version:/ { print $2; exit }')"
           public_payloads=(
             "routecontract-${project_version}-source.zip"
@@ -102,6 +126,7 @@ jobs:
             'routecontract-shardingsphere-5.5-cyclonedx.xml'
             'routecontract-aggregate-cyclonedx.json'
             'routecontract-aggregate-cyclonedx.xml'
+            'supply-chain-evidence.json'
             'test-summary.txt'
           )
           git archive \
@@ -109,7 +134,7 @@ jobs:
             --prefix="routecontract-${project_version}/" \
             --output="${public_dir}/routecontract-${project_version}-source.zip" \
             "${GITHUB_SHA}"
-          test "$(find "${public_dir}" -maxdepth 1 -type f | wc -l | tr -d ' ')" = '10'
+          test "$(find "${public_dir}" -maxdepth 1 -type f | wc -l | tr -d ' ')" = '11'
           for payload in "${public_payloads[@]}"; do
             test -f "${public_dir}/${payload}"
           done
@@ -117,8 +142,8 @@ jobs:
             cd "${public_dir}"
             sha256sum "${public_payloads[@]}" > SHA256SUMS
           )
-          test "$(find "${public_dir}" -maxdepth 1 -type f | wc -l | tr -d ' ')" = '11'
-          test "$(wc -l < "${public_dir}/SHA256SUMS" | tr -d ' ')" = '10'
+          test "$(find "${public_dir}" -maxdepth 1 -type f | wc -l | tr -d ' ')" = '12'
+          test "$(wc -l < "${public_dir}/SHA256SUMS" | tr -d ' ')" = '11'
 
       - name: Verify exact Release assets in a standalone MySQL consumer
         shell: bash
@@ -140,6 +165,10 @@ jobs:
           public_dir='build/release-public'
           evidence_dir='build/release-evidence'
           cp "${public_dir}"/* "${evidence_dir}/"
+          cp build/reports/verified-sbom/mysql-example/bom.json \
+            "${evidence_dir}/routecontract-mysql-example-cyclonedx.json"
+          cp build/reports/verified-sbom/mysql-example/bom.xml \
+            "${evidence_dir}/routecontract-mysql-example-cyclonedx.xml"
           mysql_image_tag='mysql:8.4.11'
           expected_mysql_digest='sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb'
           resolved_mysql_image_id="$(docker image ls --no-trunc --format '{{.Repository}}|{{.Tag}}|{{.ID}}' \
@@ -163,9 +192,50 @@ jobs:
           } > "${evidence_dir}/mysql-image.txt"
           grep -Fq 'image_id=sha256:' "${evidence_dir}/mysql-image.txt"
           grep -Fq "${expected_mysql_digest}" "${evidence_dir}/mysql-image.txt"
-          ! grep -Eq '  (environment|mysql-image|standalone-consumer)\.txt$' \
+          ! grep -Eq \
+            '  (environment|mysql-image|standalone-consumer)\.txt$|  routecontract-mysql-example-cyclonedx\.(json|xml)$' \
             "${evidence_dir}/SHA256SUMS"
-          test "$(find "${evidence_dir}" -maxdepth 1 -type f | wc -l | tr -d ' ')" = '14'
+          test ! -e "${evidence_dir}/osv-raw.json"
+          test "$(find "${evidence_dir}" -maxdepth 1 -type f | wc -l | tr -d ' ')" = '17'
+
+      - name: Revalidate all staged CycloneDX release-evidence SBOMs
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence_dir='build/release-evidence'
+          project_group="$(./gradlew --no-daemon -q properties | awk '/^group:/ { print $2; exit }')"
+          staged_sboms=(
+            "${evidence_dir}/routecontract-aggregate-cyclonedx.json"
+            "${evidence_dir}/routecontract-aggregate-cyclonedx.xml"
+            "${evidence_dir}/routecontract-shardingsphere-5.5-cyclonedx.json"
+            "${evidence_dir}/routecontract-shardingsphere-5.5-cyclonedx.xml"
+            "${evidence_dir}/routecontract-mysql-example-cyclonedx.json"
+            "${evidence_dir}/routecontract-mysql-example-cyclonedx.xml"
+          )
+          staged_sbom_binding="$(sha256sum "${staged_sboms[@]}")"
+          python3 scripts/finalize-sbom.py \
+            --first-party-group "${project_group}" \
+            --verify-pair \
+            "${evidence_dir}/routecontract-aggregate-cyclonedx.json" \
+            "${evidence_dir}/routecontract-aggregate-cyclonedx.xml" \
+            --verify-pair \
+            "${evidence_dir}/routecontract-shardingsphere-5.5-cyclonedx.json" \
+            "${evidence_dir}/routecontract-shardingsphere-5.5-cyclonedx.xml" \
+            --verify-pair \
+            "${evidence_dir}/routecontract-mysql-example-cyclonedx.json" \
+            "${evidence_dir}/routecontract-mysql-example-cyclonedx.xml"
+          python3 scripts/validate-official-cyclonedx.py \
+            --input-root "${evidence_dir}" \
+            --pair aggregate \
+            routecontract-aggregate-cyclonedx.json \
+            routecontract-aggregate-cyclonedx.xml \
+            --pair published \
+            routecontract-shardingsphere-5.5-cyclonedx.json \
+            routecontract-shardingsphere-5.5-cyclonedx.xml \
+            --pair example \
+            routecontract-mysql-example-cyclonedx.json \
+            routecontract-mysql-example-cyclonedx.xml
+          test "$(sha256sum "${staged_sboms[@]}")" = "${staged_sbom_binding}"
 
       - name: Upload release evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

@@ -236,7 +236,7 @@ class RouteContractTest {
     }
 
     @Test
-    void handAuthoredZeroAttemptSnapshotCannotForgeCompleteStatus() {
+    void zeroAttemptAndInvalidOperationIdsCannotForgeCapturesOrSnapshots() throws Exception {
         assertThrows(IllegalArgumentException.class, () -> new RouteSnapshot(
                 RouteSnapshot.CURRENT_SCHEMA_VERSION,
                 "forged-zero",
@@ -250,6 +250,29 @@ class RouteContractTest {
                 List.of(),
                 List.of(),
                 List.of()));
+
+        String exactUtf16Boundary = "😀".repeat(100);
+        RouteSnapshot boundary = RouteContract.capture(
+                exactUtf16Boundary, () -> callbackReturnedHook("ds_0", true));
+        assertEquals(exactUtf16Boundary, boundary.operationId());
+
+        for (String invalidOperationId : List.of(" ", "x".repeat(201), "😀".repeat(101))) {
+            assertThrows(IllegalArgumentException.class,
+                    () -> RouteContract.capture(invalidOperationId, () -> { }));
+            assertThrows(IllegalArgumentException.class, () -> new RouteSnapshot(
+                    RouteSnapshot.CURRENT_SCHEMA_VERSION,
+                    invalidOperationId,
+                    CaptureStatus.INCOMPLETE,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    List.of(),
+                    List.of(),
+                    List.of("RC_TEST_DIAGNOSTIC")));
+        }
     }
 
     @Test

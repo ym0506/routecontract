@@ -13,7 +13,7 @@ import java.util.TreeSet;
  * transaction commit or business success.</p>
  *
  * @param schemaVersion snapshot schema version
- * @param operationId opaque caller-supplied operation identifier
+ * @param operationId non-blank caller-supplied identifier, at most 200 Java UTF-16 code units
  * @param status completeness classification derived from outcomes and collector diagnostics
  * @param observedPhysicalAttemptCount total observed physical JDBC execution attempts
  * @param callbackReturnedCount attempts whose callbacks returned normally
@@ -46,7 +46,7 @@ public record RouteSnapshot(
      * Creates an immutable snapshot after validating all redundant counts, sets, and status.
      *
      * @param schemaVersion must equal {@link #CURRENT_SCHEMA_VERSION}
-     * @param operationId non-null opaque operation identifier
+     * @param operationId non-blank opaque identifier, at most 200 Java UTF-16 code units
      * @param status classification derived from outcomes and diagnostics
      * @param observedPhysicalAttemptCount count that must equal {@code attempts.size()}
      * @param callbackReturnedCount count of normal-return outcomes
@@ -62,7 +62,7 @@ public record RouteSnapshot(
         if (schemaVersion != CURRENT_SCHEMA_VERSION) {
             throw new IllegalArgumentException("Unsupported snapshot schema: " + schemaVersion);
         }
-        operationId = Objects.requireNonNull(operationId, "operationId");
+        operationId = requireOperationId(operationId);
         status = Objects.requireNonNull(status, "status");
         observedDataSourceNames = List.copyOf(
                 Objects.requireNonNull(observedDataSourceNames, "observedDataSourceNames"));
@@ -112,6 +112,18 @@ public record RouteSnapshot(
         if (status == CaptureStatus.COMPLETE && observedPhysicalAttemptCount == 0) {
             throw new IllegalArgumentException("COMPLETE status requires at least one observed attempt");
         }
+    }
+
+    private static String requireOperationId(final String value) {
+        Objects.requireNonNull(value, "operationId");
+        if (value.isBlank()) {
+            throw new IllegalArgumentException("operationId must not be blank");
+        }
+        if (value.length() > RouteContract.MAX_OPERATION_ID_UTF16_CODE_UNITS) {
+            throw new IllegalArgumentException("operationId must not exceed "
+                    + RouteContract.MAX_OPERATION_ID_UTF16_CODE_UNITS + " Java UTF-16 code units");
+        }
+        return value;
     }
 
     private static int count(

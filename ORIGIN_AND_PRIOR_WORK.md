@@ -28,8 +28,8 @@ ShardLens는 결제 provider 응답 유실, 멱등성, webhook, reconciliation�
 
 - ShardingSphere 5.5.3 `SQLExecutionHook` adapter
 - trunk/worker 실행을 하나의 application operation으로 묶는 capture lifecycle
-- parameter 원문을 저장하지 않는 physical execution model
-- 관측된 data-source 이름 및 물리 실행 예산
+- parameter 원문을 저장하지 않는 `SQLExecutionHook`-reported physical JDBC execution-attempt model
+- hook이 보고한 data-source 이름 및 관측 실행 시도 예산
 - canonical manifest record/verify
 - semantic diff와 CI 실패 리포트
 - 실제 MySQL regression corpus

@@ -14,9 +14,11 @@ Usage: ./scripts/verify-release-assets-consumer.sh \
   /absolute/path/to/empty-target-maven-repository
 
 The installer first verifies the exact public Release allowlist, SHA256SUMS,
-stable Maven coordinate, and RouteContract JAR structure. The standalone
-consumer then resolves RouteContract exclusively from the explicit repository
-and runs one real ShardingSphere-JDBC 5.5.3/MySQL 8.4.11 test.
+non-SNAPSHOT Maven coordinate (stable or strict -rcN), RouteContract JAR
+structure, and the source ZIP's versioned root, required source paths, and
+canonical package namespace. The
+standalone consumer then resolves RouteContract exclusively from the explicit
+repository and runs one real ShardingSphere-JDBC 5.5.3/MySQL 8.4.11 test.
 
 The target coordinate must not already exist. Installation itself is offline;
 the consumer build can download the Gradle distribution and third-party Maven
@@ -65,7 +67,7 @@ IFS=':' read -r routecontract_group routecontract_artifact routecontract_version
 if [[ "$routecontract_group" != 'io.github.ym0506.routecontract' \
     || "$routecontract_artifact" != 'routecontract-shardingsphere-5.5' \
     || -n "${extra:-}" \
-    || ! "$routecontract_version" =~ ^(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})$ ]]; then
+    || ! "$routecontract_version" =~ ^(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})(-rc[1-9][0-9]{0,5})?$ ]]; then
     echo "Installer reported an unsafe or unexpected Maven coordinate." >&2
     exit 2
 fi

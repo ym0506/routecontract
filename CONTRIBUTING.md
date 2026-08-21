@@ -4,6 +4,7 @@
 
 - JDK 17
 - Docker for MySQL integration tests
+- Git, Python 3, Bash or equivalent POSIX tooling, and network access for public release checks
 
 ## Change workflow
 
@@ -34,3 +35,12 @@ dependency with:
 
 A change is not complete until it passes the appropriate real-MySQL test, not only an in-memory
 substitute.
+
+## Independent release feedback
+
+After a public release candidate exists, non-authors can follow the
+[independent installation study](docs/independent-install-study.md) and report both the exact-tag
+Quick Start and, optionally, the checksummed Release-asset consumer through the dedicated issue
+form. First failures and later assistance must remain visible; same-checkout tests and AI runs are
+not independent-install evidence. Recruitment starts only after the tagged protocol's activation gate
+is satisfied.

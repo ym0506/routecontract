@@ -6,6 +6,7 @@ description = 'MySQL Testcontainers example and regression fixture for RouteCont
 
 dependencies {
     testImplementation project(':routecontract-shardingsphere-5.5')
+    testImplementation platform("com.fasterxml.jackson:jackson-bom:${shardingSphereJacksonVersion}")
     testImplementation "org.apache.shardingsphere:shardingsphere-jdbc:${shardingSphereVersion}"
     testRuntimeOnly "org.apache.shardingsphere:shardingsphere-infra-url-absolutepath:${shardingSphereVersion}"
     testRuntimeOnly "org.apache.shardingsphere:shardingsphere-infra-data-source-pool-hikari:${shardingSphereVersion}"
@@ -27,6 +28,12 @@ dependencies {
     testImplementation "com.alibaba:transmittable-thread-local:${transmittableThreadLocalVersion}"
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testRuntimeOnly "org.slf4j:slf4j-simple:${slf4jVersion}"
+
+    constraints {
+        testImplementation("org.apache.commons:commons-compress:${commonsCompressVersion}") {
+            because 'Testcontainers 1.21.4 requests a version with published denial-of-service advisories'
+        }
+    }
 }
 
 tasks.named('test') {

@@ -2,3 +2,9 @@
 gradlew text eol=lf
 *.bat text eol=crlf
 *.jar binary
+
+# Executable integration/consumer Java sources, not prose documentation.
+examples/**/*.java -linguist-documentation
+
+# Contest-only report/package documentation and its maintainer tooling.
+submission/** linguist-documentation

@@ -172,6 +172,25 @@ class ObservedExecutionManifestTest {
                         ManifestPolicy.strict(0, 0),
                         new ManifestCounts(0, 0, 0, 0, 0),
                         List.of()));
+        String exactUtf16Boundary = "😀".repeat(100);
+        ObservedExecutionManifest boundary = new ObservedExecutionManifest(
+                1,
+                exactUtf16Boundary,
+                CaptureStatus.REPORTED_EXECUTION_FAILURE,
+                ManifestPolicy.strict(1, 1),
+                ManifestCounts.from(List.of(failure)),
+                List.of(failure));
+        assertEquals(exactUtf16Boundary, boundary.operationId());
+        for (String invalidOperationId : List.of(" ", "x".repeat(201), "😀".repeat(101))) {
+            assertThrows(IllegalArgumentException.class,
+                    () -> new ObservedExecutionManifest(
+                            1,
+                            invalidOperationId,
+                            CaptureStatus.REPORTED_EXECUTION_FAILURE,
+                            ManifestPolicy.strict(1, 1),
+                            ManifestCounts.from(List.of(failure)),
+                            List.of(failure)));
+        }
     }
 
     @Test

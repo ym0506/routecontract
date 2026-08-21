@@ -9,7 +9,7 @@
 - [ ] Specification or acceptance test changed before implementation where applicable.
 - [ ] Unit tests pass.
 - [ ] Real MySQL/ShardingSphere-JDBC 5.5.3 test passes where behavior crosses the SPI boundary.
-- [ ] Clean published-JAR consumer still passes when packaging changes.
+- [ ] Clean same-checkout generated-publication consumer still passes when packaging changes.
 - [ ] Exact command, versions, repetitions, and limitations are recorded.
 
 ## Claim and privacy review

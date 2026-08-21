@@ -10,6 +10,7 @@ import os
 import re
 import shutil
 import tempfile
+import urllib.parse
 from copy import deepcopy
 from pathlib import Path
 from typing import Any, Iterable
@@ -21,8 +22,17 @@ from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
+from docx.opc.constants import RELATIONSHIP_TYPE as RELATIONSHIP_TYPE
 from docx.shared import Inches, Pt, RGBColor
+from docx.text.run import Run
 from lxml import etree
+
+try:
+    from .report_ooxml import mark_data_rows_cannot_split
+    from .report_content_contract import materialize_external_evidence
+except ImportError:  # Direct script execution puts this directory on sys.path.
+    from report_ooxml import mark_data_rows_cannot_split
+    from report_content_contract import materialize_external_evidence
 
 
 EXPECTED_TEMPLATE_SHA256 = (
@@ -31,10 +41,11 @@ EXPECTED_TEMPLATE_SHA256 = (
 FONT_NAME = "Malgun Gothic"
 BODY_FONT_PT = 10
 REPORT_IMAGE_WIDTH_INCHES = 4.15
-# Attachment 1 uses the retained landscape grid. Compact nine-point cells keep
-# all ten organizer-requested direct/core rows on one readable page while the
-# result-report body remains the required 10 pt.
+# The organizer's supplemental guide caps the prioritized summary at ten rows.
+# Compact nine-point cells keep that landscape table readable while the body
+# remains the required 10 pt.
 SBOM_FONT_PT = 9
+SBOM_MAX_ROWS = 10
 PLACEHOLDER_RE = re.compile(r"\[\[[^\]]+\]\]")
 CORE_PROPERTY_NAMESPACES = {
     "cp": "http://schemas.openxmlformats.org/package/2006/metadata/core-properties",
@@ -42,6 +53,13 @@ CORE_PROPERTY_NAMESPACES = {
     "dcterms": "http://purl.org/dc/terms/",
 }
 PUBLIC_DOCUMENT_IDENTITY = "RouteContract project"
+UPSTREAM_ISSUE_38456_URL = "https://github.com/apache/shardingsphere/issues/38456"
+EXTERNAL_LINK_ALIASES = {
+    "[결과 Issue]": "result_issue_url",
+    "[활성화 기록]": "activation_record_url",
+    "[모집 기록]": "recruitment_record_url",
+    "[검증 프로토콜]": "protocol_issue_url",
+}
 
 
 def parse_args() -> argparse.Namespace:
@@ -70,7 +88,7 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def load_content(path: Path) -> dict[str, Any]:
+def load_content(path: Path, *, strict: bool) -> dict[str, Any]:
     with path.open(encoding="utf-8") as stream:
         data = json.load(stream)
     required = {
@@ -83,14 +101,31 @@ def load_content(path: Path) -> dict[str, Any]:
         "features",
         "effects",
         "other",
+        "external_evidence",
         "sbom",
     }
     missing = sorted(required.difference(data))
-    if missing:
-        raise ValueError(f"content is missing keys: {', '.join(missing)}")
-    if len(data["sbom"]) != 10:
-        raise ValueError("the official Attachment 1 must contain exactly 10 SBOM rows")
-    return data
+    unexpected = sorted(set(data).difference(required))
+    if missing or unexpected:
+        raise ValueError(
+            "content keys do not match schema; "
+            f"missing={missing}, unexpected={unexpected}"
+        )
+    rows = data["sbom"]
+    if not isinstance(rows, list) or not 1 <= len(rows) <= SBOM_MAX_ROWS:
+        raise ValueError(
+            f"the official Attachment 1 must contain 1 to {SBOM_MAX_ROWS} prioritized rows"
+        )
+    expected_row_keys = {"name", "version", "license", "url", "purpose"}
+    for index, row in enumerate(rows, start=1):
+        if not isinstance(row, dict) or set(row) != expected_row_keys:
+            raise ValueError(
+                f"SBOM row {index} must contain exactly: "
+                + ", ".join(sorted(expected_row_keys))
+            )
+        if any(not isinstance(row[key], str) or not row[key].strip() for key in row):
+            raise ValueError(f"SBOM row {index} values must be non-empty strings")
+    return materialize_external_evidence(data, allow_placeholders=not strict)
 
 
 def iter_strings(value: Any) -> Iterable[str]:
@@ -102,6 +137,17 @@ def iter_strings(value: Any) -> Iterable[str]:
     elif isinstance(value, list):
         for child in value:
             yield from iter_strings(child)
+
+
+def discovered_https_targets(data: dict[str, Any]) -> set[str]:
+    targets: set[str] = set()
+    for text in iter_strings(data):
+        for raw in re.findall(r"https://\S+", text):
+            target = raw.rstrip(".,;:!?)]}'\"")
+            parsed = urllib.parse.urlparse(target)
+            if parsed.scheme == "https" and parsed.netloc:
+                targets.add(target)
+    return targets
 
 
 def validate_submission_gates(data: dict[str, Any], strict: bool) -> None:
@@ -197,6 +243,59 @@ def set_run_font(run, size_pt: float, *, bold: bool | None = None) -> None:
         rfonts.set(qn(f"w:{key}"), FONT_NAME)
 
 
+def append_hyperlink(paragraph, display: str, target: str, size_pt: float) -> None:
+    relationship_id = paragraph.part.relate_to(
+        target, RELATIONSHIP_TYPE.HYPERLINK, is_external=True
+    )
+    hyperlink = OxmlElement("w:hyperlink")
+    hyperlink.set(qn("r:id"), relationship_id)
+    run_element = OxmlElement("w:r")
+    hyperlink.append(run_element)
+    paragraph._p.append(hyperlink)
+    run = Run(run_element, paragraph)
+    run.add_text(display)
+    set_run_font(run, size_pt, bold=False)
+    run.font.color.rgb = RGBColor(5, 99, 193)
+    run.underline = True
+
+
+def append_text_with_hyperlinks(
+    paragraph,
+    text: str,
+    size_pt: float,
+    *,
+    targets: Iterable[str] = (),
+    aliases: dict[str, str] | None = None,
+) -> None:
+    candidates = [(target, target) for target in targets if target in text]
+    candidates.append(("#38456", UPSTREAM_ISSUE_38456_URL))
+    if aliases:
+        candidates.extend(
+            (display, target)
+            for display, target in aliases.items()
+            if display in text
+        )
+    matches: list[tuple[int, int, str, str]] = []
+    for display, target in candidates:
+        start = text.find(display)
+        while start >= 0:
+            matches.append((start, start + len(display), display, target))
+            start = text.find(display, start + len(display))
+    matches.sort(key=lambda item: (item[0], -(item[1] - item[0])))
+    cursor = 0
+    for start, end, display, target in matches:
+        if start < cursor:
+            continue
+        if start > cursor:
+            run = paragraph.add_run(text[cursor:start])
+            set_run_font(run, size_pt, bold=False)
+        append_hyperlink(paragraph, display, target, size_pt)
+        cursor = end
+    if cursor < len(text):
+        run = paragraph.add_run(text[cursor:])
+        set_run_font(run, size_pt, bold=False)
+
+
 def set_paragraph_rhythm(paragraph, *, alignment=None, after_pt: float = 1.5) -> None:
     paragraph.alignment = alignment
     fmt = paragraph.paragraph_format
@@ -221,12 +320,16 @@ def set_plain_cell(
     size_pt: float = BODY_FONT_PT,
     bold: bool = False,
     alignment=WD_ALIGN_PARAGRAPH.LEFT,
+    hyperlink_target: str | None = None,
 ) -> None:
     clear_cell(cell)
     paragraph = cell.paragraphs[0]
     set_paragraph_rhythm(paragraph, alignment=alignment, after_pt=0)
-    run = paragraph.add_run(text)
-    set_run_font(run, size_pt, bold=bold)
+    if hyperlink_target is None:
+        run = paragraph.add_run(text)
+        set_run_font(run, size_pt, bold=bold)
+    else:
+        append_hyperlink(paragraph, text, hyperlink_target, size_pt)
     cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
 
 
@@ -252,6 +355,8 @@ def set_block_cell(
     image_path: Path | None = None,
     image_caption: str | None = None,
     image_after_block: int | None = None,
+    hyperlink_targets: Iterable[str] = (),
+    hyperlink_aliases: dict[str, str] | None = None,
 ) -> None:
     clear_cell(cell)
     first_paragraph = True
@@ -298,8 +403,13 @@ def set_block_cell(
         if lead:
             lead_run = paragraph.add_run(f"{lead}: ")
             set_run_font(lead_run, BODY_FONT_PT, bold=True)
-        body_run = paragraph.add_run(text)
-        set_run_font(body_run, BODY_FONT_PT, bold=False)
+        append_text_with_hyperlinks(
+            paragraph,
+            text,
+            BODY_FONT_PT,
+            targets=hyperlink_targets,
+            aliases=hyperlink_aliases,
+        )
         if image_path is not None and image_after_block == index:
             append_image()
     cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.TOP
@@ -338,17 +448,38 @@ def fill_main_report(
         lambda table: "프로젝트 개요" in table_text(table) and "개발배경 및 목적" in table_text(table),
     )
     values = data["metadata"]
+    hyperlink_targets = discovered_https_targets(data)
+    evidence = data["external_evidence"]
+    hyperlink_aliases = {
+        display: evidence[key]
+        for display, key in EXTERNAL_LINK_ALIASES.items()
+        if isinstance(evidence.get(key), str)
+        and evidence[key].startswith("https://")
+    }
     set_plain_cell(main.cell(1, 1), values["project_name"], bold=True)
-    set_plain_cell(main.cell(2, 1), values["repository_url"])
-    set_plain_cell(main.cell(3, 1), values["video_url"])
-    set_block_cell(main.cell(4, 1), data["project_intro"])
-    set_block_cell(main.cell(6, 1), data["background"])
-    set_block_cell(main.cell(7, 1), data["environment"])
+    set_plain_cell(
+        main.cell(2, 1), values["repository_url"],
+        hyperlink_target=values["repository_url"],
+    )
+    set_plain_cell(
+        main.cell(3, 1), values["video_url"],
+        hyperlink_target=values["video_url"],
+    )
+    set_block_cell(
+        main.cell(4, 1), data["project_intro"], hyperlink_targets=hyperlink_targets
+    )
+    set_block_cell(
+        main.cell(6, 1), data["background"], hyperlink_targets=hyperlink_targets
+    )
+    set_block_cell(
+        main.cell(7, 1), data["environment"], hyperlink_targets=hyperlink_targets
+    )
     set_block_cell(
         main.cell(8, 1),
         data["architecture"],
         image_path=assets["architecture"],
         image_caption=data["assets"]["architecture"]["caption"],
+        hyperlink_targets=hyperlink_targets,
     )
     set_block_cell(
         main.cell(9, 1),
@@ -356,9 +487,17 @@ def fill_main_report(
         image_path=assets["baseline_candidate"],
         image_caption=data["assets"]["baseline_candidate"]["caption"],
         image_after_block=2,
+        hyperlink_targets=hyperlink_targets,
     )
-    set_block_cell(main.cell(10, 1), data["effects"])
-    set_block_cell(main.cell(11, 1), data["other"])
+    set_block_cell(
+        main.cell(10, 1), data["effects"], hyperlink_targets=hyperlink_targets
+    )
+    set_block_cell(
+        main.cell(11, 1),
+        data["other"],
+        hyperlink_targets=hyperlink_targets,
+        hyperlink_aliases=hyperlink_aliases,
+    )
     remove_fixed_row_heights(main)
 
 
@@ -394,11 +533,13 @@ def fill_sbom(document: Document, rows: list[dict[str, str]]) -> None:
                 item[key],
                 size_pt=SBOM_FONT_PT,
                 alignment=alignment,
+                hyperlink_target=item[key] if key == "url" else None,
             )
         for cell in sbom.rows[index].cells:
             set_cell_margins(cell, top=20, start=40, bottom=20, end=40)
             for paragraph in cell.paragraphs:
                 paragraph.paragraph_format.line_spacing = Pt(10.2)
+    mark_data_rows_cannot_split(sbom.rows[1:])
     remove_fixed_row_heights(sbom)
 
 
@@ -547,7 +688,7 @@ def main() -> None:
             f"expected {EXPECTED_TEMPLATE_SHA256}, got {actual_hash}"
         )
 
-    data = load_content(content_path)
+    data = load_content(content_path, strict=args.strict_final)
     validate_submission_gates(data, args.strict_final)
     assets = resolve_assets(data, assets_dir)
     output.parent.mkdir(parents=True, exist_ok=True)

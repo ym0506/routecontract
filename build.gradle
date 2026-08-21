@@ -7,7 +7,7 @@ plugins {
 }
 
 group = 'io.github.ym0506.routecontract'
-version = '0.1.0-SNAPSHOT'
+version = '0.1.0-rc1'
 
 def apacheLicenseChoice = {
     License license = new License()
@@ -128,4 +128,24 @@ tasks.register('prepareVerifiedSbom', Exec) {
             new File(mysqlSbomSourceDirectory, 'bom.xml'),
             new File(verifiedSbomDirectory, 'mysql-example/bom.json'),
             new File(verifiedSbomDirectory, 'mysql-example/bom.xml'))
+}
+
+tasks.register('validateOfficialCycloneDxSbom', Exec) {
+    group = 'verification'
+    description = 'Validate all three finalized JSON/XML SBOM pairs with the checksum-pinned official CycloneDX CLI.'
+    dependsOn tasks.named('prepareVerifiedSbom')
+
+    inputs.files(
+            layout.projectDirectory.file('scripts/validate-official-cyclonedx.py'),
+            layout.projectDirectory.file('security/cyclonedx-cli.lock.json'),
+            new File(verifiedSbomDirectory, 'aggregate/bom.json'),
+            new File(verifiedSbomDirectory, 'aggregate/bom.xml'),
+            new File(verifiedSbomDirectory, 'routecontract-shardingsphere-5.5/bom.json'),
+            new File(verifiedSbomDirectory, 'routecontract-shardingsphere-5.5/bom.xml'),
+            new File(verifiedSbomDirectory, 'mysql-example/bom.json'),
+            new File(verifiedSbomDirectory, 'mysql-example/bom.xml'))
+
+    commandLine(
+            'python3',
+            layout.projectDirectory.file('scripts/validate-official-cyclonedx.py').asFile)
 }
