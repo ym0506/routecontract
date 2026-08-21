@@ -184,7 +184,7 @@ from a clean checkout at that exact record commit with all twelve downloaded Rel
 
 ```bash
 python3 scripts/validate-rc-activation-record.py \
-  --record docs/evidence/independent-rc-activation-v0.1.0-rc1.json \
+  --record docs/evidence/independent-rc-activation-v0.1.0-rc2.json \
   --release-assets-dir /absolute/path/to/downloaded-release-assets
 ```
 

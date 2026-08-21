@@ -357,7 +357,7 @@ class SubmissionClaimTextTest(unittest.TestCase):
         self.assertIn("exactly eleven project payloads", protocol)
         self.assertIn("supply-chain-evidence.json", protocol)
         self.assertIn("exactly twelve uploaded assets", protocol)
-        self.assertIn("Never mix\n`rc1` and `rc2` filenames", protocol)
+        self.assertIn("Never mix different RC filenames", protocol)
         self.assertIn("cannot authenticate an earlier RC's JAR bytes", protocol)
         self.assertIn("workflow artifact identity/digest", protocol)
         self.assertIn("exact 17-file flat allowlist", protocol)
@@ -449,6 +449,54 @@ class SubmissionClaimTextTest(unittest.TestCase):
         self.assertNotIn("qualified 결과", roadmap)
         self.assertNotIn("외부 검증 미확보", roadmap)
         self.assertNotIn("외부 설치 기록·license/security 재검토를 완료", roadmap)
+
+
+class TaggedIssueFormAllowlistTest(unittest.TestCase):
+    FORM_ROOT = REPOSITORY_ROOT / ".github/ISSUE_TEMPLATE"
+    APPROVED = {
+        "independent-rc1-install.yml": (
+            "0f4afc4ac098e0ee425704168f045352b3e2a77f856a0ae7438a9f93d955e583"
+        ),
+        "independent-rc2-install.yml": (
+            "518c4102b9a0f7725b46b825ad5952263b3418bdb07b0164c54a037d902e7f8a"
+        ),
+    }
+
+    def test_accepts_reviewed_rc1_and_rc2_bytes(self) -> None:
+        self.assertEqual(
+            self.APPROVED,
+            package_submission.APPROVED_ISSUE_FORM_SHA256_BY_FILENAME,
+        )
+        for filename, expected_sha256 in self.APPROVED.items():
+            with self.subTest(filename=filename):
+                data = (self.FORM_ROOT / filename).read_bytes()
+                self.assertEqual(expected_sha256, hashlib.sha256(data).hexdigest())
+                package_submission._validate_tagged_issue_form_bytes(data, filename)
+
+    def test_rejects_tampering_cross_version_bytes_and_unreviewed_rc3(self) -> None:
+        rc1 = (self.FORM_ROOT / "independent-rc1-install.yml").read_bytes()
+        rc2 = (self.FORM_ROOT / "independent-rc2-install.yml").read_bytes()
+        for data, filename in (
+            (rc2 + b"\n", "independent-rc2-install.yml"),
+            (rc1, "independent-rc2-install.yml"),
+            (rc2, "independent-rc1-install.yml"),
+        ):
+            with self.subTest(filename=filename, data_sha256=hashlib.sha256(data).hexdigest()), (
+                self.assertRaisesRegex(
+                    package_submission.GateError,
+                    "reviewed version-specific form",
+                )
+            ):
+                package_submission._validate_tagged_issue_form_bytes(data, filename)
+
+        with self.assertRaisesRegex(
+            package_submission.GateError,
+            "outside the contest package allowlist",
+        ):
+            package_submission._validate_tagged_issue_form_bytes(
+                rc2.replace(b"0.1.0-rc2", b"0.1.0-rc3"),
+                "independent-rc3-install.yml",
+            )
 
 
 class ReportExternalEvidenceContractTest(unittest.TestCase):

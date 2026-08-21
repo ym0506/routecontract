@@ -33,13 +33,13 @@ consistent:
   independently reported as immutable. The release procedure requires the setting before tag
   creation, but the activation validator does not claim to reconstruct that earlier timing.
 
-For version `0.1.0-rc1`, the eleven checksummed payloads are exactly:
+For version `0.1.0-rc2`, the eleven checksummed payloads are exactly:
 
 ```text
-routecontract-0.1.0-rc1-source.zip
-routecontract-shardingsphere-5.5-0.1.0-rc1.jar
-routecontract-shardingsphere-5.5-0.1.0-rc1-sources.jar
-routecontract-shardingsphere-5.5-0.1.0-rc1-javadoc.jar
+routecontract-0.1.0-rc2-source.zip
+routecontract-shardingsphere-5.5-0.1.0-rc2.jar
+routecontract-shardingsphere-5.5-0.1.0-rc2-sources.jar
+routecontract-shardingsphere-5.5-0.1.0-rc2-javadoc.jar
 routecontract-shardingsphere-5.5.pom
 routecontract-shardingsphere-5.5-cyclonedx.json
 routecontract-shardingsphere-5.5-cyclonedx.xml
@@ -49,10 +49,10 @@ supply-chain-evidence.json
 test-summary.txt
 ```
 
-For a later candidate such as `0.1.0-rc2`, replace `0.1.0-rc1` with that exact
-activated version in the source ZIP, three JAR filenames and installed
-coordinate. The other seven payload filenames stay unchanged. Never mix
-`rc1` and `rc2` filenames, source roots or POM coordinates in one attempt; the
+For another candidate, replace `0.1.0-rc2` with that exact activated version in
+the source ZIP, three JAR filenames and installed coordinate. The other seven
+payload filenames stay unchanged. Never mix different RC filenames, source roots
+or POM coordinates in one attempt; the
 verifier's version-derived checks reject those inconsistencies. Those checks
 cannot authenticate an earlier RC's JAR bytes merely renamed and re-checksummed
 as a later RC. The fixed activation record's `SHA256SUMS` hash and the
@@ -76,12 +76,11 @@ derives all three values from `tag` and rejects a generic filename, another RC's
 URL mismatch. It also requires the active tag's derived path to be one ordinary non-executable Git
 blob. This generic validator binds only the active `rcN` form; it does not prove preservation of an
 earlier RC form. Distinct filenames prevent a later form from overwriting the earlier path, while
-byte preservation remains a separate reviewed tag-history and owner gate for that future version
-line. This
-`0.1.0-rc1` source contains only `independent-rc1-install.yml`; the `rc2` line above defines the
-recovery convention, not a prewritten form or evidence for a future candidate. Before a future
-`rc2` tag, its candidate must retain the reviewed RC1 form, add and review
-`independent-rc2-install.yml`, and add a version-line-specific preservation check. The interactive
+byte preservation remains a separate reviewed tag-history and owner gate for that version line.
+This `0.1.0-rc2` source preserves the reviewed RC1 form byte-for-byte and adds the reviewed
+`independent-rc2-install.yml`; the active package gate binds each filename to its own approved
+SHA-256. Before a future `rc3` tag, its candidate must retain both reviewed forms, add and review
+`independent-rc3-install.yml`, and add a version-line-specific preservation check. The interactive
 URL is safe only while public `main` remains the validated activation-record commit; it is not an
 immutable permalink and must never be substituted for the pinned form source.
 
@@ -110,7 +109,7 @@ downloaded Release assets, run:
 
 ```bash
 python3 scripts/validate-rc-activation-record.py \
-  --record docs/evidence/independent-rc-activation-v0.1.0-rc1.json \
+  --record docs/evidence/independent-rc-activation-v0.1.0-rc2.json \
   --release-assets-dir /absolute/path/to/downloaded-release-assets
 ```
 
@@ -317,11 +316,11 @@ Do not publish the child output. If that marker is unavailable, publish only
 5. Record the exit, exact installed coordinate, elapsed times, and only the complete final marker:
 
    ```text
-   ROUTECONTRACT_RELEASE_ASSET_CONSUMER coordinate=io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0-rc1 result=VERIFIED_MYSQL
+   ROUTECONTRACT_RELEASE_ASSET_CONSUMER coordinate=io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0-rc2 result=VERIFIED_MYSQL
    ```
 
-   For `rc2` or later, the marker must contain that exact activated RC version,
-   not the `rc1` example above.
+   For another RC, the marker must contain that exact activated version, not the
+   `rc2` example above.
 
 The verifier checks the public checksum/allowlist, release coordinate, selected JAR/POM/manifest
 constraints, bounded source-ZIP structure and conventional Java path/package constraints, isolated

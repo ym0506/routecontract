@@ -199,8 +199,8 @@ this binds the participant record to the same public opening used by the
 chronology gate.
 
 The final gate resolves those permalinks through GitHub, validates the
-version-derived `independent-rcN-install.yml` bytes (the contest RC1 form has a
-reviewed SHA-256 allowlist entry) and activation chronology,
+version-derived `independent-rcN-install.yml` bytes (the contest RC1 and RC2
+forms each have a reviewed SHA-256 allowlist entry) and activation chronology,
 and enumerates the repository Issue API by following every validated `rel=next`
 link until GitHub returns no next relation. The
 asserted count and URL must equal that enumeration; the renderer receives the

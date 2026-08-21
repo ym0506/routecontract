@@ -59,9 +59,14 @@ A4_LONG_EDGE_POINTS = 841.9
 PAGE_SIZE_TOLERANCE_POINTS = 1.0
 MAX_PDF_VALUE_INTERLEAVED_CHARACTERS = 256
 MAX_PDF_BLOCK_ROW_INTERLEAVED_CHARACTERS = 64
-RC1_APPROVED_ISSUE_FORM_SHA256 = (
-    "0f4afc4ac098e0ee425704168f045352b3e2a77f856a0ae7438a9f93d955e583"
-)
+APPROVED_ISSUE_FORM_SHA256_BY_FILENAME = {
+    "independent-rc1-install.yml": (
+        "0f4afc4ac098e0ee425704168f045352b3e2a77f856a0ae7438a9f93d955e583"
+    ),
+    "independent-rc2-install.yml": (
+        "518c4102b9a0f7725b46b825ad5952263b3418bdb07b0164c54a037d902e7f8a"
+    ),
+}
 APPROVED_REPORT_FONTCONFIG_SHA256 = (
     "1aad4c0015115d649ca8d3be015141539fd5f037445408a8ee14a0306af6c5d1"
 )
@@ -2624,11 +2629,12 @@ def _decode_utf8_with_required_anchors(
 
 
 def _validate_tagged_issue_form_bytes(data: bytes, filename: str) -> None:
-    if filename != "independent-rc1-install.yml":
+    expected_sha256 = APPROVED_ISSUE_FORM_SHA256_BY_FILENAME.get(filename)
+    if expected_sha256 is None:
         raise GateError("tagged Issue Form version is outside the contest package allowlist")
-    if hashlib.sha256(data).hexdigest() != RC1_APPROVED_ISSUE_FORM_SHA256:
+    if hashlib.sha256(data).hexdigest() != expected_sha256:
         raise GateError(
-            "version-derived tagged Issue Form bytes do not match the reviewed RC1 form"
+            "version-derived tagged Issue Form bytes do not match the reviewed version-specific form"
         )
     checkbox_anchors = tuple(
         f"        - label: {label}\n          required: true"

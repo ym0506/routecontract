@@ -33,6 +33,7 @@ TAG_COMMIT = "a" * 40
 ARTIFACT_DIGEST = "sha256:" + "b" * 64
 SHA256SUMS_DIGEST = "c" * 64
 RC1_FORM_SHA256 = "0f4afc4ac098e0ee425704168f045352b3e2a77f856a0ae7438a9f93d955e583"
+RC2_FORM_SHA256 = "518c4102b9a0f7725b46b825ad5952263b3418bdb07b0164c54a037d902e7f8a"
 
 
 def valid_document(
@@ -143,7 +144,7 @@ class ActivationRecordSchemaTest(unittest.TestCase):
         with self.assertRaisesRegex(MODULE.ActivationError, "unresolved"):
             MODULE.load_record(template)
 
-    def test_template_materializes_to_valid_rc1_and_future_rc2_schema(self) -> None:
+    def test_template_materializes_to_valid_rc1_and_current_rc2_schema(self) -> None:
         template = (
             REPOSITORY_ROOT
             / "docs/evidence/independent-rc-activation.example.json"
@@ -1075,7 +1076,8 @@ class ActivationDocumentationContractTest(unittest.TestCase):
         form_root = REPOSITORY_ROOT / ".github/ISSUE_TEMPLATE"
         rc1_form_path = form_root / "independent-rc1-install.yml"
         rc2_form_path = form_root / "independent-rc2-install.yml"
-        issue_form = rc1_form_path.read_text(encoding="utf-8")
+        rc1_issue_form = rc1_form_path.read_text(encoding="utf-8")
+        rc2_issue_form = rc2_form_path.read_text(encoding="utf-8")
         releasing = (REPOSITORY_ROOT / "RELEASING.md").read_text(encoding="utf-8")
         for required in (
             "scripts/validate-rc-activation-record.py",
@@ -1084,10 +1086,12 @@ class ActivationDocumentationContractTest(unittest.TestCase):
         ):
             self.assertIn(required, protocol)
             self.assertIn(required, releasing)
-        self.assertIn("ROUTECONTRACT_RC_ACTIVATION_VERIFIED", issue_form)
-        for text in (protocol, issue_form):
+        for issue_form in (rc1_issue_form, rc2_issue_form):
+            self.assertIn("ROUTECONTRACT_RC_ACTIVATION_VERIFIED", issue_form)
+        for text in (protocol, rc1_issue_form, rc2_issue_form):
             self.assertNotIn("0000000000000000000000000000000000000000", text)
-        self.assertNotIn("<record>.md", issue_form)
+        for issue_form in (rc1_issue_form, rc2_issue_form):
+            self.assertNotIn("<record>.md", issue_form)
         self.assertIn("routecontract_exact_checkout", protocol)
         self.assertIn("direct parent is the tag commit", protocol)
         self.assertIn("only tree change", protocol)
@@ -1101,11 +1105,20 @@ class ActivationDocumentationContractTest(unittest.TestCase):
             self.assertIn(required, protocol)
             self.assertIn(required, releasing)
         self.assertFalse((form_root / "independent-rc-install.yml").exists())
-        self.assertFalse(rc2_form_path.exists())
         self.assertNotIn("template=independent-rc-install.yml", protocol)
         self.assertEqual(
             RC1_FORM_SHA256,
             hashlib.sha256(rc1_form_path.read_bytes()).hexdigest(),
+        )
+        self.assertEqual(
+            RC2_FORM_SHA256,
+            hashlib.sha256(rc2_form_path.read_bytes()).hexdigest(),
+        )
+        self.assertEqual(1, rc1_issue_form.count("0.1.0-rc1"))
+        self.assertNotIn("0.1.0-rc2", rc1_issue_form)
+        self.assertEqual(
+            rc1_issue_form.replace("0.1.0-rc1", "0.1.0-rc2"),
+            rc2_issue_form,
         )
         self.assertIn(
             "future RC candidate must add and review its derived form", releasing

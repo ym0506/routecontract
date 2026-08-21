@@ -1354,6 +1354,9 @@ class InstallReleaseAssetsTest(unittest.TestCase):
         workflow = (
             REPOSITORY_ROOT / ".github/workflows/release-evidence.yml"
         ).read_text(encoding="utf-8")
+        stage = workflow.split(
+            "      - name: Stage workflow-only environment evidence\n", 1
+        )[1].split("\n      - name: Revalidate all staged CycloneDX", 1)[0]
 
         self.assertNotIn("workflow_dispatch:", workflow)
         for required_contract in (
@@ -1371,9 +1374,30 @@ class InstallReleaseAssetsTest(unittest.TestCase):
             ")\" = '17'",
             "routecontract-mysql-example-cyclonedx.json",
             "scripts/validate-official-cyclonedx.py",
+            "docker image ls --digests --no-trunc --format "
+            "'{{.Repository}}|{{.Digest}}|{{.ID}}'",
+            '-v digest="${expected_mysql_digest}"',
+            '($1 == "mysql" || $1 == "docker.io/library/mysql")',
+            '$2 == digest && $3 ~ /^sha256:[0-9a-f]{64}$/ { print $3 }',
+            'test -n "${resolved_mysql_image_ids}"',
+            "grep -F 'image_repo_digests='",
+            '"\\"(mysql|docker\\\\.io/library/mysql)'
+            '@${expected_mysql_digest}\\""',
         ):
             self.assertIn(required_contract, workflow)
+        self.assertIn("| sort -u", stage)
+        self.assertIn(
+            'test "$(printf \'%s\\n\' "${resolved_mysql_image_ids}" '
+            "| wc -l | tr -d ' ')\" = '1'",
+            stage,
+        )
         self.assertNotIn("osv-raw.json\" \"${public_dir}", workflow)
+        self.assertNotIn('$2 == "8.4.11" { print $3; exit }', workflow)
+        self.assertNotIn("{{.Tag}}", stage)
+        self.assertNotIn(
+            'grep -Fq "${expected_mysql_digest}" "${evidence_dir}/mysql-image.txt"',
+            workflow,
+        )
 
     def test_rejects_wrong_active_package_in_any_java_source(self) -> None:
         with tempfile.TemporaryDirectory() as raw:

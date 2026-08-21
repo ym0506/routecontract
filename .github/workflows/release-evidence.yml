@@ -171,9 +171,16 @@ jobs:
             "${evidence_dir}/routecontract-mysql-example-cyclonedx.xml"
           mysql_image_tag='mysql:8.4.11'
           expected_mysql_digest='sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb'
-          resolved_mysql_image_id="$(docker image ls --no-trunc --format '{{.Repository}}|{{.Tag}}|{{.ID}}' \
-            | awk -F'|' '$1 == "mysql" && $2 == "8.4.11" { print $3; exit }')"
-          test -n "${resolved_mysql_image_id}"
+          resolved_mysql_image_ids="$(
+            docker image ls --digests --no-trunc --format '{{.Repository}}|{{.Digest}}|{{.ID}}' \
+              | awk -F'|' -v digest="${expected_mysql_digest}" \
+                '($1 == "mysql" || $1 == "docker.io/library/mysql") && \
+                 $2 == digest && $3 ~ /^sha256:[0-9a-f]{64}$/ { print $3 }' \
+              | sort -u
+          )"
+          test -n "${resolved_mysql_image_ids}"
+          test "$(printf '%s\n' "${resolved_mysql_image_ids}" | wc -l | tr -d ' ')" = '1'
+          resolved_mysql_image_id="${resolved_mysql_image_ids}"
           {
             echo "revision=${GITHUB_SHA}"
             echo "runner_image_os=${ImageOS:-unknown}"
@@ -191,7 +198,9 @@ jobs:
             docker image inspect "${resolved_mysql_image_id}" --format 'image_repo_digests={{json .RepoDigests}}'
           } > "${evidence_dir}/mysql-image.txt"
           grep -Fq 'image_id=sha256:' "${evidence_dir}/mysql-image.txt"
-          grep -Fq "${expected_mysql_digest}" "${evidence_dir}/mysql-image.txt"
+          grep -F 'image_repo_digests=' "${evidence_dir}/mysql-image.txt" \
+            | grep -Eq \
+              "\"(mysql|docker\\.io/library/mysql)@${expected_mysql_digest}\""
           ! grep -Eq \
             '  (environment|mysql-image|standalone-consumer)\.txt$|  routecontract-mysql-example-cyclonedx\.(json|xml)$' \
             "${evidence_dir}/SHA256SUMS"

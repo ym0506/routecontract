@@ -7,7 +7,7 @@ plugins {
 }
 
 group = 'io.github.ym0506.routecontract'
-version = '0.1.0-rc1'
+version = '0.1.0-rc2'
 
 def apacheLicenseChoice = {
     License license = new License()
