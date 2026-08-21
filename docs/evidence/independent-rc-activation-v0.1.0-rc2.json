@@ -1,0 +1,44 @@
+{
+  "issueFormFilename": "independent-rc2-install.yml",
+  "issueFormPermalink": "https://github.com/ym0506/routecontract/blob/4cb8b368fef4ca15ad2f09a8c4a17f820e80d16b/.github/ISSUE_TEMPLATE/independent-rc2-install.yml",
+  "issueFormUrl": "https://github.com/ym0506/routecontract/issues/new?template=independent-rc2-install.yml",
+  "publicAssets": [
+    "routecontract-0.1.0-rc2-source.zip",
+    "routecontract-shardingsphere-5.5-0.1.0-rc2.jar",
+    "routecontract-shardingsphere-5.5-0.1.0-rc2-sources.jar",
+    "routecontract-shardingsphere-5.5-0.1.0-rc2-javadoc.jar",
+    "routecontract-shardingsphere-5.5.pom",
+    "routecontract-shardingsphere-5.5-cyclonedx.json",
+    "routecontract-shardingsphere-5.5-cyclonedx.xml",
+    "routecontract-aggregate-cyclonedx.json",
+    "routecontract-aggregate-cyclonedx.xml",
+    "supply-chain-evidence.json",
+    "test-summary.txt",
+    "SHA256SUMS"
+  ],
+  "releaseEvidence": {
+    "artifactDigest": "sha256:b6a0048d912a2debce39958244996954784707d36bba653059e46ff45b4a5635",
+    "artifactFileCount": 17,
+    "artifactId": 9431660175,
+    "headSha": "4cb8b368fef4ca15ad2f09a8c4a17f820e80d16b",
+    "runId": 32438464149,
+    "runUrl": "https://github.com/ym0506/routecontract/actions/runs/32438464149"
+  },
+  "releaseImmutability": {
+    "enabled": true,
+    "enforcedByOwner": false
+  },
+  "releaseState": {
+    "draft": false,
+    "immutable": true,
+    "prerelease": true
+  },
+  "releaseUrl": "https://github.com/ym0506/routecontract/releases/tag/v0.1.0-rc2",
+  "repository": "https://github.com/ym0506/routecontract",
+  "schemaVersion": 2,
+  "sha256sumsSha256": "1a163253a37cf395b8092e7a24f36020ea7c0519d0fc7b5517742e8fbc019522",
+  "tag": "v0.1.0-rc2",
+  "tagCommit": "4cb8b368fef4ca15ad2f09a8c4a17f820e80d16b",
+  "taggedProtocolUrl": "https://github.com/ym0506/routecontract/blob/v0.1.0-rc2/docs/independent-install-study.md",
+  "taggedReadmeUrl": "https://github.com/ym0506/routecontract/blob/v0.1.0-rc2/README.md"
+}
