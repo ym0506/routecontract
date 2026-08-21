@@ -1,0 +1,192 @@
+name: Independent RC installation
+description: Record an exact-tag test from an account that self-attests non-authorship, plus optional checksummed RC-asset verification.
+title: "[independent-install] "
+labels: [evidence, community]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for recording an exact-tag RouteContract test. A failure is useful evidence too.
+
+        **Security stop:** if the attempt may involve a credential, raw SQL or bind value, private topology, customer data, an absolute private path, or a possible vulnerability, stop before opening this public issue. Follow the [security policy](https://github.com/ym0506/routecontract/security/policy) and use [private vulnerability reporting](https://github.com/ym0506/routecontract/security/advisories/new). Even there, begin with the minimum information and never request, send, or retain full logs, diagnostics, or data dumps.
+
+        Until both first outcomes are recorded, use only the non-template record named by `ACTIVATION_RECORD_PERMALINK` after the validator printed `ROUTECONTRACT_RC_ACTIVATION_VERIFIED`, exact tagged protocol/README, public RC assets, and any public official prerequisite documentation recorded below. A version string or anticipated URL is not activation evidence. Task A does not require Python; optional Task B does. Submit before rescue. Do not edit first outcomes; record recovery as timestamped comments.
+
+        Do not upload files or screenshots. Remove unnecessary personal data such as a real name, email, school, employer, city, username/home path, IP/device identifier, Docker context/registry/proxy, environment dump, or Git configuration.
+
+  - type: textarea
+    id: fixed_release_identity
+    attributes:
+      label: Fixed public RC identity
+      description: Paste the validator's two complete final lines, then the exact record fields they bind. Stop on a template, partial marker, moving URL, or mismatch.
+      placeholder: |
+        ROUTECONTRACT_RC_ACTIVATION_VERIFIED tag=<record tag> commit=<record tagCommit> run=<record runId> artifact=<record artifactId> assets=12
+        ACTIVATION_RECORD_PERMALINK <validator-produced full-commit JSON URL>
+        PUBLIC_RECRUITMENT_RECORD_PERMALINK <exact Issue #9 recruitment comment permalink>
+        Tag/commit: <record tag> (annotated) / <record tagCommit>
+        Release/tagged protocol/tagged README: <exact record URLs>
+        Issue-form source: <record issueFormPermalink>
+        Release-evidence run/head: <record runUrl> / <record headSha>
+        Workflow artifact: id=<record artifactId>; digest=<record artifactDigest>; flat files=17
+        Public assets: <the 11 payload names plus SHA256SUMS from record publicAssets, all 12 names>
+        SHA256SUMS SHA-256: <record sha256sumsSha256>
+        Immutable release verification: enabled=true; Release immutable=true; gh release verify=pass; 12/12 verify-asset=pass
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: independence
+    attributes:
+      label: Eligibility and independence
+      description: If any statement is false, do not submit this Issue Form. Preserve a privacy-minimized account only in an ordinary issue or comment when safe; it is contextual feedback, not counted independent-install evidence.
+      options:
+        - label: I am a human tester and not the RouteContract author, an AI agent, or a person operating the maintainer's machine or VM.
+          required: true
+        - label: I did not author, review, privately pretest, or prepare code, documentation, workflow, installer, or release assets in the tested tag, and I did not create or publish its tag or Release or prepare its activation record.
+          required: true
+        - label: I used my own workspace, Gradle home, Maven target, Docker daemon, and downloaded assets; I used no private/unreleased artifact, maintainer cache, maintainer Docker daemon, or maintainer-provided setup.
+          required: true
+        - label: Before both first outcomes, I used no RouteContract-specific AI/search advice or maintainer help, public or private; general prerequisite help came only from the linked official Java, Docker, Git, Bash/POSIX, OS, shell, or Task-B Python documentation.
+          required: true
+        - label: Any private invitation I received contained neutral logistics only, with no RouteContract command, expected output, classification, setup guidance, or troubleshooting.
+          required: true
+        - label: I was not offered money, a gift, a reciprocal favor, contest support, or another benefit for this attempt; I was not asked to star or follow the project; and I was not asked or expected to pass, endorse, report a positive result, or use favorable wording.
+          required: true
+        - label: I preserved every started attempt and disclosed any prior RouteContract exposure, relationship, or compensation without publishing private identity details.
+          required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment, prerequisites, and prior exposure
+      description: Record OS/arch; Task A Git/Bash/POSIX/Java 17/Docker/network; and Python 3 only for Task B. Include clean/cache state, exposure, relationship, and official help URLs. Omit paths/hostnames.
+      placeholder: |
+        OS/arch: ...
+        Task A — Git/Bash/POSIX tools: ...
+        JDK: ...
+        Docker client/server: ...
+        Network: available
+        Task A: new GRADLE_USER_HOME; MySQL image cache cold|warm
+        Task B: NOT_RUN|Python 3 <version>; new flat download directory; initially empty Maven target
+        Prior RouteContract exposure: none|public README only|...
+        Relationship/compensation: none|non-identifying disclosure
+        Official prerequisite help URLs: none|https://...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: task_a_first_result
+    attributes:
+      label: Task A first outcome — exact-tag Quick Start
+      description: Choose once, before any retry or RouteContract-specific help. Task A is the primary independent Quick Start evidence.
+      options:
+        - UNASSISTED_PASS
+        - PRODUCT_OR_DOC_BLOCKED
+        - PREREQUISITE_BLOCKED
+        - TIMEOUT_OR_WITHDRAWN
+        - PROTOCOL_DEVIATION
+        - NOT_RUN
+    validations:
+      required: true
+
+  - type: textarea
+    id: task_a_evidence
+    attributes:
+      label: Task A first-attempt evidence
+      description: Record tag/HEAD and clean-state checks, the path-redacted exact command, exit, allowlisted markers, passive and active time, and a minimized blocker if needed. Never attach full logs.
+      placeholder: |
+        Tag object: annotated; HEAD=<40-character SHA>
+        Fresh clone/new empty directory: yes; pre-existing ignored build output: none
+        git status before/after: empty / empty
+        Source, scripts, and docs modified: no
+        Command: GRADLE_USER_HOME=<new-temp-dir> ./scripts/quickstart-demo.sh
+        Exit: 0
+        [ROUTECONTRACT QUICKSTART VERIFIED]
+        businessResult UNCHANGED (one row in both captures)
+        observedAttempts 1 -> 2; observedDataSources 1 -> 2
+        RCM201 ATTEMPT_BUDGET_EXCEEDED: maximum=1, observed=2
+        RCM202 DATA_SOURCE_BUDGET_EXCEEDED: maximum=1, observed=2
+        realMysqlDemoExit 0; intentionalCiGateExit 1; quickstartExit 0
+        Passive downloads: 00:00:00; active runtime/troubleshooting: 00:00:00
+        First blocker: none
+    validations:
+      required: true
+
+  - type: dropdown
+    id: task_b_first_result
+    attributes:
+      label: Task B first outcome — checksummed RC assets
+      description: Task B is optional packaging evidence. Choose NOT_RUN when it was not attempted; do not infer it from Task A.
+      options:
+        - UNASSISTED_PASS
+        - PRODUCT_OR_DOC_BLOCKED
+        - PREREQUISITE_BLOCKED
+        - TIMEOUT_OR_WITHDRAWN
+        - PROTOCOL_DEVIATION
+        - NOT_RUN
+    validations:
+      required: true
+
+  - type: textarea
+    id: task_b_evidence
+    attributes:
+      label: Task B first-attempt evidence
+      description: Record direct Release assets, SHA256SUMS hash, clean directories, path-redacted command, exit/marker, passive and active time, or NOT_RUN reason. Automatic GitHub source downloads do not count.
+      placeholder: |
+        Direct project assets: 12 files (the tagged 11-payload allowlist + SHA256SUMS)
+        SHA256SUMS SHA-256: <digest matching the fixed header>
+        Asset directory: new and flat; Maven target: initially empty
+        Workflow/local/maintainer artifact substituted: no
+        Command: ./scripts/verify-release-assets-consumer.sh /absolute/path/to/release-assets /absolute/path/to/empty-maven-repo
+        Exit: 0
+        ROUTECONTRACT_RELEASE_ASSET_CONSUMER coordinate=io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0-rc2 result=VERIFIED_MYSQL
+        Passive downloads: 00:00:00; active runtime/troubleshooting: 00:00:00
+        First blocker: none
+    validations:
+      required: true
+
+  - type: textarea
+    id: first_attempt_boundary
+    attributes:
+      label: First-attempt boundary, public help, and next step
+      description: Submit before rescue/retry and list help URLs. Put each recovery in a timestamped comment as NOT_ATTEMPTED, ASSISTED_PASS, or ASSISTED_FAIL. Do not edit first outcomes or invent a defect.
+      placeholder: |
+        Body submitted before rescue/retry: yes
+        Pre-first-outcome help: none|official prerequisite URL and scope
+        Planned recovery: NOT_ATTEMPTED
+        Genuine product/documentation defect identified: none|summary
+    validations:
+      required: true
+
+  - type: textarea
+    id: comprehension
+    attributes:
+      label: Neutral comprehension and utility feedback
+      description: Answer in your own words. It is acceptable to say that the project would not help your work.
+      placeholder: |
+        1. Why is intentionalCiGateExit=1 expected while the outer Quick Start exit=0 means success?
+        2. What does this attempt prove, and what does it not prove?
+        3. Would this help a real testing problem you have? Why, or why not?
+        4. What was the least clear step, and what exact documentation change would you suggest?
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: scope_and_privacy
+    attributes:
+      label: Scope, preservation, and privacy attestation
+      options:
+        - label: I understand that Task A can support an exact-RC clean Quick Start claim and Task B can support only exact-RC packaging/install evidence; neither result automatically applies to final v0.1.0.
+          required: true
+        - label: I understand this does not prove route plans, physical-table counts, commit or business success, production readiness, publisher identity, security, performance, adoption, endorsement, upstream acceptance, or a contest score.
+          required: true
+        - label: I will not edit this Issue title or body after submission; every later recovery will be a timestamped comment, and a final-release claim requires a new non-author run on that final release.
+          required: true
+        - label: I removed full logs, credentials, raw SQL and bind values, customer data, private topology, hostnames, absolute paths, JDBC URLs, container identifiers, and trace/span identifiers.
+          required: true
+        - label: If sensitive data or a possible vulnerability appeared, I stopped before public disclosure and followed SECURITY.md. Even through private reporting, I neither requested, sent, nor retained full logs, diagnostics, or data dumps.
+          required: true
+        - label: I am the participant and am filing this issue from my own account. I agree that this minimized first-attempt record may remain public.
+          required: true
+        - label: I uploaded no file or screenshot and removed unnecessary personal data, including real name/email/school/employer/city, usernames/home paths, IP/device details, Docker context/registry/proxy, environment dumps, and Git configuration.
+          required: true

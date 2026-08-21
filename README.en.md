@@ -17,16 +17,20 @@ Code map:
 - Demo, installation, release, and evidence-validation automation: `scripts/` — not a product runtime API
 - Contest report and packaging tooling: `submission/` — not a product runtime API
 
-This source declares prerelease-candidate project version `0.1.0-rc1` and corresponding tag name
-`v0.1.0-rc1`. A version string or checkout does not prove that an annotated tag, public immutable
+This source declares prerelease-candidate project version `0.1.0-rc2` and corresponding tag name
+`v0.1.0-rc2`. A version string or checkout does not prove that an annotated tag, public immutable
 prerelease, same-revision release-evidence run, or external-user result exists. Before using it as a
 public RC, verify the fixed activation record required by the [independent-installation activation
 gate](docs/independent-install-study.md#activation-gate--do-not-recruit-early).
 
+`v0.1.0-rc1` is retained as the historical annotated tag for the first release-evidence attempt.
+That run failed while resolving a digest-pulled MySQL image through a mutable local tag and created
+no Release. Do not use RC1 as an activated installation candidate or move its tag.
+
 The 50 normal tests and one same-checkout isolated consumer test below passed with zero failures,
 errors, or skips in the [CI for earlier public-main revision
 `54f1c92`](https://github.com/ym0506/routecontract/actions/runs/31501026857). That historical run
-does not verify the RC1 revision or Release assets, and the isolated consumer is not external
+does not verify the RC2 revision or Release assets, and the isolated consumer is not external
 adoption evidence. See the [public CI evidence record](docs/public-ci-evidence.md) for its environment,
 raw artifacts, and limitations. None of these results implies an award outcome, production support,
 or general performance.
@@ -51,13 +55,13 @@ exit `0` from the quickstart means that rejection was verified. A preflight or
 verification failure exits `2`. The wrapper does not echo raw child-process
 output that could contain SQL, parameters, or connection details.
 
-When consuming either activated RC1 Release assets or a Maven publication generated from the same
+When consuming either activated RC2 Release assets or a Maven publication generated from the same
 checkout, a ShardingSphere-JDBC 5.5.3 consumer test should align the Jackson 2 compatibility modules
-before declaring the exact coordinate below. RC1 is not claimed to exist on Maven Central.
+before declaring the exact coordinate below. RC2 is not claimed to exist on Maven Central.
 
 ```groovy
 testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))
-testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0-rc1")
+testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0-rc2")
 ```
 
 RouteContract is a thin JAR. Its module-level `compileOnly` ShardingSphere/BOM
@@ -93,7 +97,7 @@ The first command runs 50 core and MySQL-corpus tests on Java 17, ShardingSphere
 ## Consume public Release assets without a registry
 
 This path becomes usable only after the fixed activation record identifies an annotated
-`v0.1.0-rc1` tag, a public immutable prerelease, a successful same-revision release-evidence run,
+`v0.1.0-rc2` tag, a public immutable prerelease, a successful same-revision release-evidence run,
 and the exact asset set. Download every
 public asset attached to that Release into one flat directory, then provide an
 empty absolute repository path rather than relying on `~/.m2`.
@@ -104,12 +108,12 @@ python3 scripts/install-release-assets.py \
   --repository /absolute/path/to/routecontract-maven
 ```
 
-Use the exact RC1 coordinate printed by the installer as the test dependency after the Jackson 2
+Use the exact RC2 coordinate printed by the installer as the test dependency after the Jackson 2
 BOM shown in Quick Start.
 The thin POM does not align the consumer's ShardingSphere/Jackson versions.
 
 ```groovy
-testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0-rc1")
+testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0-rc2")
 ```
 
 The installer performs no network access. Before writing, it validates the

@@ -47,7 +47,7 @@ That command is same-checkout packaging evidence. It proves that the generated
 Maven publication can be consumed without a Gradle project dependency; it is
 not an external-user installation or adoption claim.
 
-After the fixed RC1 activation record verifies the exact public prerelease, a fresh checkout can
+After the fixed RC2 activation record verifies the exact public prerelease, a fresh checkout can
 consume its exact assets without Maven Central hosting. A version string alone is not publication
 evidence. Download every public
 asset from that Release—including the main/sources/Javadoc JARs, POM, source
@@ -77,7 +77,7 @@ same RouteContract group and version as the root build:
 ```bash
 ROUTECONTRACT_REPOSITORY=/absolute/path/to/maven-repository \
 ROUTECONTRACT_GROUP=io.github.ym0506.routecontract \
-ROUTECONTRACT_VERSION=0.1.0-rc1 \
+ROUTECONTRACT_VERSION=0.1.0-rc2 \
   ../../gradlew --no-daemon --refresh-dependencies -p . clean test
 ```
 

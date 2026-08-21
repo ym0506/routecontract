@@ -17,15 +17,19 @@ RouteContract는 Apache ShardingSphere-JDBC 애플리케이션에서 하나의 a
 - 데모·설치·릴리스·증거 검증 자동화: `scripts/` — 제품 runtime API가 아님
 - 대회 보고서·패키징 전용 도구: `submission/` — 제품 runtime API가 아님
 
-이 소스의 project version은 prerelease candidate `0.1.0-rc1`이며 대응 tag 이름은
-`v0.1.0-rc1`입니다. 버전 문자열이나 checkout만으로 annotated tag, 공개·불변 prerelease,
+이 소스의 project version은 prerelease candidate `0.1.0-rc2`이며 대응 tag 이름은
+`v0.1.0-rc2`입니다. 버전 문자열이나 checkout만으로 annotated tag, 공개·불변 prerelease,
 동일 revision의 release-evidence run 또는 외부 사용자 결과를 증명하지는 않습니다. 공개 RC로
 사용하기 전에는 [독립 설치 연구의 activation gate](docs/independent-install-study.md#activation-gate--do-not-recruit-early)를
 통과한 고정 activation record를 검증해야 합니다.
 
+`v0.1.0-rc1`은 최초 release-evidence 시도를 보존하는 역사적 annotated tag입니다. 해당 run은
+digest로 받은 MySQL image를 mutable local tag로 다시 찾는 단계에서 실패했고 Release를 만들지
+않았습니다. RC1을 활성화된 설치 후보로 사용하거나 그 tag를 이동하지 않습니다.
+
 아래 50개 정상 테스트와 같은 checkout의 격리 소비자 테스트 1개는 [이전 공개 main revision
 `54f1c92`의 CI](https://github.com/ym0506/routecontract/actions/runs/31501026857)에서
-실패·오류·skip 0건으로 확인됐습니다. 이 과거 run은 RC1 revision이나 Release 자산을 검증하지
+실패·오류·skip 0건으로 확인됐습니다. 이 과거 run은 RC2 revision이나 Release 자산을 검증하지
 않으며, 격리 소비자 결과도 외부 채택 증거가 아닙니다. 자세한 환경·원시 artifact·한계는
 [공개 CI 증거 기록](docs/public-ci-evidence.md)에 있습니다. 이는 수상·운영환경 지원·일반적
 성능을 뜻하지 않습니다.
@@ -48,13 +52,13 @@ container image를 내려받기 위한 네트워크가 필요할 수 있습니�
 정확히 검증했다는 뜻입니다. preflight나 검증이 실패하면 quickstart는 `2`로 종료하며, 원문
 SQL·parameter·connection 정보가 섞일 수 있는 하위 프로세스 원문은 화면에 다시 출력하지 않습니다.
 
-activation gate를 통과한 RC1 Release 자산 또는 같은 checkout에서 생성한 Maven publication을
+activation gate를 통과한 RC2 Release 자산 또는 같은 checkout에서 생성한 Maven publication을
 ShardingSphere-JDBC 5.5.3 소비자 테스트에 추가할 때는 Jackson 2 호환성 모듈을 먼저 정렬한
-뒤 다음 exact coordinate를 선언합니다. RC1은 Maven Central 게시를 주장하지 않습니다.
+뒤 다음 exact coordinate를 선언합니다. RC2는 Maven Central 게시를 주장하지 않습니다.
 
 ```groovy
 testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))
-testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0-rc1")
+testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0-rc2")
 ```
 
 RouteContract는 의존성을 내장하지 않는 thin JAR이고, 모듈의 `compileOnly`
@@ -89,7 +93,7 @@ Jackson 2 core·databind·datatype-jdk8·datatype-jsr310 모듈이 2.18.9로 해
 
 ## 공개 Release 자산을 registry 없이 사용하기
 
-이 경로는 고정 activation record가 가리키는 annotated `v0.1.0-rc1` tag, 공개·불변
+이 경로는 고정 activation record가 가리키는 annotated `v0.1.0-rc2` tag, 공개·불변
 prerelease, 동일 revision의 성공한 release-evidence run과 정확한 자산 집합이 모두 존재한
 뒤 사용할 수 있습니다. 해당 Release에 첨부된
 공개 자산 전체를 하나의 평평한 디렉터리에 내려받은 다음, `~/.m2`가 아닌 빈 절대경로를
@@ -101,11 +105,11 @@ python3 scripts/install-release-assets.py \
   --repository /absolute/path/to/routecontract-maven
 ```
 
-설치기가 출력한 exact RC1 좌표를 위 Quick Start의 Jackson 2 BOM 다음에 테스트 의존성으로
+설치기가 출력한 exact RC2 좌표를 위 Quick Start의 Jackson 2 BOM 다음에 테스트 의존성으로
 사용합니다. thin POM이 소비자의 ShardingSphere/Jackson 버전을 정렬해 주지는 않습니다.
 
 ```groovy
-testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0-rc1")
+testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0-rc2")
 ```
 
 설치기는 네트워크를 사용하지 않습니다. 공개 자산의 정확한 파일 목록, `SHA256SUMS`,

@@ -7,6 +7,27 @@ RouteContract follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) a
 
 No changes yet.
 
+## [0.1.0-rc2]
+
+This corrective prerelease candidate follows the preserved `v0.1.0-rc1` tag. RC1's
+release-evidence run failed before workflow-artifact upload because a digest-qualified MySQL pull
+did not necessarily retain the mutable `mysql:8.4.11` local tag; no RC1 Release was created.
+
+### Fixed
+
+- Resolve the staged MySQL image by its pinned repository digest and require one exact image ID,
+  then verify the observed `RepoDigests` field rather than trusting an echoed expected value.
+
+### Added
+
+- Add the reviewed, version-specific `independent-rc2-install.yml` while preserving the RC1 form
+  byte-for-byte, and extend the final package allowlist to bind either form to its own reviewed hash.
+
+### Boundaries
+
+- RC2 changes release evidence, version identity, and activation-form provenance only; it does not
+  expand the RouteContract runtime or supported ShardingSphere boundary.
+
 ## [0.1.0-rc1]
 
 This section defines the source contents of prerelease candidate `0.1.0-rc1`. It does not assert

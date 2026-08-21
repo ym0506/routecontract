@@ -2,7 +2,7 @@
 
 Status date: 2026-08-11 KST
 
-This is a dated historical snapshot. The source now declares candidate version `0.1.0-rc1`, but
+This is a dated historical snapshot. The source now declares candidate version `0.1.0-rc2`, but
 that string does not update any row or prove publication. Event-dependent RC facts belong in the
 validated fixed activation record; final stable evidence remains a separate gate.
 
