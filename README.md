@@ -132,9 +132,9 @@ python3 scripts/install-release-assets.py \
   --repository /absolute/path/to/routecontract-maven
 ```
 
-설치기가 출력한 로컬 Maven repository를 Gradle에 연결하고, exact `0.1.0` 좌표와 Jackson 2
-BOM을 테스트 의존성으로 사용합니다. thin POM이 소비자의 ShardingSphere/Jackson 버전을
-정렬해 주지는 않습니다.
+설치기가 출력한 로컬 Maven repository를 Gradle에 연결하고, exact ShardingSphere-JDBC
+`5.5.3`, RouteContract `0.1.0` 좌표와 Jackson 2 BOM을 테스트 의존성으로 사용합니다.
+thin POM이 소비자의 ShardingSphere/Jackson 버전을 정렬해 주지는 않습니다.
 
 ```groovy
 repositories {
@@ -149,6 +149,7 @@ repositories {
 
 dependencies {
     testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))
+    testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:5.5.3")
     testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0")
 }
 ```
@@ -299,10 +300,11 @@ Central 게시를 주장하지 않습니다.
 
 ```groovy
 testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))
+testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:5.5.3")
 testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0")
 ```
 
-RouteContract는 의존성을 내장하지 않는 thin JAR이고, 모듈의 `compileOnly`
+RouteContract build는 dependency embedding을 구성하지 않으며, 모듈의 `compileOnly`
 ShardingSphere/BOM 선언은 공개 POM에서 소비자 버전 제약으로 전달되지 않습니다. 검증된
 Gradle test/runtime graph에서는 위 BOM에 따라 ShardingSphere 5.5.3 호환성 그래프의
 Jackson 2 core·databind·datatype-jdk8·datatype-jsr310 모듈이 2.18.9로 해석됩니다. 단, Jackson

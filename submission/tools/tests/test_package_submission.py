@@ -138,7 +138,7 @@ def valid_test_summary(revision: str) -> str:
 
 def valid_manifest() -> dict:
     return {
-        "schema_version": 3,
+        "schema_version": 5,
         "official_notice_url": "https://osscontest.kr/notice/39",
         "submission_identity": {
             "receipt_number": "123",
@@ -168,9 +168,17 @@ def valid_manifest() -> dict:
         "video": {
             "youtube_url": "https://www.youtube.com/watch?v=abcdefghijk",
             "title": "RouteContract demo",
-            "duration_seconds": 179.5,
+            "duration_seconds": 173.0,
             "local_file_sha256": digest("4"),
             "external_evidence_branch": "rc_only",
+            "caption_contract": {
+                "schema_version": 1,
+                "source_path": "submission/video-caption-cues.json",
+                "source_sha256": (
+                    "60b27833660b5c687ea0bb4aece3e8b8"
+                    "7ff5dcab9d8cfe942fd500bcea4e4042"
+                ),
+            },
         },
         "release_evidence": {
             "workflow_artifact_id": 987654,
@@ -192,9 +200,10 @@ def valid_manifest() -> dict:
             "public_external_evidence_history_and_maintainer_edits_reviewed": True,
             "source_and_dependency_licenses_reviewed": True,
             "final_pdf_visual_qa_completed": True,
-            "final_video_watchthrough_completed": True,
+            "final_local_video_actual_screen_caption_watchthrough_completed": True,
+            "final_public_video_frame_audio_caption_equivalence_review_completed": True,
             "five_year_public_repository_visibility_obligation_if_selected_accepted": True,
-            "owner_voice_written_by_participant": True,
+            "owner_voice_ai_assistance_disclosed_and_participant_reviewed": True,
             "maintenance_order_and_period_confirmed": True,
             "origin_and_prior_work_statement_confirmed": True,
         },
@@ -264,7 +273,7 @@ def valid_report_content(branch: str = "rc_only") -> dict:
 def valid_ffprobe_video() -> dict:
     return {
         "format": {
-            "duration": "179.500000",
+            "duration": "173.000000",
             "tags": {
                 "encoder": "Lavf test fixture",
             },
@@ -285,14 +294,6 @@ def valid_ffprobe_video() -> dict:
                     "handler_name": "VideoHandler",
                 },
             },
-            {
-                "index": 1,
-                "codec_type": "audio",
-                "tags": {
-                    "language": "kor",
-                    "handler_name": "SoundHandler",
-                },
-            },
         ],
     }
 
@@ -300,7 +301,7 @@ def valid_ffprobe_video() -> dict:
 def valid_youtube_probe() -> dict:
     return {
         "id": "abcdefghijk",
-        "duration": 179,
+        "duration": 173,
         "availability": "public",
         "live_status": "not_live",
         "age_limit": 0,
@@ -428,6 +429,8 @@ class SubmissionClaimTextTest(unittest.TestCase):
             "sources JAR applies the same path policy to `.java` entries and requires every declared package to match its path",
             "source ZIP rejects JTS/Mahout-named files and package paths, every compiled `.class`",
             "do not determine the semantic origin of renamed or copied source/class bytes",
+            "does not configure shading or dependency embedding",
+            "do not prove the absence or semantic provenance of renamed, relocated, transformed, or copied bytes",
             "owner's source/provenance review",
             "published POM declares no direct JTS or Mahout dependency",
             "cannot contain a Maven parent or relocation",
@@ -440,9 +443,16 @@ class SubmissionClaimTextTest(unittest.TestCase):
             "Javadoc classifier",
             "do not add them as runtime or direct dependency components",
             "non-bundled distribution boundary is distinct from the unresolved upstream metadata gap",
+            "do not determine the semantic origin of renamed or copied source/class bytes",
             "reopens if those payload invariants change or a JTS/Mahout published dependency enters the release",
         ):
             self.assertIn(required, normalized_sbom)
+        for unsupported in (
+            "only first-party class/source entries",
+            "proves the absence of JTS/Mahout source/class bytes",
+        ):
+            self.assertNotIn(unsupported, normalized_third_party)
+            self.assertNotIn(unsupported, normalized_sbom)
         for required in (
             "Javadoc classifier",
             "17.0.20.1+1",
@@ -453,137 +463,261 @@ class SubmissionClaimTextTest(unittest.TestCase):
         self.assertIn("Javadoc classifier", readme)
         self.assertIn("THIRD_PARTY.md", readme)
 
-    def test_storyboard_pins_short_narration_and_nonmisleading_cuts(self) -> None:
+    def test_storyboard_pins_caption_first_nonmisleading_cuts(self) -> None:
         storyboard = (
             REPOSITORY_ROOT / "submission" / "video-storyboard.md"
         ).read_text(encoding="utf-8")
         for required in (
-            "같은 행을 반환해 기능 테스트는 통과했지만, ShardingSphere가 보고한 "
-            "JDBC 실행 시도는 1회에서 2회로 늘었습니다.",
-            "변경안이 승인 기준을 넘어서 CI gate가 exit 1로 멈춥니다. 기준 파일은 "
-            "자동 갱신되지 않아, 의도한 변경만 사람이 diff를 검토해 승인합니다.",
-            "프로젝트가 공개 안정판 자산의 checksum을 확인해 빈 Maven 저장소에 "
-            "설치했고, 소비자 테스트가 실제 MySQL에서 통과했습니다.",
-            "datasource-proxy도 물리 data source마다 연결하면 같은 변화를 봅니다. "
-            "RouteContract는 이를 operation별 승인과 CI 검사로 묶습니다.",
-            "제출 revision과 stable tag, main CI, 필수 PR 검사, Release 자산을 같은 "
-            "revision으로 공개 검증했습니다.",
-            "cutoff까지 형식에 맞게 제출된 RC 설치 결과는 1건입니다. stable 검증이나 채택은 "
-            "아닙니다.",
-            "cutoff까지 형식에 맞게 제출된 설치 결과는 0건이며, stable 외부 검증도 없습니다.",
-            "기존 기능 테스트가 통과해도 실행 구조는 달라질 수 있습니다. "
-            "ShardingSphere-JDBC 5.5.3 팀은 RouteContract로 그 변화를 사람이 승인한 "
-            "기준과 비교해 merge 전에 검토하거나 차단할 수 있습니다.",
-            "RCM201                  ATTEMPT_BUDGET_EXCEEDED: maximum=1, observed=2",
-            "RCM202                  DATA_SOURCE_BUDGET_EXCEEDED: maximum=1, observed=2",
+            "`0:00.000–2:53.000`의 모든 프레임",
+            "실제 terminal·browser·source",
+            "실제 명령을 입력하는 순간",
+            "로그아웃한 공개 GitHub의 실제 URL",
+            "final revision의 tracked file path",
+            "제목·로고 화면, 슬라이드, 요약판, 모의 terminal",
+            "정지 screenshot 삽입, 검은 전환 화면",
+            "구간 전환은 실제 화면에서",
             "실제 실행 · 대기 구간 8×",
-            "Gradle/Testcontainers 대기 구간만 8배속",
-            "결과 행과 RCM301·RCM302를 읽는 구간은 배속하지 않는다.",
-            "고정 화면 한 장",
-            "브라우저를 실시간 탐색하거나",
-            "스크롤하지 않고",
-            "actual final-revision output",
-            "SQLExecutionHook-reported physical JDBC execution attempts",
-            "≠ complete route plan ≠ transaction commit",
-            "ROUTECONTRACT_RELEASE_ASSET_CONSUMER",
-            "parameterTypeShape      1xLong -> 2xLong (values not retained)",
-            "demoMeaning             expected violation verified",
-            "Dependency review  SKIPPED (PR-only)",
-            "PR tree               <tree>",
-            "final main tree       <same tree>",
-            "화면은 실제 stable 공개 검증 뒤",
+            "쉬운 한국어",
+            "`submission/video-caption-cues.json`이 cue 시각·문구·분기의 유일한 원본",
+            "generated/reference-only",
+            "JSON과 byte-for-byte 같아야 한다",
+            "ShardingSphere는 한 SQL을",
+            "hook 보고 실행 시도는 1회→2회",
+            "방금 실행한 실제 MySQL 결과입니다",
+            "CI에 연결하면 exit 1",
+            "승인 기록은 자동으로 바뀌지 않습니다",
+            "입력값은 저장하지 않습니다",
+            "사람이 승인한 기준과 비교합니다",
+            "성능·거래 완료를 판단하지 않습니다",
+            "이 구간은 실제 GitHub Actions 실패 화면이 아니다",
+            "이 local task 자체가 required CI check이거나",
+            "실제 PR을 막았다고 말하지 않는다",
+            "machine-readable test/verifier 출력에서 실제로 일치한",
+            "고정 요약문은 출력하지",
+            "ROUTECONTRACT_MANIFEST_DEMO businessResult=UNCHANGED",
+            "ROUTECONTRACT_FILE_CI_DEMO approvedAttempts=1 candidateAttempts=2",
+            "ROUTECONTRACT_FINGERPRINT_DRIFT_DEMO businessResult=UNCHANGED",
+            "BUILD FAILED in <실제 Gradle 소요 시간>",
+            "verified_child_exit     0",
+            "verified_child_exit     1",
+            "바로 이어 final revision의 tracked approved/candidate JSON과 expected diff",
+            "제한된 duration-only 전체 줄과 일치할 때만",
+            "actual source",
+            "actual browser",
+            "complete route plan을 판정하지 않습니다",
+            "transaction commit",
             "다음 공통 증거가 실제로 공개된 뒤에만 녹화한다",
-            "도구 고장 아님 · 예상한 위반을 검증한 실패",
             'RouteSnapshot snapshot = RouteContract.capture("orders.find", () -> {',
             "Order actual = repository.find(userId);",
-            "assertEquals(expectedOrderId, actual.id()); // 기존 기능 assertion",
+            "assertEquals(expectedOrderId, actual.id());",
             "hasExactlyObservedPhysicalAttempts(1)",
-            "candidate → 사람이 검토한 approved diff → CI",
-            "approved 자동 갱신 없음",
-            "프로젝트 자체 공개 검증",
-            "외부 결과 현황 — 프로젝트 자체 검증과 별도",
-            "형식에 맞게 공개 제출된 설치 결과 0건",
+            "정해진 설치 결과 양식 접수 0건",
             "stable 외부 검증 미확보",
             "0건 ≠ 사용자 수·채택률·가치 0",
+            "실제 사람·독립성을 자동 증명하지 않는다",
         ):
             self.assertIn(required, storyboard)
-        self.assertNotIn("Maven Central", storyboard)
-        self.assertNotIn("Apache ShardingSphere PR #39535", storyboard)
-        self.assertNotIn("Task A", storyboard)
+
+        for stale_visual_or_claim in (
+            "RouteContract가 CI에서 차단",
+            "CI gate는 exit 1",
+            "실제 non-zero CI gate",
+            "고정 화면 한 장",
+            "한 장의 검증 카드",
+            "Release 검증 카드",
+            "설치 좌표 카드",
+            "기존 테스트에 붙이는 실제 API 카드",
+            "actual final-revision output",
+            "[MYSQL BASELINE -> CANDIDATE]",
+            "[SAME-BUDGET FINGERPRINT DRIFT]",
+            "[INTENTIONAL CI GATE]",
+            "demoMeaning             expected violation verified",
+            "Maven Central",
+            "Apache ShardingSphere PR #39535",
+            "Task A",
+        ):
+            self.assertNotIn(stale_visual_or_claim, storyboard)
+
+        timeline_headings = list(
+            re.finditer(
+                r"^## [0-9]:[0-9]{2}–[0-9]:[0-9]{2} — .+$",
+                storyboard,
+                flags=re.MULTILINE,
+            )
+        )
+        self.assertEqual(10, len(timeline_headings))
+        timeline_end = storyboard.index("## 고정 자막·YouTube 문안")
+        for index, heading in enumerate(timeline_headings):
+            body_end = (
+                timeline_headings[index + 1].start()
+                if index + 1 < len(timeline_headings)
+                else timeline_end
+            )
+            section = storyboard[heading.end() : body_end]
+            with self.subTest(heading=heading.group(0)):
+                self.assertIn("실제 화면 흐름:", section)
+                self.assertRegex(
+                    section,
+                    r"\*\*실제 (?:terminal|browser|source) 화면:\*\*",
+                )
 
         install_section = storyboard.split(
-            "## 1:00–1:22 — 설치와 검증 workflow", 1
-        )[1].split("## 1:22–1:40 — count가 같아도 구조가 달라지면 차단", 1)[0]
-        exact_footer = """화면 하단 범위:
-
-```text
-ShardingSphere-JDBC 5.5.3 · Java 17
-SQLExecutionHook-reported physical JDBC execution attempts
-≠ complete route plan ≠ transaction commit
-```"""
-        self.assertIn("화면은 실제 stable 공개 검증 뒤", install_section)
-        footer_scope = "화면 하단 범위:" + install_section.split(
-            "화면 하단 범위:", 1
-        )[1].split("내레이션:", 1)[0].rstrip()
-        self.assertEqual(exact_footer, footer_scope)
+            "## 1:00–1:22 — 실제 공개 Release와 실제 사용 source", 1
+        )[1].split(
+            "## 1:22–1:40 — 같은 횟수의 구조 변화도 실제 terminal에서 확인",
+            1,
+        )[0]
+        self.assertIn("실제 GitHub Release, Actions run, tracked source", install_section)
+        self.assertIn("**실제 browser 화면:**", install_section)
+        self.assertIn("**실제 source 화면:**", install_section)
+        self.assertIn("별도 화면에 재입력하지 않는다", install_section)
         self.assertNotIn("complete route plan을 증명", install_section)
         self.assertNotIn("transaction commit을 증명", install_section)
 
+        ci_section = storyboard.split(
+            "## 0:46–1:00 — 로컬 intentional-red 경로를 실제 terminal에서 실행", 1
+        )[1].split(
+            "## 1:00–1:22 — 실제 공개 Release와 실제 사용 source", 1
+        )[0]
+        self.assertIn("0:46.000–0:49.000", ci_section)
+        self.assertIn("0:49.000–0:52.000", ci_section)
+        self.assertIn("0:58.000", ci_section)
+        self.assertIn("이 구간에는 source나 다른 화면을 끼우지 않는다", ci_section)
+        self.assertIn("0:12–0:46에서 이미 보여 줬으므로 반복하지 않는다", ci_section)
+        self.assertNotIn("**바로 이어지는 실제 source 화면:**", ci_section)
+
         stable_section = storyboard.split(
-            "## 2:07–2:25 — exact public stable OSS 증거", 1
-        )[1].split("## 2:25–2:34 — cutoff 외부 결과 현황과 커뮤니티 기록", 1)[0]
+            "## 2:07–2:25 — 실제 공개 GitHub 화면에서 안정판 증거 확인", 1
+        )[1].split(
+            "## 2:25–2:34 — 실제 공개 Issue 화면에서 외부 결과 확인", 1
+        )[0]
         for required in (
-            "그 final SHA의 main-push `Java 17 / MySQL integration / SBOM` success",
+            "제출 revision full SHA를 가리키는 annotated stable `v0.1.0` tag의 peeled commit",
             "merge PR에서 ruleset-required",
-            "PR head와 final main의 exact tree 일치",
-            "exact tag SHA의 successful `Release evidence` run",
-            "Dependency review  SKIPPED (PR-only)",
-            "PR <number>           Java/MySQL/SBOM PASS | Dependency review PASS",
-            "제출 revision과 stable tag, main CI, 필수 PR 검사, Release 자산을 같은 "
-            "revision으로 공개 검증했습니다.",
-            "프로젝트 자체 공개 검증",
+            "같은 final SHA의 main-push `Java 17 / MySQL integration / SBOM` success",
+            "logged-out GitHub commit page",
+            "merge PR의 Checks tab",
+            "final main-push Actions run으로",
+            "PR-only라 main push 증거로 세지 않는다",
+            "2:07.000–2:15.000 (8초 dwell)",
+            "2:15.000–2:19.500 (4.5초 dwell)",
+            "2:19.500–2:25.000 (5.5초 dwell)",
+            "3초 이상 머문다",
+            "scroll 없이 머문다",
+            "1:00–1:22의 실제",
+            "이 18초에 반복해 넘기지 않는다",
+            "별도 요약 화면에 옮겨 적지 않는다",
         ):
             self.assertIn(required, stable_section)
-        self.assertNotIn("같은 SHA의 green Ubuntu CI와 required checks", stable_section)
+        for duplicated_release_proof in (
+            "exact tag SHA의 successful `Release evidence` run",
+            "immutable Release의 JAR·sources·Javadoc·POM·SBOM·`SHA256SUMS`",
+            "빈 Maven repository에서 Release asset을 검증한 consumer 결과",
+        ):
+            self.assertNotIn(duplicated_release_proof, stable_section)
 
-        branch_cards = storyboard.split(
-            "`rc_only` ↔ `rc-only-result`, `zero` ↔ `0-result`.", 1
-        )[1].split("14개 체크와 API 편집 필드", 1)[0]
-        card_lines = [line for line in branch_cards.splitlines() if line.startswith("- **")]
-        self.assertEqual(
-            [
-                "- **rc-only-result 분기:** `exact RC 공개 모집`, `형식에 맞게 공개 제출된 RC 설치 결과 1건`, `stable 검증·adoption 아님`, `결과·활성화·모집·프로토콜 링크`의 네 줄만 표시한다.",
-                "- **0-result 분기:** `형식에 맞게 공개 제출된 설치 결과 0건`, `stable 외부 검증 미확보`, `활성화·모집·프로토콜 링크`, `0건 ≠ 사용자 수·채택률·가치 0`의 네 줄만 표시한다. protocol URL만으로 모집했다고 주장하지 않는다.",
-            ],
-            card_lines,
-        )
-
-    def test_storyboard_pins_measured_narration_with_transition_margin(self) -> None:
+    def test_storyboard_pins_readable_caption_corpus_and_timeline(self) -> None:
         storyboard = (
             REPOSITORY_ROOT / "submission" / "video-storyboard.md"
         ).read_text(encoding="utf-8")
 
-        quoted = [line[2:] for line in storyboard.splitlines() if line.startswith("> ")]
-        self.assertEqual(10, len(quoted))
-        rc_only = re.search(r'- rc-only-result 분기: “([^”]+)”', storyboard)
-        zero = re.search(r'- 0-result 분기: “([^”]+)”', storyboard)
-        self.assertIsNotNone(rc_only)
-        self.assertIsNotNone(zero)
-        assert rc_only is not None and zero is not None
+        def seconds(value: str) -> float:
+            minutes, raw_seconds = value.split(":", 1)
+            return int(minutes) * 60 + float(raw_seconds)
 
-        actual = {
-            "opening": quoted[1],
-            "mysql": quoted[2],
-            "ci": quoted[3],
-            "install": quoted[4],
-            "fingerprint": quoted[5],
-            "repro": quoted[6],
-            "comparison": quoted[7],
-            "stable": quoted[8],
-            "rc_only": rc_only.group(1),
-            "zero": zero.group(1),
-            "conclusion": quoted[9],
-        }
+        caption_rows = re.findall(
+            r"^\| (공통|zero|rc_only) \| ([0-9]:[0-9]{2}\.[0-9]{3}) "
+            r"\| ([0-9]:[0-9]{2}\.[0-9]{3}) \| ([^|\n]+) \| ([^|\n]+) \|$",
+            storyboard,
+            flags=re.MULTILINE,
+        )
+        expected_rows = [
+            ("공통", "0:00.500", "0:05.200", "ShardingSphere는 한 SQL을", "여러 DB로 나눠 실행할 수 있습니다"),
+            ("공통", "0:05.700", "0:11.500", "기능 결과는 같은 한 행이지만", "hook 보고 실행 시도는 1회→2회"),
+            ("공통", "0:12.500", "0:19.000", "방금 실행한 실제 MySQL 결과입니다", "명령과 종료 상태를 함께 봅니다"),
+            ("공통", "0:19.500", "0:27.000", "승인된 기록은 실행 한 번입니다", "변경된 기록은 두 번입니다"),
+            ("공통", "0:27.500", "0:35.000", "기능 결과는 그대로 한 행입니다", "달라진 것은 내부 실행 모습입니다"),
+            ("공통", "0:35.500", "0:44.500", "정한 한도를 넘자 두 위반을 냈습니다", "자동 승인하지 않고 검토를 요구합니다"),
+            ("공통", "0:46.500", "0:52.500", "CI에 연결하면 exit 1", "의도한 실패로 빌드를 멈춥니다"),
+            ("공통", "0:53.000", "0:59.500", "승인 기록은 자동으로 바뀌지 않습니다", "사람이 차이를 본 뒤에만 바꿉니다"),
+            ("공통", "1:00.500", "1:07.000", "공개 배포 파일과 검사값을 확인합니다", "빈 저장소에 직접 설치합니다"),
+            ("공통", "1:07.500", "1:14.500", "설치한 파일로 실제 MySQL을 실행합니다", "통과한 공개 기록을 직접 봅니다"),
+            ("공통", "1:15.000", "1:21.500", "기존 기능 테스트를 그대로 감쌉니다", "새 기록은 승인본과 비교됩니다"),
+            ("공통", "1:22.500", "1:28.500", "실행 횟수는 그대로 한 번입니다", "그래도 기록의 모양은 달라졌습니다"),
+            ("공통", "1:29.000", "1:35.000", "입력값은 저장하지 않습니다", "자료형 개수만 한 개에서 두 개로 바뀝니다"),
+            ("공통", "1:35.500", "1:39.500", "횟수만 같아도 승인하지 않습니다", "SQL 뜻은 판단하지 않습니다"),
+            ("공통", "1:40.500", "1:47.000", "실제 MySQL 여덟 사례를 스무 번씩", "모두 같은 기록으로 되풀이했습니다"),
+            ("공통", "1:47.500", "1:54.500", "동시에 연 테스트 스무 쌍은 섞이지 않았습니다", "내부 호출의 시간 겹침은 재지 않았습니다"),
+            ("공통", "1:55.500", "2:01.500", "기록을 한 작업별로 묶고", "사람이 승인한 기준과 비교합니다"),
+            ("공통", "2:02.000", "2:06.500", "의도치 않은 차이는 CI 실패", "승인 기준은 자동으로 바뀌지 않습니다"),
+            ("공통", "2:07.500", "2:15.000", "제출 코드와 안정판이 같은 코드인지", "공개 이력에서 직접 확인합니다"),
+            ("공통", "2:15.500", "2:24.500", "코드 변경 검사와 main 검사 결과를", "실제 공개 화면에서 확인합니다"),
+            ("zero", "2:25.500", "2:33.500", "정해진 설치 결과 양식 접수는 0건", "사용자 수·채택률을 뜻하지 않습니다"),
+            ("rc_only", "2:25.500", "2:33.500", "정해진 양식의 RC 결과 접수는 1건", "자기 확인 진술이며 안정판 검증은 아닙니다"),
+            ("공통", "2:34.500", "2:41.000", "검증 범위는 5.5.3 동기 실행", "성능·거래 완료를 판단하지 않습니다"),
+            ("공통", "2:41.500", "2:48.000", "기능 결과가 같아도 hook 보고 실행 시도는", "한 번에서 두 번으로 달라질 수 있습니다"),
+            ("공통", "2:48.500", "2:52.500", "새 기록을 승인본과 비교해", "CI에서 의도치 않은 차이를 멈춥니다"),
+        ]
+        self.assertEqual(expected_rows, caption_rows)
+        self.assertEqual(23, sum(branch == "공통" for branch, *_ in caption_rows))
+        self.assertEqual(1, sum(branch == "zero" for branch, *_ in caption_rows))
+        self.assertEqual(1, sum(branch == "rc_only" for branch, *_ in caption_rows))
+
+        for branch, start_text, end_text, line_one, line_two in caption_rows:
+            with self.subTest(branch=branch, start=start_text, text=line_one):
+                start = seconds(start_text)
+                end = seconds(end_text)
+                duration = end - start
+                self.assertGreaterEqual(duration, 4.0)
+                self.assertLessEqual(duration, 9.0)
+                self.assertLessEqual(len(line_one.strip()), 34)
+                self.assertLessEqual(len(line_two.strip()), 34)
+                visible = re.sub(r"\s+", "", line_one + line_two)
+                self.assertLessEqual(len(visible) / duration, 8.0)
+
+        caption_corpus = "\n".join(
+            line_one + "\n" + line_two
+            for _branch, _start, _end, line_one, line_two in caption_rows
+        )
+        for internal_term in (
+            "RCM201",
+            "RCM202",
+            "RCM301",
+            "RCM302",
+            "checksum",
+            "attestation",
+            "Maven",
+            "Release",
+            "capture",
+            "approved",
+            "candidate",
+            "fingerprint",
+            "parameter",
+            "alias",
+            "caller-operation",
+            "callback",
+            "datasource-proxy",
+            "SBOM",
+            "PR",
+            "commit",
+            "stable",
+            "cutoff",
+            "manifest",
+        ):
+            with self.subTest(internal_caption_term=internal_term):
+                self.assertNotIn(internal_term, caption_corpus)
+
+        for branch in ("zero", "rc_only"):
+            selected = [
+                (seconds(start), seconds(end))
+                for row_branch, start, end, _line_one, _line_two in caption_rows
+                if row_branch in {"공통", branch}
+            ]
+            self.assertEqual(selected, sorted(selected))
+            self.assertEqual(0.5, selected[0][0])
+            self.assertEqual(172.5, selected[-1][1])
+            for previous, current in zip(selected, selected[1:]):
+                self.assertGreaterEqual(current[0] - previous[1], 0.5)
 
         heading_matches = re.findall(
             r"^## (\d+):(\d{2})–(\d+):(\d{2}) — (.+)$",
@@ -592,56 +726,19 @@ SQLExecutionHook-reported physical JDBC execution attempts
         )
         self.assertEqual(10, len(heading_matches))
         timeline = [
-            (int(sm) * 60 + int(ss), int(em) * 60 + int(es), label)
-            for sm, ss, em, es, label in heading_matches
+            (int(sm) * 60 + int(ss), int(em) * 60 + int(es))
+            for sm, ss, em, es, _label in heading_matches
         ]
         self.assertEqual(0, timeline[0][0])
         self.assertEqual(173, timeline[-1][1])
         for previous, current in zip(timeline, timeline[1:]):
             self.assertEqual(previous[1], current[0])
-        durations = {label: end - start for start, end, label in timeline}
-        segment_for = {
-            "opening": durations["대상과 결과를 함께 보여 주는 훅"],
-            "mysql": durations["실제 MySQL baseline과 candidate"],
-            "ci": durations["실제 non-zero CI gate"],
-            "install": durations["설치와 검증 workflow"],
-            "fingerprint": durations["count가 같아도 구조가 달라지면 차단"],
-            "repro": durations["재현성과 지원 경계"],
-            "comparison": durations["공정한 기존 도구 비교"],
-            "stable": durations["exact public stable OSS 증거"],
-            "rc_only": durations["cutoff 외부 결과 현황과 커뮤니티 기록"],
-            "zero": durations["cutoff 외부 결과 현황과 커뮤니티 기록"],
-            "conclusion": durations["결론"],
-        }
-        expected = {
-            "opening": ("cad6b7c5f823267006fc2b24c4180f66ef0e720e3bd2fdfe01fb4b7f9ea0bb5b", 8.420, 12, "opening"),
-            "mysql": ("fef14131a4d59c7c7d412422dde072fb8c8ecd297e15a224759baf448782b05f", 17.673, 34, "MySQL"),
-            "ci": ("88729d04d2e5ba24704dc8b58521f34fee8307076c596f88cb799133554e1e47", 10.938, 14, "intentional-red CI"),
-            "install": ("d2642bc3a51c77c67308d03e32f81e2b2be31b75c9f9273d37b73e9128e2a348", 15.586, 22, "install/workflow"),
-            "fingerprint": ("7516d0387ad0299dc3ec284be0c6ced4856d7633913af41ffedf9bf0a97cc5ab", 15.624, 18, "fingerprint"),
-            "repro": ("c472eeb08a0943a742fefab8c5c5fb2f72837cccf44a3d8e378551e4616a0a4f", 12.988, 15, "reproducibility"),
-            "comparison": ("0210823a300ce791b5a87b643fd8704c6bb390105ea35bc6875b138e39d379f6", 10.100, 12, "comparison"),
-            "stable": ("a8758dca07309a08019864733040eea979124bbbe4ad3a6946bc37feb39d1889", 8.493, 18, "public stable"),
-            "rc_only": ("3659e8590ffba6bce6ad1fe00fcea069195cf01a9b5c860a4465da8cb9bcb60e", 7.239, 9, "rc-only"),
-            "zero": ("53be748af7966d91822a1ee4de79804fa95e073cd4d5b7d84777473b3164f02f", 6.600, 9, "zero"),
-            "conclusion": ("21a174138c5ebec27bda365d1347f0724ffa1185eca3a46da48343a26904ae41", 14.028, 19, "conclusion"),
-        }
-        for key, (expected_sha, measured, segment, table_label) in expected.items():
-            with self.subTest(narration=key):
-                self.assertEqual(segment, segment_for[key])
-                self.assertEqual(
-                    expected_sha,
-                    hashlib.sha256(actual[key].encode("utf-8")).hexdigest(),
-                )
-                self.assertLessEqual(measured, segment - 1)
-                self.assertIn(
-                    f"| {table_label} | {measured:.3f}초 | {segment}초 | {segment - 1}초 |",
-                    storyboard,
-                )
 
-        self.assertIn("Yuna 180 wpm", storyboard)
-        self.assertIn("문장의 UTF-8 SHA-256을 이 측정 fixture에 결속", storyboard)
-        self.assertRegex(storyboard, r"사람 목소리로 세 번\s+재어")
+        self.assertIn("audio stream이 정확히 0개", storyboard)
+        self.assertIn("빈 audio track", storyboard)
+        self.assertIn("burned-in caption", storyboard)
+        self.assertNotIn("내레이션:", storyboard)
+        self.assertNotIn("Yuna 180 wpm", storyboard)
 
     def test_video_delivery_docs_separate_machine_and_owner_qc(self) -> None:
         readme = (REPOSITORY_ROOT / "submission" / "README.md").read_text(
@@ -653,22 +750,27 @@ SQLExecutionHook-reported physical JDBC execution attempts
 
         for required in (
             "at least 1920x1080",
-            "at least one audio stream",
+            "exactly zero audio",
+            "170 through 175 seconds inclusive",
+            "at least 20 decoded frames per second on average",
+            "a complete selected-stream decode",
+            "post-decode file-hash recheck",
             "public, non-live, age-unrestricted",
             "downloadable 1080p",
             "checks all reported formats",
-            "does not grade narration",
-            "loudness, clipping, or visual readability",
-            "owner must still watch and listen",
+            "cannot grade whether the",
+            "burned-in captions match the visible real execution",
+            "owner must still watch the checksummed local file",
+            "`ffmpeg` for a full decode",
             "download the entire public video",
         ):
             self.assertIn(required, readme)
         for required in (
             "1920×1080 이상",
-            "audio stream이 1개 이상",
+            "audio stream이 정확히 0개",
             "공개·non-live·연령 제한 없음",
             "1080p 이상 format",
-            "음량·clipping·내레이션 진실성·화면 가독성",
+            "실제 화면·burned-in caption 일치와 화면 가독성",
         ):
             self.assertIn(required, storyboard)
 
@@ -719,6 +821,7 @@ SQLExecutionHook-reported physical JDBC execution attempts
             "MyBatis·JPA·Hibernate별 end-to-end 호환성을 검증했다는 뜻은 아닙니다",
             readme_ko,
         )
+        self.assertNotIn("위 Quick Start의 Jackson 2 BOM", readme_ko)
         self.assertLess(readme_ko.index("## Quick Start"), readme_ko.index("## 가장 작은 사용 예"))
         self.assertLess(readme_ko.index("## 가장 작은 사용 예"), readme_ko.index("## 검증된 핵심 시나리오"))
         self.assertLess(readme_ko.index("## 검증된 핵심 시나리오"), readme_ko.index("## 기존 도구와의 정확한 차이"))
@@ -740,11 +843,26 @@ SQLExecutionHook-reported physical JDBC execution attempts
             "not verified end-to-end compatibility with each of MyBatis, JPA, and Hibernate",
             readme_en,
         )
+        self.assertNotIn("BOM shown in Quick Start", readme_en)
         self.assertLess(readme_en.index("## Quick Start"), readme_en.index("## Smallest usage example"))
         self.assertLess(readme_en.index("## Smallest usage example"), readme_en.index("## Verified core scenarios"))
         self.assertLess(readme_en.index("## Verified core scenarios"), readme_en.index("## Precise comparison with existing tools"))
         self.assertLess(readme_en.index("## Precise comparison with existing tools"), readme_en.index("## Code and public-evidence boundaries"))
         self.assertLess(readme_en.index("## v0.1 support boundary"), readme_en.index("## Dependency and Release compatibility details"))
+        driver_coordinate = (
+            'testImplementation("org.apache.shardingsphere:'
+            'shardingsphere-jdbc:5.5.3")'
+        )
+        for readme in (readme_ko, readme_en):
+            self.assertEqual(2, readme.count(driver_coordinate))
+            for block in re.findall(r"```groovy\n(.*?)```", readme, re.DOTALL):
+                if "routecontract-shardingsphere-5.5:0.1.0" not in block:
+                    continue
+                self.assertLess(block.index("jackson-bom:2.18.9"), block.index(driver_coordinate))
+                self.assertLess(
+                    block.index(driver_coordinate),
+                    block.index("routecontract-shardingsphere-5.5:0.1.0"),
+                )
         self.assertIn(
             "[Verification evidence matrix](docs/evidence-matrix.md)",
             readme_en,
@@ -768,6 +886,7 @@ SQLExecutionHook-reported physical JDBC execution attempts
                 "exclusiveContent",
                 'maven { url = uri("/absolute/path/to/routecontract-maven") }',
                 'testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))',
+                'testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:5.5.3")',
                 'testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0")',
             )
             self.assertTrue(all(value in release_section for value in ordered))
@@ -1060,19 +1179,23 @@ SQLExecutionHook-reported physical JDBC execution attempts
 
         for required in (
             "**rc-only-result 분기:**",
-            "형식에 맞게 공개 제출된 RC 설치 결과 1건",
+            "정해진 양식의 RC 결과 접수 1건",
+            "참가자의 자기 확인 진술",
             "stable 검증·adoption 아님",
             "결과·활성화·모집·프로토콜 링크",
             "**0-result 분기:**",
-            "형식에 맞게 공개 제출된 설치 결과 0건",
+            "정해진 설치 결과 양식 접수 0건",
             "stable 외부 검증 미확보",
             "활성화·모집·프로토콜 링크",
             "package manifest의 `video.external_evidence_branch`",
-            "실제 영상 카드·내레이션은 같은 분기를 사용",
+            "실제 browser 화면·burned-in caption은 같은 분기를 사용",
             "`rc_only` ↔ `rc-only-result`, `zero` ↔ `0-result`",
-            "게시하지 않았다면 카드와 내레이션에서 제외",
+            "실제 Issue search",
+            "다른 분기의 문구나 화면은 한 프레임도 넣지 않는다",
+            "게시하지 않았다면 browser 화면과 자막에서 제외",
             "final-stable-result 분기는 fail-closed",
             "실제 사람·독립성·채택·endorsement를 추정하지 않는다",
+            "실제 사람·독립성을 자동 증명하지 않는다",
         ):
             self.assertIn(required, storyboard)
 
@@ -1118,7 +1241,7 @@ SQLExecutionHook-reported physical JDBC execution attempts
             if item["lead"] == "품질관리·발전 로드맵"
         )
 
-        self.assertIn("실제 링크만 보고한다", community)
+        self.assertIn("외부 결과는 링크로만 보고한다", community)
         self.assertNotIn("비작성자 독립 설치 결과", community)
         self.assertNotIn("qualified 결과", community)
         self.assertNotIn("외부 검증 미확보", community)
@@ -5186,12 +5309,12 @@ class ManifestTest(unittest.TestCase):
         )
 
     def test_rejects_legacy_or_non_integer_manifest_schema_version(self) -> None:
-        for version in (1, 2, 3.0, True, "3", None):
+        for version in (1, 2, 3, 4, 4.0, 5.0, True, "4", "5", None):
             manifest = valid_manifest()
             manifest["schema_version"] = version
             with self.subTest(version=version), self.assertRaisesRegex(
                 package_submission.GateError,
-                r"^manifest\.schema_version must be 3$",
+                r"^manifest\.schema_version must be 5$",
             ):
                 package_submission.validate_manifest(manifest)
 
@@ -5200,6 +5323,17 @@ class ManifestTest(unittest.TestCase):
         attestations = manifest["participant_attestations"]
         attestations["all_submitted_code_reviewed_and_explainable"] = attestations.pop(
             "core_behavior_boundaries_artifacts_and_dependency_roles_reviewed_and_explainable"
+        )
+        with self.assertRaisesRegex(
+            package_submission.GateError, "participant_attestations"
+        ):
+            package_submission.validate_manifest(manifest)
+
+    def test_rejects_legacy_participant_only_owner_voice_attestation_key(self) -> None:
+        manifest = valid_manifest()
+        attestations = manifest["participant_attestations"]
+        attestations["owner_voice_written_by_participant"] = attestations.pop(
+            "owner_voice_ai_assistance_disclosed_and_participant_reviewed"
         )
         with self.assertRaisesRegex(
             package_submission.GateError, "participant_attestations"
@@ -5278,11 +5412,28 @@ class ManifestTest(unittest.TestCase):
         with self.assertRaisesRegex(package_submission.GateError, "deadline has passed"):
             package_submission.validate_submission_deadline(at_deadline)
 
-    def test_rejects_video_over_three_minutes(self) -> None:
-        manifest = valid_manifest()
-        manifest["video"]["duration_seconds"] = 180.001
-        with self.assertRaisesRegex(package_submission.GateError, "at most 180"):
-            package_submission.validate_manifest(manifest)
+    def test_video_duration_window_and_caption_end_are_inclusive(self) -> None:
+        for duration in (172.5, 175.0):
+            manifest = valid_manifest()
+            manifest["video"]["duration_seconds"] = duration
+            with self.subTest(duration=duration):
+                package_submission.validate_manifest(manifest)
+
+        for duration in (169.9, 175.1):
+            manifest = valid_manifest()
+            manifest["video"]["duration_seconds"] = duration
+            with self.subTest(duration=duration), self.assertRaisesRegex(
+                package_submission.GateError, "170 through 175 seconds inclusive"
+            ):
+                package_submission.validate_manifest(manifest)
+
+        for duration in (170.0, 172.499):
+            manifest = valid_manifest()
+            manifest["video"]["duration_seconds"] = duration
+            with self.subTest(duration=duration), self.assertRaisesRegex(
+                package_submission.GateError, "selected caption branch's final cue"
+            ):
+                package_submission.validate_manifest(manifest)
 
     def test_rejects_unsupported_or_mismatched_video_evidence_branch(self) -> None:
         for branch in ([], {}, None, True, 1, 1.0):
@@ -5349,7 +5500,7 @@ class ManifestTest(unittest.TestCase):
             "report_free_text_contains_no_external_evidence_claims",
             "report_free_text_privacy_reviewed",
             "five_year_public_repository_visibility_obligation_if_selected_accepted",
-            "owner_voice_written_by_participant",
+            "owner_voice_ai_assistance_disclosed_and_participant_reviewed",
             "maintenance_order_and_period_confirmed",
             "origin_and_prior_work_statement_confirmed",
         ):
@@ -5392,6 +5543,10 @@ class LocalVideoEvidenceTest(unittest.TestCase):
                 "/usr/local/bin/ffprobe",
                 "-v",
                 "error",
+                "-f",
+                "mov",
+                "-protocol_whitelist",
+                "file",
                 "-show_entries",
                 "format=duration:format_tags:stream=index,codec_type,width,height:stream_tags:stream_disposition=default,attached_pic,still_image:chapter=id:chapter_tags:program=id:program_tags",
                 "-of",
@@ -5428,33 +5583,26 @@ class LocalVideoEvidenceTest(unittest.TestCase):
             self.assertIsNone(caught.exception.__cause__)
             self.assertNotIn(canary, str(caught.exception))
 
-    def test_accepts_1080p_audio_and_normal_container_tags(self) -> None:
+    def test_accepts_1080p_caption_first_video_and_normal_container_tags(self) -> None:
         result = self.probe(valid_ffprobe_video())
 
-        self.assertEqual(179.5, result["duration_seconds"])
+        self.assertEqual(173.0, result["duration_seconds"])
         self.assertEqual(1920, result["width"])
         self.assertEqual(1080, result["height"])
         self.assertEqual(1, result["video_stream_count"])
-        self.assertEqual(1, result["audio_stream_count"])
+        self.assertEqual(0, result["audio_stream_count"])
         self.assertEqual("ffprobe", result["probe"])
 
-    def test_accepts_larger_video_and_multiple_audio_streams(self) -> None:
+    def test_accepts_larger_silent_video(self) -> None:
         payload = valid_ffprobe_video()
         payload["streams"][0]["width"] = 3840
         payload["streams"][0]["height"] = 2160
-        payload["streams"].append(
-            {
-                "index": 2,
-                "codec_type": "audio",
-                "tags": {"language": "eng", "handler_name": "SoundHandler"},
-            }
-        )
 
         result = self.probe(payload)
 
         self.assertEqual(3840, result["width"])
         self.assertEqual(2160, result["height"])
-        self.assertEqual(2, result["audio_stream_count"])
+        self.assertEqual(0, result["audio_stream_count"])
 
     def test_uses_default_motion_video_instead_of_larger_alternate(self) -> None:
         payload = valid_ffprobe_video()
@@ -5618,16 +5766,34 @@ class LocalVideoEvidenceTest(unittest.TestCase):
             self.assertNotIn(canary, str(caught.exception))
             self.assertNotIn("9" * 32, str(caught.exception))
 
-    def test_rejects_missing_audio_stream(self) -> None:
+    def test_rejects_any_audio_stream(self) -> None:
         payload = valid_ffprobe_video()
-        payload["streams"] = [payload["streams"][0]]
+        payload["streams"].append(
+            {
+                "index": 1,
+                "codec_type": "audio",
+                "tags": {
+                    "language": "kor",
+                    "handler_name": "SoundHandler",
+                },
+            }
+        )
 
-        with self.assertRaisesRegex(package_submission.GateError, "audio stream"):
+        with self.assertRaisesRegex(package_submission.GateError, "no audio streams"):
             self.probe(payload)
 
     def test_rejects_missing_video_stream(self) -> None:
         payload = valid_ffprobe_video()
-        payload["streams"] = [payload["streams"][1]]
+        payload["streams"] = [
+            {
+                "index": 1,
+                "codec_type": "audio",
+                "tags": {
+                    "language": "kor",
+                    "handler_name": "SoundHandler",
+                },
+            }
+        ]
 
         with self.assertRaisesRegex(package_submission.GateError, "no video stream"):
             self.probe(payload)
@@ -5695,7 +5861,7 @@ class LocalVideoEvidenceTest(unittest.TestCase):
 
         result = self.probe(payload)
 
-        self.assertEqual(8, result["metadata_tag_count"])
+        self.assertEqual(6, result["metadata_tag_count"])
 
     def test_rejects_sensitive_chapter_and_program_metadata_tags(self) -> None:
         for scope in ("chapters", "programs"):
@@ -5730,6 +5896,115 @@ class LocalVideoEvidenceTest(unittest.TestCase):
             ):
                 self.probe(payload)
 
+    def test_full_decode_requires_ffmpeg(self) -> None:
+        with patch.object(package_submission.shutil, "which", return_value=None), \
+            self.assertRaisesRegex(package_submission.GateError, "ffmpeg is required"):
+            package_submission.validate_full_motion_video_decode(self.VIDEO, 0, 173.0)
+
+    def test_full_decode_maps_selected_stream_and_requires_completion(self) -> None:
+        output = (
+            "frame=1\nout_time_us=1000\nprogress=continue\n"
+            "frame=5190\nout_time_us=173000000\nprogress=end\n"
+        )
+        with patch.object(
+            package_submission.shutil,
+            "which",
+            return_value="/usr/local/bin/ffmpeg",
+        ), patch.object(package_submission, "run", return_value=output) as run:
+            result = package_submission.validate_full_motion_video_decode(
+                self.VIDEO, 7, 173.0
+            )
+
+        run.assert_called_once_with(
+            [
+                "/usr/local/bin/ffmpeg",
+                "-hide_banner",
+                "-nostdin",
+                "-v",
+                "error",
+                "-xerror",
+                "-err_detect",
+                "explode",
+                "-f",
+                "mov",
+                "-protocol_whitelist",
+                "file",
+                "-progress",
+                "pipe:1",
+                "-nostats",
+                "-i",
+                str(self.VIDEO),
+                "-map",
+                "0:7",
+                "-an",
+                "-sn",
+                "-dn",
+                "-f",
+                "null",
+                "-",
+            ],
+            timeout_seconds=600,
+            failure_label="ffmpeg full motion-video decode",
+        )
+        self.assertEqual(
+            {
+                "decode_probe": "ffmpeg",
+                "decoded_frame_count": 5190,
+                "decoded_duration_seconds": 173.0,
+                "minimum_frame_count": 3460,
+            },
+            result,
+        )
+
+    def test_full_decode_rejects_zero_frames_or_incomplete_progress(self) -> None:
+        for output in (
+            "frame=0\nout_time_us=173000000\nprogress=end\n",
+            "frame=10\nout_time_us=1000000\nprogress=continue\n",
+            "progress=end\n",
+        ):
+            with self.subTest(output=output), patch.object(
+                package_submission.shutil,
+                "which",
+                return_value="/usr/local/bin/ffmpeg",
+            ), patch.object(
+                package_submission, "run", return_value=output
+            ), self.assertRaisesRegex(
+                package_submission.GateError, "did not complete"
+            ):
+                package_submission.validate_full_motion_video_decode(
+                    self.VIDEO, 0, 173.0
+                )
+
+    def test_full_decode_binds_duration_and_minimum_frame_count(self) -> None:
+        cases = (
+            (
+                "frame=5190\nout_time_us=1000000\nprogress=end\n",
+                173.0,
+                "duration differs",
+            ),
+            (
+                "frame=1\nout_time_us=173000000\nprogress=end\n",
+                173.0,
+                "frame count is too low",
+            ),
+            (
+                "frame=3400\nout_time_us=170010000\nprogress=end\n",
+                170.01,
+                "frame count is too low",
+            ),
+        )
+        for output, duration, message in cases:
+            with self.subTest(duration=duration, message=message), patch.object(
+                package_submission.shutil,
+                "which",
+                return_value="/usr/local/bin/ffmpeg",
+            ), patch.object(
+                package_submission, "run", return_value=output
+            ), self.assertRaisesRegex(package_submission.GateError, message):
+                package_submission.validate_full_motion_video_decode(
+                    self.VIDEO, 0, duration
+                )
+
     def test_validate_local_video_preserves_hash_and_duration_gates(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             video = Path(raw) / "final.mp4"
@@ -5738,41 +6013,139 @@ class LocalVideoEvidenceTest(unittest.TestCase):
             manifest["video"]["local_file_sha256"] = hashlib.sha256(
                 video.read_bytes()
             ).hexdigest()
+            manifest = package_submission.validate_manifest(manifest)
 
             with patch.object(
                 package_submission,
                 "local_video_metadata",
                 return_value={
-                    "duration_seconds": 179.5,
+                    "duration_seconds": 173.0,
                     "width": 1920,
                     "height": 1080,
                     "video_stream_count": 1,
-                    "audio_stream_count": 1,
+                    "audio_stream_count": 0,
+                    "selected_video_stream_index": 0,
                     "probe": "ffprobe",
                 },
-            ):
+            ), patch.object(
+                package_submission,
+                "validate_full_motion_video_decode",
+                return_value={
+                    "decode_probe": "ffmpeg",
+                    "decoded_frame_count": 5190,
+                    "decoded_duration_seconds": 173.0,
+                    "minimum_frame_count": 3460,
+                },
+            ) as decode:
                 accepted = package_submission.validate_local_video(video, manifest)
+            decode.assert_called_once_with(video, 0, 173.0)
             self.assertEqual(manifest["video"]["local_file_sha256"], accepted["sha256"])
+            self.assertEqual(5190, accepted["decoded_frame_count"])
 
-            changed = valid_manifest()
+            changed = package_submission.validate_manifest(valid_manifest())
             with self.assertRaisesRegex(package_submission.GateError, "SHA-256 mismatch"):
                 package_submission.validate_local_video(video, changed)
 
             with patch.object(
                 package_submission,
                 "local_video_metadata",
-                return_value={"duration_seconds": 180.001},
+                return_value={"duration_seconds": 175.1},
             ), self.assertRaisesRegex(
-                package_submission.GateError, "official 180-second maximum"
+                package_submission.GateError, "170 through 175 seconds inclusive"
             ):
                 package_submission.validate_local_video(video, manifest)
 
             with patch.object(
                 package_submission,
                 "local_video_metadata",
-                return_value={"duration_seconds": 179.0},
+                return_value={"duration_seconds": 172.6},
             ), self.assertRaisesRegex(package_submission.GateError, "differs from manifest"):
                 package_submission.validate_local_video(video, manifest)
+
+    def test_validate_local_video_duration_window_and_caption_end_are_inclusive(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            video = Path(raw) / "final.mp4"
+            video.write_bytes(b"final video fixture")
+            expected_hash = hashlib.sha256(video.read_bytes()).hexdigest()
+
+            for duration in (172.5, 175.0):
+                manifest = package_submission.validate_manifest(valid_manifest())
+                manifest["video"]["duration_seconds"] = duration
+                manifest["video"]["local_file_sha256"] = expected_hash
+                with self.subTest(duration=duration), patch.object(
+                    package_submission,
+                    "local_video_metadata",
+                    return_value={
+                        "duration_seconds": duration,
+                        "selected_video_stream_index": 0,
+                    },
+                ), patch.object(
+                    package_submission,
+                    "validate_full_motion_video_decode",
+                    return_value={
+                        "decode_probe": "ffmpeg",
+                        "decoded_frame_count": int(duration * 20),
+                        "decoded_duration_seconds": duration,
+                        "minimum_frame_count": int(duration * 20),
+                    },
+                ):
+                    package_submission.validate_local_video(video, manifest)
+
+            for duration in (169.9, 175.1):
+                manifest = package_submission.validate_manifest(valid_manifest())
+                manifest["video"]["duration_seconds"] = duration
+                manifest["video"]["local_file_sha256"] = expected_hash
+                with self.subTest(duration=duration), patch.object(
+                    package_submission,
+                    "local_video_metadata",
+                    return_value={"duration_seconds": duration},
+                ), self.assertRaisesRegex(
+                    package_submission.GateError,
+                    "170 through 175 seconds inclusive",
+                ):
+                    package_submission.validate_local_video(video, manifest)
+
+            for duration in (170.0, 172.499):
+                manifest = package_submission.validate_manifest(valid_manifest())
+                manifest["video"]["duration_seconds"] = duration
+                manifest["video"]["local_file_sha256"] = expected_hash
+                with self.subTest(duration=duration), patch.object(
+                    package_submission,
+                    "local_video_metadata",
+                    return_value={"duration_seconds": duration},
+                ), self.assertRaisesRegex(
+                    package_submission.GateError,
+                    "selected caption branch's final cue",
+                ):
+                    package_submission.validate_local_video(video, manifest)
+
+    def test_validate_local_video_rejects_change_during_decode(self) -> None:
+        manifest = package_submission.validate_manifest(valid_manifest())
+        expected = manifest["video"]["local_file_sha256"]
+        with patch.object(
+            package_submission,
+            "sha256",
+            side_effect=[expected, "f" * 64],
+        ), patch.object(
+            package_submission,
+            "local_video_metadata",
+            return_value={
+                "duration_seconds": 173.0,
+                "selected_video_stream_index": 0,
+            },
+        ), patch.object(
+            package_submission,
+            "validate_full_motion_video_decode",
+            return_value={
+                "decode_probe": "ffmpeg",
+                "decoded_frame_count": 3460,
+                "decoded_duration_seconds": 173.0,
+                "minimum_frame_count": 3460,
+            },
+        ), self.assertRaisesRegex(
+            package_submission.GateError, "changed during validation"
+        ):
+            package_submission.validate_local_video(self.VIDEO, manifest)
 
 
 class GitStateTest(unittest.TestCase):
@@ -6359,7 +6732,7 @@ class ReportContractTest(unittest.TestCase):
             package_submission.validate_docx_privacy(output)
 
     def test_local_package_metadata_uses_current_schema(self) -> None:
-        self.assertEqual(2, package_submission.PACKAGE_METADATA_SCHEMA_VERSION)
+        self.assertEqual(4, package_submission.PACKAGE_METADATA_SCHEMA_VERSION)
 
     def test_direct_report_validator_rejects_unsupported_final_stable_branch(self) -> None:
         with self.assertRaisesRegex(
@@ -7224,9 +7597,10 @@ class ReportContentSbomTest(unittest.TestCase):
         )
         evidence = evidence_row["text"]
         self.assertIn("SQLExecutionHook SPI", evidence)
-        self.assertIn("thin unshaded JAR", evidence)
+        self.assertIn("JAR build에는 shading 설정이 없다", evidence)
+        self.assertIn("부재나 의미적 출처를 증명하지 않는다", evidence)
         self.assertIn("SBOM·lock·checksum·NOTICE", evidence)
-        self.assertIn("runtime JAR에 없다", evidence)
+        self.assertIn("runtime POM에 없다", evidence)
 
         application_result = next(
             row["text"]
@@ -7389,12 +7763,10 @@ class ReportContentSbomTest(unittest.TestCase):
         )
         self.assertEqual("사용자·검출 공백", content["background"][0]["lead"])
         self.assertEqual(
-            "기존 기능 테스트는 같은 행을 반환해 통과했지만, 실제 MySQL에서 "
-            "ShardingSphere의 SQLExecutionHook이 보고한 물리 JDBC 실행 시도와 data "
-            "source는 각각 1→2로 늘었다. RouteContract는 1→2 자체를 성능 결함으로 "
-            "단정하지 않고, 분산 실행 정책 변화의 의도 여부를 merge 전 CI 검토 대상으로 "
-            "만든다. 대상은 ShardingSphere-JDBC 5.5.3을 쓰거나 평가하는 Java "
-            "개발자·팀이며, 검증 범위는 저장소의 실제 MySQL 통합 테스트 fixture다. "
+            "기능 테스트는 같은 한 행으로 통과했지만 실제 MySQL의 SQLExecutionHook이 "
+            "보고한 물리 JDBC 실행 시도·data source는 1→2였다. 이를 성능 결함으로 "
+            "단정하지 않고 merge 전 검토 대상으로 만든다. 대상은 ShardingSphere-JDBC "
+            "5.5.3 Java 팀, 증거는 저장소 MySQL fixture다. "
             "지연·부하·비용은 측정하지 않았다.",
             content["background"][0]["text"],
         )
@@ -7403,10 +7775,9 @@ class ReportContentSbomTest(unittest.TestCase):
             [
                 {
                     "lead": "한 문장 소개",
-                    "text": "ShardingSphere-JDBC는 하나의 애플리케이션 SQL을 여러 "
-                    "데이터베이스로 분산 실행할 수 있고, RouteContract는 기능 테스트 "
-                    "결과가 같아도 그 과정에서 보고된 JDBC 실행 시도 구조가 승인본과 "
-                    "달라진 변경을 CI에서 차단하는 Java 테스트 라이브러리다.",
+                    "text": "ShardingSphere-JDBC는 한 SQL을 여러 DB로 나눠 실행할 수 "
+                    "있다. RouteContract는 기능 결과가 같아도 보고된 JDBC 실행 구조가 "
+                    "승인본과 달라지면 CI에서 검토·차단하는 Java 테스트 라이브러리다.",
                 }
             ],
             content["project_intro"],
@@ -7414,7 +7785,7 @@ class ReportContentSbomTest(unittest.TestCase):
         self.assertNotIn("SQLExecutionHook", content["project_intro"][0]["text"])
         self.assertNotIn("5.5.3", content["project_intro"][0]["text"])
         self.assertIn(
-            "보고된 JDBC 실행 시도 구조",
+            "보고된 JDBC 실행 구조",
             content["project_intro"][0]["text"],
         )
         for boundary_text in (
@@ -7462,11 +7833,10 @@ class ReportContentSbomTest(unittest.TestCase):
             row["text"] for row in content["environment"] if row["lead"] == "개발 보조 AI"
         )
         self.assertEqual(
-            "OpenAI ChatGPT·Codex를 조사·설계·코드·테스트·디버깅·문서화·local "
-            "command execution 보조에 쓰고 AI_ASSISTANCE.md에 공개했다. 참가자는 최종 "
-            "source diff·재현 테스트를 직접 검토하고 사실인 manifest attestation만 true로 "
-            "둔다. AI 출력은 근거·독립 검증이 아니며 runtime에는 AI 모델·데이터셋·외부 AI "
-            "API가 없다.",
+            "OpenAI ChatGPT·Codex를 조사·설계·구현·테스트·문서(소감 초안 포함)·local "
+            "command 보조에 사용하고 AI_ASSISTANCE.md에 공개했다. 참가자는 최종 "
+            "diff·재현 테스트·소감 사실을 검토해 사실인 attestation만 true로 "
+            "둔다. AI 출력은 증거가 아니며 runtime에는 AI 모델·데이터셋·외부 AI API가 없다.",
             ai_scope,
         )
         self.assertIn(package_submission.NO_RUNTIME_AI_DISCLOSURE, ai_scope)
@@ -7503,21 +7873,21 @@ class ReportContentSbomTest(unittest.TestCase):
             if row["lead"] == "stable 배포 후 4단계 적용 흐름"
         )
         self.assertEqual(
-            "최종 package gate가 exact tag·checksum·attestation을 확인한 stable Release "
-            "공개 뒤 ① 설치 ② v0.1 범위의 Java 통합 테스트에서 application operation을 "
-            "capture(operationId)로 감싸 candidate 생성 ③ approved diff 검토·별도 승인 "
-            "④ strict CI 검증을 적용한다. candidate는 approved를 덮지 않고 사람만 diff "
-            "검토 후 baseline을 승인한다.",
+            "stable Release 공개 후 package gate로 exact tag·checksum·attestation을 "
+            "확인하고 ① 설치 ② v0.1 Java 테스트의 application operation을 "
+            "capture(operationId)로 감싸 candidate 생성 ③ 사람이 approved diff 검토·승인 "
+            "④ strict CI 순으로 적용한다. candidate는 "
+            "approved를 자동 갱신하지 않는다.",
             development_effect,
         )
-        self.assertIn("최종 package gate", development_effect)
-        self.assertIn("stable Release 공개 뒤 ① 설치", development_effect)
-        self.assertIn("② v0.1 범위의 Java 통합 테스트", development_effect)
+        self.assertIn("package gate", development_effect)
+        self.assertIn("stable Release 공개 후", development_effect)
+        self.assertIn("① 설치", development_effect)
+        self.assertIn("② v0.1 Java 테스트", development_effect)
         self.assertIn("application operation", development_effect)
         self.assertIn("capture(operationId)", development_effect)
-        self.assertIn("③ approved diff 검토·별도 승인", development_effect)
-        self.assertIn("④ strict CI 검증", development_effect)
-        self.assertIn("사람만 diff 검토 후 baseline을 승인", development_effect)
+        self.assertIn("③ 사람이 approved diff 검토·승인", development_effect)
+        self.assertIn("④ strict CI", development_effect)
         self.assertNotIn("의도한 baseline 변경", development_effect)
 
         reproducible_application = next(
@@ -7526,12 +7896,11 @@ class ReportContentSbomTest(unittest.TestCase):
             if row["lead"] == "재현한 적용 결과"
         )
         self.assertEqual(
-            "동일한 synthetic MySQL fixture의 한 행 반환 assertion은 통과했지만 "
-            "RouteContract는 SQLExecutionHook이 보고한 물리 JDBC 실행 시도·data source "
-            "1→2를 RCM201·RCM202와 non-zero exit으로 검출했고 quickstart가 재현한다. "
-            "same-checkout standalone consumer는 로컬 게시 JAR의 SPI 자동 발견과 실제 "
-            "MySQL 테스트 1건 통과만 확인하며 1→2 재현·독립 외부 설치·채택 증거가 "
-            "아니다. 외부 결과는 cutoff의 실제 공개 사실만 보고한다.",
+            "동일 MySQL 한 행 assertion은 통과했지만 SQLExecutionHook이 보고한 "
+            "물리 JDBC 실행 시도·data source 1→2를 RCM201·RCM202/non-zero exit으로 "
+            "검출해 quickstart로 재현한다. same-checkout standalone consumer는 JAR "
+            "SPI·MySQL 1건만 확인하므로 1→2 재현·독립 외부 설치·채택 증거가 아니다. 외부 결과는 "
+            "cutoff 공개 사실만 보고한다.",
             reproducible_application,
         )
 
@@ -7539,15 +7908,13 @@ class ReportContentSbomTest(unittest.TestCase):
             row["text"] for row in content["effects"] if row["lead"] == "활용 경계"
         )
         self.assertEqual(
-            "지원 범위 안에서 SQLExecutionHook이 보고한 물리 JDBC 실행 시도를 "
+            "지원 범위에서 SQLExecutionHook이 보고한 물리 JDBC 실행 시도를 "
             "review·CI 계약으로 만든다. complete route plan·transaction commit·business "
             "success·성능을 증명하지 않는다. caller-supplied target universe 없이는 "
-            "full-route detection을 주장하지 않는다. 기대 효과(예상)는 기능 assertion이 "
-            "같아도 승인본과 다른 관측 실행 구조를 merge 전 검토 대상으로 드러내는 "
-            "것이다. 이는 성능·비용 개선을 보장하지 않는다. 확장 방향(제안)은 공개 수요 "
-            "기록·최소 재현 fixture·real-MySQL CI 통과를 gate로 version adapter·IDE/CI "
-            "reporter·추가 DB fixture를 검토하는 것이다. 현재 지원은 5.5.3/MySQL 8.4.11 "
-            "범위다.",
+            "full-route detection을 주장하지 않는다. 기대 효과는 승인본과 다른 구조의 "
+            "merge 전 노출이며 성능·비용 개선 보장은 없다. 공개 수요+fixture+"
+            "real-MySQL CI를 gate로 확장한다. "
+            "현재는 5.5.3/MySQL 8.4.11이다.",
             application_boundary,
         )
         for required in (
@@ -7564,11 +7931,10 @@ class ReportContentSbomTest(unittest.TestCase):
             if row["lead"] == "품질관리·발전 로드맵"
         )
         self.assertEqual(
-            "Issue #5→PR #6에서 clean Ubuntu CI checksum을 고쳐 Dependency Review·build를 "
-            "통과시켰다. Issue·PR·CI·CONTRIBUTING.md로 관리하며 우선순위는 설치·문서→"
-            "adapter·reporter→기여 CI다. adapter gate는 공개 수요 기록+최소 재현 "
-            "fixture+real-MySQL CI 통과다. 단일 maintainer이며 외부 결과·upstream 반응은 "
-            "실제 링크만 보고한다.",
+            "Issue #5→PR #6에서 Ubuntu CI checksum을 고쳐 Dependency Review·build를 "
+            "통과시켰다. 1인이 Issue·PR·CI로 관리한다. 설치·문서→adapter·reporter 순이며 "
+            "확장은 공개 수요+fixture+real-MySQL CI 뒤 한다. 외부 결과는 링크로만 "
+            "보고한다.",
             community,
         )
         self.assertNotIn("v0.1.0", community)
@@ -7590,8 +7956,9 @@ class ReportContentSbomTest(unittest.TestCase):
             row["text"] for row in content["other"] if row["lead"] == "개발 소감"
         )
         self.assertEqual(
-            "[[OWNER_VOICE: 실제로 가장 어려웠던 문제, 직접 한 분석/실험, 배운 점, "
-            "능동 유지보수 우선순위·순서와 의도한 기간을 본인이 작성]]",
+            "[[OWNER_VOICE: AI 보조 여부를 공개한 뒤 참가자가 사실·의미를 검토·확인한 "
+            "1인칭 소감—실제로 가장 어려웠던 문제, 직접 한 분석/실험, 배운 점, 능동 "
+            "유지보수 우선순위·순서와 의도한 기간]]",
             owner_voice,
         )
 
@@ -7599,13 +7966,10 @@ class ReportContentSbomTest(unittest.TestCase):
             row["text"] for row in content["other"] if row["lead"] == "차별성"
         )
         self.assertEqual(
-            "차별점은 ShardingSphere-JDBC 5.5.3의 SQLExecutionHook이 보고한 물리 JDBC "
-            "실행 시도를 application operation 단위로 묶고, worker 상관관계→value-minimized "
-            "manifest→사람 승인→결정적 structural diff→stable RCM code→CI assertion까지 "
-            "하나의 반복 가능한 workflow로 제공하는 데 있다. ShardingSphere 관측 도구나 "
-            "datasource-proxy를 대체하지 않으며, datasource-proxy로도 물리 data source별 "
-            "연결과 상관관계·canonicalization·diff·assertion을 별도 구현하면 유사한 검사를 "
-            "만들 수 있다.",
+            "5.5.3 SQLExecutionHook이 보고한 물리 JDBC 시도를 operation별 최소 manifest→"
+            "사람 승인→결정적 diff→RCM code→CI로 잇는다. 관측 도구를 대체하지 않으며 "
+            "datasource-proxy도 data source 연결·상관관계·canonicalization·diff·assertion을 더하면 유사 "
+            "검사가 가능하다.",
             differentiation,
         )
 
@@ -7615,12 +7979,11 @@ class ReportContentSbomTest(unittest.TestCase):
             if row["lead"] == "오픈소스SW 조합"
         )
         self.assertEqual(
-            "ShardingSphere-JDBC 5.5.3 SQLExecutionHook SPI를 digest 고정 MySQL 8.4.11과 "
-            "Testcontainers로 검증한다. Apache-2.0 thin unshaded JAR이며 "
-            "SBOM·lock·checksum·NOTICE로 공급망을 추적한다. "
-            "datasource-proxy는 test-only로 runtime JAR에 없다. preflight는 "
-            "5.5.3 infra-executor·infra-spi와 provider 1개만 확인한다. 전체 graph "
-            "호환성 증명은 아니다.",
+            "5.5.3 SQLExecutionHook SPI를 MySQL 8.4.11로 검증했다. JAR "
+            "build에는 shading 설정이 없다. path·POM 검사는 renamed/copied bytes 부재나 "
+            "의미적 출처를 증명하지 않는다. SBOM·lock·checksum·NOTICE로 추적한다. "
+            "test-only datasource-proxy는 runtime POM에 없다. preflight는 전체 graph "
+            "증명이 아니다.",
             evidence,
         )
 
@@ -7628,10 +7991,9 @@ class ReportContentSbomTest(unittest.TestCase):
             row["text"] for row in content["other"] if row["lead"] == "선행 작업 경계"
         )
         self.assertEqual(
-            "참가자 provenance 선언: ShardLens의 미구현 Route Guard 설계에서 출발해 "
-            "RouteContract의 독립 라이브러리·manifest/diff·MySQL corpus·설치/CI를 새로 "
-            "구현했고 ShardLens 애플리케이션 코드는 복사하지 않았다"
-            "(ORIGIN_AND_PRIOR_WORK.md). 독립 검증이 아니다.",
+            "참가자 선언: ShardLens의 미구현 Route Guard 설계를 바탕으로 RouteContract "
+            "라이브러리·manifest/diff·MySQL corpus·설치/CI를 새로 구현했고 애플리케이션 "
+            "코드는 복사하지 않았다(ORIGIN_AND_PRIOR_WORK.md). 독립 증명은 아니다.",
             prior_work,
         )
 
@@ -7641,10 +8003,8 @@ class ReportContentSbomTest(unittest.TestCase):
         self.assertEqual(
             "5.5.3 정상 반환·비-interrupt 동기식 non-batch PreparedStatement만 지원한다. "
             "Proxy·reactive·@Async·SQL Federation·route/table plan·commit·business "
-            "success는 제외한다. ShardingSphere-JDBC 5.5.3의 test/example graph에는 SQL "
-            "Federation 경유 Calcite/JTS가 포함되며, calcite-core 1.40.0의 "
-            "GHSA-c2rv-hwqm-wjpg는 2026-08-27 만료의 검토 예외다. SBOM은 법률 검토가 "
-            "아니다.",
+            "success는 제외한다. test/example graph의 calcite-core 1.40.0 advisory는 "
+            "2026-08-27까지 검토 예외이며 SBOM은 법률 검토가 아니다.",
             limitations,
         )
         license_disposition = next(
@@ -7696,15 +8056,20 @@ class ReportContentSbomTest(unittest.TestCase):
             privacy_block,
         )
 
-        owner_boundary = "The participant must write the `개발 소감` owner-voice block personally and" + readme.split(
-            "The participant must write the `개발 소감` owner-voice block personally and",
+        owner_boundary = "The `개발 소감` owner-voice block may use AI drafting or editing only when that" + readme.split(
+            "The `개발 소감` owner-voice block may use AI drafting or editing only when that",
             1,
         )[1].split("\n\nDo not replace", 1)[0]
         self.assertEqual(
-            "The participant must write the `개발 소감` owner-voice block personally and\n"
-            "include a concrete active-maintenance priority, order, and intended period before\n"
-            "setting `owner_voice_written_by_participant=true` and\n"
-            "`maintenance_order_and_period_confirmed=true`. Separately, contest rule Article\n"
+            "The `개발 소감` owner-voice block may use AI drafting or editing only when that\n"
+            "assistance is disclosed. Before setting\n"
+            "`owner_voice_ai_assistance_disclosed_and_participant_reviewed=true`, the\n"
+            "participant must review and adopt the final text as an accurate first-person\n"
+            "account, verify its concrete statements about the hardest problem, their own\n"
+            "analysis or experiments, lessons learned, and active-maintenance priority, order,\n"
+            "and intended period, and be able to explain it. This attestation does not claim\n"
+            "participant-only authorship. Set `maintenance_order_and_period_confirmed=true`\n"
+            "separately after confirming that concrete maintenance commitment. Contest rule Article\n"
             "10(3) requires a selected excellent or award-winning team to keep the public\n"
             "repository Public for five years from the award date. Set\n"
             "`five_year_public_repository_visibility_obligation_if_selected_accepted=true`\n"
@@ -7712,7 +8077,8 @@ class ReportContentSbomTest(unittest.TestCase):
             "active-maintenance promise. Confirm the tracked provenance statement with\n"
             "`origin_and_prior_work_statement_confirmed=true`; that is a participant\n"
             "self-attestation, not independent proof. The tool does not semantically decide\n"
-            "whether the owner voice or provenance statement is true or adequate.",
+            "whether the owner voice, its AI-assistance disclosure, or provenance statement is\n"
+            "true or adequate.",
             owner_boundary,
         )
 
@@ -9203,10 +9569,10 @@ class ReleaseEvidenceTest(unittest.TestCase):
 class PublicEvidenceTest(unittest.TestCase):
     def test_public_youtube_contract_preserves_title_and_duration_gates(self) -> None:
         manifest = package_submission.validate_manifest(valid_manifest())
-        local_video = {"duration_seconds": 179.5}
+        local_video = {"duration_seconds": 173.0}
         youtube = {
             "title": "RouteContract demo",
-            "duration_seconds": 179.0,
+            "duration_seconds": 172.5,
         }
         package_submission.validate_public_youtube_contract(
             manifest, local_video, youtube
@@ -9218,13 +9584,15 @@ class PublicEvidenceTest(unittest.TestCase):
                 manifest, local_video, changed_title
             )
 
-        over_limit = dict(youtube, duration_seconds=180.001)
-        with self.assertRaisesRegex(package_submission.GateError, "180-second maximum"):
+        over_limit = dict(youtube, duration_seconds=175.1)
+        with self.assertRaisesRegex(
+            package_submission.GateError, "170 through 175 seconds inclusive"
+        ):
             package_submission.validate_public_youtube_contract(
                 manifest, local_video, over_limit
             )
 
-        different_upload = dict(youtube, duration_seconds=178.499)
+        different_upload = dict(youtube, duration_seconds=174.1)
         with self.assertRaisesRegex(
             package_submission.GateError, "checksummed local video"
         ):
@@ -9236,9 +9604,41 @@ class PublicEvidenceTest(unittest.TestCase):
         manifest = package_submission.validate_manifest(valid_manifest())
         package_submission.validate_public_youtube_contract(
             manifest,
-            {"duration_seconds": 179.5},
-            {"title": "RouteContract demo", "duration_seconds": 178.5},
+            {"duration_seconds": 173.5},
+            {"title": "RouteContract demo", "duration_seconds": 172.5},
         )
+
+    def test_public_youtube_duration_window_and_caption_end_are_inclusive(self) -> None:
+        manifest = package_submission.validate_manifest(valid_manifest())
+        for duration in (172.5, 175.0):
+            with self.subTest(duration=duration):
+                package_submission.validate_public_youtube_contract(
+                    manifest,
+                    {"duration_seconds": duration},
+                    {"title": "RouteContract demo", "duration_seconds": duration},
+                )
+
+        for duration in (170.0, 172.499):
+            with self.subTest(duration=duration), self.assertRaisesRegex(
+                package_submission.GateError,
+                "selected caption branch's final cue",
+            ):
+                package_submission.validate_public_youtube_contract(
+                    manifest,
+                    {"duration_seconds": duration},
+                    {"title": "RouteContract demo", "duration_seconds": duration},
+                )
+
+        for duration in (169.9, 175.1):
+            with self.subTest(duration=duration), self.assertRaisesRegex(
+                package_submission.GateError,
+                "170 through 175 seconds inclusive",
+            ):
+                package_submission.validate_public_youtube_contract(
+                    manifest,
+                    {"duration_seconds": duration},
+                    {"title": "RouteContract demo", "duration_seconds": duration},
+                )
 
     def test_tls_context_uses_the_pinned_certifi_bundle(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
@@ -9296,7 +9696,7 @@ class PublicEvidenceTest(unittest.TestCase):
         ), patch.object(package_submission, "run", side_effect=fake_run):
             result = package_submission.public_youtube_metadata(url)
 
-        self.assertEqual(179.0, result["duration_seconds"])
+        self.assertEqual(173.0, result["duration_seconds"])
         self.assertEqual("public", result["availability"])
         self.assertEqual("not_live", result["live_status"])
         self.assertEqual(0, result["age_limit"])
@@ -9571,8 +9971,8 @@ class PublicEvidenceTest(unittest.TestCase):
         with self.assertRaises(package_submission.GateError) as caught:
             package_submission.validate_public_youtube_contract(
                 manifest,
-                {"duration_seconds": 179.5},
-                {"title": canary, "duration_seconds": 179.0},
+                {"duration_seconds": 173.0},
+                {"title": canary, "duration_seconds": 172.5},
             )
         self.assertIsNone(caught.exception.__cause__)
         self.assertNotIn(canary, str(caught.exception))
@@ -9680,7 +10080,7 @@ class PublicEvidenceTest(unittest.TestCase):
         youtube = {
             "id": "abcdefghijk",
             "title": "RouteContract demo",
-            "duration_seconds": 179.0,
+            "duration_seconds": 172.5,
             "availability": "public",
             "live_status": "not_live",
             "age_limit": 0,
@@ -9702,7 +10102,7 @@ class PublicEvidenceTest(unittest.TestCase):
         ) as verify_remote_tag:
             result = package_submission.validate_public_evidence(
                 manifest,
-                {"duration_seconds": 179.5},
+                {"duration_seconds": 173.0},
                 evidence,
                 Path("/evidence"),
                 Path("/repository"),
@@ -9714,7 +10114,7 @@ class PublicEvidenceTest(unittest.TestCase):
         self.assertEqual(456, result["workflow_artifact"]["size_in_bytes"])
         self.assertEqual("abcdefghijk", result["youtube_video_id"])
         self.assertEqual("RouteContract demo", result["youtube_title"])
-        self.assertEqual(179.0, result["youtube_duration_seconds"])
+        self.assertEqual(172.5, result["youtube_duration_seconds"])
         self.assertEqual("public", result["youtube_availability"])
         self.assertEqual("not_live", result["youtube_live_status"])
         self.assertEqual(0, result["youtube_age_limit"])
@@ -9835,7 +10235,7 @@ class PublicEvidenceTest(unittest.TestCase):
             youtube = {
                 "id": "abcdefghijk",
                 "title": "RouteContract demo",
-                "duration_seconds": 179.0,
+                "duration_seconds": 172.5,
                 "availability": "public",
                 "live_status": "not_live",
                 "age_limit": 0,
@@ -9843,7 +10243,7 @@ class PublicEvidenceTest(unittest.TestCase):
             }
             arguments = (
                 manifest,
-                {"duration_seconds": 179.5},
+                {"duration_seconds": 173.0},
                 evidence,
                 Path("/evidence"),
                 Path("/repository"),
@@ -10145,7 +10545,7 @@ class PublicEvidenceTest(unittest.TestCase):
                     ):
                         package_submission.validate_public_evidence(
                             manifest,
-                            {"duration_seconds": 179.5},
+                            {"duration_seconds": 173.0},
                             evidence,
                             Path("/evidence"),
                             Path("/repository"),
@@ -10214,7 +10614,7 @@ class PublicEvidenceTest(unittest.TestCase):
             with self.assertRaisesRegex(package_submission.GateError, "artifact ID/digest"):
                 package_submission.validate_public_evidence(
                     manifest,
-                    {"duration_seconds": 179.5},
+                    {"duration_seconds": 173.0},
                     evidence,
                     Path("/evidence"),
                     Path("/repository"),
@@ -10307,7 +10707,7 @@ class PublicEvidenceTest(unittest.TestCase):
                     ):
                         package_submission.validate_public_evidence(
                             manifest,
-                            {"duration_seconds": 179.5},
+                            {"duration_seconds": 173.0},
                             evidence,
                             Path("/evidence"),
                             Path("/repository"),
@@ -10360,7 +10760,7 @@ class PublicEvidenceTest(unittest.TestCase):
             with self.assertRaisesRegex(package_submission.GateError, "not green"):
                 package_submission.validate_public_evidence(
                     manifest,
-                    {"duration_seconds": 179.5},
+                    {"duration_seconds": 173.0},
                     evidence,
                     Path("/evidence"),
                     Path("/repository"),

@@ -135,7 +135,8 @@ python3 scripts/install-release-assets.py \
   --repository /absolute/path/to/routecontract-maven
 ```
 
-Connect the installed local Maven repository to Gradle, then use the exact `0.1.0` coordinate and
+Connect the installed local Maven repository to Gradle, then use exact
+ShardingSphere-JDBC `5.5.3` and RouteContract `0.1.0` coordinates plus the
 Jackson 2 BOM as test dependencies. The thin POM does not align the consumer's
 ShardingSphere/Jackson versions.
 
@@ -152,6 +153,7 @@ repositories {
 
 dependencies {
     testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))
+    testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:5.5.3")
     testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0")
 }
 ```
@@ -303,11 +305,13 @@ is not claimed to exist on Maven Central.
 
 ```groovy
 testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))
+testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:5.5.3")
 testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0")
 ```
 
-RouteContract is a thin JAR. Its module-level `compileOnly` ShardingSphere/BOM
-declarations are not published as consumer version constraints. In the verified
+The RouteContract build does not configure dependency embedding. Its
+module-level `compileOnly` ShardingSphere/BOM declarations are not published as
+consumer version constraints. In the verified
 Gradle test/runtime graph, the Jackson 2 core, databind, datatype-jdk8, and
 datatype-jsr310 modules in ShardingSphere 5.5.3's compatibility graph resolve to
 2.18.9. In the runtime that also contains Jackson 3.1.5, the shared

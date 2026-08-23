@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 5,
   "official_notice_url": "https://osscontest.kr/notice/39",
   "submission_identity": {
     "receipt_number": "[[APPLICATION_RECEIPT_NUMBER]]",
@@ -27,7 +27,12 @@
     "title": "[[YOUTUBE_VIDEO_TITLE]]",
     "duration_seconds": "[[FFPROBE_DURATION_SECONDS]]",
     "local_file_sha256": "[[FINAL_VIDEO_SHA256]]",
-    "external_evidence_branch": "[[EXTERNAL_EVIDENCE_BRANCH: rc_only|zero]]"
+    "external_evidence_branch": "[[EXTERNAL_EVIDENCE_BRANCH: rc_only|zero]]",
+    "caption_contract": {
+      "schema_version": 1,
+      "source_path": "submission/video-caption-cues.json",
+      "source_sha256": "60b27833660b5c687ea0bb4aece3e8b87ff5dcab9d8cfe942fd500bcea4e4042"
+    }
   },
   "release_evidence": {
     "workflow_artifact_id": "[[RELEASE_EVIDENCE_ARTIFACT_ID]]",
@@ -49,9 +54,10 @@
     "public_external_evidence_history_and_maintainer_edits_reviewed": false,
     "source_and_dependency_licenses_reviewed": false,
     "final_pdf_visual_qa_completed": false,
-    "final_video_watchthrough_completed": false,
+    "final_local_video_actual_screen_caption_watchthrough_completed": false,
+    "final_public_video_frame_audio_caption_equivalence_review_completed": false,
     "five_year_public_repository_visibility_obligation_if_selected_accepted": false,
-    "owner_voice_written_by_participant": false,
+    "owner_voice_ai_assistance_disclosed_and_participant_reviewed": false,
     "maintenance_order_and_period_confirmed": false,
     "origin_and_prior_work_statement_confirmed": false
   },

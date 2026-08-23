@@ -45,13 +45,16 @@ LEGACY_SUBMISSION_FILENAMES = {
     "02_RouteContract_Result_Report.pdf",
 }
 PACKAGE_METADATA_NAME = "PACKAGE-METADATA.json"
-PACKAGE_METADATA_SCHEMA_VERSION = 2
+PACKAGE_METADATA_SCHEMA_VERSION = 4
 CHECKSUMS_NAME = "SHA256SUMS"
 SUPPLY_CHAIN_EVIDENCE_NAME = "supply-chain-evidence.json"
-MAX_VIDEO_SECONDS = 180.0
+MIN_VIDEO_SECONDS = 170.0
+MAX_VIDEO_SECONDS = 175.0
 MIN_VIDEO_WIDTH = 1920
 MIN_VIDEO_HEIGHT = 1080
 MIN_PUBLIC_VIDEO_HEIGHT = 1080
+MIN_DECODED_VIDEO_FPS = 20.0
+DECODE_DURATION_TOLERANCE_SECONDS = 0.25
 MAX_PORTABLE_FILENAME_BYTES = 255
 MAX_PUBLIC_ASSET_BYTES = 250 * 1024 * 1024
 # These are validation ceilings for already captured subprocess output and
@@ -186,6 +189,26 @@ def load_report_content_contract() -> Any:
 
 
 REPORT_CONTENT_CONTRACT = load_report_content_contract()
+
+
+def load_video_caption_contract() -> Any:
+    """Load the pure-stdlib caption-source validator and SRT renderer."""
+    path = Path(__file__).resolve().parent / "video_caption_contract.py"
+    spec = importlib.util.spec_from_file_location(
+        "routecontract_video_caption_contract", path
+    )
+    if spec is None or spec.loader is None:
+        raise GateError("could not load the video-caption contract")
+    module = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(module)
+    except (OSError, ImportError, SyntaxError):
+        raise GateError("could not load the video-caption contract") from None
+    return module
+
+
+VIDEO_CAPTION_CONTRACT = load_video_caption_contract()
+VIDEO_CAPTION_SOURCE_PATH = VIDEO_CAPTION_CONTRACT.TRACKED_SOURCE_PATH
 
 
 def _decode_strict_json(
@@ -554,6 +577,40 @@ def validate_video_external_evidence_branch_matches_content(
         )
 
 
+def video_caption_branch_evidence(
+    expected_source_sha256: str, branch: str
+) -> dict[str, Any]:
+    """Bind the fixed tracked cue source to one deterministic selected SRT."""
+    try:
+        return VIDEO_CAPTION_CONTRACT.build_branch_evidence(
+            VIDEO_CAPTION_SOURCE_PATH, expected_source_sha256, branch
+        )
+    except (OSError, ValueError):
+        raise GateError(
+            "video.caption_contract does not match the strict tracked caption source"
+        ) from None
+
+
+def manifest_video_caption_evidence(manifest: dict[str, Any]) -> dict[str, Any]:
+    """Revalidate and materialize caption evidence from a validated manifest."""
+    video = manifest["video"]
+    return video_caption_branch_evidence(
+        video["caption_contract"]["source_sha256"],
+        video["external_evidence_branch"],
+    )
+
+
+def require_caption_cues_fit_duration(
+    caption_evidence: dict[str, Any], duration_seconds: float, label: str
+) -> None:
+    """Require the selected branch's final cue to fit in an observed duration."""
+    last_cue_end_ms = caption_evidence["selected_last_cue_end_ms"]
+    if duration_seconds * 1_000 < last_cue_end_ms:
+        raise GateError(
+            f"{label} ends before the selected caption branch's final cue"
+        )
+
+
 def validate_manifest(data: dict[str, Any]) -> dict[str, Any]:
     require_exact_keys(
         data,
@@ -574,9 +631,9 @@ def validate_manifest(data: dict[str, Any]) -> dict[str, Any]:
     if (
         isinstance(data["schema_version"], bool)
         or not isinstance(data["schema_version"], int)
-        or data["schema_version"] != 3
+        or data["schema_version"] != 5
     ):
-        raise GateError("manifest.schema_version must be 3")
+        raise GateError("manifest.schema_version must be 5")
     if data["official_notice_url"] != NOTICE_URL:
         raise GateError(f"official_notice_url must be {NOTICE_URL}")
 
@@ -640,6 +697,7 @@ def validate_manifest(data: dict[str, Any]) -> dict[str, Any]:
             "duration_seconds",
             "local_file_sha256",
             "external_evidence_branch",
+            "caption_contract",
         },
         "video",
     )
@@ -654,12 +712,40 @@ def validate_manifest(data: dict[str, Any]) -> dict[str, Any]:
     ):
         raise GateError("video.duration_seconds must be a number from ffprobe")
     duration = float(video["duration_seconds"])
-    if not 0 < duration <= MAX_VIDEO_SECONDS:
-        raise GateError("video.duration_seconds must be greater than 0 and at most 180")
+    if not MIN_VIDEO_SECONDS <= duration <= MAX_VIDEO_SECONDS:
+        raise GateError(
+            "video.duration_seconds must be from 170 through 175 seconds inclusive"
+        )
     require_digest(video["local_file_sha256"], "video.local_file_sha256")
     branch = video["external_evidence_branch"]
     if not isinstance(branch, str) or branch not in {"rc_only", "zero"}:
         raise GateError("video.external_evidence_branch must be rc_only or zero")
+    caption_contract = require_exact_keys(
+        video["caption_contract"],
+        {"schema_version", "source_path", "source_sha256"},
+        "video.caption_contract",
+    )
+    if (
+        type(caption_contract["schema_version"]) is not int
+        or caption_contract["schema_version"] != VIDEO_CAPTION_CONTRACT.SCHEMA_VERSION
+    ):
+        raise GateError(
+            "video.caption_contract.schema_version must be "
+            f"{VIDEO_CAPTION_CONTRACT.SCHEMA_VERSION}"
+        )
+    if caption_contract["source_path"] != VIDEO_CAPTION_CONTRACT.SOURCE_RELATIVE_PATH:
+        raise GateError(
+            "video.caption_contract.source_path must be "
+            f"{VIDEO_CAPTION_CONTRACT.SOURCE_RELATIVE_PATH}"
+        )
+    require_digest(
+        caption_contract["source_sha256"],
+        "video.caption_contract.source_sha256",
+    )
+    caption_evidence = video_caption_branch_evidence(
+        caption_contract["source_sha256"], branch
+    )
+    require_caption_cues_fit_duration(caption_evidence, duration, "manifest video")
 
     evidence = require_exact_keys(
         data["release_evidence"],
@@ -730,9 +816,10 @@ def validate_manifest(data: dict[str, Any]) -> dict[str, Any]:
             "public_external_evidence_history_and_maintainer_edits_reviewed",
             "source_and_dependency_licenses_reviewed",
             "final_pdf_visual_qa_completed",
-            "final_video_watchthrough_completed",
+            "final_local_video_actual_screen_caption_watchthrough_completed",
+            "final_public_video_frame_audio_caption_equivalence_review_completed",
             "five_year_public_repository_visibility_obligation_if_selected_accepted",
-            "owner_voice_written_by_participant",
+            "owner_voice_ai_assistance_disclosed_and_participant_reviewed",
             "maintenance_order_and_period_confirmed",
             "origin_and_prior_work_statement_confirmed",
         },
@@ -1894,14 +1981,18 @@ def local_video_metadata(path: Path) -> dict[str, Any]:
     ffprobe = shutil.which("ffprobe")
     if not ffprobe:
         raise GateError(
-            "ffprobe is required to verify duration, 1080p dimensions, audio, "
-            "and privacy-safe video metadata"
+            "ffprobe is required to verify duration, 1080p dimensions, the "
+            "caption-first no-audio contract, and privacy-safe video metadata"
         )
     output = run(
         [
             ffprobe,
             "-v",
             "error",
+            "-f",
+            "mov",
+            "-protocol_whitelist",
+            "file",
             "-show_entries",
             "format=duration:format_tags:stream=index,codec_type,width,height:stream_tags:stream_disposition=default,attached_pic,still_image:chapter=id:chapter_tags:program=id:program_tags",
             "-of",
@@ -1968,8 +2059,10 @@ def local_video_metadata(path: Path) -> dict[str, Any]:
     ]
     if not video_streams:
         raise GateError("local demonstration file has no video stream")
-    if not audio_streams:
-        raise GateError("local demonstration file must contain at least one audio stream")
+    if audio_streams:
+        raise GateError(
+            "caption-first local demonstration file must contain no audio streams"
+        )
 
     playable_video_streams: list[dict[str, Any]] = []
     for stream in video_streams:
@@ -2035,6 +2128,72 @@ def local_video_metadata(path: Path) -> dict[str, Any]:
     }
 
 
+def validate_full_motion_video_decode(
+    path: Path, stream_index: int, expected_duration: float
+) -> dict[str, Any]:
+    """Decode the complete selected motion stream instead of trusting headers."""
+    ffmpeg = shutil.which("ffmpeg")
+    if not ffmpeg:
+        raise GateError(
+            "ffmpeg is required to decode the complete selected motion video stream"
+        )
+    output = run(
+        [
+            ffmpeg,
+            "-hide_banner",
+            "-nostdin",
+            "-v",
+            "error",
+            "-xerror",
+            "-err_detect",
+            "explode",
+            "-f",
+            "mov",
+            "-protocol_whitelist",
+            "file",
+            "-progress",
+            "pipe:1",
+            "-nostats",
+            "-i",
+            str(path),
+            "-map",
+            f"0:{stream_index}",
+            "-an",
+            "-sn",
+            "-dn",
+            "-f",
+            "null",
+            "-",
+        ],
+        timeout_seconds=600,
+        failure_label="ffmpeg full motion-video decode",
+    )
+    frames = re.findall(r"(?m)^frame=([0-9]{1,12})$", output)
+    out_times = re.findall(r"(?m)^out_time_us=([0-9]{1,18})$", output)
+    if (
+        not frames
+        or not out_times
+        or int(frames[-1]) <= 0
+        or not output.rstrip().endswith("progress=end")
+    ):
+        raise GateError("ffmpeg did not complete the selected motion-video decode")
+    decoded_frames = int(frames[-1])
+    decoded_duration = int(out_times[-1]) / 1_000_000
+    if abs(decoded_duration - expected_duration) > DECODE_DURATION_TOLERANCE_SECONDS:
+        raise GateError("decoded motion-video duration differs from the container duration")
+    minimum_frames = max(1, math.ceil(decoded_duration * MIN_DECODED_VIDEO_FPS))
+    if decoded_frames < minimum_frames:
+        raise GateError(
+            "decoded motion-video frame count is too low for the declared duration"
+        )
+    return {
+        "decode_probe": "ffmpeg",
+        "decoded_frame_count": decoded_frames,
+        "decoded_duration_seconds": decoded_duration,
+        "minimum_frame_count": minimum_frames,
+    }
+
+
 def validate_local_video(path: Path, manifest: dict[str, Any]) -> dict[str, Any]:
     expected_hash = manifest["video"]["local_file_sha256"]
     actual_hash = sha256(path)
@@ -2042,13 +2201,61 @@ def validate_local_video(path: Path, manifest: dict[str, Any]) -> dict[str, Any]
         raise GateError(f"video SHA-256 mismatch: expected {expected_hash}, got {actual_hash}")
     metadata = local_video_metadata(path)
     duration = float(metadata["duration_seconds"])
-    if not 0 < duration <= MAX_VIDEO_SECONDS:
-        raise GateError("local video duration is outside the official 180-second maximum")
+    if not MIN_VIDEO_SECONDS <= duration <= MAX_VIDEO_SECONDS:
+        raise GateError(
+            "local video duration must be from 170 through 175 seconds inclusive"
+        )
+    require_caption_cues_fit_duration(
+        manifest_video_caption_evidence(manifest), duration, "local video"
+    )
     declared = float(manifest["video"]["duration_seconds"])
     if abs(duration - declared) > 0.1:
         raise GateError("video duration differs from manifest")
+    stream_index = metadata["selected_video_stream_index"]
+    if type(stream_index) is not int or stream_index < 0:
+        raise GateError("local video has no selected motion-video stream index")
+    metadata.update(
+        validate_full_motion_video_decode(path, stream_index, duration)
+    )
+    if sha256(path) != actual_hash:
+        raise GateError("local demonstration file changed during validation")
     metadata["sha256"] = actual_hash
     return metadata
+
+
+def revalidate_local_video_hash_before_metadata(
+    path: Path, expected_sha256: str
+) -> str:
+    """Rehash the video at the last point before audit metadata is materialized."""
+    actual_sha256 = sha256(path)
+    if actual_sha256 != expected_sha256:
+        raise GateError(
+            "local demonstration file changed before package metadata write"
+        )
+    return actual_sha256
+
+
+def package_video_metadata(
+    video_metadata: dict[str, Any], manifest: dict[str, Any]
+) -> dict[str, Any]:
+    """Materialize the exact video audit-metadata shape."""
+    attestations = manifest["participant_attestations"]
+    return {
+        **video_metadata,
+        "youtube_url": manifest["video"]["youtube_url"],
+        "external_evidence_branch": manifest["video"][
+            "external_evidence_branch"
+        ],
+        "caption_contract": manifest_video_caption_evidence(manifest),
+        "local_burned_in_caption_pixels_automatically_verified": False,
+        "local_actual_screen_caption_watchthrough_participant_attested": attestations[
+            "final_local_video_actual_screen_caption_watchthrough_completed"
+        ],
+        "public_frame_audio_caption_equivalence_automatically_verified": False,
+        "public_frame_audio_caption_equivalence_participant_attested": attestations[
+            "final_public_video_frame_audio_caption_equivalence_review_completed"
+        ],
+    }
 
 
 def verified_tls_context() -> ssl.SSLContext:
@@ -2328,8 +2535,15 @@ def validate_public_youtube_contract(
 ) -> None:
     if youtube["title"] != manifest["video"]["title"]:
         raise GateError("public YouTube title mismatch")
-    if youtube["duration_seconds"] > MAX_VIDEO_SECONDS:
-        raise GateError("public YouTube video exceeds the official 180-second maximum")
+    if not MIN_VIDEO_SECONDS <= youtube["duration_seconds"] <= MAX_VIDEO_SECONDS:
+        raise GateError(
+            "public YouTube video duration must be from 170 through 175 seconds inclusive"
+        )
+    require_caption_cues_fit_duration(
+        manifest_video_caption_evidence(manifest),
+        float(youtube["duration_seconds"]),
+        "public YouTube video",
+    )
     if abs(
         float(youtube["duration_seconds"])
         - float(local_video["duration_seconds"])
@@ -6058,6 +6272,9 @@ def main() -> None:
         }
         upload_zip = staging / official_filenames["zip"]
         build_upload_zip(upload_dir, upload_zip, expected_names)
+        video_metadata["sha256"] = revalidate_local_video_hash_before_metadata(
+            video_file, video_metadata["sha256"]
+        )
 
         package_metadata = {
             "schema_version": PACKAGE_METADATA_SCHEMA_VERSION,
@@ -6070,13 +6287,7 @@ def main() -> None:
             "source_video_sbom_are_not_separate_uploads": True,
             "project": manifest["project"],
             "report": report_metadata,
-            "video": {
-                **video_metadata,
-                "youtube_url": manifest["video"]["youtube_url"],
-                "external_evidence_branch": manifest["video"][
-                    "external_evidence_branch"
-                ],
-            },
+            "video": package_video_metadata(video_metadata, manifest),
             "release_evidence": evidence_metadata,
             "public_evidence": public_metadata,
             "duplicate_benefit_confirmation": manifest[

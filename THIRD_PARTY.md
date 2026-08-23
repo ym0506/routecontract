@@ -7,9 +7,12 @@ and the pinned report-builder runtime closure, as of 2026-08-23; it is not a
 substitute for the machine-readable SBOM or the license text shipped by each
 dependency.
 
-RouteContract does not shade or copy these dependencies into its library JAR.
-The MySQL example's dependencies and container image are test-only and are not
-part of the published library artifact.
+The v0.1 build does not configure shading or dependency embedding. The Release
+gate checks a first-party path/metadata inventory and the published POM's direct
+dependencies; those checks do not prove the absence or semantic provenance of
+renamed, relocated, transformed, or copied bytes. The MySQL example's declared
+dependencies and container image are test-only and are not part of the
+published library's declared runtime profile.
 
 ## Published library
 

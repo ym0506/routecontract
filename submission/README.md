@@ -85,10 +85,14 @@ The organizer's 2026 submission notice is the packaging authority:
 - source code is represented by exactly one public repository URL in the
   report;
 - the demonstration is represented by a public YouTube URL in the report and
-  must be no longer than 180 seconds. This project's final gate also requires
-  a local video at least 1920x1080 with at least one audio stream, and a
-  public, non-live, age-unrestricted YouTube upload with a downloadable 1080p
-  or higher video format;
+  must be no longer than 180 seconds. This project's caption-first final gate
+  narrows the final duration to 170 through 175 seconds inclusive and also
+  requires a local video at least 1920x1080, at least 20 decoded frames per
+  second on average, exactly zero audio streams, burned-in Korean captions, and
+  a public, non-live, age-unrestricted YouTube upload with a downloadable 1080p
+  or higher video format. The selected branch's final tracked cue must fit in
+  the manifest, local, and public durations, so the current 172.500-second cue
+  corpus makes 172.500 seconds the effective minimum;
 - Attachment 1 SBOM stays inside the report;
 - Attachment 2 is intentionally removed under the organizer's development-
   assistance disclosure option because RouteContract has no runtime AI model
@@ -100,9 +104,15 @@ The organizer's 2026 submission notice is the packaging authority:
 
 `package_submission.py` implements those rules as a fail-closed final gate. It
 rebuilds the DOCX with `build_official_report.py --strict-final`, checks the PDF
-content and page boundary, checks the local video's duration, default playable
-motion-stream dimensions, audio-stream presence, and narrow privacy-sensitive
-format/stream/chapter/program metadata denylist with `ffprobe`, verifies the
+content and page boundary, requires the local and public video durations to be
+within the inclusive 170-through-175-second window, checks the default playable
+motion-stream dimensions, at least 20 decoded frames per second on average,
+exactly zero audio streams, a complete selected-stream decode, post-decode file
+hash stability, a final rehash immediately before audit-metadata creation, and
+a narrow privacy-sensitive format/stream/chapter/program metadata denylist with
+`ffprobe`. It also binds the fixed `submission/video-caption-cues.json` path,
+schema and source SHA-256, renders the selected `zero` or `rc_only` SRT
+deterministically, and records the selected-cue and SRT hashes. It verifies the
 exact Git revision/tag/public repository/green release-evidence run/GitHub
 Release, verifies the release artifact checksums and all three staged SBOM
 pairs, and emits
@@ -117,7 +127,9 @@ confirm these host tools: Poppler's `pdfinfo`, `pdfdetach`, `pdftotext`, `pdftoh
 the supplied PDF; an absolute regular `FONTCONFIG_FILE` naming the exact font
 configuration used for both exports and matching the reviewed SHA-256
 `1aad4c0015115d649ca8d3be015141539fd5f037445408a8ee14a0306af6c5d1`;
-`ffprobe` for the local video; `yt-dlp --check-all-formats` for public
+`ffprobe` for local-video metadata and `ffmpeg` for a full decode of the
+selected motion stream, including the at-least-20 average decoded-fps check and
+post-decode file-hash recheck; `yt-dlp --check-all-formats` for public
 availability, non-live and age-unrestricted status, duration, and downloadable
 1080p format evidence (the verifier checks all reported formats first);
 and GitHub CLI 2.93.0 or newer with
@@ -135,12 +147,20 @@ into public evidence. If duplicate-benefit status is required, obtain and
 retain the exact organizer form and implement its title/identity/placeholder
 validation before enabling that path; do not substitute an arbitrary document.
 
-The video gate does not require a particular codec and does not grade narration
-loudness, clipping, or visual readability. The owner must still watch and listen
-to the checksummed local file and the logged-out public 1080p playback from
-start to finish before setting `final_video_watchthrough_completed=true`.
-The `yt-dlp` result is downloadable-format inventory evidence; the gate does not
-download the entire public video or replace that owner playback review.
+The video gate does not require a particular codec and cannot grade whether the
+burned-in captions match the visible real execution or remain readable from
+pixels alone. The owner must still watch the checksummed local file from start
+to finish, confirm
+that it shows the actual recorded screens and the selected generated captions,
+and only then set
+`final_local_video_actual_screen_caption_watchthrough_completed=true`.
+The owner must also watch the logged-out public 1080p playback and attest that
+its frames, zero-audio behavior, and captions are equivalent to that reviewed
+local file before setting
+`final_public_video_frame_audio_caption_equivalence_review_completed=true`.
+The `yt-dlp` result is downloadable-format inventory evidence: this gate does
+not download the entire public video or perform public/local pixel, audio, or
+caption comparison, so that equivalence remains participant-attested.
 
 The report gate re-exports the generated strict DOCX twice with independent
 LibreOffice profiles and the same `FONTCONFIG_FILE`, requires those canonical
@@ -161,10 +181,13 @@ cp submission/package-manifest.example.json \
   submission/private/package-manifest.final.json
 ```
 
-The current private input manifest is schema version `3`. Version `1` predates
-the declared video evidence branch; versions `1` and `2` predate this bounded
-participant-understanding attestation contract. Both are deliberately rejected;
-recopy the example instead of silently treating an older file as complete.
+The current private input manifest is schema version `5`. Version `1` predates
+the declared video evidence branch; versions `1` and `2` predate the bounded
+participant-understanding attestation contract; version `3` predates the
+AI-assistance-aware owner-voice attestation; version `4` predates the fixed-path
+caption-source binding, selected-SRT hashes, and split local/public video review
+attestations. All older versions are deliberately
+rejected; recopy the example instead of silently treating an older file as complete.
 
 Replace every `[[...]]` gate in those private copies, export the PDF from the
 strictly generated DOCX, and set every participant attestation to `true` only
@@ -192,10 +215,15 @@ immutable. The selected Actions evidence must be a successful push run for that
 exact tag and revision; the gate cryptographically verifies the Release and
 every one of its attached public assets with GitHub's release attestations.
 
-The participant must write the `개발 소감` owner-voice block personally and
-include a concrete active-maintenance priority, order, and intended period before
-setting `owner_voice_written_by_participant=true` and
-`maintenance_order_and_period_confirmed=true`. Separately, contest rule Article
+The `개발 소감` owner-voice block may use AI drafting or editing only when that
+assistance is disclosed. Before setting
+`owner_voice_ai_assistance_disclosed_and_participant_reviewed=true`, the
+participant must review and adopt the final text as an accurate first-person
+account, verify its concrete statements about the hardest problem, their own
+analysis or experiments, lessons learned, and active-maintenance priority, order,
+and intended period, and be able to explain it. This attestation does not claim
+participant-only authorship. Set `maintenance_order_and_period_confirmed=true`
+separately after confirming that concrete maintenance commitment. Contest rule Article
 10(3) requires a selected excellent or award-winning team to keep the public
 repository Public for five years from the award date. Set
 `five_year_public_repository_visibility_obligation_if_selected_accepted=true`
@@ -203,7 +231,8 @@ only after understanding that conditional visibility obligation; it is not an
 active-maintenance promise. Confirm the tracked provenance statement with
 `origin_and_prior_work_statement_confirmed=true`; that is a participant
 self-attestation, not independent proof. The tool does not semantically decide
-whether the owner voice or provenance statement is true or adequate.
+whether the owner voice, its AI-assistance disclosure, or provenance statement is
+true or adequate.
 
 Do not replace the `외부 검증` report sentence manually. Fill the structured
 `external_evidence` object instead; the strict builder and package gate generate
@@ -221,10 +250,23 @@ that sentence from exactly one enabled branch:
 
 Set `video.external_evidence_branch` to that same exact `rc_only` or `zero`
 branch. Packaging rejects a report/manifest branch-declaration mismatch; it
-does not infer audiovisual meaning from the video bytes. After the final
-watchthrough, `final_video_watchthrough_completed=true` is the participant's
-attestation that the actual card and narration—not only the storyboard—use
-that selected branch.
+does not infer audiovisual meaning from the video bytes. Keep
+`video.caption_contract.source_path` fixed at
+`submission/video-caption-cues.json`, its schema at `1`, and its SHA-256 equal
+to the tracked file. Generate the branch-selected SRT from that sole caption
+authority with:
+
+```bash
+python3 submission/tools/video_caption_contract.py \
+  --branch zero \
+  --expected-source-sha256 60b27833660b5c687ea0bb4aece3e8b87ff5dcab9d8cfe942fd500bcea4e4042 \
+  --output /absolute/private/path/routecontract-zero.srt
+```
+
+Use `--branch rc_only` when that is the selected report/video branch. Burn the
+generated SRT into the actual recorded screens, then complete the two local and
+public review attestations described above; the storyboard mirror is not a
+second caption source.
 
 `final_stable` is unavailable because the reviewed participant form and
 protocol are RC-specific; the package gate rejects that branch.
@@ -389,7 +431,9 @@ ZIP printed as `upload_zip=...`. With the currently enabled
 official-name DOCX and PDF.
 `PACKAGE-METADATA.json` and `SHA256SUMS` are local pre-submission audit
 evidence, not organizer uploads. The emitted audit metadata is schema version
-`2`; it includes the video/report external-evidence branch and must not be
-interpreted with the older schema. Finally, verify that the contest site shows
+`4`; it includes the video/report external-evidence branch, the bound silent-video
+decode evidence, source/selected-cue/SRT caption hashes, explicit `false`
+automatic pixel/equivalence fields, and the two participant-review attestations.
+It must not be interpreted with the older schema. Finally, verify that the contest site shows
 `제출 완료` and that the completion email arrived; a local ZIP cannot prove the
 website submission itself.

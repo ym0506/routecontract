@@ -21,7 +21,9 @@ Usage: ./scripts/video-demo-session.sh <mysql|fingerprint|ci|standalone>
   ci           Run the file-based intentional-red gate; exit 1 only on the expected failure.
   standalone   Verify the published JAR consumer and SPI discovery; exit 0 on verified evidence.
 
-Only fixed, privacy-reviewed lines are emitted. Raw child-process output is withheld.
+The mysql, fingerprint, and ci modes emit only exact, privacy-reviewed evidence
+lines extracted from child output; verified_child_exit records the checked exit.
+Raw child-process output is withheld in every mode.
 An evidence or exit-code mismatch returns 2 and must be debugged off-camera.
 EOF
 }
@@ -39,9 +41,65 @@ safe_error() {
     return 2
 }
 
+extract_unique_trimmed_line() {
+    local raw_output="$1"
+    local expected="$2"
+    local line
+    local trimmed
+    local exact_line=''
+    local indented_line=''
+    local exact_count=0
+    local indented_count=0
+
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        trimmed="${line#"${line%%[![:space:]]*}"}"
+        if [[ "$line" == "$expected" ]]; then
+            exact_line="$line"
+            exact_count=$((exact_count + 1))
+        elif [[ "$trimmed" == "$expected" ]]; then
+            indented_line="$line"
+            indented_count=$((indented_count + 1))
+        fi
+    done <<<"$raw_output"
+
+    if [[ "$exact_count" -eq 1 ]]; then
+        printf '%s\n' "$exact_line"
+        return 0
+    fi
+    if [[ "$exact_count" -eq 0 && "$indented_count" -eq 1 ]]; then
+        printf '%s\n' "$indented_line"
+        return 0
+    fi
+    return 1
+}
+
+extract_unique_build_failure_line() {
+    local raw_output="$1"
+    local line
+    local trimmed
+    local matched_line=''
+    local match_count=0
+    local duration_piece='[0-9]+([.][0-9]+)?(ms|s|m|h)'
+
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        trimmed="${line#"${line%%[![:space:]]*}"}"
+        trimmed="${trimmed%"${trimmed##*[![:space:]]}"}"
+        if [[ $trimmed =~ ^BUILD\ FAILED\ in\ ${duration_piece}(\ ${duration_piece})*$ ]]; then
+            matched_line="$trimmed"
+            match_count=$((match_count + 1))
+        fi
+    done <<<"$raw_output"
+
+    if [[ "$match_count" -ne 1 ]]; then
+        return 1
+    fi
+    printf '%s\n' "$matched_line"
+}
+
 run_mysql_demo() {
     local raw_output
     local observed_exit
+    local extracted_marker
 
     printf '%s\n' \
         'video_phase=mysql status=RUNNING child_output=WITHHELD_UNTIL_VERIFIED'
@@ -54,33 +112,19 @@ run_mysql_demo() {
         safe_error mysql child_exit 0 "$observed_exit"
         return 2
     fi
-    if [[ "$raw_output" != *"$mysql_marker"* ]]; then
-        safe_error mysql evidence_marker PRESENT MISSING
+    if ! extracted_marker="$(extract_unique_trimmed_line "$raw_output" "$mysql_marker")"; then
+        safe_error mysql unique_evidence_marker 1 MISMATCH
         return 2
     fi
 
-    cat <<'EOF'
-[MYSQL BASELINE -> CANDIDATE]
-environment             Java 17 | MySQL 8.4.11 digest-pinned | ShardingSphere-JDBC 5.5.3
-businessResult          UNCHANGED (one row in both captures)
-observedAttempts        1 -> 2
-observedDataSources     1 -> 2
-approvedAliases         [orders-odd]
-candidateAliases        [orders-even,orders-odd]
-verificationStatus      POLICY_VIOLATION
-blockingCodes           [RCM201,RCM202]
-RCM201                  ATTEMPT_BUDGET_EXCEEDED: maximum=1, observed=2
-RCM202                  DATA_SOURCE_BUDGET_EXCEEDED: maximum=1, observed=2
-privacy                 raw child output withheld | raw SQL/binds not retained
-aliases                 reviewed aliases remain | minimized != anonymized
-demoMeaning             expected violation verified
-demo_exit               0
-EOF
+    printf '%s\n' "$extracted_marker"
+    printf 'verified_child_exit     %s\n' "$observed_exit"
 }
 
 run_fingerprint_demo() {
     local raw_output
     local observed_exit
+    local extracted_marker
     local test_name='io.github.ym0506.routecontract.example.ObservedExecutionRegressionCorpusMySqlTest.strategyRemovalProducesTwoDifferentObservableRegressionShapes'
 
     printf '%s\n' \
@@ -100,30 +144,22 @@ run_fingerprint_demo() {
         safe_error fingerprint child_exit 0 "$observed_exit"
         return 2
     fi
-    if [[ "$raw_output" != *"$fingerprint_marker"* ]]; then
-        safe_error fingerprint evidence_marker PRESENT MISSING
+    if ! extracted_marker="$(extract_unique_trimmed_line "$raw_output" "$fingerprint_marker")"; then
+        safe_error fingerprint unique_evidence_marker 1 MISMATCH
         return 2
     fi
 
-    cat <<'EOF'
-[SAME-BUDGET FINGERPRINT DRIFT]
-businessResult          UNCHANGED
-observedAttempts        1 -> 1
-observedDataSources     1 -> 1
-observedAliases         [orders-odd] -> [orders-odd]
-fingerprintMultiset     CHANGED
-parameterTypeShape      1xLong -> 2xLong (values not retained)
-verificationStatus      DRIFT
-blockingCodes           [RCM301,RCM302]
-privacy                 raw child output withheld | raw SQL/binds not retained
-aliases                 reviewed aliases remain | minimized != anonymized
-fingerprint_demo_exit   0
-EOF
+    printf '%s\n' "$extracted_marker"
+    printf 'verified_child_exit     %s\n' "$observed_exit"
 }
 
 run_ci_demo() {
     local raw_output
     local observed_exit
+    local extracted_marker
+    local extracted_attempt_diff
+    local extracted_data_source_diff
+    local extracted_build_failure
 
     printf '%s\n' \
         'video_phase=ci status=RUNNING child_output=WITHHELD_UNTIL_VERIFIED'
@@ -136,34 +172,29 @@ run_ci_demo() {
         safe_error ci child_exit 1 "$observed_exit"
         return 2
     fi
-    if [[ "$raw_output" != *"$ci_marker"* ]]; then
-        safe_error ci evidence_marker PRESENT MISSING
+    if ! extracted_marker="$(extract_unique_trimmed_line "$raw_output" "$ci_marker")"; then
+        safe_error ci unique_evidence_marker 1 MISMATCH
         return 2
     fi
-    if [[ "$raw_output" != *"$ci_attempt_diff"* ]]; then
-        safe_error ci RCM201 PRESENT MISSING
+    if ! extracted_attempt_diff="$(extract_unique_trimmed_line "$raw_output" "- $ci_attempt_diff")"; then
+        safe_error ci unique_RCM201_line 1 MISMATCH
         return 2
     fi
-    if [[ "$raw_output" != *"$ci_data_source_diff"* ]]; then
-        safe_error ci RCM202 PRESENT MISSING
+    if ! extracted_data_source_diff="$(extract_unique_trimmed_line "$raw_output" "- $ci_data_source_diff")"; then
+        safe_error ci unique_RCM202_line 1 MISMATCH
         return 2
     fi
-    if [[ "$raw_output" != *'BUILD FAILED'* ]]; then
-        safe_error ci build_failure PRESENT MISSING
+    if ! extracted_build_failure="$(extract_unique_build_failure_line "$raw_output")"; then
+        safe_error ci unique_build_failure_line 1 MISMATCH
         return 2
     fi
 
-    cat <<EOF
-[INTENTIONAL CI GATE]
-approvedAttempts        1
-candidateAttempts       2
-verificationStatus      POLICY_VIOLATION
-blockingCodes           [RCM201,RCM202]
-$ci_attempt_diff
-$ci_data_source_diff
-BUILD FAILED (intentional)
-ci_exit                 1
-EOF
+    printf '%s\n' \
+        "$extracted_marker" \
+        "$extracted_attempt_diff" \
+        "$extracted_data_source_diff" \
+        "$extracted_build_failure"
+    printf 'verified_child_exit     %s\n' "$observed_exit"
     return 1
 }
 

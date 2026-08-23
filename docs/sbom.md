@@ -5,7 +5,9 @@ aggregate SBOM from Gradle's **resolved** dependency graphs. The aggregate is a
 repository-level inventory that includes the library and MySQL example/test
 configurations. The library module's direct SBOM is restricted to its compile
 and runtime compatibility graph; it is still not a list of files embedded in
-the thin JAR, which does not shade dependencies.
+the JAR. The v0.1 build does not configure shading, while the Release gate checks
+first-party paths and metadata; neither fact proves the absence or semantic
+provenance of renamed, relocated, transformed, or copied bytes.
 
 All six generated JSON/XML documents are **Gradle dependency-profile BOMs**,
 not a shipped-file inventory of every Release classifier. In particular, the
@@ -22,7 +24,9 @@ TransmittableThreadLocal 2.14.2 and `tools.jackson.core:jackson-core` 3.1.5.
 Its locked runtime closure also contains the Jackson 3.1.5 BOM; all three are
 Apache-2.0. ShardingSphere, Connector/J, Jakarta Transaction API, JNA, JTS and
 the MySQL image belong to compile compatibility, test/example or container
-profiles and are not bundled in the published RouteContract JAR.
+profiles rather than the POM's declared runtime dependencies. The Release gate
+rejects their original dependency paths; this profile/path statement is not a
+semantic provenance proof for renamed or transformed bytes.
 
 ## Generate
 
