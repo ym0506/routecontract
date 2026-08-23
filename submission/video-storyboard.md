@@ -103,20 +103,21 @@ exec zsh -df
 - `mysql`과 `fingerprint`는 실제 MySQL을 실행하고 `0`, `ci`는 검증된 intentional-red
   gate일 때만 `1`을 반환한다. wrapper 검증 자체가 깨지면 구별 가능한 `2`를 반환한다.
 
-## 0:00–0:12 — 실제 terminal 결과를 먼저 가리켜 확인
+## 0:00–0:12 — 실제 MySQL 명령을 직접 입력하고 한 번만 실행
 
-긴 도입 없이 final revision의 실제 MySQL 명령이 방금 끝난 terminal scrollback에서 시작한다.
-입력했던 `./scripts/video-demo-session.sh mysql`, prompt, 실제 출력이 같은 terminal에 남아 있어야
-한다. screenshot으로 멈추지 않고 cursor로 marker 안의 `businessResult=UNCHANGED`와
-`observedPhysicalAttempts=1->2`를 차례로 선택한다. 이 marker는 실제 하위 실행의
-machine-readable test 결과에서 추출한 줄이지, 촬영용 고정 요약이 아니다. 0:12부터 같은 명령을
-새 실제 take에서 처음부터 다시 실행한다.
+완료된 결과 화면이나 별도 도입 화면에서 시작하지 않는다. final revision의 실제 terminal에서
+`./scripts/video-demo-session.sh mysql`을 직접 입력하고 Enter를 누르는 순간부터 시작한다. 실제
+대기 구간만 8배속하고 그 terminal 위에 `실제 실행 · 대기 구간 8×`를 표시한다. 결과가 나오면
+같은 terminal에서 marker와 `verified_child_exit 0`을 그대로 보여 준다. 이 marker는 실제 하위
+실행의 machine-readable test 결과에서 추출한 줄이지, 촬영용 고정 요약이 아니다. 같은 명령을
+영상에서 다시 실행하지 않는다.
 
 실제 화면 흐름:
 
-1. **실제 terminal 화면:** 입력한 command와 완료된 실제 출력이 함께 보이는 scrollback.
-2. **같은 실제 terminal 화면:** 아래 marker에서 두 필드를 cursor로 차례로 선택한다.
-3. **같은 실제 terminal 화면:** prompt까지 짧게 scroll해 실제 command와 output의 연결을 남긴다.
+1. **실제 terminal 화면:** 0:00.000–0:03.000에 command를 직접 입력하고 Enter를 누른다.
+2. **같은 실제 terminal 화면:** 0:03.000–0:10.500에는 실제 대기만 8배속하며 실행 중인 화면을 남긴다.
+3. **같은 실제 terminal 화면:** 0:10.500–0:12.000에는 아래 marker와 검증된 child exit가 나타나는
+   순간을 자르지 않고 보여 준다.
 
 ```text
 ROUTECONTRACT_MANIFEST_DEMO businessResult=UNCHANGED observedPhysicalAttempts=1->2 verificationStatus=POLICY_VIOLATION blockingCodes=[RCM201,RCM202] privacy=MINIMIZED
@@ -125,20 +126,19 @@ verified_child_exit     0
 
 화면 자막: `submission/video-caption-cues.json`의 `0:00–0:12` 공통 cue 2개를 그대로 사용한다.
 
-## 0:12–0:46 — 실제 MySQL 결과와 tracked manifest 비교
+## 0:12–0:46 — 방금 실행한 결과에서 tracked manifest 비교로 이어가기
 
-새 실제 terminal take에서 `./scripts/video-demo-session.sh mysql`을 직접 입력하고 실행한다.
-실제 대기 구간만 8배속한 뒤 machine-readable test 결과에서 바꾸지 않고 추출된 marker와 검증한
-exit를 읽는다. 바로 이어 final revision의 tracked approved/candidate JSON과 expected diff를
-실제 source viewer에서 연다. 파일을 발표용으로 재작성하지 않고 repository-relative path와
-line chrome을 남긴다.
+0:00에 시작한 같은 실제 실행의 marker와 검증한 exit를 먼저 읽는다. 바로 이어 final revision의 tracked approved/candidate JSON과 expected diff를
+실제 source viewer에서 연다. 파일을 발표용으로
+재작성하지 않고 repository-relative path와 line chrome을 남긴다.
 
 실제 화면 흐름:
 
-1. **실제 terminal 화면:** command 입력, `status=RUNNING`, 실제 대기 8배속, 이어서 나타난
-   `ROUTECONTRACT_MANIFEST_DEMO` marker와 `verified_child_exit 0`을 선택한다. 긴 marker는
+1. **0:12.000–0:19.000, 같은 실제 terminal 화면:**
+   `ROUTECONTRACT_MANIFEST_DEMO` marker의 `businessResult=UNCHANGED`와
+   `observedPhysicalAttempts=1->2`, 이어 `verified_child_exit 0`을 차례로 선택한다. 긴 marker는
    terminal의 실제 줄바꿈 그대로 보여 준다.
-2. **바로 이어지는 실제 source 화면:**
+2. **0:19.000부터 바로 이어지는 실제 source 화면:**
    `examples/manifests/find-paid-orders-by-user.approved.json`에서
    `"observedPhysicalAttemptCount":1`을 찾는다.
 3. **실제 source 화면:** 같은 위치의 `candidate.json`으로 tab을 바꾸고
@@ -146,7 +146,7 @@ line chrome을 남긴다.
 4. **실제 source 화면:** `find-paid-orders-by-user.expected-diff.txt`를 열어 실제
    `RCM201`·`RCM202` 두 줄을 선택한다.
 
-같은 take의 terminal에는 하위 실행에서 검증·추출한 다음 두 줄만 결과로 보인다.
+한 번만 실행한 terminal에는 하위 실행에서 검증·추출한 다음 두 줄만 결과로 보인다.
 
 ```text
 ROUTECONTRACT_MANIFEST_DEMO businessResult=UNCHANGED observedPhysicalAttempts=1->2 verificationStatus=POLICY_VIOLATION blockingCodes=[RCM201,RCM202] privacy=MINIMIZED
