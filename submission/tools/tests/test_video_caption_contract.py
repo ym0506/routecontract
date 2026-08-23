@@ -16,7 +16,7 @@ from submission.tools.tests.test_package_submission import (
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 SOURCE = REPOSITORY_ROOT / "submission" / "video-caption-cues.json"
-SOURCE_SHA256 = "60b27833660b5c687ea0bb4aece3e8b87ff5dcab9d8cfe942fd500bcea4e4042"
+SOURCE_SHA256 = "19560225c18ca8156a13760e8412e46462383df5e80a92bc2dd7d4615a1f0158"
 
 
 class VideoCaptionContractTest(unittest.TestCase):
@@ -28,27 +28,27 @@ class VideoCaptionContractTest(unittest.TestCase):
         expected = {
             "zero": {
                 "selected_cues_sha256": (
-                    "21bba086107a9e0320adfdef16880c1b"
-                    "3096b95719da834537de625f242e8b26"
+                    "f0df2fe73e013756010a144f6512e3ed"
+                    "d0ed8bc2cb215e92b1ff434bd6d6abaf"
                 ),
                 "srt_sha256": (
-                    "94c2aa83a246973c3c38a2810a583901"
-                    "fb9b0ac8d500c9453f46db252efd6206"
+                    "8b8130e12db376ce349e3e22008e970b"
+                    "c94f0567a938ee943ca44de9724c41f6"
                 ),
-                "included": "정해진 설치 결과 양식 접수는 0건",
+                "included": "독립 검증은 공개 양식으로 받습니다",
                 "excluded": "정해진 양식의 RC 결과 접수는 1건",
             },
             "rc_only": {
                 "selected_cues_sha256": (
-                    "4aded4cde4dd5926f8c15ab0a3213241"
-                    "e2fc590c67c7a037180c14d725683602"
+                    "1a92e56786fbe382ae6fc2d4c66180b3"
+                    "cd50cbba3a8e9001cf99ba4098bb3fca"
                 ),
                 "srt_sha256": (
-                    "a2f00cd0ddbcbc42024d99cefebd257a"
-                    "e501fda29383de97786c2d117cafc0ef"
+                    "7bfa80c8ca3f9536c225595f700ae6cc"
+                    "6f44ddf4121a56355e7410e706bb4c3a"
                 ),
                 "included": "정해진 양식의 RC 결과 접수는 1건",
-                "excluded": "정해진 설치 결과 양식 접수는 0건",
+                "excluded": "독립 검증은 공개 양식으로 받습니다",
             },
         }
         for branch, assertions in expected.items():

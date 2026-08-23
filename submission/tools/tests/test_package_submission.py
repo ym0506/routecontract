@@ -175,8 +175,8 @@ def valid_manifest() -> dict:
                 "schema_version": 1,
                 "source_path": "submission/video-caption-cues.json",
                 "source_sha256": (
-                    "60b27833660b5c687ea0bb4aece3e8b8"
-                    "7ff5dcab9d8cfe942fd500bcea4e4042"
+                    "19560225c18ca8156a13760e8412e464"
+                    "62383df5e80a92bc2dd7d4615a1f0158"
                 ),
             },
         },
@@ -481,8 +481,9 @@ class SubmissionClaimTextTest(unittest.TestCase):
             "`submission/video-caption-cues.json`이 cue 시각·문구·분기의 유일한 원본",
             "generated/reference-only",
             "JSON과 byte-for-byte 같아야 한다",
-            "ShardingSphere는 한 SQL을",
-            "hook 보고 실행 시도는 1회→2회",
+            "RouteContract는 JDBC 실행 기록을",
+            "ShardingSphere의 기능 결과는 같아도",
+            "관측된 실행 시도는 1회→2회",
             "방금 실행한 실제 MySQL 결과입니다",
             "CI에 연결하면 exit 1",
             "승인 기록은 자동으로 바뀌지 않습니다",
@@ -511,10 +512,13 @@ class SubmissionClaimTextTest(unittest.TestCase):
             "Order actual = repository.find(userId);",
             "assertEquals(expectedOrderId, actual.id());",
             "hasExactlyObservedPhysicalAttempts(1)",
-            "정해진 설치 결과 양식 접수 0건",
+            "독립 검증은 공개 양식으로 받습니다",
             "stable 외부 검증 미확보",
-            "0건 ≠ 사용자 수·채택률·가치 0",
+            "없는 결과는 만들지 않습니다",
             "실제 사람·독립성을 자동 증명하지 않는다",
+            "Tab 자동완성",
+            "선택한 분기의 결정적 공개 화면 하나",
+            "같은 화면에서 8초 동안",
         ):
             self.assertIn(required, storyboard)
 
@@ -579,8 +583,8 @@ class SubmissionClaimTextTest(unittest.TestCase):
         )[1].split(
             "## 1:00–1:22 — 실제 공개 Release와 실제 사용 source", 1
         )[0]
-        self.assertIn("0:46.000–0:49.000", ci_section)
-        self.assertIn("0:49.000–0:52.000", ci_section)
+        self.assertIn("0:46.000–0:51.000", ci_section)
+        self.assertIn("0:51.000–0:54.000", ci_section)
         self.assertIn("0:58.000", ci_section)
         self.assertIn("이 구간에는 source나 다른 화면을 끼우지 않는다", ci_section)
         self.assertIn("0:12–0:46에서 이미 보여 줬으므로 반복하지 않는다", ci_section)
@@ -632,8 +636,8 @@ class SubmissionClaimTextTest(unittest.TestCase):
             flags=re.MULTILINE,
         )
         expected_rows = [
-            ("공통", "0:00.500", "0:05.200", "ShardingSphere는 한 SQL을", "여러 DB로 나눠 실행할 수 있습니다"),
-            ("공통", "0:05.700", "0:11.500", "기능 결과는 같은 한 행이지만", "hook 보고 실행 시도는 1회→2회"),
+            ("공통", "0:00.500", "0:05.200", "RouteContract는 JDBC 실행 기록을", "승인본과 비교합니다"),
+            ("공통", "0:05.700", "0:11.500", "ShardingSphere의 기능 결과는 같아도", "관측된 실행 시도는 1회→2회"),
             ("공통", "0:12.500", "0:19.000", "방금 실행한 실제 MySQL 결과입니다", "명령과 종료 상태를 함께 봅니다"),
             ("공통", "0:19.500", "0:27.000", "승인된 기록은 실행 한 번입니다", "변경된 기록은 두 번입니다"),
             ("공통", "0:27.500", "0:35.000", "기능 결과는 그대로 한 행입니다", "달라진 것은 내부 실행 모습입니다"),
@@ -647,12 +651,12 @@ class SubmissionClaimTextTest(unittest.TestCase):
             ("공통", "1:29.000", "1:35.000", "입력값은 저장하지 않습니다", "자료형 개수만 한 개에서 두 개로 바뀝니다"),
             ("공통", "1:35.500", "1:39.500", "횟수만 같아도 승인하지 않습니다", "SQL 뜻은 판단하지 않습니다"),
             ("공통", "1:40.500", "1:47.000", "실제 MySQL 여덟 사례를 스무 번씩", "모두 같은 기록으로 되풀이했습니다"),
-            ("공통", "1:47.500", "1:54.500", "동시에 연 테스트 스무 쌍은 섞이지 않았습니다", "내부 호출의 시간 겹침은 재지 않았습니다"),
+            ("공통", "1:47.500", "1:54.500", "동시에 실행한 20쌍은 섞이지 않았습니다", "실제 호출의 겹침은 측정하지 않았습니다"),
             ("공통", "1:55.500", "2:01.500", "기록을 한 작업별로 묶고", "사람이 승인한 기준과 비교합니다"),
             ("공통", "2:02.000", "2:06.500", "의도치 않은 차이는 CI 실패", "승인 기준은 자동으로 바뀌지 않습니다"),
             ("공통", "2:07.500", "2:15.000", "제출 코드와 안정판이 같은 코드인지", "공개 이력에서 직접 확인합니다"),
             ("공통", "2:15.500", "2:24.500", "코드 변경 검사와 main 검사 결과를", "실제 공개 화면에서 확인합니다"),
-            ("zero", "2:25.500", "2:33.500", "정해진 설치 결과 양식 접수는 0건", "사용자 수·채택률을 뜻하지 않습니다"),
+            ("zero", "2:25.500", "2:33.500", "독립 검증은 공개 양식으로 받습니다", "없는 결과는 만들지 않습니다"),
             ("rc_only", "2:25.500", "2:33.500", "정해진 양식의 RC 결과 접수는 1건", "자기 확인 진술이며 안정판 검증은 아닙니다"),
             ("공통", "2:34.500", "2:41.000", "검증 범위는 5.5.3 동기 실행", "성능·거래 완료를 판단하지 않습니다"),
             ("공통", "2:41.500", "2:48.000", "기능 결과가 같아도 hook 보고 실행 시도는", "한 번에서 두 번으로 달라질 수 있습니다"),
@@ -1182,15 +1186,17 @@ class SubmissionClaimTextTest(unittest.TestCase):
             "정해진 양식의 RC 결과 접수 1건",
             "참가자의 자기 확인 진술",
             "stable 검증·adoption 아님",
-            "결과·활성화·모집·프로토콜 링크",
+            "실제 result Issue만 보여 준다",
             "**0-result 분기:**",
-            "정해진 설치 결과 양식 접수 0건",
+            "독립 검증은 공개 양식으로 받습니다",
             "stable 외부 검증 미확보",
-            "활성화·모집·프로토콜 링크",
+            "실제 Discussion #28만 보여 준다",
+            "activation·모집·프로토콜 링크는 보고서와 영상 설명에 남기고",
             "package manifest의 `video.external_evidence_branch`",
             "실제 browser 화면·burned-in caption은 같은 분기를 사용",
             "`rc_only` ↔ `rc-only-result`, `zero` ↔ `0-result`",
-            "실제 Issue search",
+            "실제 Discussion #28",
+            "같은 화면에서 8초 동안 전환·scroll 없이 머문다",
             "다른 분기의 문구나 화면은 한 프레임도 넣지 않는다",
             "게시하지 않았다면 browser 화면과 자막에서 제외",
             "final-stable-result 분기는 fail-closed",

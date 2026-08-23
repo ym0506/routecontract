@@ -47,8 +47,8 @@ mirror이며 JSON과 byte-for-byte 같아야 한다. 표를 직접 고쳐 JSON�
 
 | 분기 | 시작 | 종료 | 1행 | 2행 |
 |---|---:|---:|---|---|
-| 공통 | 0:00.500 | 0:05.200 | ShardingSphere는 한 SQL을 | 여러 DB로 나눠 실행할 수 있습니다 |
-| 공통 | 0:05.700 | 0:11.500 | 기능 결과는 같은 한 행이지만 | hook 보고 실행 시도는 1회→2회 |
+| 공통 | 0:00.500 | 0:05.200 | RouteContract는 JDBC 실행 기록을 | 승인본과 비교합니다 |
+| 공통 | 0:05.700 | 0:11.500 | ShardingSphere의 기능 결과는 같아도 | 관측된 실행 시도는 1회→2회 |
 | 공통 | 0:12.500 | 0:19.000 | 방금 실행한 실제 MySQL 결과입니다 | 명령과 종료 상태를 함께 봅니다 |
 | 공통 | 0:19.500 | 0:27.000 | 승인된 기록은 실행 한 번입니다 | 변경된 기록은 두 번입니다 |
 | 공통 | 0:27.500 | 0:35.000 | 기능 결과는 그대로 한 행입니다 | 달라진 것은 내부 실행 모습입니다 |
@@ -62,12 +62,12 @@ mirror이며 JSON과 byte-for-byte 같아야 한다. 표를 직접 고쳐 JSON�
 | 공통 | 1:29.000 | 1:35.000 | 입력값은 저장하지 않습니다 | 자료형 개수만 한 개에서 두 개로 바뀝니다 |
 | 공통 | 1:35.500 | 1:39.500 | 횟수만 같아도 승인하지 않습니다 | SQL 뜻은 판단하지 않습니다 |
 | 공통 | 1:40.500 | 1:47.000 | 실제 MySQL 여덟 사례를 스무 번씩 | 모두 같은 기록으로 되풀이했습니다 |
-| 공통 | 1:47.500 | 1:54.500 | 동시에 연 테스트 스무 쌍은 섞이지 않았습니다 | 내부 호출의 시간 겹침은 재지 않았습니다 |
+| 공통 | 1:47.500 | 1:54.500 | 동시에 실행한 20쌍은 섞이지 않았습니다 | 실제 호출의 겹침은 측정하지 않았습니다 |
 | 공통 | 1:55.500 | 2:01.500 | 기록을 한 작업별로 묶고 | 사람이 승인한 기준과 비교합니다 |
 | 공통 | 2:02.000 | 2:06.500 | 의도치 않은 차이는 CI 실패 | 승인 기준은 자동으로 바뀌지 않습니다 |
 | 공통 | 2:07.500 | 2:15.000 | 제출 코드와 안정판이 같은 코드인지 | 공개 이력에서 직접 확인합니다 |
 | 공통 | 2:15.500 | 2:24.500 | 코드 변경 검사와 main 검사 결과를 | 실제 공개 화면에서 확인합니다 |
-| zero | 2:25.500 | 2:33.500 | 정해진 설치 결과 양식 접수는 0건 | 사용자 수·채택률을 뜻하지 않습니다 |
+| zero | 2:25.500 | 2:33.500 | 독립 검증은 공개 양식으로 받습니다 | 없는 결과는 만들지 않습니다 |
 | rc_only | 2:25.500 | 2:33.500 | 정해진 양식의 RC 결과 접수는 1건 | 자기 확인 진술이며 안정판 검증은 아닙니다 |
 | 공통 | 2:34.500 | 2:41.000 | 검증 범위는 5.5.3 동기 실행 | 성능·거래 완료를 판단하지 않습니다 |
 | 공통 | 2:41.500 | 2:48.000 | 기능 결과가 같아도 hook 보고 실행 시도는 | 한 번에서 두 번으로 달라질 수 있습니다 |
@@ -114,8 +114,9 @@ exec zsh -df
 
 실제 화면 흐름:
 
-1. **실제 terminal 화면:** 0:00.000–0:03.000에 command를 직접 입력하고 Enter를 누른다.
-2. **같은 실제 terminal 화면:** 0:03.000–0:10.500에는 실제 대기만 8배속하며 실행 중인 화면을 남긴다.
+1. **실제 terminal 화면:** 0:00.000–0:05.000에 command를 직접 입력하고 Enter를 누른다.
+   경로 일부를 실제로 입력한 뒤 Tab 자동완성을 한 번 보여 주며, 완성된 명령을 붙여넣지 않는다.
+2. **같은 실제 terminal 화면:** 0:05.000–0:10.500에는 실제 대기만 8배속하며 실행 중인 화면을 남긴다.
 3. **같은 실제 terminal 화면:** 0:10.500–0:12.000에는 아래 marker와 검증된 child exit가 나타나는
    순간을 자르지 않고 보여 준다.
 
@@ -167,9 +168,9 @@ non-zero를 반환하는지 local final revision에서 확인하는 intentional-
 
 실제 화면 흐름:
 
-1. **실제 terminal 화면:** 0:46.000–0:49.000에 `./scripts/video-demo-session.sh ci`를 직접
-   입력하고 Enter를 누른다.
-2. **같은 실제 terminal 화면:** 0:49.000–0:52.000에는 실제 대기만 8배속한다. 이어 실제
+1. **실제 terminal 화면:** 0:46.000–0:51.000에 `./scripts/video-demo-session.sh ci`를 직접
+   입력하고 Enter를 누른다. 경로 일부를 입력한 뒤 Tab 자동완성을 한 번 보여 주며 붙여넣지 않는다.
+2. **같은 실제 terminal 화면:** 0:51.000–0:54.000에는 실제 대기만 8배속한다. 이어 실제
    하위 출력에서 허용된 전체 줄로 검증한 marker, RCM 두 줄, 엄격한 duration 형식의
    `BUILD FAILED in …` 줄과 `verified_child_exit 1`을 0:58.000까지 보여 준다.
 3. **같은 실제 terminal 화면:** 0:58.000에 prompt가 돌아오면 `echo $?`를 입력하고 1:00.000까지
@@ -313,15 +314,14 @@ full SHA·tree·run ID·PR 번호·Release URL을 별도 요약 화면에 옮겨
 `external_evidence.branch`, package manifest의 `video.external_evidence_branch`, 실제 browser 화면·burned-in caption은 같은 분기를 사용한다:
 `rc_only` ↔ `rc-only-result`, `zero` ↔ `0-result`.
 
-- **rc-only-result 분기:** 실제 browser에서 `exact RC 공개 모집`, `정해진 양식의 RC 결과 접수 1건`, `참가자의 자기 확인 진술`, `stable 검증·adoption 아님`, `결과·활성화·모집·프로토콜 링크`를 해당 GitHub Issue와 activation record를 click해 확인한다. API·form 검사는 진술 형식과 public account association을 확인할 뿐 실제 사람·독립성을 자동 증명하지 않는다.
-- **0-result 분기:** 실제 browser에서 `정해진 설치 결과 양식 접수 0건`, `stable 외부 검증 미확보`, `활성화·모집·프로토콜 링크`, `0건 ≠ 사용자 수·채택률·가치 0`의 근거가 되는 실제 Issue search와 activation/recruitment/protocol page를 click해 확인한다. protocol URL만으로 모집했다고 주장하지 않는다.
+- **rc-only-result 분기:** 선택한 분기의 결정적 공개 화면 하나인 실제 result Issue만 보여 준다. `정해진 양식의 RC 결과 접수 1건`, `참가자의 자기 확인 진술`, `stable 검증·adoption 아님`을 그 Issue의 실제 문구로 확인한다. activation·모집·프로토콜 링크는 보고서와 영상 설명에 남기고 이 9초에 다른 화면으로 전환하지 않는다. API·form 검사는 진술 형식과 public account association을 확인할 뿐 실제 사람·독립성을 자동 증명하지 않는다.
+- **0-result 분기:** 선택한 분기의 결정적 공개 화면 하나인 실제 Discussion #28만 보여 준다. 공개 평가 절차와 `slot request` 경로를 실제 문구로 확인하고, 댓글 0건 상태를 숨기지 않는다. `stable 외부 검증 미확보`와 exact cutoff·결과 수는 보고서와 package evidence에 남기고 이 9초에 다른 화면으로 전환하지 않는다. 없는 결과를 만들거나 사용자 수·채택을 추정하지 않고, protocol URL만으로 모집했다고 주장하지 않는다.
 
 실제 화면 흐름:
 
-1. **실제 browser 화면:** 선택한 분기의 activation record에서 cutoff, 결과 수,
-   recruitment/protocol link가 있는 실제 줄까지 천천히 scroll한다.
-2. **같은 실제 browser 화면:** 실제 result Issue 또는 0-result search로 click하고 남은 시간 동안
-   결과 수와 RC/stable 경계를 읽을 수 있게 둔다.
+1. **실제 browser 화면:** 2:25.000에 선택한 분기의 결정적 공개 화면 하나를 이미 읽을 수 있는
+   위치로 연다. URL과 GitHub UI를 남기고 필요한 공개 평가 절차 또는 RC/stable 경계 줄만 cursor로 선택한다.
+   같은 화면에서 8초 동안 전환·scroll 없이 머문다.
 
 다른 분기의 문구나 화면은 한 프레임도 넣지 않는다. 실제 사람·독립성·채택·endorsement를 추정하지 않는다. 실제 결함 수정 PR이나 RouteContract-specific upstream 질문은 실제로 게시한
 경우에만 browser에서 연다. 게시하지 않았다면 browser 화면과 자막에서 제외한다.
@@ -389,8 +389,9 @@ YouTube 접근성 자막도 같은 문구·시각으로 올리되 영상에 이�
 - [ ] commit↔annotated tag, merge PR required checks, final main-push checks를 정한 8초·4.5초·
   5.5초 dwell로 분리해 실제 GitHub 화면에서 검증했다.
 - [ ] 외부 결과 browser 구간은 exact-tag `rc-only-result` 또는 `0-result` 중 구조화 보고서와
-  같은 하나만 표시한다. RC-only는 안정판 검증·adoption이 아님과 안정판 외부 검증 미확보를
-  밝힌다. owner가 아닌 User account와 14개 self-attestation은 API로 확인하되, 실제
+  같은 하나만 표시하고, 선택한 분기의 결정적 공개 화면 하나에서 8초 동안 전환·scroll 없이
+  머문다. RC-only는 안정판 검증·adoption이 아님과 안정판 외부 검증 미확보를 밝힌다.
+  owner가 아닌 User account와 14개 self-attestation은 API로 확인하되, 실제
   비작성자·no-AI·no-same-checkout 여부는 participant 진술이며 자동 증명이라고 말하지 않는다.
   final-stable-result는 별도 stable 전용 form/protocol 전까지 사용하지 않는다.
 - [ ] 영상 속 test 수가 final revision과 일치한다.
