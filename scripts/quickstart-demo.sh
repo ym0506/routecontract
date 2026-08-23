@@ -5,6 +5,8 @@ set -euo pipefail
 script_directory="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 repository_root="$(cd -- "$script_directory/.." && pwd)"
 video_demo="$script_directory/video-demo-session.sh"
+mysql_marker='ROUTECONTRACT_MANIFEST_DEMO businessResult=UNCHANGED observedPhysicalAttempts=1->2 verificationStatus=POLICY_VIOLATION blockingCodes=[RCM201,RCM202] privacy=MINIMIZED'
+ci_marker='ROUTECONTRACT_FILE_CI_DEMO approvedAttempts=1 candidateAttempts=2 status=POLICY_VIOLATION blockingCodes=[RCM201,RCM202]'
 
 usage() {
     cat <<'EOF'
@@ -91,16 +93,8 @@ if [[ "$mysql_exit" -ne 0 ]]; then
     quickstart_error mysql child_exit 0 "$mysql_exit"
 fi
 require_contains mysql "$mysql_output" \
-    'businessResult          UNCHANGED (one row in both captures)' business_result
-require_contains mysql "$mysql_output" \
-    'observedAttempts        1 -> 2' observed_attempts
-require_contains mysql "$mysql_output" \
-    'observedDataSources     1 -> 2' observed_data_sources
-require_contains mysql "$mysql_output" \
-    'RCM201                  ATTEMPT_BUDGET_EXCEEDED: maximum=1, observed=2' RCM201
-require_contains mysql "$mysql_output" \
-    'RCM202                  DATA_SOURCE_BUDGET_EXCEEDED: maximum=1, observed=2' RCM202
-require_contains mysql "$mysql_output" 'demo_exit               0' verified_exit
+    "$mysql_marker" manifest_evidence
+require_contains mysql "$mysql_output" 'verified_child_exit     0' verified_exit
 
 printf '%s\n' 'phase=mysql            VERIFIED' 'phase=ci               RUNNING'
 
@@ -112,11 +106,13 @@ if [[ "$ci_exit" -ne 1 ]]; then
     quickstart_error ci child_exit 1 "$ci_exit"
 fi
 require_contains ci "$ci_output" \
-    'RCM201 BLOCKING ATTEMPT_BUDGET_EXCEEDED: maximum=1, observed=2' RCM201
+    "$ci_marker" manifest_evidence
 require_contains ci "$ci_output" \
-    'RCM202 BLOCKING DATA_SOURCE_BUDGET_EXCEEDED: maximum=1, observed=2' RCM202
-require_contains ci "$ci_output" 'BUILD FAILED (intentional)' build_failure
-require_contains ci "$ci_output" 'ci_exit                 1' verified_exit
+    '- RCM201 BLOCKING ATTEMPT_BUDGET_EXCEEDED: maximum=1, observed=2' RCM201
+require_contains ci "$ci_output" \
+    '- RCM202 BLOCKING DATA_SOURCE_BUDGET_EXCEEDED: maximum=1, observed=2' RCM202
+require_contains ci "$ci_output" 'BUILD FAILED in ' build_failure
+require_contains ci "$ci_output" 'verified_child_exit     1' verified_exit
 
 cat <<'EOF'
 phase=ci               VERIFIED
