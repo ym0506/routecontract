@@ -16,31 +16,38 @@
 
 ## Claims and privacy
 
-Use the terminology in [docs/specification.md](docs/specification.md). Never include real credentials, parameter values, customer identifiers or production topology in fixtures, logs or issues.
+Use the terminology in [docs/specification.md](docs/specification.md). Never include real credentials, production or sensitive parameter values, customer identifiers, or production topology in fixtures, logs, or issues. Synthetic, non-sensitive test values are allowed; RouteContract snapshots and manifests must not retain their raw values.
 
 ## Verification
 
 Run the complete unit, real-MySQL integration and SBOM checks with:
 
 ```bash
-./gradlew --no-daemon --no-build-cache clean check prepareVerifiedSbom
+./gradlew --no-daemon --no-build-cache clean check validateOfficialCycloneDxSbom
 ```
 
-Verify that a consumer can resolve and run the published JAR rather than an in-repository project
-dependency with:
+Verify that a standalone consumer can resolve and run this checkout's generated Maven publication
+from an isolated temporary repository rather than use an in-repository Gradle project dependency with:
 
 ```bash
 ./scripts/verify-standalone-consumer.sh
 ```
 
+This is same-checkout packaging evidence, not proof of a public Release, registry publication,
+external installation, or adoption. After a Release exists, use
+`scripts/verify-release-assets-consumer.sh` for its downloaded assets.
+
 A change is not complete until it passes the appropriate real-MySQL test, not only an in-memory
 substitute.
 
-## Independent release feedback
+## Release feedback
 
-After a public release candidate exists, non-authors can follow the
-[independent installation study](docs/independent-install-study.md) and report both the exact-tag
-Quick Start and, optionally, the checksummed Release-asset consumer through the dedicated issue
-form. First failures and later assistance must remain visible; same-checkout tests and AI runs are
-not independent-install evidence. Recruitment starts only after the tagged protocol's activation gate
-is satisfied.
+For a current or stable release, use the Route regression, Product bug, or Feature proposal Issue
+Form and include the exact version, environment, minimized reproduction, and documented claim
+boundary. First failures and later assistance must remain visible.
+
+The [independent installation study](docs/independent-install-study.md) and its RC1/RC2 forms are
+retained as version-bound evidence contracts. Use a dedicated RC form only while that candidate's
+activation gate and recruitment window are active and public `main` remains its activation-record
+commit. After that lifecycle ends, do not present ordinary stable feedback, same-checkout tests, or
+AI runs as counted independent-install evidence.

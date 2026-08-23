@@ -15,6 +15,11 @@ independent-install evidence.
 Task A is the primary clean-Quick-Start study. Task B is optional evidence for the exact RC's public
 asset installation path. The two first outcomes are always classified separately.
 
+This document is retained as the version-bound RC evidence contract. It is not a stable-release
+feedback form. A new attempt qualifies only while that RC's validated recruitment window is open
+and public `main` remains the activation-record commit; otherwise use the ordinary product Issue
+Forms and do not present the feedback as counted RC evidence.
+
 ## Activation gate — do not recruit early
 
 The maintainer may recruit a participant only after all of the following are public and mutually
@@ -77,12 +82,13 @@ URL mismatch. It also requires the active tag's derived path to be one ordinary 
 blob. This generic validator binds only the active `rcN` form; it does not prove preservation of an
 earlier RC form. Distinct filenames prevent a later form from overwriting the earlier path, while
 byte preservation remains a separate reviewed tag-history and owner gate for that version line.
-This `0.1.0-rc2` source preserves the reviewed RC1 form byte-for-byte and adds the reviewed
-`independent-rc2-install.yml`; the active package gate binds each filename to its own approved
-SHA-256. Before a future `rc3` tag, its candidate must retain both reviewed forms, add and review
-`independent-rc3-install.yml`, and add a version-line-specific preservation check. The interactive
-URL is safe only while public `main` remains the validated activation-record commit; it is not an
-immutable permalink and must never be substituted for the pinned form source.
+For the `0.1.0` version line, the reviewed `v0.1.0-rc2` tag source preserves the RC1 form
+byte-for-byte and adds the reviewed `independent-rc2-install.yml`; the active package gate binds
+each filename to its own approved SHA-256. Before a future `rc3` tag, its candidate must retain both
+reviewed forms, add and review `independent-rc3-install.yml`, and add a version-line-specific
+preservation check. The interactive URL is safe only while public `main` remains the validated
+activation-record commit; it is not an immutable permalink and must never be substituted for the
+pinned form source.
 
 After the prerelease exists, copy
 `docs/evidence/independent-rc-activation.example.json` to

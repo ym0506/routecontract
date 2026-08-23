@@ -24,7 +24,23 @@ jobs:
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: '17.0.20+101'
+          architecture: x64
+          verify-signature: true
+
+      - name: Verify exact Temurin runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "${JAVA_HOME}/release"
+          test "$(grep -Ec '^IMPLEMENTOR_VERSION=' "${JAVA_HOME}/release")" = '1'
+          test "$(grep -Ec '^JAVA_RUNTIME_VERSION=' "${JAVA_HOME}/release")" = '1'
+          grep -Fxq 'IMPLEMENTOR_VERSION="Temurin-17.0.20.1+1"' "${JAVA_HOME}/release"
+          grep -Fxq 'JAVA_RUNTIME_VERSION="17.0.20.1+1"' "${JAVA_HOME}/release"
+          test "$("${JAVA_HOME}/bin/java" -fullversion 2>&1)" = 'openjdk full version "17.0.20.1+1"'
+          test -f "${JAVA_HOME}/jmods/jdk.javadoc.jmod"
+          test ! -L "${JAVA_HOME}/jmods/jdk.javadoc.jmod"
+          test "$(sha256sum "${JAVA_HOME}/jmods/jdk.javadoc.jmod" | awk '{print $1}')" = '4fd0541eb01b08f79a280484ec11569d87cebdf2b90a5e5b4bff695732d049ea'
 
       - name: Generate and submit Gradle dependency graph
         uses: gradle/actions/dependency-submission@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0

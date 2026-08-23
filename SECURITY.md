@@ -37,20 +37,23 @@ publication POM is cross-checked against the published BOM's dependency graph.
 The pinned MySQL fixture must additionally be an excluded container with the
 explicit `routecontract:usage=test-only` property.
 
-The policy has only these three vulnerability exceptions, each expiring on
-**2026-08-27**:
+The policy has only one vulnerability exception, expiring on **2026-08-27**:
 
-- `commons-lang:commons-lang:2.4` — `GHSA-j288-q9x7-2f5v`;
-- `net.minidev:json-smart:2.5.0` — `GHSA-pq2g-wx69-c263`;
 - `org.apache.calcite:calcite-core:1.40.0` — `GHSA-c2rv-hwqm-wjpg`.
 
-All three are confined to the repository's test/example dependency graph
-reached through ShardingSphere 5.5.3's SQL Federation modules. SQL Federation
-coverage remains outside v0.1 scope. None of these coordinates is declared in
-RouteContract's published POM, and the exceptions are not a claim that those
-dependencies are safe for production use. Upgrading or removing them requires
+It is confined to the repository's test/example dependency graph reached
+through ShardingSphere 5.5.3's SQL Federation modules. SQL Federation
+coverage remains outside v0.1 scope. This coordinate is not declared in
+RouteContract's published POM, and the exception is not a claim that this
+dependency is safe for production use. Upgrading or removing it requires
 ShardingSphere-compatible test evidence; otherwise the exception must expire
 and fail the release audit.
+
+The fixture strictly aligns `aggdesigner-algorithm` 6.1, `json-smart` 2.4.10
+and `accessors-smart` 2.4.9 to the dependency-management versions in the
+ShardingSphere 5.5.3 parent POM. That removes the previously observed
+`commons-lang:commons-lang:2.4` and `json-smart:2.5.0` matches from this exact
+resolved graph; it is not a general vulnerability-free claim.
 
 The raw OSV JSON remains runner-local and must never be staged, checksummed or
 uploaded. A successful exact-tag Release evidence workflow retains only the
@@ -59,8 +62,8 @@ artifact and public checksum set. The final package gate binds that summary to
 the final commit/tree, tracked scanner/database/policy inputs, published
 dependency lock, publication POM and all six aggregate, published-module and
 example-profile SBOM documents from the exact workflow artifact. It requires
-policy schema v3, exactly two unresolved manual license reviews, three reviewed
-test/example-only findings and zero unreviewed findings. This is point-in-time
+policy schema v3, exactly two unresolved manual license reviews, one reviewed
+test/example-only finding and zero unreviewed findings. This is point-in-time
 release evidence, not a zero-vulnerability, completed legal review or
 legal-suitability claim.
 

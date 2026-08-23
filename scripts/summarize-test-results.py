@@ -31,7 +31,7 @@ EXPECTED_SUITES = {
     "io.github.ym0506.routecontract.example.ObservedExecutionRegressionCorpusMySqlTest": 7,
     "io.github.ym0506.routecontract.example.OperationCorrelationMySqlTest": 5,
     "io.github.ym0506.routecontract.internal.ShardingSphere553PreflightTest": 3,
-    "io.github.ym0506.routecontract.manifest.ObservedExecutionManifestTest": 15,
+    "io.github.ym0506.routecontract.manifest.ObservedExecutionManifestTest": 17,
 }
 
 

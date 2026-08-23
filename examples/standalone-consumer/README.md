@@ -47,13 +47,12 @@ That command is same-checkout packaging evidence. It proves that the generated
 Maven publication can be consumed without a Gradle project dependency; it is
 not an external-user installation or adoption claim.
 
-After the fixed RC2 activation record verifies the exact public prerelease, a fresh checkout can
-consume its exact assets without Maven Central hosting. A version string alone is not publication
-evidence. Download every public
-asset from that Release—including the main/sources/Javadoc JARs, POM, source
-archive, direct and aggregate SBOMs, `supply-chain-evidence.json`,
-`test-summary.txt`, and `SHA256SUMS`—into
-one flat directory. Then use an explicit empty Maven repository:
+After an annotated `v0.1.0` tag, a public immutable non-prerelease Release, a successful
+same-revision release-evidence run, and the exact asset set all exist, a fresh checkout can consume
+those assets without Maven Central hosting. A version string alone is not publication evidence.
+Download every public asset from that Release—including the main/sources/Javadoc JARs, POM, source
+archive, direct and aggregate SBOMs, `supply-chain-evidence.json`, `test-summary.txt`, and
+`SHA256SUMS`—into one flat directory. Then use an explicit empty Maven repository:
 
 ```bash
 python3 ../../scripts/install-release-assets.py \
@@ -68,8 +67,8 @@ the JARs plus versioned POM into the Maven layout. `SHA256SUMS` must list
 exactly the other public payloads (not itself) and no workflow-only logs. The installer rejects
 `~/.m2/repository` and every path below it, and it refuses to overwrite an existing coordinate. A
 checksum does not authenticate the publisher, so the input directory must
-come from the public GitHub Release for the exact tag. A release candidate is
-prerelease evidence, not the stable artifact required by the final contest gate.
+come from the public GitHub Release for the exact tag. The activated RC2 remains historical
+prerelease evidence; it is not final `v0.1.0` validation or adoption.
 
 To run this consumer directly, point it at a Maven repository containing the
 same RouteContract group and version as the root build:
@@ -77,7 +76,7 @@ same RouteContract group and version as the root build:
 ```bash
 ROUTECONTRACT_REPOSITORY=/absolute/path/to/maven-repository \
 ROUTECONTRACT_GROUP=io.github.ym0506.routecontract \
-ROUTECONTRACT_VERSION=0.1.0-rc2 \
+ROUTECONTRACT_VERSION=0.1.0 \
   ../../gradlew --no-daemon --refresh-dependencies -p . clean test
 ```
 

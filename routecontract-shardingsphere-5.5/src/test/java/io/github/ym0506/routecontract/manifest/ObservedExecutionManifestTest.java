@@ -11,6 +11,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -433,6 +434,49 @@ class ObservedExecutionManifestTest {
                         manifest("checkout", FINGERPRINT_A, ManifestPolicy.strict(1, 1))));
         assertTrue(failure.getMessage().contains("differ"));
         assertFalse(Files.exists(approved));
+    }
+
+    @Test
+    void candidateWriteRejectsFileSystemEquivalentFutureApprovedLeaf() throws Exception {
+        assertFutureLeafAliasHandling("case-probe", "BASELINE.json", "baseline.json");
+    }
+
+    @Test
+    void candidateWriteRejectsUnicodeNormalizedFutureApprovedLeaf() throws Exception {
+        assertFutureLeafAliasHandling("unicode-probe", "caf\u00e9.json", "cafe\u0301.json");
+    }
+
+    private void assertFutureLeafAliasHandling(
+            final String directoryName,
+            final String approvedName,
+            final String candidateName) throws Exception {
+        Path probeDirectory = Files.createDirectory(temporaryDirectory.resolve(directoryName));
+        Path approved = probeDirectory.resolve(approvedName);
+        Path candidate = probeDirectory.resolve(candidateName);
+
+        Files.createFile(candidate);
+        boolean fileSystemAliasesNames = Files.exists(approved, LinkOption.NOFOLLOW_LINKS)
+                && Files.isSameFile(approved, candidate);
+        Files.delete(candidate);
+
+        ObservedExecutionManifest candidateManifest =
+                manifest("checkout", FINGERPRINT_A, ManifestPolicy.strict(1, 1));
+        if (fileSystemAliasesNames) {
+            IllegalArgumentException failure = assertThrows(
+                    IllegalArgumentException.class,
+                    () -> new ManifestStore().writeCandidate(
+                            approved, candidate, candidateManifest));
+            assertTrue(failure.getMessage().contains("differ")
+                    || failure.getMessage().contains("absent approvedFile"));
+            assertFalse(Files.exists(approved, LinkOption.NOFOLLOW_LINKS));
+            assertFalse(Files.exists(candidate, LinkOption.NOFOLLOW_LINKS));
+        } else {
+            Path written = new ManifestStore().writeCandidate(
+                    approved, candidate, candidateManifest);
+            assertEquals(candidate.toAbsolutePath().normalize(), written);
+            assertFalse(Files.exists(approved, LinkOption.NOFOLLOW_LINKS));
+            assertEquals(candidateManifest, new ManifestStore().read(candidate));
+        }
     }
 
     @Test

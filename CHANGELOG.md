@@ -7,6 +7,29 @@ RouteContract follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) a
 
 No changes yet.
 
+## [0.1.0]
+
+This section records the source delta for stable version `0.1.0`. Its presence alone does not prove
+that an annotated tag, public immutable non-prerelease Release, same-revision release-evidence run,
+or final contest package exists.
+
+### Changed
+
+- Finalize the Maven coordinate and generated artifact/SBOM version identity as `0.1.0`.
+- Clarify the product, maintainer, and contest-only boundaries and the structural-manifest-diff
+  problem statement.
+- Pin stable release evidence to Temurin 17.0.20.1+1 and disclose, inventory, and verify the
+  OpenJDK `GPL-2.0-only WITH Classpath-exception-2.0` and jQuery MIT assets in the Javadoc
+  classifier.
+- Make the opt-in built-asset/MySQL acceptance test fail fast unless it is run with that exact
+  release toolchain, while keeping ordinary development builds on the documented Java 17 boundary.
+
+### Boundaries
+
+- Runtime/API behavior and the supported Java 17, ShardingSphere-JDBC 5.5.3, synchronous non-batch
+  `PreparedStatement` boundary are unchanged from `0.1.0-rc2`.
+- RC assets and RC-only participant evidence are not promoted to stable validation or adoption.
+
 ## [0.1.0-rc2]
 
 This corrective prerelease candidate follows the preserved `v0.1.0-rc1` tag. RC1's
@@ -40,7 +63,8 @@ created only after publication.
 - Operation-scoped ShardingSphere-JDBC 5.5.3 `SQLExecutionHook` capture.
 - Fail-closed runtime/SPI preflight and callback lifecycle diagnostics.
 - Attempt and data-source budgets with value-minimized snapshots.
-- Canonical approved manifests, semantic diff, and deterministic CI assertions.
+- Canonical approved manifests, deterministic structural manifest/attempt diff with stable RCM
+  codes, and CI assertions.
 - Real MySQL regression, determinism, concurrency, failure-boundary, and privacy fixtures.
 - Standalone generated-Maven-publication consumer, SBOM generation, and release-evidence workflow with a
   strict revision-bound, privacy-minimized full-suite test summary.

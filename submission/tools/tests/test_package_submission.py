@@ -12,14 +12,18 @@ import tempfile
 import unicodedata
 import unittest
 import urllib.parse
+import xml.etree.ElementTree as ET
 from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import call, patch
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
+from submission.tools import build_official_report
+
 
 SCRIPT = Path(__file__).resolve().parents[1] / "package_submission.py"
+REPORT_BUILDER_SCRIPT = SCRIPT.parent / "build_official_report.py"
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 SPEC = importlib.util.spec_from_file_location("package_submission", SCRIPT)
 assert SPEC is not None and SPEC.loader is not None
@@ -63,8 +67,6 @@ def valid_license_reviews() -> list[dict[str, object]]:
 
 def valid_vulnerability_exceptions() -> list[dict[str, object]]:
     coordinates = (
-        ("OSV-001", "GHSA-j288-q9x7-2f5v", "pkg:maven/commons-lang/commons-lang@2.4", None, "MODERATE"),
-        ("OSV-002", "GHSA-pq2g-wx69-c263", "pkg:maven/net.minidev/json-smart@2.5.0", "2.5.2", "HIGH"),
         ("OSV-003", "GHSA-c2rv-hwqm-wjpg", "pkg:maven/org.apache.calcite/calcite-core@1.40.0", "1.42.0", "MODERATE"),
     )
     return [
@@ -116,13 +118,13 @@ def valid_test_summary(revision: str) -> str:
         "io.github.ym0506.routecontract.example.ObservedExecutionRegressionCorpusMySqlTest": 7,
         "io.github.ym0506.routecontract.example.OperationCorrelationMySqlTest": 5,
         "io.github.ym0506.routecontract.internal.ShardingSphere553PreflightTest": 3,
-        "io.github.ym0506.routecontract.manifest.ObservedExecutionManifestTest": 15,
+        "io.github.ym0506.routecontract.manifest.ObservedExecutionManifestTest": 17,
     }
     lines = [
         "format=routecontract-test-summary-v1",
         f"revision={revision}",
         "suite_count=7",
-        "test_count=50",
+        "test_count=52",
         "failure_count=0",
         "error_count=0",
         "skipped_count=0",
@@ -136,7 +138,7 @@ def valid_test_summary(revision: str) -> str:
 
 def valid_manifest() -> dict:
     return {
-        "schema_version": 1,
+        "schema_version": 3,
         "official_notice_url": "https://osscontest.kr/notice/39",
         "submission_identity": {
             "receipt_number": "123",
@@ -168,6 +170,7 @@ def valid_manifest() -> dict:
             "title": "RouteContract demo",
             "duration_seconds": 179.5,
             "local_file_sha256": digest("4"),
+            "external_evidence_branch": "rc_only",
         },
         "release_evidence": {
             "workflow_artifact_id": 987654,
@@ -183,13 +186,17 @@ def valid_manifest() -> dict:
             "single_entry_per_participant_confirmed": True,
             "duplicate_benefit_status_reviewed": True,
             "ai_assistance_scope_confirmed": True,
-            "all_submitted_code_reviewed_and_explainable": True,
+            "core_behavior_boundaries_artifacts_and_dependency_roles_reviewed_and_explainable": True,
             "report_free_text_contains_no_external_evidence_claims": True,
+            "report_free_text_privacy_reviewed": True,
             "public_external_evidence_history_and_maintainer_edits_reviewed": True,
             "source_and_dependency_licenses_reviewed": True,
             "final_pdf_visual_qa_completed": True,
             "final_video_watchthrough_completed": True,
-            "public_repository_maintenance_obligation_accepted": True,
+            "five_year_public_repository_visibility_obligation_if_selected_accepted": True,
+            "owner_voice_written_by_participant": True,
+            "maintenance_order_and_period_confirmed": True,
+            "origin_and_prior_work_statement_confirmed": True,
         },
         "duplicate_benefit_confirmation": {
             "status": "not_applicable",
@@ -318,6 +325,324 @@ def valid_youtube_probe() -> dict:
 
 
 class SubmissionClaimTextTest(unittest.TestCase):
+    def test_develop_kim_provenance_is_consistent_across_public_docs(self) -> None:
+        origin = (REPOSITORY_ROOT / "ORIGIN_AND_PRIOR_WORK.md").read_text(
+            encoding="utf-8"
+        )
+        competitive = (
+            REPOSITORY_ROOT / "docs" / "competitive-analysis.md"
+        ).read_text(encoding="utf-8")
+        evidence_matrix = (
+            REPOSITORY_ROOT / "docs" / "evidence-matrix.md"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("`Develop-KIM`은 프로젝트 소유자의 계정이 아니므로", origin)
+        for public_doc in (competitive, evidence_matrix):
+            self.assertIn("`Develop-KIM` is not the participant's account", public_doc)
+            self.assertNotIn("Until participant ownership", public_doc)
+            self.assertNotIn("Until the participant's ownership", public_doc)
+
+    def test_ai_assistance_uses_bounded_owner_understanding_contract(self) -> None:
+        disclosure = (REPOSITORY_ROOT / "AI_ASSISTANCE.md").read_text(
+            encoding="utf-8"
+        )
+        submission_readme = (
+            REPOSITORY_ROOT / "submission" / "README.md"
+        ).read_text(encoding="utf-8")
+        self.assertNotIn(
+            "reviewing and understanding every submitted source line and dependency",
+            disclosure,
+        )
+        for required in (
+            "reviewing the final submitted diff",
+            "core behavior, generated evidence",
+            "safety boundaries, and direct-dependency roles",
+        ):
+            self.assertIn(required, disclosure)
+        for required in (
+            "core_behavior_boundaries_artifacts_and_dependency_roles_reviewed_and_explainable",
+            "purpose and non-proof limits",
+            "runtime, compile-only, test, build/audit and report-tool dependencies",
+            "not a claim of line-by-line authorship",
+        ):
+            self.assertIn(required, submission_readme)
+
+    def test_release_toolchain_and_javadoc_classifier_disclosure_are_pinned(
+        self,
+    ) -> None:
+        workflows = {
+            path.name: path.read_text(encoding="utf-8")
+            for path in (
+                REPOSITORY_ROOT / ".github" / "workflows" / "ci.yml",
+                REPOSITORY_ROOT
+                / ".github"
+                / "workflows"
+                / "dependency-submission.yml",
+                REPOSITORY_ROOT
+                / ".github"
+                / "workflows"
+                / "release-evidence.yml",
+            )
+        }
+        for name, workflow in workflows.items():
+            with self.subTest(workflow=name):
+                self.assertIn("java-version: '17.0.20+101'", workflow)
+                self.assertNotRegex(workflow, r"java-version: [\"']17[\"']")
+                self.assertIn(
+                    "actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961",
+                    workflow,
+                )
+                self.assertIn(
+                    "grep -Fxq 'IMPLEMENTOR_VERSION=\"Temurin-17.0.20.1+1\"' "
+                    '"${JAVA_HOME}/release"',
+                    workflow,
+                )
+                self.assertIn(
+                    "grep -Fxq 'JAVA_RUNTIME_VERSION=\"17.0.20.1+1\"' "
+                    '"${JAVA_HOME}/release"',
+                    workflow,
+                )
+        self.assertIn("java -fullversion", workflows["ci.yml"])
+        self.assertIn("java -fullversion", workflows["release-evidence.yml"])
+
+        third_party = (REPOSITORY_ROOT / "THIRD_PARTY.md").read_text(
+            encoding="utf-8"
+        )
+        sbom = (REPOSITORY_ROOT / "docs" / "sbom.md").read_text(encoding="utf-8")
+        notice = (REPOSITORY_ROOT / "NOTICE").read_text(encoding="utf-8")
+        readme = (REPOSITORY_ROOT / "README.md").read_text(encoding="utf-8")
+        normalized_third_party = " ".join(third_party.split())
+        normalized_sbom = " ".join(sbom.split())
+        for required in (
+            "Eclipse Temurin/OpenJDK standard-doclet 17.0.20.1+1",
+            "GPL-2.0-only WITH Classpath-exception-2.0",
+            "jQuery 3.7.1",
+            "jQuery UI 1.14.1",
+            "`legal/`",
+            "not present in the main library JAR or its runtime dependency graph",
+            "https://github.com/adoptium/temurin17-binaries/releases/tag/jdk-17.0.20.1%2B1",
+            "https://github.com/openjdk/jdk17u/tree/jdk-17.0.20.1%2B1/src/jdk.javadoc",
+            "https://github.com/jquery/jquery/tree/3.7.1",
+            "https://github.com/jquery/jquery-ui/tree/1.14.1",
+            "main JAR accepts only `.class` entry paths under the exact RouteContract package namespace plus an exact metadata allowlist",
+            "sources JAR applies the same path policy to `.java` entries and requires every declared package to match its path",
+            "source ZIP rejects JTS/Mahout-named files and package paths, every compiled `.class`",
+            "do not determine the semantic origin of renamed or copied source/class bytes",
+            "owner's source/provenance review",
+            "published POM declares no direct JTS or Mahout dependency",
+            "cannot contain a Maven parent or relocation",
+            "upstream metadata gap remains disclosed",
+        ):
+            self.assertIn(required, normalized_third_party)
+        for required in (
+            "Gradle dependency-profile BOMs",
+            "not a shipped-file inventory",
+            "Javadoc classifier",
+            "do not add them as runtime or direct dependency components",
+            "non-bundled distribution boundary is distinct from the unresolved upstream metadata gap",
+            "reopens if those payload invariants change or a JTS/Mahout published dependency enters the release",
+        ):
+            self.assertIn(required, normalized_sbom)
+        for required in (
+            "Javadoc classifier",
+            "17.0.20.1+1",
+            "legal/",
+            "THIRD_PARTY.md",
+        ):
+            self.assertIn(required, notice)
+        self.assertIn("Javadoc classifier", readme)
+        self.assertIn("THIRD_PARTY.md", readme)
+
+    def test_storyboard_pins_short_narration_and_nonmisleading_cuts(self) -> None:
+        storyboard = (
+            REPOSITORY_ROOT / "submission" / "video-storyboard.md"
+        ).read_text(encoding="utf-8")
+        for required in (
+            "같은 행을 반환해 기능 테스트는 통과했지만, ShardingSphere가 보고한 "
+            "JDBC 실행 시도는 1회에서 2회로 늘었습니다.",
+            "변경안이 승인 기준을 넘어서 CI gate가 exit 1로 멈춥니다. 기준 파일은 "
+            "자동 갱신되지 않아, 의도한 변경만 사람이 diff를 검토해 승인합니다.",
+            "프로젝트가 공개 안정판 자산의 checksum을 확인해 빈 Maven 저장소에 "
+            "설치했고, 소비자 테스트가 실제 MySQL에서 통과했습니다.",
+            "datasource-proxy도 물리 data source마다 연결하면 같은 변화를 봅니다. "
+            "RouteContract는 이를 operation별 승인과 CI 검사로 묶습니다.",
+            "제출 revision과 stable tag, main CI, 필수 PR 검사, Release 자산을 같은 "
+            "revision으로 공개 검증했습니다.",
+            "cutoff까지 형식에 맞게 제출된 RC 설치 결과는 1건입니다. stable 검증이나 채택은 "
+            "아닙니다.",
+            "cutoff까지 형식에 맞게 제출된 설치 결과는 0건이며, stable 외부 검증도 없습니다.",
+            "기존 기능 테스트가 통과해도 실행 구조는 달라질 수 있습니다. "
+            "ShardingSphere-JDBC 5.5.3 팀은 RouteContract로 그 변화를 사람이 승인한 "
+            "기준과 비교해 merge 전에 검토하거나 차단할 수 있습니다.",
+            "RCM201                  ATTEMPT_BUDGET_EXCEEDED: maximum=1, observed=2",
+            "RCM202                  DATA_SOURCE_BUDGET_EXCEEDED: maximum=1, observed=2",
+            "실제 실행 · 대기 구간 8×",
+            "Gradle/Testcontainers 대기 구간만 8배속",
+            "결과 행과 RCM301·RCM302를 읽는 구간은 배속하지 않는다.",
+            "고정 화면 한 장",
+            "브라우저를 실시간 탐색하거나",
+            "스크롤하지 않고",
+            "actual final-revision output",
+            "SQLExecutionHook-reported physical JDBC execution attempts",
+            "≠ complete route plan ≠ transaction commit",
+            "ROUTECONTRACT_RELEASE_ASSET_CONSUMER",
+            "parameterTypeShape      1xLong -> 2xLong (values not retained)",
+            "demoMeaning             expected violation verified",
+            "Dependency review  SKIPPED (PR-only)",
+            "PR tree               <tree>",
+            "final main tree       <same tree>",
+            "화면은 실제 stable 공개 검증 뒤",
+            "다음 공통 증거가 실제로 공개된 뒤에만 녹화한다",
+            "도구 고장 아님 · 예상한 위반을 검증한 실패",
+            'RouteSnapshot snapshot = RouteContract.capture("orders.find", () -> {',
+            "Order actual = repository.find(userId);",
+            "assertEquals(expectedOrderId, actual.id()); // 기존 기능 assertion",
+            "hasExactlyObservedPhysicalAttempts(1)",
+            "candidate → 사람이 검토한 approved diff → CI",
+            "approved 자동 갱신 없음",
+            "프로젝트 자체 공개 검증",
+            "외부 결과 현황 — 프로젝트 자체 검증과 별도",
+            "형식에 맞게 공개 제출된 설치 결과 0건",
+            "stable 외부 검증 미확보",
+            "0건 ≠ 사용자 수·채택률·가치 0",
+        ):
+            self.assertIn(required, storyboard)
+        self.assertNotIn("Maven Central", storyboard)
+        self.assertNotIn("Apache ShardingSphere PR #39535", storyboard)
+        self.assertNotIn("Task A", storyboard)
+
+        install_section = storyboard.split(
+            "## 1:00–1:22 — 설치와 검증 workflow", 1
+        )[1].split("## 1:22–1:40 — count가 같아도 구조가 달라지면 차단", 1)[0]
+        exact_footer = """화면 하단 범위:
+
+```text
+ShardingSphere-JDBC 5.5.3 · Java 17
+SQLExecutionHook-reported physical JDBC execution attempts
+≠ complete route plan ≠ transaction commit
+```"""
+        self.assertIn("화면은 실제 stable 공개 검증 뒤", install_section)
+        footer_scope = "화면 하단 범위:" + install_section.split(
+            "화면 하단 범위:", 1
+        )[1].split("내레이션:", 1)[0].rstrip()
+        self.assertEqual(exact_footer, footer_scope)
+        self.assertNotIn("complete route plan을 증명", install_section)
+        self.assertNotIn("transaction commit을 증명", install_section)
+
+        stable_section = storyboard.split(
+            "## 2:07–2:25 — exact public stable OSS 증거", 1
+        )[1].split("## 2:25–2:34 — cutoff 외부 결과 현황과 커뮤니티 기록", 1)[0]
+        for required in (
+            "그 final SHA의 main-push `Java 17 / MySQL integration / SBOM` success",
+            "merge PR에서 ruleset-required",
+            "PR head와 final main의 exact tree 일치",
+            "exact tag SHA의 successful `Release evidence` run",
+            "Dependency review  SKIPPED (PR-only)",
+            "PR <number>           Java/MySQL/SBOM PASS | Dependency review PASS",
+            "제출 revision과 stable tag, main CI, 필수 PR 검사, Release 자산을 같은 "
+            "revision으로 공개 검증했습니다.",
+            "프로젝트 자체 공개 검증",
+        ):
+            self.assertIn(required, stable_section)
+        self.assertNotIn("같은 SHA의 green Ubuntu CI와 required checks", stable_section)
+
+        branch_cards = storyboard.split(
+            "`rc_only` ↔ `rc-only-result`, `zero` ↔ `0-result`.", 1
+        )[1].split("14개 체크와 API 편집 필드", 1)[0]
+        card_lines = [line for line in branch_cards.splitlines() if line.startswith("- **")]
+        self.assertEqual(
+            [
+                "- **rc-only-result 분기:** `exact RC 공개 모집`, `형식에 맞게 공개 제출된 RC 설치 결과 1건`, `stable 검증·adoption 아님`, `결과·활성화·모집·프로토콜 링크`의 네 줄만 표시한다.",
+                "- **0-result 분기:** `형식에 맞게 공개 제출된 설치 결과 0건`, `stable 외부 검증 미확보`, `활성화·모집·프로토콜 링크`, `0건 ≠ 사용자 수·채택률·가치 0`의 네 줄만 표시한다. protocol URL만으로 모집했다고 주장하지 않는다.",
+            ],
+            card_lines,
+        )
+
+    def test_storyboard_pins_measured_narration_with_transition_margin(self) -> None:
+        storyboard = (
+            REPOSITORY_ROOT / "submission" / "video-storyboard.md"
+        ).read_text(encoding="utf-8")
+
+        quoted = [line[2:] for line in storyboard.splitlines() if line.startswith("> ")]
+        self.assertEqual(10, len(quoted))
+        rc_only = re.search(r'- rc-only-result 분기: “([^”]+)”', storyboard)
+        zero = re.search(r'- 0-result 분기: “([^”]+)”', storyboard)
+        self.assertIsNotNone(rc_only)
+        self.assertIsNotNone(zero)
+        assert rc_only is not None and zero is not None
+
+        actual = {
+            "opening": quoted[1],
+            "mysql": quoted[2],
+            "ci": quoted[3],
+            "install": quoted[4],
+            "fingerprint": quoted[5],
+            "repro": quoted[6],
+            "comparison": quoted[7],
+            "stable": quoted[8],
+            "rc_only": rc_only.group(1),
+            "zero": zero.group(1),
+            "conclusion": quoted[9],
+        }
+
+        heading_matches = re.findall(
+            r"^## (\d+):(\d{2})–(\d+):(\d{2}) — (.+)$",
+            storyboard,
+            flags=re.MULTILINE,
+        )
+        self.assertEqual(10, len(heading_matches))
+        timeline = [
+            (int(sm) * 60 + int(ss), int(em) * 60 + int(es), label)
+            for sm, ss, em, es, label in heading_matches
+        ]
+        self.assertEqual(0, timeline[0][0])
+        self.assertEqual(173, timeline[-1][1])
+        for previous, current in zip(timeline, timeline[1:]):
+            self.assertEqual(previous[1], current[0])
+        durations = {label: end - start for start, end, label in timeline}
+        segment_for = {
+            "opening": durations["대상과 결과를 함께 보여 주는 훅"],
+            "mysql": durations["실제 MySQL baseline과 candidate"],
+            "ci": durations["실제 non-zero CI gate"],
+            "install": durations["설치와 검증 workflow"],
+            "fingerprint": durations["count가 같아도 구조가 달라지면 차단"],
+            "repro": durations["재현성과 지원 경계"],
+            "comparison": durations["공정한 기존 도구 비교"],
+            "stable": durations["exact public stable OSS 증거"],
+            "rc_only": durations["cutoff 외부 결과 현황과 커뮤니티 기록"],
+            "zero": durations["cutoff 외부 결과 현황과 커뮤니티 기록"],
+            "conclusion": durations["결론"],
+        }
+        expected = {
+            "opening": ("cad6b7c5f823267006fc2b24c4180f66ef0e720e3bd2fdfe01fb4b7f9ea0bb5b", 8.420, 12, "opening"),
+            "mysql": ("fef14131a4d59c7c7d412422dde072fb8c8ecd297e15a224759baf448782b05f", 17.673, 34, "MySQL"),
+            "ci": ("88729d04d2e5ba24704dc8b58521f34fee8307076c596f88cb799133554e1e47", 10.938, 14, "intentional-red CI"),
+            "install": ("d2642bc3a51c77c67308d03e32f81e2b2be31b75c9f9273d37b73e9128e2a348", 15.586, 22, "install/workflow"),
+            "fingerprint": ("7516d0387ad0299dc3ec284be0c6ced4856d7633913af41ffedf9bf0a97cc5ab", 15.624, 18, "fingerprint"),
+            "repro": ("c472eeb08a0943a742fefab8c5c5fb2f72837cccf44a3d8e378551e4616a0a4f", 12.988, 15, "reproducibility"),
+            "comparison": ("0210823a300ce791b5a87b643fd8704c6bb390105ea35bc6875b138e39d379f6", 10.100, 12, "comparison"),
+            "stable": ("a8758dca07309a08019864733040eea979124bbbe4ad3a6946bc37feb39d1889", 8.493, 18, "public stable"),
+            "rc_only": ("3659e8590ffba6bce6ad1fe00fcea069195cf01a9b5c860a4465da8cb9bcb60e", 7.239, 9, "rc-only"),
+            "zero": ("53be748af7966d91822a1ee4de79804fa95e073cd4d5b7d84777473b3164f02f", 6.600, 9, "zero"),
+            "conclusion": ("21a174138c5ebec27bda365d1347f0724ffa1185eca3a46da48343a26904ae41", 14.028, 19, "conclusion"),
+        }
+        for key, (expected_sha, measured, segment, table_label) in expected.items():
+            with self.subTest(narration=key):
+                self.assertEqual(segment, segment_for[key])
+                self.assertEqual(
+                    expected_sha,
+                    hashlib.sha256(actual[key].encode("utf-8")).hexdigest(),
+                )
+                self.assertLessEqual(measured, segment - 1)
+                self.assertIn(
+                    f"| {table_label} | {measured:.3f}초 | {segment}초 | {segment - 1}초 |",
+                    storyboard,
+                )
+
+        self.assertIn("Yuna 180 wpm", storyboard)
+        self.assertIn("문장의 UTF-8 SHA-256을 이 측정 fixture에 결속", storyboard)
+        self.assertRegex(storyboard, r"사람 목소리로 세 번\s+재어")
+
     def test_video_delivery_docs_separate_machine_and_owner_qc(self) -> None:
         readme = (REPOSITORY_ROOT / "submission" / "README.md").read_text(
             encoding="utf-8"
@@ -346,6 +671,357 @@ class SubmissionClaimTextTest(unittest.TestCase):
             "음량·clipping·내레이션 진실성·화면 가독성",
         ):
             self.assertIn(required, storyboard)
+
+    def test_public_docs_keep_build_consumer_and_contest_boundaries_explicit(self) -> None:
+        contributing = (REPOSITORY_ROOT / "CONTRIBUTING.md").read_text(encoding="utf-8")
+        releasing = (REPOSITORY_ROOT / "RELEASING.md").read_text(encoding="utf-8")
+        readme_ko = (REPOSITORY_ROOT / "README.md").read_text(encoding="utf-8")
+        readme_en = (REPOSITORY_ROOT / "README.en.md").read_text(encoding="utf-8")
+        competitive = (
+            REPOSITORY_ROOT / "docs" / "competitive-analysis.md"
+        ).read_text(encoding="utf-8")
+        specification = (
+            REPOSITORY_ROOT / "docs" / "specification.md"
+        ).read_text(encoding="utf-8")
+        submission_readme = (
+            REPOSITORY_ROOT / "submission" / "README.md"
+        ).read_text(encoding="utf-8")
+        storyboard = (
+            REPOSITORY_ROOT / "submission" / "video-storyboard.md"
+        ).read_text(encoding="utf-8")
+        release_evidence = (
+            REPOSITORY_ROOT / ".github" / "workflows" / "release-evidence.yml"
+        ).read_text(encoding="utf-8")
+        ci_workflow = (
+            REPOSITORY_ROOT / ".github" / "workflows" / "ci.yml"
+        ).read_text(encoding="utf-8")
+
+        for required in (
+            "validateOfficialCycloneDxSbom",
+            "same-checkout packaging evidence",
+            "Synthetic, non-sensitive test values are allowed",
+            "scripts/verify-release-assets-consumer.sh",
+        ):
+            self.assertIn(required, contributing)
+        self.assertNotIn("repository ownership, signing and", releasing)
+        self.assertIn("v0.1 packaging gate requires no signature assets", releasing)
+        self.assertIn(
+            "asserted-absent task-specific Gradle user home before any\n  "
+            "project-local Python or Gradle command",
+            releasing,
+        )
+        self.assertIn("intentional contract-gate\n  child exit `1`", releasing)
+        self.assertIn("혼합 자동화", readme_ko)
+        self.assertTrue(readme_ko.startswith("# RouteContract for ShardingSphere-JDBC\n"))
+        self.assertIn("사용하거나 도입을 평가하는 Java 개발자·팀", readme_ko)
+        self.assertIn("`1 → 2` 자체를 성능 결함으로 단정", readme_ko)
+        self.assertIn(
+            "MyBatis·JPA·Hibernate별 end-to-end 호환성을 검증했다는 뜻은 아닙니다",
+            readme_ko,
+        )
+        self.assertLess(readme_ko.index("## Quick Start"), readme_ko.index("## 가장 작은 사용 예"))
+        self.assertLess(readme_ko.index("## 가장 작은 사용 예"), readme_ko.index("## 검증된 핵심 시나리오"))
+        self.assertLess(readme_ko.index("## 검증된 핵심 시나리오"), readme_ko.index("## 기존 도구와의 정확한 차이"))
+        self.assertLess(readme_ko.index("## 기존 도구와의 정확한 차이"), readme_ko.index("## 코드·공개 증거 경계"))
+        self.assertLess(readme_ko.index("## v0.1 지원 범위"), readme_ko.index("## 의존성·Release 호환성 상세"))
+        self.assertIn(
+            "[검증 증거 매트릭스](docs/evidence-matrix.md)", readme_ko
+        )
+        self.assertIn(
+            "datasource-proxy도 충분히 신뢰할 수 있는 직접 구현 대안", readme_ko
+        )
+        self.assertIn("모든 물리 data source wrapper 없이", readme_ko)
+        self.assertIn("docs/empirical-comparison.md", readme_ko)
+        self.assertIn("Mixed automation", readme_en)
+        self.assertTrue(readme_en.startswith("# RouteContract for ShardingSphere-JDBC\n"))
+        self.assertIn("developers and teams using or evaluating", readme_en)
+        self.assertIn("does not label `1 → 2` itself as a performance defect", readme_en)
+        self.assertIn(
+            "not verified end-to-end compatibility with each of MyBatis, JPA, and Hibernate",
+            readme_en,
+        )
+        self.assertLess(readme_en.index("## Quick Start"), readme_en.index("## Smallest usage example"))
+        self.assertLess(readme_en.index("## Smallest usage example"), readme_en.index("## Verified core scenarios"))
+        self.assertLess(readme_en.index("## Verified core scenarios"), readme_en.index("## Precise comparison with existing tools"))
+        self.assertLess(readme_en.index("## Precise comparison with existing tools"), readme_en.index("## Code and public-evidence boundaries"))
+        self.assertLess(readme_en.index("## v0.1 support boundary"), readme_en.index("## Dependency and Release compatibility details"))
+        self.assertIn(
+            "[Verification evidence matrix](docs/evidence-matrix.md)",
+            readme_en,
+        )
+        self.assertIn("RouteContract v0.1 implemented surface", competitive)
+        self.assertIn("evidence status at its declared snapshot", competitive)
+        self.assertIn(
+            "deterministic structural added/removed attempt\n  signatures",
+            specification,
+        )
+        self.assertIn("does not establish SQL semantic equivalence", specification)
+        self.assertNotIn("semantic added/removed signatures", specification)
+        for readme, heading in (
+            (readme_ko, "## 공개 Release 자산을 registry 없이 사용하기"),
+            (readme_en, "## Consume public Release assets without a registry"),
+        ):
+            release_section = readme.split(heading, 1)[1].split("\n## ", 1)[0]
+            ordered = (
+                "gh release download v0.1.0",
+                "python3 scripts/install-release-assets.py",
+                "exclusiveContent",
+                'maven { url = uri("/absolute/path/to/routecontract-maven") }',
+                'testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))',
+                'testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0")',
+            )
+            self.assertTrue(all(value in release_section for value in ordered))
+            self.assertEqual(
+                sorted(release_section.index(value) for value in ordered),
+                [release_section.index(value) for value in ordered],
+            )
+        release_quick_start = "      - name: Verify public Quick Start"
+        ci_quick_start = "      - name: Verify the documented real-MySQL Quick Start"
+        ci_package_job = (
+            "  build-and-sbom:\n"
+            "    name: Java 17 / MySQL integration / SBOM\n"
+            "    runs-on: ubuntu-24.04"
+        )
+        release_package_job = (
+            "  build-release-evidence:\n"
+            "    name: Build release evidence\n"
+            "    runs-on: ubuntu-24.04"
+        )
+        test_and_build = "      - name: Test and build evidence"
+        test_summary = "      - name: Create revision-bound privacy-minimized test summary"
+        python_setup = "      - name: Set up report-package Python"
+        python_install = (
+            "      - name: Install checksum-locked report-package test dependencies"
+        )
+        package_tests = "      - name: Test fail-closed contest packaging rules"
+        for workflow, quick_start, package_job in (
+            (ci_workflow, ci_quick_start, ci_package_job),
+            (release_evidence, release_quick_start, release_package_job),
+        ):
+            self.assertIn(package_job, workflow)
+            self.assertEqual(
+                1,
+                workflow.count(
+                    "--requirement submission/report-package-ci-requirements.txt"
+                ),
+            )
+            self.assertNotIn(
+                "--requirement submission/report-builder-requirements.txt", workflow
+            )
+            self.assertEqual(
+                1,
+                workflow.count(
+                    "uses: actions/setup-python@"
+                    "5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0"
+                ),
+            )
+            self.assertEqual(1, workflow.count("python-version: '3.12.14'"))
+            self.assertEqual(2, workflow.count("architecture: x64"))
+            self.assertEqual(1, workflow.count("check-latest: false"))
+            self.assertIn("${RUNNER_TEMP}/routecontract-report-test-venv", workflow)
+            self.assertEqual(1, workflow.count('test ! -e "${report_venv}"'))
+            self.assertEqual(1, workflow.count('python -m venv "${report_venv}"'))
+            self.assertEqual(1, workflow.count('"${report_venv}/bin/python"'))
+            self.assertIn("--only-binary=:all: --no-deps", workflow)
+            self.assertEqual(1, workflow.count("--require-hashes"))
+            self.assertEqual(1, workflow.count("--isolated"))
+            self.assertEqual(1, workflow.count("--index-url https://pypi.org/simple"))
+            self.assertIn("sys.version_info[:3] == (3, 12, 14)", workflow)
+            self.assertIn('platform.python_implementation() == "CPython"', workflow)
+            self.assertIn('platform.machine() == "x86_64"', workflow)
+            self.assertEqual(
+                2,
+                workflow.count(
+                    '"${RUNNER_TEMP}/routecontract-report-test-venv/bin/python"'
+                ),
+            )
+            self.assertNotIn("python3 -m unittest", workflow)
+            self.assertLess(workflow.index(python_setup), workflow.index(python_install))
+            self.assertLess(workflow.index(python_install), workflow.index(package_tests))
+            self.assertEqual(1, workflow.count("routecontract-quickstart-gradle-home"))
+            quick_start_offset = workflow.index(quick_start)
+            next_step_offset = workflow.find("\n      - name:", quick_start_offset + 1)
+            self.assertNotEqual(-1, next_step_offset)
+            quick_start_block = workflow[quick_start_offset:next_step_offset]
+            status_check = (
+                'test -z "$(git status --porcelain=v1 --untracked-files=all '
+                '--ignore-submodules=none)"'
+            )
+            ignored_check = 'test -z "$(git clean -ndx)"'
+            home_assignment = (
+                'quickstart_gradle_home="${RUNNER_TEMP}/'
+                'routecontract-quickstart-gradle-home"'
+            )
+            absent_home_check = 'test ! -e "${quickstart_gradle_home}"'
+            quick_start_invocation = (
+                'GRADLE_USER_HOME="${quickstart_gradle_home}" '
+                "./scripts/quickstart-demo.sh"
+            )
+            for command in (
+                status_check,
+                ignored_check,
+                home_assignment,
+                absent_home_check,
+                quick_start_invocation,
+            ):
+                self.assertIn(command, quick_start_block)
+            self.assertLess(
+                quick_start_block.index(status_check),
+                quick_start_block.index(ignored_check),
+            )
+            self.assertLess(
+                quick_start_block.index(ignored_check),
+                quick_start_block.index(home_assignment),
+            )
+            self.assertLess(
+                quick_start_block.index(home_assignment),
+                quick_start_block.index(absent_home_check),
+            )
+            self.assertLess(
+                quick_start_block.index(absent_home_check),
+                quick_start_block.index(quick_start_invocation),
+            )
+            self.assertEqual(
+                1,
+                workflow.count(
+                    'git status --porcelain=v1 --untracked-files=all '
+                    "--ignore-submodules=none"
+                ),
+            )
+            self.assertEqual(1, workflow.count("git clean -ndx"))
+            full_gradle_validation = (
+                "./gradlew --no-daemon --no-build-cache clean check"
+            )
+            self.assertEqual(1, workflow.count(full_gradle_validation))
+            self.assertLess(workflow.index(quick_start), workflow.index(python_setup))
+            self.assertLess(workflow.index(quick_start), workflow.index(python_install))
+            self.assertLess(
+                workflow.index(quick_start),
+                workflow.index(full_gradle_validation),
+            )
+        self.assertEqual(1, release_evidence.count("./scripts/quickstart-demo.sh"))
+        self.assertIn(release_quick_start, release_evidence)
+        release_tag_binding = (
+            "      - name: Require tag revision and public main to match"
+        )
+        release_version_binding = (
+            "      - name: Require tag and project versions to match"
+        )
+        self.assertLess(
+            release_evidence.index(release_tag_binding),
+            release_evidence.index(release_quick_start),
+        )
+        self.assertLess(
+            release_evidence.index(release_quick_start),
+            release_evidence.index(release_version_binding),
+        )
+        self.assertLess(
+            release_evidence.index(release_quick_start),
+            release_evidence.index(test_and_build),
+        )
+        self.assertLess(release_evidence.index(test_and_build), release_evidence.index(test_summary))
+        self.assertIn(
+            "Do not invent, append, or combine a detail that the application does not display",
+            submission_readme.replace("\n", " "),
+        )
+        self.assertIn("high-confidence lexical privacy scanner", submission_readme)
+        self.assertIn("it is a heuristic", submission_readme)
+        self.assertIn("report_free_text_privacy_reviewed=true", submission_readme)
+        self.assertIn(
+            "--content submission/private/report-content.final.ko.json \\\n"
+            "  --assets-dir submission/assets \\\n"
+            "  --output submission/draft/routecontract-result-report-final.docx \\\n"
+            "  --strict-final",
+            submission_readme,
+        )
+        self.assertNotIn(
+            "--content submission/report-content.ko.json \\\n+  --output submission/draft/routecontract-result-report-final.docx",
+            submission_readme,
+        )
+        self.assertEqual(
+            "[[APPLICATION_TASK_TYPE]]",
+            json.loads(
+                (REPOSITORY_ROOT / "submission" / "report-content.ko.json").read_text(
+                    encoding="utf-8"
+                )
+            )["metadata"]["task_type"],
+        )
+        self.assertEqual(
+            "[[APPLICATION_TASK_TYPE]]",
+            json.loads(
+                (
+                    REPOSITORY_ROOT
+                    / "submission"
+                    / "package-manifest.example.json"
+                ).read_text(encoding="utf-8")
+            )["submission_identity"]["task_type"],
+        )
+        self.assertIn("공개 오픈소스 시연 영상의 결과 우선", storyboard)
+        self.assertNotIn("금상", storyboard)
+        self.assertNotIn("은상", storyboard)
+
+    def test_august_20_notice_41_rubric_has_exact_second_round_weights(self) -> None:
+        matrix = (REPOSITORY_ROOT / "docs" / "evidence-matrix.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("Rubric source checked: 2026-08-21 KST", matrix)
+        self.assertIn(
+            "[August 20 judging notice](https://osscontest.kr/notice/41)",
+            matrix,
+        )
+
+        section = matrix.split("## 2차 평가(발표): 70 points", 1)[1].split(
+            "The second round applies", 1
+        )[0]
+        rows = re.findall(r"^\| ([^|]+?) \| (\d+) \|", section, flags=re.MULTILINE)
+        self.assertEqual(7, len(rows))
+        self.assertEqual(7, len({name for name, _ in rows}))
+        self.assertEqual(
+            {
+                "작품발표(PT)": 10,
+                "활용성": 15,
+                "작품 데모(완성도)": 10,
+                "커뮤니티 확장 가능성": 5,
+                "오픈소스SW 적절성": 15,
+                "기능테스트": 10,
+                "라이선스 검증": 5,
+            },
+            {name: int(points) for name, points in rows},
+        )
+        self.assertEqual(70, sum(int(points) for _, points in rows))
+
+    def test_second_round_evidence_mappings_track_application_and_oss_proof(
+        self,
+    ) -> None:
+        matrix = (REPOSITORY_ROOT / "docs" / "evidence-matrix.md").read_text(
+            encoding="utf-8"
+        )
+        section = matrix.split("## 2차 평가(발표): 70 points", 1)[1].split(
+            "The second round applies", 1
+        )[0]
+
+        self.assertRegex(
+            section,
+            r"\| 활용성 \| 15 \| E04, E05, E06, E08, E09, E10 \|",
+        )
+        self.assertRegex(
+            section,
+            r"\| 오픈소스SW 적절성 \| 15 \| "
+            r"E02, E03, E06, E08, E09, E11, E12 \|",
+        )
+        functional_row = next(
+            line for line in section.splitlines() if line.startswith("| 기능테스트 |")
+        )
+        self.assertIn("final stable exact-revision", functional_row)
+        self.assertIn("clean-clone Quick Start", functional_row)
+        self.assertNotIn("independent-user", functional_row)
+        oss_row = next(
+            line
+            for line in section.splitlines()
+            if line.startswith("| 오픈소스SW 적절성 |")
+        )
+        self.assertIn("owner license/NOTICE", oss_row)
+        self.assertNotIn("external consumption", oss_row)
 
     def test_independent_rc_protocol_uses_twelve_asset_supply_chain_contract(self) -> None:
         protocol = (REPOSITORY_ROOT / "docs/independent-install-study.md").read_text(
@@ -383,28 +1059,20 @@ class SubmissionClaimTextTest(unittest.TestCase):
         ).read_text(encoding="utf-8")
 
         for required in (
-            "currently API-visible at both packaging observations",
             "**rc-only-result 분기:**",
-            "Issue #9 form의 14개 필수 self-attestation",
-            "나머지 자유서술 답변 의미",
-            "REST/GraphQL은 현재 editor·last edit·retained body edit·title rename이 보이지 않는 상태",
-            "비공개 독립성을 판정한다고 말하지 않는다",
-            "정확히 활성화된 immutable RC",
-            "schema-v2 activation-record permalink",
-            "superseding 공개 모집 comment",
-            "`RC-only`",
-            "not final-stable validation or adoption",
-            "최종 안정 Release 화면과 나란히 보여도 RC 결과를 최종 안정 검증으로 승격하지 않는다.",
+            "형식에 맞게 공개 제출된 RC 설치 결과 1건",
+            "stable 검증·adoption 아님",
+            "결과·활성화·모집·프로토콜 링크",
             "**0-result 분기:**",
-            "Issue #9의 activation/protocol",
-            "currently API-visible at both packaging observations: 0",
-            "final-stable external validation not obtained before cutoff",
-            "구조화 `external_evidence.branch`와 영상 카드는 같은 분기",
+            "형식에 맞게 공개 제출된 설치 결과 0건",
+            "stable 외부 검증 미확보",
+            "활성화·모집·프로토콜 링크",
+            "package manifest의 `video.external_evidence_branch`",
+            "실제 영상 카드·내레이션은 같은 분기를 사용",
+            "`rc_only` ↔ `rc-only-result`, `zero` ↔ `0-result`",
             "게시하지 않았다면 카드와 내레이션에서 제외",
-            "maintainer 수정·삭제·은폐·이전·누락 이력은 API로 복원하지 못해 "
-            "owner 수동 진술에 의존",
             "final-stable-result 분기는 fail-closed",
-            "저장소 owner와 다른 GitHub User 계정이 비작성자라고 self-attest",
+            "실제 사람·독립성·채택·endorsement를 추정하지 않는다",
         ):
             self.assertIn(required, storyboard)
 
@@ -418,6 +1086,9 @@ class SubmissionClaimTextTest(unittest.TestCase):
             "비작성자 독립 clean-install 첫 결과 1건을 adoption과 구분해 링크했습니다.",
             "모든 acceptance criteria",
             "qualified Issue",
+            "Issue #9 form의 14개 필수 self-attestation",
+            "REST/GraphQL은 현재 editor·last edit·retained body edit·title rename",
+            "maintainer 수정·삭제·은폐·이전·누락",
         ):
             self.assertNotIn(unconditional_claim, storyboard)
 
@@ -441,14 +1112,19 @@ class SubmissionClaimTextTest(unittest.TestCase):
             [package_submission.REPORT_CONTENT_CONTRACT.EXTERNAL_EVIDENCE_SUMMARY_MARKER],
             [item["text"] for item in slot],
         )
-        roadmap = next(
-            item["text"] for item in report["other"] if item["lead"] == "로드맵"
+        community = next(
+            item["text"]
+            for item in report["other"]
+            if item["lead"] == "품질관리·발전 로드맵"
         )
 
-        self.assertNotIn("비작성자 독립 설치 결과", roadmap)
-        self.assertNotIn("qualified 결과", roadmap)
-        self.assertNotIn("외부 검증 미확보", roadmap)
-        self.assertNotIn("외부 설치 기록·license/security 재검토를 완료", roadmap)
+        self.assertIn("실제 링크만 보고한다", community)
+        self.assertNotIn("비작성자 독립 설치 결과", community)
+        self.assertNotIn("qualified 결과", community)
+        self.assertNotIn("외부 검증 미확보", community)
+        self.assertNotIn(
+            "외부 설치 기록·license/security 재검토를 완료", community
+        )
 
 
 class TaggedIssueFormAllowlistTest(unittest.TestCase):
@@ -523,41 +1199,53 @@ class ReportExternalEvidenceContractTest(unittest.TestCase):
         self,
     ) -> None:
         summary = self.summary(self.materialize("rc_only"))
-
-        for required in (
-            "exact RC v0.1.0-rc1",
-            "저장소 owner와 다른 GitHub User의 비작성자 self-attestation",
-            "현재 GraphQL 편집 신호 없음(editor·last edit·body edit·title rename)",
-            "14개 [x]·Task A enum",
-            "[활성화 기록]·[모집 기록]·[검증 프로토콜]을 확인",
-            "자동 gate는 실제 사람·작성자·비공개 독립성",
-            "adoption, stable 검증을 증명하지 않는다",
-            "stable 외부 검증 미확보",
-            "maintainer 수정·삭제·은폐·이전·누락은 API 이력 복원·자동 검증 불가로 "
-            "owner 수동 진술에 의존",
-            "[결과 Issue]",
-        ):
-            self.assertIn(required, summary)
+        self.assertEqual(
+            "cutoff 2026-08-01T06:00:00Z까지 exact RC v0.1.0-rc1의 Task A 형식 "
+            "요건을 충족한 API-visible 공개 self-attestation 1건 [결과 Issue]을 "
+            "확인했다. 이는 실제 사람·비공개 독립성·stable 검증·채택·endorsement를 "
+            "자동 증명하지 않는다. API로 복원할 수 없는 변경 이력은 자동 검증 범위 "
+            "밖이다. [활성화 기록]·[모집 기록]·[검증 프로토콜]",
+            summary,
+        )
 
     def test_zero_branch_requires_honest_zero_and_no_result_issue(self) -> None:
         summary = self.summary(self.materialize("zero"))
+        self.assertEqual(
+            "cutoff 2026-08-01T06:00:00Z까지 exact RC v0.1.0-rc1 공개 모집 "
+            "[모집 기록]과 [검증 프로토콜]을 운영했으나 API-visible Task A 형식 "
+            "요건을 충족한 공개 결과는 0건이었다. 따라서 독립 외부 설치·채택·stable "
+            "검증을 주장하지 않는다. API로 복원할 수 없는 변경 이력은 자동 검증 "
+            "범위 밖이다. [활성화 기록]",
+            summary,
+        )
 
-        for required in (
-            "exact RC v0.1.0-rc1",
-            "[모집 기록]",
-            "owner와 다른 GitHub User의 비작성자 self-attestation",
-            "현재 GraphQL 편집 신호 없음(editor·last edit·body edit·title rename)",
-            "14개 [x]·Task A enum",
-            "갖춘 결과는 0건",
-            "실제 사람·작성자·비공개 독립성은 자동 증명되지 않는다",
-            "stable 외부 검증 미확보",
-            "maintainer 수정·삭제·은폐·이전·누락은 API 이력 복원·자동 검증 불가로 "
-            "owner 수동 진술에 의존",
-        ):
-            self.assertIn(required, summary)
-        for overclaim in ("eligible", "qualified", "전 기준", "모든 acceptance"):
-            self.assertNotIn(overclaim, summary)
-        self.assertNotIn("issues/42", summary)
+    def test_rejects_reader_facing_evidence_ids_in_every_owner_overlay(self) -> None:
+        markers = ("E09", "e09", "Ｅ０９", "Ｅ09", "E０9")
+        for path in package_submission.REPORT_CONTENT_CONTRACT.OWNER_FREE_TEXT_OVERLAY_STRING_PATHS:
+            for marker in markers:
+                content = valid_report_content("zero")
+                parent = content
+                for component in path[:-1]:
+                    parent = parent[component]
+                value = f"owner-reviewed prose {marker}"
+                parent[path[-1]] = value
+                with self.subTest(path=path, marker=marker), self.assertRaisesRegex(
+                    package_submission.GateError,
+                    r"reader-facing audit evidence IDs \(count=1\)",
+                ) as caught:
+                    package_submission.validate_and_materialize_report_content(
+                        content, valid_manifest(), current_utc=TEST_CURRENT_UTC
+                    )
+                self.assertNotIn(value, str(caught.exception))
+
+    def test_reader_facing_evidence_id_counter_is_normalized_and_bounded(self) -> None:
+        counter = package_submission.REPORT_CONTENT_CONTRACT.count_reader_facing_evidence_ids
+        for marker in ("E09", "e09", "Ｅ０９", "Ｅ09", "E０9", "E\u200b09", "ThinkPad E14"):
+            with self.subTest(marker=marker):
+                self.assertEqual(1, counter(marker))
+        for allowed in ("E15", "AE09", "E09Z"):
+            with self.subTest(allowed=allowed):
+                self.assertEqual(0, counter(allowed))
 
     def test_report_sentence_keeps_only_the_branch_necessary_public_url(self) -> None:
         rc_summary = self.summary(self.materialize("rc_only"))
@@ -638,6 +1326,26 @@ class ReportExternalEvidenceContractTest(unittest.TestCase):
 
     def test_accepts_each_documented_private_overlay_path(self) -> None:
         paths = package_submission.REPORT_CONTENT_CONTRACT.PRIVATE_OVERLAY_STRING_PATHS
+        self.assertEqual(
+            paths,
+            (
+                *package_submission.REPORT_CONTENT_CONTRACT.STRUCTURED_PRIVATE_OVERLAY_STRING_PATHS,
+                *package_submission.REPORT_CONTENT_CONTRACT.OWNER_FREE_TEXT_OVERLAY_STRING_PATHS,
+            ),
+        )
+        self.assertEqual(
+            {
+                ("environment", 2, "text"),
+                ("features", 4, "text"),
+                ("features", 6, "text"),
+                ("other", 4, "text"),
+                ("other", 5, "text"),
+                ("other", 8, "text"),
+            },
+            set(
+                package_submission.REPORT_CONTENT_CONTRACT.OWNER_FREE_TEXT_OVERLAY_STRING_PATHS
+            ),
+        )
         for path in paths:
             content = valid_report_content("zero")
             parent = content
@@ -648,6 +1356,591 @@ class ReportExternalEvidenceContractTest(unittest.TestCase):
                 package_submission.validate_and_materialize_report_content(
                     content, valid_manifest(), current_utc=TEST_CURRENT_UTC
                 )
+
+    def test_rejects_sensitive_visible_private_overlay_values_without_echoing(self) -> None:
+        cases = (
+            (("environment", 2, "text"), "macOS /Users/alice/private-project", "LOCAL_PATH"),
+            (("features", 4, "text"), "CI token=super-secret-value", "CREDENTIAL_OR_TOKEN"),
+            (("features", 4, "text"), "AWS_SECRET_ACCESS_KEY=super-secret-value", "CREDENTIAL_OR_TOKEN"),
+            (("features", 4, "text"), "access AKIAIOSFODNN7EXAMPLE", "CREDENTIAL_OR_TOKEN"),
+            (
+                ("features", 4, "text"),
+                "JWT eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+                "CREDENTIAL_OR_TOKEN",
+            ),
+            (("features", 6, "text"), "jdbc:mysql://localhost:3306/private", "JDBC_URL"),
+            (("other", 4, "text"), "contact alice@example.com", "EMAIL_ADDRESS"),
+            (("other", 4, "text"), "연락 개발자@예시.한국", "EMAIL_ADDRESS"),
+            (("other", 8, "text"), "SELECT secret FROM customer", "RAW_SQL"),
+            (("other", 8, "text"), "SEL/**/ECT secret FR/**/OM customer", "RAW_SQL"),
+            (("other", 8, "text"), "SELECT/**/secret/**/FROM customer", "RAW_SQL"),
+            (("other", 8, "text"), "INSERT/**/INTO customer VALUES (1)", "RAW_SQL"),
+            (("other", 8, "text"), "UPDATE/**/customer/**/SET status = 1", "RAW_SQL"),
+            (("other", 8, "text"), "alice@\nexample.com", "EMAIL_ADDRESS"),
+            (("other", 8, "text"), "pass\tword=hunter2", "CREDENTIAL_OR_TOKEN"),
+            (("other", 8, "text"), "jd\r\nbc:mysql://db", "JDBC_URL"),
+            (
+                ("other", 8, "text"),
+                "SEL-- comment\nECT secret FR-- comment\nOM customer",
+                "RAW_SQL",
+            ),
+            (
+                ("other", 8, "text"),
+                "SEL# comment\nECT secret FR# comment\nOM customer",
+                "RAW_SQL",
+            ),
+            (
+                ("other", 8, "text"),
+                "SELECT-- comment\nsecret-- comment\nFROM customer",
+                "RAW_SQL",
+            ),
+            (("other", 8, "text"), "database is 10.0.0.8:3306", "PRIVATE_TOPOLOGY"),
+            (("other", 8, "text"), "database is [::1]:3306", "PRIVATE_TOPOLOGY"),
+            (("other", 8, "text"), "phone 010-1234-5678", "KOREAN_PHONE_NUMBER"),
+            (("other", 8, "text"), "phone 010 1234 5678", "KOREAN_PHONE_NUMBER"),
+            (("other", 8, "text"), "phone 010--1234---5678", "KOREAN_PHONE_NUMBER"),
+            (("other", 8, "text"), "identity 020506-3123456", "KOREAN_RESIDENT_NUMBER"),
+            (("other", 8, "text"), "-----BEGIN PRIVATE KEY-----", "PRIVATE_KEY"),
+            (("other", 8, "text"), "device 00:1A:2B:3C:4D:5E", "MAC_ADDRESS"),
+            (("other", 8, "text"), "workspace /var/folders/ab/private", "LOCAL_PATH"),
+            (("other", 8, "text"), "workspace /private/tmp/private", "LOCAL_PATH"),
+            (("other", 8, "text"), "workspace /workspace/private", "LOCAL_PATH"),
+            (("other", 8, "text"), "workspace /workspace", "LOCAL_PATH"),
+            (("other", 8, "text"), "workspace ~/private", "LOCAL_PATH"),
+            (("other", 8, "text"), "workspace ~alice/private", "LOCAL_PATH"),
+            (("other", 8, "text"), "workspace ~alice", "LOCAL_PATH"),
+        )
+        for path, value, category in cases:
+            content = valid_report_content("zero")
+            parent = content
+            for component in path[:-1]:
+                parent = parent[component]
+            parent[path[-1]] = value
+            with self.subTest(path=path, category=category):
+                with self.assertRaisesRegex(
+                    package_submission.GateError, f"privacy-safe.*{category}"
+                ) as caught:
+                    package_submission.validate_and_materialize_report_content(
+                        content, valid_manifest(), current_utc=TEST_CURRENT_UTC
+                    )
+                self.assertNotIn(value, str(caught.exception))
+
+    def test_report_builder_cli_rejects_privacy_bypasses_without_echoing(self) -> None:
+        cases = (
+            ("PRIVATECANARY alice@\nexample.com", "EMAIL_ADDRESS"),
+            ("PRIVATECANARY pass\tword=hunter2", "CREDENTIAL_OR_TOKEN"),
+            ("PRIVATECANARY phone 010--1234---5678", "KOREAN_PHONE_NUMBER"),
+            ("PRIVATECANARY workspace /workspace", "LOCAL_PATH"),
+            (
+                "PRIVATECANARY SEL-- comment\nECT secret FR-- comment\nOM customer",
+                "RAW_SQL",
+            ),
+            ("PRIVATECANARY Cafe\u0301", "COMBINING_OR_ENCLOSING_MARK"),
+        )
+        with tempfile.TemporaryDirectory(dir="/private/tmp") as raw:
+            root = Path(raw)
+            template = root / "template.docx"
+            template.write_bytes(b"not reached")
+            for index, (value, category) in enumerate(cases):
+                content = valid_report_content("zero")
+                content["other"][8]["text"] = value
+                content_path = root / f"content-{index}.json"
+                content_path.write_text(json.dumps(content), encoding="utf-8")
+                process = subprocess.run(
+                    [
+                        sys.executable,
+                        str(REPORT_BUILDER_SCRIPT),
+                        "--template",
+                        str(template),
+                        "--content",
+                        str(content_path),
+                        "--output",
+                        str(root / f"report-{index}.docx"),
+                        "--strict-final",
+                    ],
+                    cwd=REPOSITORY_ROOT,
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                )
+                with self.subTest(category=category):
+                    self.assertNotEqual(0, process.returncode)
+                    self.assertIn(category, process.stderr)
+                    self.assertNotIn(value, process.stderr)
+                    self.assertNotIn("PRIVATECANARY", process.stderr)
+
+    def test_rejects_unicode_obfuscation_and_disallowed_controls(self) -> None:
+        cases = (
+            ("alice＠example．com", "EMAIL_ADDRESS"),
+            ("ＳＥＬＥＣＴ secret ＦＲＯＭ customer", "RAW_SQL"),
+            ("ｐａｓｓｗｏｒｄ＝hunter2", "CREDENTIAL_OR_TOKEN"),
+            ("ｊｄｂｃ：ｍｙｓｑｌ：／／10.0.0.8/private", "JDBC_URL"),
+            ("／Ｕｓｅｒｓ／alice／private", "LOCAL_PATH"),
+            (f"password{chr(0xFE0F)}=hunter2", "DEFAULT_IGNORABLE_OR_FILLER"),
+            (f"pass{chr(0x034F)}word=hunter2", "DEFAULT_IGNORABLE_OR_FILLER"),
+            (f"safe{chr(0x200B)}text", "DEFAULT_IGNORABLE_OR_FILLER"),
+            (f"safe{chr(0x2060)}text", "DEFAULT_IGNORABLE_OR_FILLER"),
+            (f"safe{chr(0x115F)}text", "DEFAULT_IGNORABLE_OR_FILLER"),
+            (f"safe{chr(0x1160)}text", "DEFAULT_IGNORABLE_OR_FILLER"),
+            (f"safe{chr(0x3164)}text", "DEFAULT_IGNORABLE_OR_FILLER"),
+            (f"safe{chr(0xFFA0)}text", "DEFAULT_IGNORABLE_OR_FILLER"),
+            (f"safe{chr(0xE0100)}text", "DEFAULT_IGNORABLE_OR_FILLER"),
+            (f"safe{chr(0x0338)}text", "COMBINING_OR_ENCLOSING_MARK"),
+            (f"safe{chr(0x0488)}text", "COMBINING_OR_ENCLOSING_MARK"),
+            (f"safe{chr(0xD800)}text", "CONTROL_OR_FORMAT_CHARACTER"),
+            (f"safe{chr(0xE000)}text", "CONTROL_OR_FORMAT_CHARACTER"),
+            (f"safe{chr(0x0378)}text", "CONTROL_OR_FORMAT_CHARACTER"),
+            (f"safe{chr(0x000B)}text", "CONTROL_OR_FORMAT_CHARACTER"),
+            ("Cafe\u0301", "COMBINING_OR_ENCLOSING_MARK"),
+        )
+        for value, category in cases:
+            content = valid_report_content("zero")
+            content["other"][8]["text"] = value
+            with self.subTest(category=category):
+                with self.assertRaisesRegex(
+                    package_submission.GateError, f"privacy-safe.*{category}"
+                ) as caught:
+                    package_submission.validate_and_materialize_report_content(
+                        content, valid_manifest(), current_utc=TEST_CURRENT_UTC
+                    )
+                self.assertNotIn(value, str(caught.exception))
+
+    def test_rejects_owner_marker_before_placeholder_error_can_echo_it(self) -> None:
+        value = "[[password is super-secret-value]]"
+        content = valid_report_content("zero")
+        content["other"][8]["text"] = value
+
+        with self.assertRaisesRegex(
+            package_submission.GateError, "privacy-safe.*UNRESOLVED_MARKER"
+        ) as caught:
+            package_submission.validate_and_materialize_report_content(
+                content, valid_manifest(), current_utc=TEST_CURRENT_UTC
+            )
+        self.assertNotIn(value, str(caught.exception))
+        self.assertNotIn("super-secret-value", str(caught.exception))
+
+    def test_placeholder_errors_never_echo_values_in_memory_visible_or_cli(self) -> None:
+        marker = "[[AWS_SECRET_ACCESS_KEY=canary-secret-value]]"
+        with self.assertRaisesRegex(package_submission.GateError, r"count=1") as caught:
+            package_submission.reject_placeholders({"owner": marker}, "manifest")
+        self.assertNotIn(marker, str(caught.exception))
+        self.assertNotIn("canary-secret-value", str(caught.exception))
+
+        valid_visible = (
+            "개발 보조 AI "
+            + package_submission.NO_RUNTIME_AI_DISCLOSURE
+            + " SBOM(소프트웨어 자재명세서)"
+        )
+        for label, docx_text, pdf_text in (
+            ("DOCX", marker, valid_visible),
+            ("PDF", valid_visible, marker),
+        ):
+            with self.subTest(label=label), self.assertRaisesRegex(
+                package_submission.GateError, rf"{label}.*count=1"
+            ) as caught:
+                package_submission.validate_report_text_contract(docx_text, pdf_text)
+            self.assertNotIn(marker, str(caught.exception))
+            self.assertNotIn("canary-secret-value", str(caught.exception))
+
+        with tempfile.TemporaryDirectory(dir="/private/tmp") as raw:
+            root = Path(raw)
+            manifest = root / "manifest.json"
+            manifest_value = valid_manifest()
+            manifest_value["submission_identity"]["team_name"] = marker
+            manifest.write_text(json.dumps(manifest_value), encoding="utf-8")
+            dummy = root / "input.bin"
+            dummy.write_bytes(b"x")
+            evidence = root / "evidence"
+            evidence.mkdir()
+            process = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPT),
+                    "--manifest",
+                    str(manifest),
+                    "--template",
+                    str(dummy),
+                    "--content",
+                    str(dummy),
+                    "--report-pdf",
+                    str(dummy),
+                    "--video-file",
+                    str(dummy),
+                    "--release-evidence-dir",
+                    str(evidence),
+                    "--release-evidence-artifact",
+                    str(dummy),
+                    "--output",
+                    str(root / "output"),
+                    "--repository-root",
+                    str(REPOSITORY_ROOT),
+                ],
+                cwd=REPOSITORY_ROOT,
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(1, process.returncode)
+            self.assertIn("count=1", process.stderr)
+            self.assertNotIn(marker, process.stderr)
+            self.assertNotIn("canary-secret-value", process.stderr)
+
+    def test_report_builder_placeholder_errors_never_echo_values_direct_or_cli(
+        self,
+    ) -> None:
+        marker = "[[AWS_SECRET_ACCESS_KEY=builder-canary-secret]]"
+        with self.assertRaisesRegex(ValueError, r"count=1") as caught:
+            build_official_report.validate_submission_gates(
+                {"metadata": {"team_name": marker}}, strict=True
+            )
+        self.assertNotIn(marker, str(caught.exception))
+        self.assertNotIn("builder-canary-secret", str(caught.exception))
+
+        with tempfile.TemporaryDirectory(dir="/private/tmp") as raw:
+            root = Path(raw)
+            content = valid_report_content("zero")
+            content["metadata"]["team_name"] = marker
+            content_path = root / "report-content.json"
+            content_path.write_text(json.dumps(content), encoding="utf-8")
+            dummy_template = root / "template.docx"
+            dummy_template.write_bytes(b"not reached")
+            process = subprocess.run(
+                [
+                    sys.executable,
+                    str(REPORT_BUILDER_SCRIPT),
+                    "--template",
+                    str(dummy_template),
+                    "--content",
+                    str(content_path),
+                    "--output",
+                    str(root / "report.docx"),
+                    "--strict-final",
+                ],
+                cwd=REPOSITORY_ROOT,
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(0, process.returncode)
+            self.assertIn("count=1", process.stderr)
+            self.assertNotIn(marker, process.stderr)
+            self.assertNotIn("builder-canary-secret", process.stderr)
+
+    def test_report_builder_strict_final_rejects_normalized_evidence_ids(self) -> None:
+        markers = ("E09", "e09", "Ｅ０９", "Ｅ09", "E０9", "E\u200b09")
+        with tempfile.TemporaryDirectory(dir="/private/tmp") as raw:
+            root = Path(raw)
+            template = root / "template.docx"
+            template.write_bytes(b"not reached")
+            for index, marker in enumerate(markers):
+                direct = {"metadata": {"team_name": marker}}
+                with self.subTest(marker=marker, path="direct"), self.assertRaisesRegex(
+                    ValueError, r"reader-facing report content contains audit evidence IDs \(count=1\)"
+                ) as caught:
+                    build_official_report.validate_submission_gates(direct, strict=True)
+                self.assertNotIn(marker, str(caught.exception))
+
+                content = valid_report_content("zero")
+                content["environment"][2]["text"] = marker
+                content_path = root / f"content-{index}.json"
+                content_path.write_text(
+                    json.dumps(content, ensure_ascii=False), encoding="utf-8"
+                )
+                process = subprocess.run(
+                    [
+                        sys.executable,
+                        str(REPORT_BUILDER_SCRIPT),
+                        "--template",
+                        str(template),
+                        "--content",
+                        str(content_path),
+                        "--output",
+                        str(root / f"report-{index}.docx"),
+                        "--strict-final",
+                    ],
+                    cwd=REPOSITORY_ROOT,
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                )
+                with self.subTest(marker=marker, path="cli"):
+                    self.assertNotEqual(0, process.returncode)
+                    expected_error = (
+                        "DEFAULT_IGNORABLE_OR_FILLER"
+                        if "\u200b" in marker
+                        else "audit evidence IDs (count=1)"
+                    )
+                    self.assertIn(expected_error, process.stderr)
+                    self.assertNotIn(marker, process.stderr)
+
+    def test_placeholder_fragments_are_counted_without_echo_in_all_report_gates(
+        self,
+    ) -> None:
+        valid_visible = (
+            "개발 보조 AI "
+            + package_submission.NO_RUNTIME_AI_DISCLOSURE
+            + " SBOM(소프트웨어 자재명세서)"
+        )
+        for marker in (
+            "[[PRIVATECANARYSECRETXYZ",
+            "PRIVATECANARYSECRETXYZ]]",
+        ):
+            with self.subTest(marker=marker), self.assertRaisesRegex(
+                package_submission.GateError, r"count=1"
+            ) as caught:
+                package_submission.reject_placeholders({"owner": marker}, "manifest")
+            self.assertNotIn(marker, str(caught.exception))
+            self.assertNotIn("PRIVATECANARYSECRETXYZ", str(caught.exception))
+
+            with self.subTest(marker=marker), self.assertRaisesRegex(
+                ValueError, r"count=1"
+            ) as caught:
+                build_official_report.validate_submission_gates(
+                    {"metadata": {"team_name": marker}}, strict=True
+                )
+            self.assertNotIn(marker, str(caught.exception))
+            self.assertNotIn("PRIVATECANARYSECRETXYZ", str(caught.exception))
+
+            for label, docx_text, pdf_text in (
+                ("DOCX", marker, valid_visible),
+                ("PDF", valid_visible, marker),
+            ):
+                with self.subTest(marker=marker, label=label), self.assertRaisesRegex(
+                    package_submission.GateError, rf"{label}.*count=1"
+                ) as caught:
+                    package_submission.validate_report_text_contract(
+                        docx_text, pdf_text
+                    )
+                self.assertNotIn(marker, str(caught.exception))
+                self.assertNotIn("PRIVATECANARYSECRETXYZ", str(caught.exception))
+
+            with tempfile.TemporaryDirectory(dir="/private/tmp") as raw:
+                root = Path(raw)
+                manifest_path = root / "manifest.json"
+                manifest = valid_manifest()
+                manifest["submission_identity"]["team_name"] = marker
+                manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+                content_path = root / "report-content.json"
+                content = valid_report_content("zero")
+                content["metadata"]["team_name"] = marker
+                content_path.write_text(json.dumps(content), encoding="utf-8")
+                dummy = root / "input.bin"
+                dummy.write_bytes(b"x")
+                evidence = root / "evidence"
+                evidence.mkdir()
+                package_process = subprocess.run(
+                    [
+                        sys.executable,
+                        str(SCRIPT),
+                        "--manifest",
+                        str(manifest_path),
+                        "--template",
+                        str(dummy),
+                        "--content",
+                        str(dummy),
+                        "--report-pdf",
+                        str(dummy),
+                        "--video-file",
+                        str(dummy),
+                        "--release-evidence-dir",
+                        str(evidence),
+                        "--release-evidence-artifact",
+                        str(dummy),
+                        "--output",
+                        str(root / "package-output"),
+                        "--repository-root",
+                        str(REPOSITORY_ROOT),
+                    ],
+                    cwd=REPOSITORY_ROOT,
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                )
+                self.assertNotEqual(0, package_process.returncode)
+                self.assertIn("count=1", package_process.stderr)
+                self.assertNotIn(marker, package_process.stderr)
+                self.assertNotIn("PRIVATECANARYSECRETXYZ", package_process.stderr)
+
+                template = root / "template.docx"
+                template.write_bytes(b"not reached")
+                builder_process = subprocess.run(
+                    [
+                        sys.executable,
+                        str(REPORT_BUILDER_SCRIPT),
+                        "--template",
+                        str(template),
+                        "--content",
+                        str(content_path),
+                        "--output",
+                        str(root / "report.docx"),
+                        "--strict-final",
+                    ],
+                    cwd=REPOSITORY_ROOT,
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                )
+                self.assertNotEqual(0, builder_process.returncode)
+                self.assertIn("count=1", builder_process.stderr)
+                self.assertNotIn(marker, builder_process.stderr)
+                self.assertNotIn("PRIVATECANARYSECRETXYZ", builder_process.stderr)
+
+    def test_exact_key_errors_and_clis_report_counts_without_key_values(self) -> None:
+        canary = "PRIVATE_CANARY_UNEXPECTED_KEY"
+        direct_cases = (
+            lambda: package_submission.REPORT_CONTENT_CONTRACT._require_exact_keys(
+                {canary: True}, {"expected"}, "external evidence"
+            ),
+            lambda: package_submission.require_exact_keys(
+                {canary: True}, {"expected"}, "manifest"
+            ),
+        )
+        for call in direct_cases:
+            with self.subTest(call=call), self.assertRaisesRegex(
+                (ValueError, package_submission.GateError),
+                r"missing_count=1, unexpected_count=1",
+            ) as caught:
+                call()
+            self.assertNotIn(canary, str(caught.exception))
+
+        with tempfile.TemporaryDirectory(dir="/private/tmp") as raw:
+            root = Path(raw)
+            content = valid_report_content("zero")
+            content[canary] = True
+            content_path = root / "report-content.json"
+            content_path.write_text(json.dumps(content), encoding="utf-8")
+            with self.assertRaisesRegex(
+                ValueError, r"missing_count=0, unexpected_count=1"
+            ) as caught:
+                build_official_report.load_content(content_path, strict=False)
+            self.assertNotIn(canary, str(caught.exception))
+
+            array_path = root / "array.json"
+            array_path.write_text(json.dumps([canary]), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "must be an object") as caught:
+                build_official_report.load_content(array_path, strict=False)
+            self.assertNotIn(canary, str(caught.exception))
+
+            template = root / "template.docx"
+            template.write_bytes(b"not reached")
+            builder_process = subprocess.run(
+                [
+                    sys.executable,
+                    str(REPORT_BUILDER_SCRIPT),
+                    "--template",
+                    str(template),
+                    "--content",
+                    str(content_path),
+                    "--output",
+                    str(root / "report.docx"),
+                ],
+                cwd=REPOSITORY_ROOT,
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(0, builder_process.returncode)
+            self.assertIn("unexpected_count=1", builder_process.stderr)
+            self.assertNotIn(canary, builder_process.stderr)
+
+            manifest = valid_manifest()
+            manifest[canary] = True
+            manifest_path = root / "manifest.json"
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+            dummy = root / "input.bin"
+            dummy.write_bytes(b"x")
+            evidence = root / "evidence"
+            evidence.mkdir()
+            package_process = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPT),
+                    "--manifest",
+                    str(manifest_path),
+                    "--template",
+                    str(dummy),
+                    "--content",
+                    str(dummy),
+                    "--report-pdf",
+                    str(dummy),
+                    "--video-file",
+                    str(dummy),
+                    "--release-evidence-dir",
+                    str(evidence),
+                    "--release-evidence-artifact",
+                    str(dummy),
+                    "--output",
+                    str(root / "package-output"),
+                    "--repository-root",
+                    str(REPOSITORY_ROOT),
+                ],
+                cwd=REPOSITORY_ROOT,
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(0, package_process.returncode)
+            self.assertIn("unexpected_count=1", package_process.stderr)
+            self.assertNotIn(canary, package_process.stderr)
+
+    def test_visible_content_mismatch_errors_never_echo_owner_values(self) -> None:
+        canary = "PRIVATECANARYSECRETXYZ"
+        content = valid_report_content("zero")
+        cases = (
+            ("missing", "anchor", "anchor", ["anchor", canary], []),
+            (
+                "value-order",
+                "anchor" + canary,
+                "anchor" + canary[::-1],
+                ["anchor", canary],
+                [],
+            ),
+            (
+                "row-order",
+                "anchor" + canary,
+                "anchor" + canary[::-1],
+                ["anchor"],
+                [canary],
+            ),
+        )
+        for label, docx_text, pdf_text, values, rows in cases:
+            with self.subTest(label=label), patch.object(
+                package_submission, "visible_report_values", return_value=values
+            ), patch.object(
+                package_submission, "visible_report_block_rows", return_value=rows
+            ), patch.object(
+                package_submission, "external_evidence_summary", return_value="anchor"
+            ), self.assertRaisesRegex(package_submission.GateError, r"count=1") as caught:
+                package_submission.validate_report_visible_content(
+                    docx_text, pdf_text, content
+                )
+            self.assertNotIn(canary, str(caught.exception))
+
+    def test_accepts_privacy_safe_owner_and_public_link_overlays(self) -> None:
+        content = valid_report_content("zero")
+        content["environment"][2]["text"] = "Apple silicon, macOS, JDK 17, Docker Desktop"
+        content["features"][4]["text"] = (
+            "52 tests passed: https://github.com/example-owner/routecontract/actions/runs/123456"
+        )
+        content["features"][6]["text"] = (
+            "Release: https://github.com/example-owner/routecontract/releases/tag/v0.1.0"
+        )
+        content["other"][4]["text"] = (
+            "JTS is non-bundled; the upstream metadata gap remains disclosed."
+        )
+        content["other"][5]["text"] = (
+            "Revision and public evidence links were checked against the final manifest."
+        )
+        content["other"][8]["text"] = (
+            "실패 경계를 좁히고 재현 fixture와 검증 계약을 직접 설명할 수 있게 됐다. "
+            "AWS SDK와 JWT 검토 용어, 공개 IPv6 https://[2606:4700:4700::1111]/dns-query, "
+            "https://github.com/apache/shardingsphere/issues/38456, "
+            "org.apache.shardingsphere:shardingsphere-jdbc:5.5.3, "
+            "v0.1.0 / Java 17 / MySQL 8.4.11도 값 없이 기록했다."
+        )
+        package_submission.validate_and_materialize_report_content(
+            content, valid_manifest(), current_utc=TEST_CURRENT_UTC
+        )
 
     def test_rejects_rc_result_collapsed_into_final_stable_branch(self) -> None:
         content = valid_report_content("final_stable")
@@ -751,6 +2044,668 @@ class ReportExternalEvidenceContractTest(unittest.TestCase):
                     content, valid_manifest(), current_utc=TEST_CURRENT_UTC
                 )
 
+class PublicJsonTransportTest(unittest.TestCase):
+    URL = "https://api.github.com/repos/example-owner/routecontract"
+
+    @staticmethod
+    def nested_json(depth: int, shape: str) -> bytes:
+        value = b"0"
+        for index in range(depth):
+            container = shape if shape != "mixed" else ("array" if index % 2 else "object")
+            value = b"[" + value + b"]" if container == "array" else b'{"a":' + value + b"}"
+        return value
+
+    @staticmethod
+    def node_json(node_count: int, shape: str) -> bytes:
+        if node_count < 1:
+            raise AssertionError("node_count must include the root")
+        if shape == "array":
+            value: object = [0] * (node_count - 1)
+        elif shape == "object":
+            value = {f"k{index}": 0 for index in range(node_count - 1)}
+        elif shape == "mixed":
+            if node_count < 3:
+                raise AssertionError("mixed JSON needs a list, object, and scalar")
+            value = [{"nested": 0}, *([0] * (node_count - 3))]
+        else:
+            raise AssertionError(f"unknown JSON shape: {shape}")
+        return json.dumps(value, separators=(",", ":")).encode("utf-8")
+
+    @staticmethod
+    def activation_record_payload(raw: bytes) -> tuple[dict[str, object], str, str]:
+        expected_url = (
+            "https://github.com/example-owner/routecontract/blob/"
+            + "a" * 40
+            + "/docs/evidence/independent-rc-activation-v0.1.0-rc2.json"
+        )
+        expected_path = (
+            "docs/evidence/independent-rc-activation-v0.1.0-rc2.json"
+        )
+        return (
+            {
+                "type": "file",
+                "path": expected_path,
+                "sha": "b" * 40,
+                "html_url": expected_url,
+                "encoding": "base64",
+                "content": base64.b64encode(raw).decode("ascii"),
+                "size": len(raw),
+            },
+            expected_url,
+            expected_path,
+        )
+
+    def test_object_list_and_page_helpers_reject_duplicate_keys_at_any_depth(self) -> None:
+        cases = (
+            (
+                "object-top-level",
+                package_submission.request_json,
+                b'{"CANARY_SECRET":1,"CANARY_SECRET":2}',
+                "bytes",
+            ),
+            (
+                "object-nested",
+                package_submission.request_json,
+                b'{"outer":{"CANARY_SECRET":1,"CANARY_SECRET":2}}',
+                "bytes",
+            ),
+            (
+                "list-nested",
+                package_submission.request_json_list,
+                b'[{"outer":{"CANARY_SECRET":1,"CANARY_SECRET":2}}]',
+                "bytes",
+            ),
+            (
+                "page-nested",
+                package_submission.request_json_list_page,
+                b'[{"outer":{"CANARY_SECRET":1,"CANARY_SECRET":2}}]',
+                "page",
+            ),
+        )
+        for label, helper, raw, transport in cases:
+            patcher = (
+                patch.object(
+                    package_submission,
+                    "request_bytes_with_headers",
+                    return_value=(raw, {}),
+                )
+                if transport == "page"
+                else patch.object(package_submission, "request_bytes", return_value=raw)
+            )
+            with self.subTest(label=label), patcher, self.assertRaises(
+                package_submission.GateError
+            ) as caught:
+                helper(self.URL)
+            self.assertNotIn("CANARY_SECRET", str(caught.exception))
+
+    def test_public_json_helpers_reject_nonfinite_and_malformed_utf8_generically(self) -> None:
+        cases = (
+            (package_submission.request_json, b'{"id":NaN}', "bytes"),
+            (package_submission.request_json_list, b'[{"id":Infinity}]', "bytes"),
+            (package_submission.request_json_list_page, b'[{"id":-Infinity}]', "page"),
+            (package_submission.request_json, b'{"id":1e999}', "bytes"),
+            (package_submission.request_json, b'{"id":"\xff"}', "bytes"),
+            (
+                package_submission.request_json,
+                self.nested_json(
+                    package_submission.REPORT_CONTENT_CONTRACT.STRICT_JSON_MAX_CONTAINER_DEPTH
+                    + 1,
+                    "object",
+                ),
+                "bytes",
+            ),
+        )
+        for helper, raw, transport in cases:
+            patcher = (
+                patch.object(
+                    package_submission,
+                    "request_bytes_with_headers",
+                    return_value=(raw, {}),
+                )
+                if transport == "page"
+                else patch.object(package_submission, "request_bytes", return_value=raw)
+            )
+            with self.subTest(raw=raw), patcher, self.assertRaisesRegex(
+                package_submission.GateError, "strict JSON"
+            ):
+                helper(self.URL)
+
+    def test_public_json_helpers_accept_strict_object_list_and_page(self) -> None:
+        self.assertEqual(8_000_000, package_submission.MAX_PUBLIC_JSON_RESPONSE_BYTES)
+        self.assertEqual(
+            package_submission.MAX_PUBLIC_JSON_RESPONSE_BYTES,
+            package_submission._decode_public_contents_file.__kwdefaults__["maximum_size"],
+        )
+        with patch.object(
+            package_submission, "request_bytes", return_value=b'{"id":1}'
+        ):
+            self.assertEqual({"id": 1}, package_submission.request_json(self.URL))
+        with patch.object(
+            package_submission, "request_bytes", return_value=b'[{"id":1}]'
+        ):
+            self.assertEqual([{"id": 1}], package_submission.request_json_list(self.URL))
+        with patch.object(
+            package_submission,
+            "request_bytes_with_headers",
+            return_value=(b'[{"id":1}]', {"link": ["next"]}),
+        ):
+            self.assertEqual(
+                ([{"id": 1}], ["next"]),
+                package_submission.request_json_list_page(self.URL),
+            )
+
+    def test_shared_strict_decoder_enforces_iterative_depth_and_node_budgets(self) -> None:
+        contract = package_submission.REPORT_CONTENT_CONTRACT
+        maximum_depth = contract.STRICT_JSON_MAX_CONTAINER_DEPTH
+        maximum_nodes = contract.STRICT_JSON_MAX_NODES
+
+        for shape in ("array", "object", "mixed"):
+            accepted = self.nested_json(maximum_depth, shape)
+            rejected = self.nested_json(maximum_depth + 1, shape).replace(
+                b"0", b'"CANARY_DEPTH_SECRET"', 1
+            )
+            with self.subTest(shape=shape, boundary="max"):
+                contract.decode_strict_json(accepted)
+            with self.subTest(shape=shape, boundary="max-plus-one"), self.assertRaises(
+                contract.StrictJsonError
+            ) as caught:
+                contract.decode_strict_json(rejected)
+            self.assertIsNone(caught.exception.__cause__)
+            self.assertNotIn("CANARY_DEPTH_SECRET", str(caught.exception))
+
+        accepted_elements = maximum_nodes - 1
+        accepted = b"[" + b"0," * (accepted_elements - 1) + b"0]"
+        rejected = accepted[:-1] + b",0]"
+        self.assertEqual(accepted_elements, len(contract.decode_strict_json(accepted)))
+        with self.assertRaises(contract.StrictJsonError) as caught:
+            contract.decode_strict_json(rejected)
+        self.assertIsNone(caught.exception.__cause__)
+
+        for depth in (1_050, 1_200):
+            with self.subTest(parser_depth=depth), self.assertRaises(
+                contract.StrictJsonError
+            ) as caught:
+                contract.decode_strict_json(self.nested_json(depth, "mixed"))
+            self.assertIsNone(caught.exception.__cause__)
+
+    def test_shared_strict_decoder_enforces_explicit_byte_budget(self) -> None:
+        contract = package_submission.REPORT_CONTENT_CONTRACT
+        self.assertEqual({}, contract.decode_strict_json(b"{}", maximum_bytes=2))
+        with self.assertRaises(contract.StrictJsonError) as caught:
+            contract.decode_strict_json(b" {}", maximum_bytes=2)
+        self.assertIsNone(caught.exception.__cause__)
+        for invalid_limit in (-1, True, 1.5):
+            with self.subTest(invalid_limit=invalid_limit), self.assertRaises(
+                contract.StrictJsonError
+            ) as caught:
+                contract.decode_strict_json(b"{}", maximum_bytes=invalid_limit)
+            self.assertIsNone(caught.exception.__cause__)
+
+    def test_shared_and_activation_decoders_have_exact_integer_and_tree_parity(
+        self,
+    ) -> None:
+        contract = package_submission.REPORT_CONTENT_CONTRACT
+        activation = package_submission.RC_ACTIVATION_RECORD_VALIDATOR
+        self.assertEqual(64, contract.STRICT_JSON_MAX_CONTAINER_DEPTH)
+        self.assertEqual(100_000, contract.STRICT_JSON_MAX_NODES)
+        self.assertEqual(1_000, contract.STRICT_JSON_MAX_INTEGER_DIGITS)
+        self.assertEqual(
+            contract.STRICT_JSON_MAX_CONTAINER_DEPTH,
+            activation.MAX_JSON_NESTING_DEPTH,
+        )
+        self.assertEqual(contract.STRICT_JSON_MAX_NODES, activation.MAX_JSON_NODE_COUNT)
+        self.assertEqual(
+            contract.STRICT_JSON_MAX_INTEGER_DIGITS,
+            activation.MAX_JSON_INTEGER_DIGITS,
+        )
+        self.assertEqual(
+            package_submission.MAX_PUBLIC_ACTIVATION_RECORD_BYTES,
+            activation.MAX_RECORD_BYTES,
+        )
+
+        decoders = (contract.decode_strict_json, activation._decode_strict_json)
+        accepted_integer = b"-" + b"9" * contract.STRICT_JSON_MAX_INTEGER_DIGITS
+        rejected_integer = accepted_integer + b"9"
+        for decoder in decoders:
+            with self.subTest(decoder=decoder.__module__, boundary="integer-max"):
+                self.assertEqual(int(accepted_integer), decoder(accepted_integer))
+            with self.subTest(
+                decoder=decoder.__module__, boundary="integer-max-plus-one"
+            ), self.assertRaises(ValueError) as caught:
+                decoder(rejected_integer)
+            self.assertIsNone(caught.exception.__cause__)
+
+            encoded = b'{"ok":true}'
+            self.assertEqual(
+                {"ok": True}, decoder(encoded, maximum_bytes=len(encoded))
+            )
+            with self.assertRaises(ValueError) as caught:
+                decoder(encoded, maximum_bytes=len(encoded) - 1)
+            self.assertIsNone(caught.exception.__cause__)
+
+        for shape in ("array", "object", "mixed"):
+            accepted = self.node_json(contract.STRICT_JSON_MAX_NODES, shape)
+            rejected = self.node_json(contract.STRICT_JSON_MAX_NODES + 1, shape)
+            for decoder in decoders:
+                with self.subTest(
+                    decoder=decoder.__module__, shape=shape, boundary="nodes-max"
+                ):
+                    decoder(accepted)
+                with self.subTest(
+                    decoder=decoder.__module__,
+                    shape=shape,
+                    boundary="nodes-max-plus-one",
+                ), self.assertRaises(ValueError) as caught:
+                    decoder(rejected)
+                self.assertIsNone(caught.exception.__cause__)
+
+    def test_public_activation_record_uses_the_strict_json_decoder(self) -> None:
+        valid_raw = b'{"schemaVersion":2}'
+        payload, expected_url, expected_path = self.activation_record_payload(valid_raw)
+        record, observed_raw, blob_sha = package_submission._decode_activation_record(
+            payload, expected_url, expected_path
+        )
+        self.assertEqual({"schemaVersion": 2}, record)
+        self.assertEqual(valid_raw, observed_raw)
+        self.assertEqual("b" * 40, blob_sha)
+
+        maximum_depth = (
+            package_submission.REPORT_CONTENT_CONTRACT.STRICT_JSON_MAX_CONTAINER_DEPTH
+        )
+        boundary_raw = self.nested_json(maximum_depth, "object")
+        payload, expected_url, expected_path = self.activation_record_payload(boundary_raw)
+        boundary_record, observed_raw, _ = package_submission._decode_activation_record(
+            payload, expected_url, expected_path
+        )
+        self.assertIsInstance(boundary_record, dict)
+        self.assertEqual(boundary_raw, observed_raw)
+
+        canary = "CANARY_PRIVATE_DUPLICATE_KEY"
+        deep = b"[" * 10_000 + b"0" + b"]" * 10_000
+        post_parse_deep = b'{"a":' * 2_000 + b"0" + b"}" * 2_000
+        huge_integer = b'{"value":' + b"9" * 5_000 + b"}"
+        malformed = (
+            b'{"value":NaN}',
+            b'{"value":Infinity}',
+            b'{"value":-Infinity}',
+            b'{"value":1e999}',
+            self.nested_json(maximum_depth + 1, "object").replace(
+                b"0", ('"' + canary + '"').encode(), 1
+            ),
+            self.nested_json(1_050, "object"),
+            self.nested_json(1_200, "mixed"),
+            deep,
+            post_parse_deep,
+            huge_integer,
+            '{"value":1}'.encode("utf-16"),
+            ('{"' + canary + '":1,"' + canary + '":2}').encode(),
+        )
+        for raw in malformed:
+            payload, expected_url, expected_path = self.activation_record_payload(raw)
+            with self.subTest(raw_prefix=raw[:24]), self.assertRaisesRegex(
+                package_submission.GateError, "strict JSON"
+            ) as caught:
+                package_submission._decode_activation_record(
+                    payload, expected_url, expected_path
+                )
+            self.assertIsNone(caught.exception.__cause__)
+            self.assertNotIn(canary, str(caught.exception))
+
+    def test_public_activation_record_enforces_the_exact_one_mibibyte_raw_limit(
+        self,
+    ) -> None:
+        maximum = package_submission.MAX_PUBLIC_ACTIVATION_RECORD_BYTES
+        accepted_raw = b"{}" + b" " * (maximum - 2)
+        payload, expected_url, expected_path = self.activation_record_payload(
+            accepted_raw
+        )
+        record, observed_raw, _ = package_submission._decode_activation_record(
+            payload, expected_url, expected_path
+        )
+        self.assertEqual({}, record)
+        self.assertEqual(accepted_raw, observed_raw)
+
+        rejected_raw = accepted_raw + b" "
+        payload, expected_url, expected_path = self.activation_record_payload(
+            rejected_raw
+        )
+        with self.assertRaisesRegex(
+            package_submission.GateError, "bounded public ordinary file"
+        ) as caught:
+            package_submission._decode_activation_record(
+                payload, expected_url, expected_path
+            )
+        self.assertIsNone(caught.exception.__cause__)
+
+    def test_tracked_public_activation_record_is_accepted_by_the_contents_decoder(
+        self,
+    ) -> None:
+        expected_path = "docs/evidence/independent-rc-activation-v0.1.0-rc2.json"
+        raw = (REPOSITORY_ROOT / expected_path).read_bytes()
+        expected_url = (
+            "https://github.com/ym0506/routecontract/blob/"
+            + "a" * 40
+            + f"/{expected_path}"
+        )
+        payload = {
+            "type": "file",
+            "path": expected_path,
+            "sha": "b" * 40,
+            "html_url": expected_url,
+            "encoding": "base64",
+            "content": base64.b64encode(raw).decode("ascii"),
+            "size": len(raw),
+        }
+        record, observed_raw, _ = package_submission._decode_activation_record(
+            payload, expected_url, expected_path
+        )
+        self.assertEqual("v0.1.0-rc2", record["tag"])
+        self.assertEqual(raw, observed_raw)
+
+    def test_activation_record_duplicate_key_cli_traceback_does_not_echo_key(self) -> None:
+        canary = "CANARY_PRIVATE_DUPLICATE_KEY"
+        script = f"""
+import base64
+from submission.tools import package_submission as module
+raw = b'{{\"{canary}\":1,\"{canary}\":2}}'
+url = 'https://github.com/example-owner/routecontract/blob/' + 'a' * 40 + '/record.json'
+payload = {{'type':'file','path':'record.json','sha':'b'*40,'html_url':url,'encoding':'base64','content':base64.b64encode(raw).decode('ascii'),'size':len(raw)}}
+module._decode_activation_record(payload, url, 'record.json')
+"""
+        process = subprocess.run(
+            [sys.executable, "-c", script],
+            cwd=REPOSITORY_ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.assertNotEqual(0, process.returncode)
+        self.assertIn("strict JSON", process.stderr)
+        self.assertNotIn(canary, process.stderr)
+
+    def test_private_and_supply_loaders_share_the_strict_json_contract(self) -> None:
+        canary = "CANARY_PRIVATE_DUPLICATE_KEY"
+        deep = b"[" * 10_000 + b"0" + b"]" * 10_000
+        malformed = (
+            ('{"' + canary + '":1,"' + canary + '":2}').encode(),
+            b'{"value":NaN}',
+            b'{"value":Infinity}',
+            b'{"value":-Infinity}',
+            b'{"value":1e999}',
+            b'{"value":' + b"9" * 5_000 + b"}",
+            self.nested_json(
+                package_submission.REPORT_CONTENT_CONTRACT.STRICT_JSON_MAX_CONTAINER_DEPTH
+                + 1,
+                "object",
+            ),
+            deep,
+            '{"value":1}'.encode("utf-16"),
+            b"\xff",
+        )
+        with tempfile.TemporaryDirectory(dir="/private/tmp") as raw_root:
+            root = Path(raw_root)
+            path = root / "input.json"
+            for raw in malformed:
+                path.write_bytes(raw)
+                loaders = (
+                    (
+                        "private-manifest",
+                        lambda: package_submission.load_json(path, "package manifest"),
+                    ),
+                    (
+                        "private-report",
+                        lambda: package_submission.load_json(path, "report content"),
+                    ),
+                    (
+                        "supply-evidence",
+                        lambda: package_submission.load_strict_json(
+                            path, "supply-chain evidence"
+                        ),
+                    ),
+                    (
+                        "builder-report",
+                        lambda: build_official_report.load_content(path, strict=False),
+                    ),
+                )
+                for label, loader in loaders:
+                    with self.subTest(label=label, raw_prefix=raw[:24]), self.assertRaises(
+                        (package_submission.GateError, ValueError)
+                    ) as caught:
+                        loader()
+                    self.assertIsNone(caught.exception.__cause__)
+                    self.assertNotIn(canary, str(caught.exception))
+
+            path.write_bytes(b" " * (1024 * 1024 + 1))
+            oversized_loaders = (
+                lambda: package_submission.load_json(path, "package manifest"),
+                lambda: package_submission.load_strict_json(
+                    path, "supply-chain evidence"
+                ),
+                lambda: build_official_report.load_content(path, strict=False),
+            )
+            for loader in oversized_loaders:
+                with self.subTest(loader=loader), self.assertRaisesRegex(
+                    (package_submission.GateError, ValueError), "safety limit"
+                ) as caught:
+                    loader()
+                self.assertIsNone(caught.exception.__cause__)
+
+            path.write_text('{"ok":true}', encoding="utf-8")
+            self.assertEqual(
+                {"ok": True}, package_submission.load_json(path, "package manifest")
+            )
+            self.assertEqual(
+                {"ok": True},
+                package_submission.load_strict_json(path, "supply-chain evidence"),
+            )
+            report = valid_report_content("zero")
+            path.write_text(json.dumps(report), encoding="utf-8")
+            observed_report = build_official_report.load_content(path, strict=False)
+            self.assertEqual(report["metadata"], observed_report["metadata"])
+            self.assertEqual("zero", observed_report["external_evidence"]["branch"])
+
+            path.write_bytes(
+                self.nested_json(
+                    package_submission.REPORT_CONTENT_CONTRACT.STRICT_JSON_MAX_CONTAINER_DEPTH
+                    + 1,
+                    "object",
+                )
+            )
+            with patch.object(
+                package_submission.REPORT_CONTENT_CONTRACT,
+                "CANONICAL_REPORT_SOURCE",
+                path,
+            ), self.assertRaisesRegex(ValueError, "canonical report source") as caught:
+                package_submission.REPORT_CONTENT_CONTRACT._canonical_report_source()
+            self.assertIsNone(caught.exception.__cause__)
+
+            maximum = (
+                package_submission.REPORT_CONTENT_CONTRACT.CANONICAL_REPORT_SOURCE_MAX_BYTES
+            )
+            accepted_source = b"{}" + b" " * (maximum - 2)
+            path.write_bytes(accepted_source)
+            with patch.object(
+                package_submission.REPORT_CONTENT_CONTRACT,
+                "CANONICAL_REPORT_SOURCE",
+                path,
+            ):
+                self.assertEqual(
+                    {},
+                    package_submission.REPORT_CONTENT_CONTRACT._canonical_report_source(),
+                )
+
+            path.write_bytes(accepted_source + b" ")
+            with patch.object(
+                package_submission.REPORT_CONTENT_CONTRACT,
+                "CANONICAL_REPORT_SOURCE",
+                path,
+            ), self.assertRaisesRegex(ValueError, "canonical report source") as caught:
+                package_submission.REPORT_CONTENT_CONTRACT._canonical_report_source()
+            self.assertIsNone(caught.exception.__cause__)
+
+    def test_private_and_supply_loader_cli_errors_never_echo_values(self) -> None:
+        canary = "CANARY_PRIVATE_DUPLICATE_KEY"
+        with tempfile.TemporaryDirectory(dir="/private/tmp") as raw_root:
+            root = Path(raw_root)
+            path = root / "input.json"
+            path.write_text(
+                '{"' + canary + '":1,"' + canary + '":2}', encoding="utf-8"
+            )
+            calls = (
+                (
+                    "package-manifest",
+                    "from submission.tools import package_submission as m; "
+                    f"m.load_json(__import__('pathlib').Path({str(path)!r}), 'package manifest')",
+                ),
+                (
+                    "package-report",
+                    "from submission.tools import package_submission as m; "
+                    f"m.load_json(__import__('pathlib').Path({str(path)!r}), 'report content')",
+                ),
+                (
+                    "supply-evidence",
+                    "from submission.tools import package_submission as m; "
+                    f"m.load_strict_json(__import__('pathlib').Path({str(path)!r}), 'supply-chain evidence')",
+                ),
+                (
+                    "builder-report",
+                    "from submission.tools import build_official_report as m; "
+                    f"m.load_content(__import__('pathlib').Path({str(path)!r}), strict=False)",
+                ),
+            )
+            for label, command in calls:
+                process = subprocess.run(
+                    [sys.executable, "-c", command],
+                    cwd=REPOSITORY_ROOT,
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                )
+                with self.subTest(label=label):
+                    self.assertNotEqual(0, process.returncode)
+                    self.assertNotIn(canary, process.stderr)
+
+            duplicate = '{"' + canary + '":1,"' + canary + '":2}'
+            manifest_path = root / "manifest.json"
+            report_path = root / "report.json"
+            dummy = root / "input.bin"
+            dummy.write_bytes(b"x")
+            evidence = root / "evidence"
+            evidence.mkdir()
+            package_arguments = [
+                sys.executable,
+                str(SCRIPT),
+                "--manifest",
+                str(manifest_path),
+                "--template",
+                str(dummy),
+                "--content",
+                str(report_path),
+                "--report-pdf",
+                str(dummy),
+                "--video-file",
+                str(dummy),
+                "--release-evidence-dir",
+                str(evidence),
+                "--release-evidence-artifact",
+                str(dummy),
+                "--output",
+                str(root / "package-output"),
+                "--repository-root",
+                str(REPOSITORY_ROOT),
+            ]
+            for surface in ("manifest", "report"):
+                manifest_path.write_text(
+                    duplicate if surface == "manifest" else json.dumps(valid_manifest()),
+                    encoding="utf-8",
+                )
+                report_path.write_text(
+                    duplicate if surface == "report" else json.dumps(valid_report_content("zero")),
+                    encoding="utf-8",
+                )
+                process = subprocess.run(
+                    package_arguments,
+                    cwd=REPOSITORY_ROOT,
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                )
+                with self.subTest(cli="package", surface=surface):
+                    self.assertNotEqual(0, process.returncode)
+                    self.assertIn("strict UTF-8 JSON", process.stderr)
+                    self.assertNotIn(canary, process.stderr)
+
+            report_path.write_text(duplicate, encoding="utf-8")
+            builder_process = subprocess.run(
+                [
+                    sys.executable,
+                    str(REPORT_BUILDER_SCRIPT),
+                    "--template",
+                    str(dummy),
+                    "--content",
+                    str(report_path),
+                    "--output",
+                    str(root / "report.docx"),
+                ],
+                cwd=REPOSITORY_ROOT,
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(0, builder_process.returncode)
+            self.assertIn("strict JSON", builder_process.stderr)
+            self.assertNotIn(canary, builder_process.stderr)
+
+    def test_graphql_command_failure_and_timeout_do_not_echo_output(self) -> None:
+        canary = "CANARY_GRAPHQL_SECRET"
+        failures = (
+            subprocess.CompletedProcess(
+                ["/safe/gh"], 1, stdout=canary, stderr=canary
+            ),
+            subprocess.TimeoutExpired(["/safe/gh"], 60, output=canary, stderr=canary),
+        )
+        for failure in failures:
+            side_effect = failure if isinstance(failure, BaseException) else None
+            return_value = None if side_effect is not None else failure
+            with self.subTest(kind=type(failure).__name__), patch.object(
+                package_submission,
+                "require_safe_github_cli_release_verification",
+                return_value="/safe/gh",
+            ), patch.object(
+                package_submission.subprocess,
+                "run",
+                return_value=return_value,
+                side_effect=side_effect,
+            ) as invoked, self.assertRaises(package_submission.GateError) as caught:
+                package_submission.request_graphql_issue("owner", "repo", 7)
+            self.assertNotIn(canary, str(caught.exception))
+            self.assertIsNone(caught.exception.__cause__)
+            self.assertEqual(60, invoked.call_args.kwargs["timeout"])
+
+    def test_graphql_decoder_rejects_nonfinite_deep_and_oversized_output(self) -> None:
+        malformed = (
+            '{"data":{"repository":{"id":1e999}}}',
+            self.nested_json(
+                package_submission.REPORT_CONTENT_CONTRACT.STRICT_JSON_MAX_CONTAINER_DEPTH
+                + 1,
+                "object",
+            ).decode(),
+            " " * (package_submission.MAX_JSON_TOOL_OUTPUT_BYTES + 1),
+        )
+        for output in malformed:
+            with self.subTest(length=len(output)), patch.object(
+                package_submission,
+                "require_safe_github_cli_release_verification",
+                return_value="/safe/gh",
+            ), patch.object(
+                package_submission,
+                "run",
+                return_value=output,
+            ), self.assertRaisesRegex(package_submission.GateError, "invalid JSON") as caught:
+                package_submission.request_graphql_issue("owner", "repo", 7)
+            self.assertIsNone(caught.exception.__cause__)
+
+
 class PublicExternalEvidenceTest(unittest.TestCase):
     RECORD_COMMIT = "b" * 40
     TAG_COMMIT = "c" * 40
@@ -785,6 +2740,14 @@ class PublicExternalEvidenceTest(unittest.TestCase):
         )
         self.graphql_patcher.start()
         self.addCleanup(self.graphql_patcher.stop)
+        self.activation_graphql_mutate = None
+        self.activation_graphql_patcher = patch.object(
+            package_submission,
+            "request_graphql_activation_pull",
+            side_effect=self.fake_graphql_activation_pull,
+        )
+        self.activation_graphql_patcher.start()
+        self.addCleanup(self.activation_graphql_patcher.stop)
         self.activation_pull_patcher = patch.object(
             package_submission,
             "request_json_list",
@@ -851,6 +2814,37 @@ class PublicExternalEvidenceTest(unittest.TestCase):
         }
         if self.graphql_mutate is not None:
             self.graphql_mutate(payload)
+        return payload
+
+    def fake_graphql_activation_pull(
+        self, owner: str, repository: str, number: int
+    ) -> dict:
+        rest = self.activation_pull_request()
+        payload = {
+            "data": {
+                "repository": {
+                    "id": self.REPOSITORY_NODE,
+                    "nameWithOwner": f"{owner}/{repository}",
+                    "pullRequest": {
+                        "id": rest["node_id"],
+                        "databaseId": rest["id"],
+                        "number": number,
+                        "url": rest["html_url"],
+                        "state": "MERGED",
+                        "merged": True,
+                        "mergedAt": rest["merged_at"],
+                        "baseRefName": "main",
+                        "baseRepository": {
+                            "id": self.REPOSITORY_NODE,
+                            "nameWithOwner": f"{owner}/{repository}",
+                        },
+                        "mergeCommit": {"oid": self.RECORD_COMMIT},
+                    },
+                }
+            }
+        }
+        if self.activation_graphql_mutate is not None:
+            self.activation_graphql_mutate(payload)
         return payload
 
     @staticmethod
@@ -1120,6 +3114,8 @@ class PublicExternalEvidenceTest(unittest.TestCase):
                     "content": base64.b64encode(raw).decode("ascii"),
                     "size": len(raw),
                 }
+            elif url == f"{self.api_base}/commits/main":
+                value = {"sha": self.manifest["project"]["commit"]}
             elif f"/commits/{self.RECORD_COMMIT}" in url:
                 value = {
                     "sha": self.RECORD_COMMIT,
@@ -1164,7 +3160,6 @@ class PublicExternalEvidenceTest(unittest.TestCase):
                     "behind_by": 0,
                     "base_commit": {"sha": self.RECORD_COMMIT},
                     "merge_base_commit": {"sha": self.RECORD_COMMIT},
-                    "head_commit": {"sha": self.manifest["project"]["commit"]},
                 }
             elif f"/commits/{self.TAG_COMMIT}" in url:
                 value = {
@@ -1417,6 +3412,14 @@ class PublicExternalEvidenceTest(unittest.TestCase):
             if "/compare/" in url:
                 value["merge_base_commit"]["sha"] = "8" * 40
 
+        def wrong_main_head(url: str, value: dict) -> None:
+            if url == f"{self.api_base}/commits/main":
+                value["sha"] = "8" * 40
+
+        def activation_behind_main(url: str, value: dict) -> None:
+            if "/compare/" in url:
+                value["behind_by"] = 1
+
         def missing_archived(url: str, value: dict) -> None:
             if url == self.api_base:
                 value.pop("archived")
@@ -1470,6 +3473,8 @@ class PublicExternalEvidenceTest(unittest.TestCase):
         for label, mutator in (
             ("tree", wrong_tree),
             ("main", wrong_main),
+            ("main-head", wrong_main_head),
+            ("activation-behind-main", activation_behind_main),
             ("repository", missing_archived),
             ("run", failed_run),
             ("artifact", wrong_artifact),
@@ -1566,6 +3571,503 @@ class PublicExternalEvidenceTest(unittest.TestCase):
                 package_submission, "request_bytes", return_value=self.checksum_bytes()
             ), self.assertRaises(package_submission.GateError):
                 package_submission.validate_public_external_evidence(content, self.manifest)
+
+    def test_activation_pull_association_accepts_null_list_merge_sha_only_when_direct_is_exact(
+        self,
+    ) -> None:
+        """GitHub's anonymous commit/pulls response can omit a known squash SHA."""
+        content = self.materialized("zero")
+        associated = self.activation_pull_request()
+        associated["merge_commit_sha"] = None
+        with patch.object(
+            package_submission,
+            "request_json_list",
+            return_value=[associated],
+        ), patch.object(
+            package_submission,
+            "request_json",
+            side_effect=self.fake_json(content),
+        ), patch.object(
+            package_submission,
+            "request_json_list_page",
+            side_effect=self.fake_pages({1: []}),
+        ), patch.object(
+            package_submission, "request_bytes", return_value=self.checksum_bytes()
+        ):
+            metadata = package_submission.validate_public_external_evidence(
+                content, self.manifest
+            )
+
+        self.assertEqual(
+            self.RECORD_COMMIT,
+            metadata["activation_pull_request"]["merge_commit_sha"],
+        )
+        self.assertEqual(
+            self.RECORD_COMMIT,
+            metadata["activation_pull_request"]["graphql_verified"][
+                "merge_commit_sha"
+            ],
+        )
+
+    def test_activation_pull_association_accepts_null_direct_merge_sha_only_when_list_is_exact(
+        self,
+    ) -> None:
+        """GitHub can instead omit the SHA only from the direct PR response."""
+        content = self.materialized("zero")
+
+        def omit_direct_sha(url: str, payload: dict) -> None:
+            if url == f"{self.api_base}/pulls/{self.ACTIVATION_PULL_NUMBER}":
+                payload["merge_commit_sha"] = None
+
+        with patch.object(
+            package_submission,
+            "request_json",
+            side_effect=self.fake_json(content, mutate=omit_direct_sha),
+        ), patch.object(
+            package_submission,
+            "request_json_list_page",
+            side_effect=self.fake_pages({1: []}),
+        ), patch.object(
+            package_submission, "request_bytes", return_value=self.checksum_bytes()
+        ):
+            metadata = package_submission.validate_public_external_evidence(
+                content, self.manifest
+            )
+
+        self.assertEqual(
+            self.RECORD_COMMIT,
+            metadata["activation_pull_request"]["merge_commit_sha"],
+        )
+
+    def test_activation_pull_association_rejects_optional_sha_or_direct_identity_drift(
+        self,
+    ) -> None:
+        content = self.materialized("zero")
+
+        def direct_mutator(field: str, value):
+            def mutate(url: str, payload: dict) -> None:
+                if url != f"{self.api_base}/pulls/{self.ACTIVATION_PULL_NUMBER}":
+                    return
+                if field == "base_ref":
+                    payload["base"]["ref"] = value
+                elif field == "base_repository":
+                    payload["base"]["repo"]["full_name"] = value
+                else:
+                    payload[field] = value
+
+            return mutate
+
+        cases = (
+            ("id", 9999),
+            ("node_id", "PR_drifted"),
+            ("number", self.ACTIVATION_PULL_NUMBER + 1),
+            ("html_url", f"{self.repository_url}/pull/999"),
+            ("state", "open"),
+            ("merged", False),
+            ("merged_at", None),
+            ("merge_commit_sha", "8" * 40),
+            ("base_ref", "next"),
+            ("base_repository", "foreign-owner/routecontract"),
+        )
+        for field, value in cases:
+            associated = self.activation_pull_request()
+            associated["merge_commit_sha"] = None
+            with self.subTest(field=field), patch.object(
+                package_submission,
+                "request_json_list",
+                return_value=[associated],
+            ), patch.object(
+                package_submission,
+                "request_json",
+                side_effect=self.fake_json(
+                    content, mutate=direct_mutator(field, value)
+                ),
+            ), patch.object(
+                package_submission,
+                "request_json_list_page",
+                side_effect=self.fake_pages({1: []}),
+            ), patch.object(
+                package_submission, "request_bytes", return_value=self.checksum_bytes()
+            ), self.assertRaises(package_submission.GateError):
+                package_submission.validate_public_external_evidence(
+                    content, self.manifest
+                )
+
+    def test_direct_main_compare_requires_exact_typed_ancestor_counts(self) -> None:
+        content = self.materialized("zero")
+
+        def comparison_mutator(changes: dict[str, object], missing: str | None = None):
+            def mutate(url: str, payload: dict) -> None:
+                if "/compare/" not in url:
+                    return
+                if missing is not None:
+                    payload.pop(missing)
+                payload.update(changes)
+
+            return mutate
+
+        cases = (
+            ("missing-ahead", {}, "ahead_by"),
+            ("missing-behind", {}, "behind_by"),
+            ("bool-ahead", {"ahead_by": True}, None),
+            ("bool-behind", {"behind_by": False}, None),
+            ("float-ahead", {"ahead_by": 1.0}, None),
+            ("float-behind", {"behind_by": 0.0}, None),
+            ("identical-with-ahead", {"status": "identical", "ahead_by": 1}, None),
+            ("ahead-with-zero", {"status": "ahead", "ahead_by": 0}, None),
+            ("behind-positive", {"behind_by": 1}, None),
+        )
+        for label, changes, missing in cases:
+            with self.subTest(label=label), patch.object(
+                package_submission,
+                "request_json",
+                side_effect=self.fake_json(
+                    content, mutate=comparison_mutator(changes, missing)
+                ),
+            ), patch.object(
+                package_submission,
+                "request_json_list_page",
+                side_effect=self.fake_pages({1: []}),
+            ), patch.object(
+                package_submission, "request_bytes", return_value=self.checksum_bytes()
+            ), self.assertRaisesRegex(
+                package_submission.GateError, "ancestor of final public main"
+            ):
+                package_submission.validate_public_external_evidence(
+                    content, self.manifest
+                )
+
+        associated = self.activation_pull_request()
+        associated["merge_commit_sha"] = "8" * 40
+        with patch.object(
+            package_submission,
+            "request_json_list",
+            return_value=[associated],
+        ), patch.object(
+            package_submission,
+            "request_json",
+            side_effect=self.fake_json(content),
+        ), patch.object(
+            package_submission,
+            "request_json_list_page",
+            side_effect=self.fake_pages({1: []}),
+        ), patch.object(
+            package_submission, "request_bytes", return_value=self.checksum_bytes()
+        ), self.assertRaises(package_submission.GateError):
+            package_submission.validate_public_external_evidence(content, self.manifest)
+
+    def test_activation_pull_association_rejects_ambiguous_or_foreign_candidates(
+        self,
+    ) -> None:
+        content = self.materialized("zero")
+        first = self.activation_pull_request()
+        first["merge_commit_sha"] = None
+        second = deepcopy(first)
+        second.update(
+            {
+                "id": 8900,
+                "node_id": "PR_kwDOActivation89",
+                "number": 89,
+                "html_url": f"{self.repository_url}/pull/89",
+            }
+        )
+        ordinary_json = self.fake_json(content)
+
+        def ambiguous_json(url: str) -> dict:
+            if url == f"{self.api_base}/pulls/89":
+                direct = deepcopy(second)
+                direct["merge_commit_sha"] = self.RECORD_COMMIT
+                return direct
+            return ordinary_json(url)
+
+        def ambiguous_graphql(owner: str, repository: str, number: int) -> dict:
+            payload = self.fake_graphql_activation_pull(owner, repository, number)
+            if number == 89:
+                pull = payload["data"]["repository"]["pullRequest"]
+                pull.update(
+                    {
+                        "id": second["node_id"],
+                        "databaseId": second["id"],
+                        "url": second["html_url"],
+                    }
+                )
+            return payload
+
+        for label, associated in (
+            ("ambiguous", [first, second]),
+            (
+                "foreign",
+                [
+                    {
+                        **first,
+                        "base": {
+                            "ref": "main",
+                            "repo": {"full_name": "foreign-owner/routecontract"},
+                        },
+                    }
+                ],
+            ),
+        ):
+            with self.subTest(label=label), patch.object(
+                package_submission,
+                "request_json_list",
+                return_value=associated,
+            ), patch.object(
+                package_submission,
+                "request_json",
+                side_effect=ambiguous_json,
+            ), patch.object(
+                package_submission,
+                "request_json_list_page",
+                side_effect=self.fake_pages({1: []}),
+            ), patch.object(
+                package_submission, "request_bytes", return_value=self.checksum_bytes()
+            ), patch.object(
+                package_submission,
+                "request_graphql_activation_pull",
+                side_effect=ambiguous_graphql,
+            ), self.assertRaises(package_submission.GateError):
+                package_submission.validate_public_external_evidence(
+                    content, self.manifest
+                )
+
+    def test_activation_pull_accepts_both_rest_shas_null_only_with_exact_graphql(
+        self,
+    ) -> None:
+        content = self.materialized("zero")
+        associated = self.activation_pull_request()
+        associated["merge_commit_sha"] = None
+
+        def omit_direct_sha(url: str, payload: dict) -> None:
+            if url == f"{self.api_base}/pulls/{self.ACTIVATION_PULL_NUMBER}":
+                payload["merge_commit_sha"] = None
+
+        with patch.object(
+            package_submission, "request_json_list", return_value=[associated]
+        ), patch.object(
+            package_submission,
+            "request_json",
+            side_effect=self.fake_json(content, mutate=omit_direct_sha),
+        ), patch.object(
+            package_submission,
+            "request_json_list_page",
+            side_effect=self.fake_pages({1: []}),
+        ), patch.object(
+            package_submission, "request_bytes", return_value=self.checksum_bytes()
+        ):
+            metadata = package_submission.validate_public_external_evidence(
+                content, self.manifest
+            )
+
+        self.assertEqual(
+            self.RECORD_COMMIT,
+            metadata["activation_pull_request"]["graphql_verified"][
+                "merge_commit_sha"
+            ],
+        )
+
+    def test_activation_pull_rejects_missing_merge_sha_key_but_accepts_explicit_null(
+        self,
+    ) -> None:
+        content = self.materialized("zero")
+
+        associated_missing = self.activation_pull_request()
+        associated_missing.pop("merge_commit_sha")
+        with self.subTest(surface="associated"), patch.object(
+            package_submission, "request_json_list", return_value=[associated_missing]
+        ), patch.object(
+            package_submission, "request_json", side_effect=self.fake_json(content)
+        ), patch.object(
+            package_submission,
+            "request_json_list_page",
+            side_effect=self.fake_pages({1: []}),
+        ), patch.object(
+            package_submission, "request_bytes", return_value=self.checksum_bytes()
+        ), self.assertRaises(package_submission.GateError):
+            package_submission.validate_public_external_evidence(content, self.manifest)
+
+        def remove_direct_sha(url: str, payload: dict) -> None:
+            if url == f"{self.api_base}/pulls/{self.ACTIVATION_PULL_NUMBER}":
+                payload.pop("merge_commit_sha")
+
+        associated_null = self.activation_pull_request()
+        associated_null["merge_commit_sha"] = None
+        with self.subTest(surface="direct"), patch.object(
+            package_submission, "request_json_list", return_value=[associated_null]
+        ), patch.object(
+            package_submission,
+            "request_json",
+            side_effect=self.fake_json(content, mutate=remove_direct_sha),
+        ), patch.object(
+            package_submission,
+            "request_json_list_page",
+            side_effect=self.fake_pages({1: []}),
+        ), patch.object(
+            package_submission, "request_bytes", return_value=self.checksum_bytes()
+        ), self.assertRaises(package_submission.GateError):
+            package_submission.validate_public_external_evidence(content, self.manifest)
+
+    def test_activation_pull_rejects_noninteger_rest_and_graphql_identities(self) -> None:
+        content = self.materialized("zero")
+
+        for field in ("id", "number"):
+            for value in (True, 1.0, 0, -1):
+                associated = self.activation_pull_request()
+                associated[field] = value
+                with self.subTest(surface="associated", field=field, value=value), patch.object(
+                    package_submission, "request_json_list", return_value=[associated]
+                ), patch.object(
+                    package_submission, "request_json", side_effect=self.fake_json(content)
+                ), patch.object(
+                    package_submission,
+                    "request_json_list_page",
+                    side_effect=self.fake_pages({1: []}),
+                ), patch.object(
+                    package_submission, "request_bytes", return_value=self.checksum_bytes()
+                ), self.assertRaises(package_submission.GateError):
+                    package_submission.validate_public_external_evidence(
+                        content, self.manifest
+                    )
+
+                def mutate_direct(url: str, payload: dict) -> None:
+                    if url == f"{self.api_base}/pulls/{self.ACTIVATION_PULL_NUMBER}":
+                        payload[field] = value
+
+                with self.subTest(surface="direct", field=field, value=value), patch.object(
+                    package_submission,
+                    "request_json",
+                    side_effect=self.fake_json(content, mutate=mutate_direct),
+                ), patch.object(
+                    package_submission,
+                    "request_json_list_page",
+                    side_effect=self.fake_pages({1: []}),
+                ), patch.object(
+                    package_submission, "request_bytes", return_value=self.checksum_bytes()
+                ), self.assertRaises(package_submission.GateError):
+                    package_submission.validate_public_external_evidence(
+                        content, self.manifest
+                    )
+
+        pull_path = ("data", "repository", "pullRequest")
+        for field in ("databaseId", "number"):
+            for value in (True, 1.0, 0, -1):
+                def mutate_graphql(payload: dict, field=field, value=value) -> None:
+                    payload["data"]["repository"]["pullRequest"][field] = value
+
+                self.activation_graphql_mutate = mutate_graphql
+                try:
+                    with self.subTest(surface="graphql", field=field, value=value), patch.object(
+                        package_submission, "request_json", side_effect=self.fake_json(content)
+                    ), patch.object(
+                        package_submission,
+                        "request_json_list_page",
+                        side_effect=self.fake_pages({1: []}),
+                    ), patch.object(
+                        package_submission, "request_bytes", return_value=self.checksum_bytes()
+                    ), self.assertRaises(package_submission.GateError):
+                        package_submission.validate_public_external_evidence(
+                            content, self.manifest
+                        )
+                finally:
+                    self.activation_graphql_mutate = None
+
+        strict_fields = (
+            ((*pull_path, "merged"), 1),
+            ((*pull_path, "url"), self.ACTIVATION_PULL_NUMBER),
+            ((*pull_path, "state"), 1),
+            ((*pull_path, "mergedAt"), 1),
+            (("data", "repository", "id"), 1),
+            ((*pull_path, "baseRepository", "id"), 1),
+        )
+        for path, value in strict_fields:
+            def mutate_graphql(payload: dict, path=path, value=value) -> None:
+                target = payload
+                for component in path[:-1]:
+                    target = target[component]
+                target[path[-1]] = value
+
+            self.activation_graphql_mutate = mutate_graphql
+            try:
+                with self.subTest(path=path), patch.object(
+                    package_submission, "request_json", side_effect=self.fake_json(content)
+                ), patch.object(
+                    package_submission,
+                    "request_json_list_page",
+                    side_effect=self.fake_pages({1: []}),
+                ), patch.object(
+                    package_submission, "request_bytes", return_value=self.checksum_bytes()
+                ), self.assertRaises(package_submission.GateError):
+                    package_submission.validate_public_external_evidence(
+                        content, self.manifest
+                    )
+            finally:
+                self.activation_graphql_mutate = None
+
+    def test_activation_pull_rejects_graphql_partial_or_identity_drift(self) -> None:
+        content = self.materialized("zero")
+
+        def mutate(path: tuple[str, ...], value):
+            def apply(payload: dict) -> None:
+                target = payload
+                for key in path[:-1]:
+                    target = target[key]
+                target[path[-1]] = value
+
+            return apply
+
+        pull_path = ("data", "repository", "pullRequest")
+        cases = (
+            (("data", "repository"), None),
+            (("data", "unexpected"), {}),
+            (("data", "repository", "unexpected"), True),
+            (("data", "repository", "id"), "R_wrong"),
+            (("data", "repository", "nameWithOwner"), "other/repo"),
+            ((*pull_path, "id"), "PR_wrong"),
+            ((*pull_path, "databaseId"), 9999),
+            ((*pull_path, "number"), 89),
+            ((*pull_path, "url"), f"{self.repository_url}/pull/89"),
+            ((*pull_path, "state"), "CLOSED"),
+            ((*pull_path, "merged"), False),
+            ((*pull_path, "mergedAt"), None),
+            ((*pull_path, "baseRefName"), "next"),
+            ((*pull_path, "baseRepository", "id"), "R_wrong"),
+            ((*pull_path, "baseRepository", "nameWithOwner"), "other/repo"),
+            ((*pull_path, "mergeCommit"), None),
+            ((*pull_path, "mergeCommit", "oid"), "8" * 40),
+        )
+        for path, value in cases:
+            self.activation_graphql_mutate = mutate(path, value)
+            with self.subTest(path=path), patch.object(
+                package_submission,
+                "request_json",
+                side_effect=self.fake_json(content),
+            ), patch.object(
+                package_submission,
+                "request_json_list_page",
+                side_effect=self.fake_pages({1: []}),
+            ), patch.object(
+                package_submission, "request_bytes", return_value=self.checksum_bytes()
+            ), self.assertRaises(package_submission.GateError):
+                package_submission.validate_public_external_evidence(
+                    content, self.manifest
+                )
+        self.activation_graphql_mutate = None
+        with patch.object(
+            package_submission,
+            "request_graphql_activation_pull",
+            side_effect=package_submission.GateError("GraphQL unavailable"),
+        ), patch.object(
+            package_submission,
+            "request_json",
+            side_effect=self.fake_json(content),
+        ), patch.object(
+            package_submission,
+            "request_json_list_page",
+            side_effect=self.fake_pages({1: []}),
+        ), patch.object(
+            package_submission, "request_bytes", return_value=self.checksum_bytes()
+        ), self.assertRaises(package_submission.GateError):
+            package_submission.validate_public_external_evidence(content, self.manifest)
 
     def test_result_requires_checked_lines_user_type_exact_tag_and_cutoff(self) -> None:
         cases: list[tuple[str, str, object]] = []
@@ -2521,6 +5023,31 @@ class PublicExternalSnapshotRevalidationTest(unittest.TestCase):
         self.assertLess(external_requery, archive)
         self.assertLess(archive, publish)
 
+    def test_malformed_second_observation_fails_before_canonical_comparison(self) -> None:
+        mutations = (
+            ("missing", lambda value: value.pop("qualified_result_count")),
+            ("null", lambda value: value.__setitem__("qualified_result_count", None)),
+            ("float", lambda value: value.__setitem__("qualified_result_count", 1.0)),
+        )
+        for label, mutate in mutations:
+            initial = self.snapshot()
+            observed = deepcopy(initial)
+            mutate(observed)
+            with self.subTest(label=label), patch.object(
+                package_submission,
+                "validate_public_external_evidence",
+                return_value=observed,
+            ), patch.object(
+                package_submission,
+                "canonical_external_snapshot_bytes",
+                side_effect=AssertionError("canonical comparison must not run"),
+            ), self.assertRaisesRegex(
+                package_submission.GateError, "malformed"
+            ):
+                package_submission.revalidate_public_external_evidence(
+                    initial, {"external_evidence": {}}, valid_manifest()
+                )
+
     def test_complete_release_ci_video_snapshot_is_recollected_exactly(self) -> None:
         initial = {
             "repository_full_name": "example-owner/routecontract",
@@ -2658,6 +5185,27 @@ class ManifestTest(unittest.TestCase):
             checked["official_submission_filenames"],
         )
 
+    def test_rejects_legacy_or_non_integer_manifest_schema_version(self) -> None:
+        for version in (1, 2, 3.0, True, "3", None):
+            manifest = valid_manifest()
+            manifest["schema_version"] = version
+            with self.subTest(version=version), self.assertRaisesRegex(
+                package_submission.GateError,
+                r"^manifest\.schema_version must be 3$",
+            ):
+                package_submission.validate_manifest(manifest)
+
+    def test_rejects_legacy_overbroad_source_review_attestation_key(self) -> None:
+        manifest = valid_manifest()
+        attestations = manifest["participant_attestations"]
+        attestations["all_submitted_code_reviewed_and_explainable"] = attestations.pop(
+            "core_behavior_boundaries_artifacts_and_dependency_roles_reviewed_and_explainable"
+        )
+        with self.assertRaisesRegex(
+            package_submission.GateError, "participant_attestations"
+        ):
+            package_submission.validate_manifest(manifest)
+
     def test_rejects_non_nfc_submission_identity(self) -> None:
         manifest = valid_manifest()
         manifest["submission_identity"]["team_name"] = unicodedata.normalize(
@@ -2736,6 +5284,43 @@ class ManifestTest(unittest.TestCase):
         with self.assertRaisesRegex(package_submission.GateError, "at most 180"):
             package_submission.validate_manifest(manifest)
 
+    def test_rejects_unsupported_or_mismatched_video_evidence_branch(self) -> None:
+        for branch in ([], {}, None, True, 1, 1.0):
+            manifest = valid_manifest()
+            manifest["video"]["external_evidence_branch"] = branch
+            with self.subTest(branch=branch), self.assertRaisesRegex(
+                package_submission.GateError,
+                r"^video\.external_evidence_branch must be rc_only or zero$",
+            ):
+                package_submission.validate_manifest(manifest)
+
+        manifest = valid_manifest()
+        manifest["video"]["external_evidence_branch"] = "final_stable"
+        with self.assertRaisesRegex(
+            package_submission.GateError,
+            r"video\.external_evidence_branch must be rc_only or zero",
+        ):
+            package_submission.validate_manifest(manifest)
+
+        manifest = package_submission.validate_manifest(valid_manifest())
+        content = package_submission.validate_and_materialize_report_content(
+            valid_report_content("zero"),
+            manifest,
+            current_utc=TEST_CURRENT_UTC,
+        )
+        with self.assertRaisesRegex(
+            package_submission.GateError,
+            r"must exactly match.*report external-evidence branch",
+        ):
+            package_submission.validate_video_external_evidence_branch_matches_content(
+                content, manifest
+            )
+
+        manifest["video"]["external_evidence_branch"] = "zero"
+        package_submission.validate_video_external_evidence_branch_matches_content(
+            content, manifest
+        )
+
     def test_rejects_release_candidate_tag_for_final_package(self) -> None:
         manifest = valid_manifest()
         manifest["project"]["tag"] = "v0.1.0-rc1"
@@ -2758,15 +5343,23 @@ class ManifestTest(unittest.TestCase):
         with self.assertRaisesRegex(package_submission.GateError, "attestations"):
             package_submission.validate_manifest(manifest)
 
-    def test_report_free_text_attestation_requires_literal_true(self) -> None:
-        key = "report_free_text_contains_no_external_evidence_claims"
-        for value in (False, 1, "true", None):
-            manifest = valid_manifest()
-            manifest["participant_attestations"][key] = value
-            with self.subTest(value=value), self.assertRaisesRegex(
-                package_submission.GateError, key
-            ):
-                package_submission.validate_manifest(manifest)
+    def test_human_review_attestations_require_literal_true(self) -> None:
+        for key in (
+            "core_behavior_boundaries_artifacts_and_dependency_roles_reviewed_and_explainable",
+            "report_free_text_contains_no_external_evidence_claims",
+            "report_free_text_privacy_reviewed",
+            "five_year_public_repository_visibility_obligation_if_selected_accepted",
+            "owner_voice_written_by_participant",
+            "maintenance_order_and_period_confirmed",
+            "origin_and_prior_work_statement_confirmed",
+        ):
+            for value in (False, 1, "true", None):
+                manifest = valid_manifest()
+                manifest["participant_attestations"][key] = value
+                with self.subTest(key=key, value=value), self.assertRaisesRegex(
+                    package_submission.GateError, key
+                ):
+                    package_submission.validate_manifest(manifest)
 
     def test_rejects_unimplemented_release_signature_claim(self) -> None:
         manifest = valid_manifest()
@@ -2804,9 +5397,36 @@ class LocalVideoEvidenceTest(unittest.TestCase):
                 "-of",
                 "json",
                 str(self.VIDEO),
-            ]
+            ],
+            failure_label="ffprobe video metadata probe",
         )
         return result
+
+    def test_ffprobe_rejects_duplicate_nonfinite_and_deep_json_generically(self) -> None:
+        canary = "CANARY_FFPROBE_PRIVATE_KEY"
+        malformed = (
+            '{"' + canary + '":1,"' + canary + '":2}',
+            '{"value":NaN}',
+            '{"value":1e999}',
+            PublicJsonTransportTest.nested_json(
+                package_submission.REPORT_CONTENT_CONTRACT.STRICT_JSON_MAX_CONTAINER_DEPTH
+                + 1,
+                "object",
+            ).decode(),
+            "[" * 10_000 + "0" + "]" * 10_000,
+            " " * (package_submission.MAX_JSON_TOOL_OUTPUT_BYTES + 1),
+        )
+        for output in malformed:
+            with self.subTest(prefix=output[:24]), patch.object(
+                package_submission.shutil, "which", return_value="/usr/local/bin/ffprobe"
+            ), patch.object(
+                package_submission, "run", return_value=output
+            ), self.assertRaisesRegex(
+                package_submission.GateError, "incomplete video metadata"
+            ) as caught:
+                package_submission.local_video_metadata(self.VIDEO)
+            self.assertIsNone(caught.exception.__cause__)
+            self.assertNotIn(canary, str(caught.exception))
 
     def test_accepts_1080p_audio_and_normal_container_tags(self) -> None:
         result = self.probe(valid_ffprobe_video())
@@ -2867,7 +5487,7 @@ class LocalVideoEvidenceTest(unittest.TestCase):
         )
         payload["streams"].append(alternate)
 
-        with self.assertRaisesRegex(package_submission.GateError, "got 1280x720"):
+        with self.assertRaisesRegex(package_submission.GateError, "at least 1920x1080"):
             self.probe(payload)
 
     def test_rejects_cover_art_or_still_image_as_resolution_evidence(self) -> None:
@@ -2888,7 +5508,7 @@ class LocalVideoEvidenceTest(unittest.TestCase):
             payload["streams"].append(cover)
 
             with self.subTest(disposition=excluded_disposition), self.assertRaisesRegex(
-                package_submission.GateError, "got 1280x720"
+                package_submission.GateError, "at least 1920x1080"
             ):
                 self.probe(payload)
 
@@ -2906,7 +5526,7 @@ class LocalVideoEvidenceTest(unittest.TestCase):
         )
         payload["streams"].append(secondary)
 
-        with self.assertRaisesRegex(package_submission.GateError, "got 1280x720"):
+        with self.assertRaisesRegex(package_submission.GateError, "at least 1920x1080"):
             self.probe(payload)
 
     def test_rejects_multiple_default_motion_video_streams(self) -> None:
@@ -2975,6 +5595,28 @@ class LocalVideoEvidenceTest(unittest.TestCase):
                 package_submission.GateError, "ffprobe returned incomplete video metadata"
             ):
                 self.probe(payload)
+
+    def test_ffprobe_schema_diagnostics_never_echo_json_values(self) -> None:
+        canary = "CANARY_FFPROBE_PRIVATE_VALUE"
+        cases = []
+        invalid_duration = valid_ffprobe_video()
+        invalid_duration["format"]["duration"] = canary
+        cases.append(invalid_duration)
+        sensitive_stream_tag = valid_ffprobe_video()
+        sensitive_stream_tag["streams"][0]["index"] = canary
+        sensitive_stream_tag["streams"][0]["tags"]["author"] = "private"
+        cases.append(sensitive_stream_tag)
+        oversized_integer = valid_ffprobe_video()
+        oversized_integer["format"]["duration"] = int("9" * 1_000)
+        cases.append(oversized_integer)
+        for payload in cases:
+            with self.subTest(payload=payload), self.assertRaises(
+                package_submission.GateError
+            ) as caught:
+                self.probe(payload)
+            self.assertIsNone(caught.exception.__cause__)
+            self.assertNotIn(canary, str(caught.exception))
+            self.assertNotIn("9" * 32, str(caught.exception))
 
     def test_rejects_missing_audio_stream(self) -> None:
         payload = valid_ffprobe_video()
@@ -3120,7 +5762,9 @@ class LocalVideoEvidenceTest(unittest.TestCase):
                 package_submission,
                 "local_video_metadata",
                 return_value={"duration_seconds": 180.001},
-            ), self.assertRaisesRegex(package_submission.GateError, "official maximum"):
+            ), self.assertRaisesRegex(
+                package_submission.GateError, "official 180-second maximum"
+            ):
                 package_submission.validate_local_video(video, manifest)
 
             with patch.object(
@@ -3217,7 +5861,7 @@ class ReportContractTest(unittest.TestCase):
     BASE = (
         "2026년 오픈소스 개발자대회 결과보고서 "
         "개발 보조 AI OpenAI ChatGPT 및 Codex "
-        "제품에는 AI 모델·학습/추론 코드·외부 AI API 호출이 없다 "
+        f"{package_submission.NO_RUNTIME_AI_DISCLOSURE} "
         "붙임1 SBOM(소프트웨어 자재명세서)"
     )
     PORTRAIT = (595.0, 842.0)
@@ -3226,6 +5870,496 @@ class ReportContractTest(unittest.TestCase):
         {"name": "Alpha", "version": "1.0"},
         {"name": "Omega", "version": "2.0"},
     ]
+
+    def test_visible_release_identity_binds_full_coordinate_and_commit(self) -> None:
+        manifest = package_submission.validate_manifest(valid_manifest())
+        coordinate = (
+            "io.github.example-owner.routecontract:"
+            "routecontract-shardingsphere-5.5:0.1.0"
+        )
+        commit = manifest["project"]["commit"]
+        package_submission.validate_report_release_identity(
+            f"설치 {coordinate} 최종 revision {commit}", manifest
+        )
+
+        cases = (
+            (
+                "artifact",
+                f"설치 io.github.example-owner.routecontract:wrong:0.1.0 {commit}",
+                "Maven install coordinate",
+            ),
+            (
+                "version",
+                "설치 io.github.example-owner.routecontract:"
+                f"routecontract-shardingsphere-5.5:0.1.1 {commit}",
+                "Maven install coordinate",
+            ),
+            (
+                "commit",
+                f"설치 {coordinate} {'2' * 40}",
+                "final commit SHA",
+            ),
+        )
+        for label, text, message in cases:
+            with self.subTest(label=label), self.assertRaisesRegex(
+                package_submission.GateError, message
+            ):
+                package_submission.validate_report_release_identity(text, manifest)
+
+    def test_sbom_visible_text_uses_required_ten_point_body_font(self) -> None:
+        self.assertEqual(10, build_official_report.BODY_FONT_PT)
+        self.assertEqual(
+            build_official_report.BODY_FONT_PT,
+            build_official_report.SBOM_FONT_PT,
+        )
+        self.assertEqual(11.2, build_official_report.SBOM_LINE_SPACING_PT)
+
+    def test_fill_sbom_applies_ten_point_visible_text_and_exact_line_spacing(
+        self,
+    ) -> None:
+        class FakeFormat:
+            pass
+
+        class FakeRun:
+            def __init__(self, paragraph, text: str) -> None:
+                self.paragraph = paragraph
+                self.text = text
+
+        class FakeParagraph:
+            def __init__(self) -> None:
+                self.alignment = None
+                self.paragraph_format = FakeFormat()
+                self.runs = []
+
+            def add_run(self, text: str = "") -> FakeRun:
+                run = FakeRun(self, text)
+                self.runs.append(run)
+                return run
+
+        class FakeCell:
+            def __init__(self) -> None:
+                self.text = ""
+                self.paragraphs = [FakeParagraph()]
+                self.vertical_alignment = None
+
+        class FakeRow:
+            def __init__(self) -> None:
+                self.cells = [FakeCell() for _ in range(6)]
+
+        class FakeTable:
+            def __init__(self) -> None:
+                self.rows = [FakeRow() for _ in range(11)]
+                self.columns = [object() for _ in range(6)]
+
+            def cell(self, row: int, column: int) -> FakeCell:
+                return self.rows[row].cells[column]
+
+        class FakeParagraphAlignment:
+            LEFT = object()
+            CENTER = object()
+
+        class FakeVerticalAlignment:
+            CENTER = object()
+
+        rows = [
+            {
+                "name": f"component-{index}",
+                "version": f"{index}.0",
+                "license": "Apache-2.0",
+                "url": f"https://example.test/component-{index}",
+                "purpose": f"purpose-{index}",
+            }
+            for index in range(1, 11)
+        ]
+        table = FakeTable()
+        # python-docx serializes a Pt length as exact line spacing.
+        exact_11_2_pt = ("pt", 11.2)
+
+        with (
+            patch.object(build_official_report, "find_table", return_value=table),
+            patch.object(build_official_report, "set_cell_margins"),
+            patch.object(build_official_report, "mark_repeat_header"),
+            patch.object(build_official_report, "mark_data_rows_cannot_split"),
+            patch.object(build_official_report, "remove_fixed_row_heights"),
+            patch.object(
+                build_official_report,
+                "WD_ALIGN_PARAGRAPH",
+                new=FakeParagraphAlignment,
+                create=True,
+            ),
+            patch.object(
+                build_official_report,
+                "WD_CELL_VERTICAL_ALIGNMENT",
+                new=FakeVerticalAlignment,
+                create=True,
+            ),
+            patch.object(
+                build_official_report,
+                "Pt",
+                side_effect=lambda value: ("pt", value),
+                create=True,
+            ),
+            patch.object(build_official_report, "set_run_font") as plain_font,
+            patch.object(build_official_report, "append_hyperlink") as hyperlink,
+        ):
+            build_official_report.fill_sbom(object(), rows)
+
+        data_paragraphs = {
+            cell.paragraphs[0]
+            for row in table.rows[1:]
+            for cell in row.cells
+        }
+        self.assertEqual(60, len(data_paragraphs))
+        self.assertEqual(50, plain_font.call_count)
+        self.assertEqual(10, hyperlink.call_count)
+
+        plain_paragraphs = set()
+        for invocation in plain_font.call_args_list:
+            run, size_pt = invocation.args
+            self.assertEqual(10, size_pt)
+            self.assertEqual({"bold": False}, invocation.kwargs)
+            plain_paragraphs.add(run.paragraph)
+
+        actual_hyperlinks = {
+            tuple(invocation.args) for invocation in hyperlink.call_args_list
+        }
+        expected_hyperlinks = {
+            (
+                table.cell(index, 4).paragraphs[0],
+                item["url"],
+                item["url"],
+                10,
+            )
+            for index, item in enumerate(rows, start=1)
+        }
+        self.assertEqual(expected_hyperlinks, actual_hyperlinks)
+
+        hyperlink_paragraphs = {
+            invocation.args[0] for invocation in hyperlink.call_args_list
+        }
+        self.assertFalse(plain_paragraphs & hyperlink_paragraphs)
+        self.assertEqual(
+            data_paragraphs,
+            plain_paragraphs | hyperlink_paragraphs,
+        )
+        for paragraph in data_paragraphs:
+            self.assertEqual(
+                exact_11_2_pt,
+                paragraph.paragraph_format.line_spacing,
+            )
+
+    def test_report_text_blocks_do_not_split_across_pages(self) -> None:
+        class FakeFormat:
+            pass
+
+        class FakeRun:
+            pass
+
+        class FakeParagraph:
+            def __init__(self) -> None:
+                self.alignment = None
+                self.paragraph_format = FakeFormat()
+
+            def add_run(self, _text: str = "") -> FakeRun:
+                return FakeRun()
+
+        class FakeCell:
+            def __init__(self) -> None:
+                self.text = ""
+                self.paragraphs = [FakeParagraph()]
+                self.vertical_alignment = None
+
+            def add_paragraph(self) -> FakeParagraph:
+                paragraph = FakeParagraph()
+                self.paragraphs.append(paragraph)
+                return paragraph
+
+        class FakeVerticalAlignment:
+            TOP = object()
+
+        cell = FakeCell()
+        with (
+            patch.object(
+                build_official_report, "Pt", new=lambda value: value, create=True
+            ),
+            patch.object(
+                build_official_report,
+                "WD_CELL_VERTICAL_ALIGNMENT",
+                new=FakeVerticalAlignment,
+                create=True,
+            ),
+            patch.object(build_official_report, "set_run_font"),
+            patch.object(build_official_report, "append_text_with_hyperlinks"),
+        ):
+            build_official_report.set_block_cell(
+                cell,
+                [
+                    {
+                        "lead": "첫 문단",
+                        "text": "한 문단은 페이지 사이에서 분리되지 않는다.",
+                    },
+                    {
+                        "lead": "둘째 문단",
+                        "text": "다음 문단도 같은 규칙을 따른다.",
+                    },
+                ],
+            )
+
+        self.assertEqual(2, len(cell.paragraphs))
+        for paragraph in cell.paragraphs:
+            self.assertIs(True, paragraph.paragraph_format.keep_together)
+
+    def test_report_other_continuation_row_is_kept_whole(self) -> None:
+        class FakeTable:
+            def __init__(self) -> None:
+                self.rows = [object() for _ in range(12)]
+
+            @staticmethod
+            def cell(row: int, column: int) -> tuple[int, int]:
+                return row, column
+
+        table = FakeTable()
+        blocks = [
+            {"lead": "차별성", "text": "앞 행"},
+            {"lead": "품질관리·발전 로드맵", "text": "앞 행"},
+            {"lead": "오픈소스SW 조합", "text": "앞 행"},
+            {"lead": "현재 한계", "text": "계속 행"},
+            {"lead": "공개 증거 gate", "text": "계속 행"},
+        ]
+
+        def append_row(target, _row) -> None:
+            target.rows.append(object())
+
+        with (
+            patch.object(build_official_report, "copy_row", side_effect=append_row),
+            patch.object(build_official_report, "set_plain_cell") as plain,
+            patch.object(build_official_report, "set_block_cell") as block,
+            patch.object(
+                build_official_report, "mark_data_rows_cannot_split"
+            ) as marker,
+        ):
+            build_official_report.fill_other_report_rows(
+                table,
+                blocks,
+                hyperlink_targets={"https://example.test/evidence"},
+                hyperlink_aliases={"[증거]": "https://example.test/evidence"},
+            )
+
+        self.assertEqual(13, len(table.rows))
+        self.assertEqual(blocks[:1], block.call_args_list[0].args[1])
+        self.assertEqual(blocks[1:], block.call_args_list[1].args[1])
+        plain.assert_called_once_with((12, 0), "")
+        marker.assert_called_once_with([table.rows[12]])
+
+    def test_report_other_continuation_requires_the_source_to_be_last(self) -> None:
+        class FakeTable:
+            def __init__(self) -> None:
+                self.rows = [object() for _ in range(13)]
+
+        with self.assertRaisesRegex(
+            ValueError, "source row must be the final row"
+        ):
+            build_official_report.fill_other_report_rows(
+                FakeTable(),
+                [
+                    {"lead": "차별성", "text": "앞 행"},
+                    {"lead": "품질관리·발전 로드맵", "text": "앞 행"},
+                    {"lead": "오픈소스SW 조합", "text": "앞 행"},
+                    {"lead": "현재 한계", "text": "계속 행"},
+                ],
+                original_row_index=11,
+            )
+
+    def test_report_installation_has_an_unsplittable_continuation_row(self) -> None:
+        from docx import Document
+
+        table = Document().add_table(rows=12, cols=2)
+        blocks = [
+            {"lead": f"기능 {index}", "text": f"본문 {index}"}
+            for index in range(6)
+        ] + [{"lead": "설치·릴리스", "text": "검증된 stable 설치 경로"}]
+
+        with (
+            patch.object(build_official_report, "set_plain_cell") as plain,
+            patch.object(build_official_report, "set_block_cell") as block,
+            patch.object(
+                build_official_report, "mark_data_rows_cannot_split"
+            ) as marker,
+        ):
+            build_official_report.fill_feature_report_rows(
+                table,
+                blocks,
+                image_path=Path("diagram.png"),
+                image_caption="검증 흐름",
+                hyperlink_targets={"https://example.test/evidence"},
+            )
+
+        self.assertEqual(13, len(table.rows))
+        self.assertEqual(blocks[:6], block.call_args_list[0].args[1])
+        self.assertEqual(blocks[6:], block.call_args_list[1].args[1])
+        self.assertIs(plain.call_args.args[0]._tc, table.cell(10, 0)._tc)
+        plain.assert_called_once_with(plain.call_args.args[0], "")
+        marker.assert_called_once()
+        self.assertIs(marker.call_args.args[0][0]._tr, table.rows[10]._tr)
+
+    def test_report_effects_row_does_not_split_across_pages(self) -> None:
+        class FakeTable:
+            def __init__(self) -> None:
+                self.rows = [object() for _ in range(12)]
+
+        table = FakeTable()
+        with patch.object(
+            build_official_report, "mark_data_rows_cannot_split"
+        ) as marker:
+            build_official_report.mark_effects_row_cannot_split(table)
+
+        marker.assert_called_once_with([table.rows[11]])
+
+    def test_report_environment_row_does_not_split_across_pages(self) -> None:
+        class FakeTable:
+            def __init__(self) -> None:
+                self.rows = [object() for _ in range(8)]
+
+        table = FakeTable()
+        with patch.object(
+            build_official_report, "mark_data_rows_cannot_split"
+        ) as marker:
+            build_official_report.mark_environment_row_cannot_split(table)
+
+        marker.assert_called_once_with([table.rows[7]])
+
+    def test_report_main_table_structure_is_fail_closed(self) -> None:
+        from docx import Document
+        from docx.oxml import OxmlElement
+
+        table = Document().add_table(rows=14, cols=2)
+        for index, label in {
+            9: "프로젝트 주요기능",
+            10: "",
+            11: "기대효과 및 활용분야",
+            12: "기타",
+            13: "",
+        }.items():
+            table.cell(index, 0).text = label
+        table.cell(10, 1).text = "설치·릴리스: 검증된 stable 설치 경로"
+        for index in (7, 10, 11, 13):
+            table.rows[index]._tr.get_or_add_trPr().append(
+                OxmlElement("w:cantSplit")
+            )
+
+        build_official_report.assert_main_report_table_structure(table)
+
+        table.cell(11, 0).text = "잘못된 라벨"
+        with self.assertRaisesRegex(ValueError, "continuation row labels changed"):
+            build_official_report.assert_main_report_table_structure(table)
+
+    def test_cloned_report_rows_drop_volatile_identity_attributes(self) -> None:
+        from docx import Document
+        from docx.oxml.ns import qn
+
+        table = Document().add_table(rows=1, cols=2)
+        source = table.rows[0]
+        source._tr.set(qn("w:rsidR"), "00112233")
+        source.cells[0].paragraphs[0]._p.set(qn("w14:paraId"), "AABBCCDD")
+        source.cells[0].paragraphs[0]._p.set(qn("w14:textId"), "EEFF0011")
+
+        cloned = build_official_report.insert_row_after(table, source)
+
+        volatile = []
+        for element in cloned._tr.iter():
+            volatile.extend(
+                attribute
+                for attribute in element.attrib
+                if attribute.rsplit("}", 1)[-1].startswith("rsid")
+                or attribute.rsplit("}", 1)[-1] in {"paraId", "textId"}
+            )
+        self.assertEqual([], volatile)
+
+    def test_report_story_sanitizer_removes_revision_attributes_and_elements(self) -> None:
+        build_official_report.load_document_dependencies()
+        source = b'''<?xml version="1.0" encoding="UTF-8"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+ xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml">
+  <w:body><w:p w:rsidR="00112233" w14:paraId="AABBCCDD">
+    <w:r w:rsidRPr="44556677"><w:t>visible</w:t></w:r>
+    <w:rsids><w:rsidRoot w:val="00112233"/><w:rsid w:val="44556677"/></w:rsids>
+  </w:p></w:body>
+</w:document>'''
+
+        sanitized = build_official_report.sanitize_story_part(source)
+
+        self.assertNotIn(b"rsid", sanitized)
+        self.assertIn(b"paraId", sanitized)
+        self.assertIn(b"visible", sanitized)
+
+    def test_report_privacy_part_selector_includes_settings_and_styles(self) -> None:
+        for name in ("word/document.xml", "word/settings.xml", "word/styles.xml"):
+            with self.subTest(name=name):
+                self.assertTrue(
+                    build_official_report.is_revision_identifier_part(name)
+                )
+        self.assertFalse(
+            build_official_report.is_revision_identifier_part("word/numbering.xml")
+        )
+
+    def test_report_package_restore_scrubs_all_revision_identifier_shapes(self) -> None:
+        build_official_report.load_document_dependencies()
+        core = b'''<?xml version="1.0" encoding="UTF-8"?>
+<cp:coreProperties
+ xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties"
+ xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <dc:creator>template author</dc:creator>
+  <cp:lastModifiedBy>template editor</cp:lastModifiedBy>
+  <cp:revision>7</cp:revision>
+</cp:coreProperties>'''
+        document = b'''<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body><w:p w:rsidR="00112233"><w:r><w:t>visible</w:t></w:r></w:p></w:body>
+</w:document>'''
+        settings = b'''<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:zoom w:percent="100"/>
+  <w:rsids><w:rsidRoot w:val="00112233"/><w:rsid w:val="44556677"/></w:rsids>
+</w:settings>'''
+        styles = b'''<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:style w:type="paragraph" w:rsidR="00112233">
+    <w:name w:val="Normal"/><w:rsid w:val="44556677"/>
+  </w:style>
+</w:styles>'''
+        parts = {
+            "[Content_Types].xml": b"<Types/>",
+            "docProps/core.xml": core,
+            "word/document.xml": document,
+            "word/settings.xml": settings,
+            "word/styles.xml": styles,
+        }
+
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            template = root / "template.docx"
+            output = root / "report.docx"
+            for path in (template, output):
+                with ZipFile(path, "w", ZIP_DEFLATED) as package:
+                    for name, content in parts.items():
+                        package.writestr(name, content)
+
+            build_official_report.restore_preserve_only_package_parts(
+                template, output
+            )
+
+            with ZipFile(output) as package:
+                for name in (
+                    "word/document.xml",
+                    "word/settings.xml",
+                    "word/styles.xml",
+                ):
+                    with self.subTest(name=name):
+                        self.assertNotIn(b"rsid", package.read(name))
+                self.assertIn(b"visible", package.read("word/document.xml"))
+                self.assertIn(b"zoom", package.read("word/settings.xml"))
+                self.assertIn(b"Normal", package.read("word/styles.xml"))
+            package_submission.validate_docx_privacy(output)
+
+    def test_local_package_metadata_uses_current_schema(self) -> None:
+        self.assertEqual(2, package_submission.PACKAGE_METADATA_SCHEMA_VERSION)
 
     def test_direct_report_validator_rejects_unsupported_final_stable_branch(self) -> None:
         with self.assertRaisesRegex(
@@ -3347,6 +6481,22 @@ class ReportContractTest(unittest.TestCase):
             with self.assertRaisesRegex(package_submission.GateError, "unresolved gates"):
                 package_submission.validate_report_text_contract(extracted, self.BASE)
 
+    def test_final_visible_report_rejects_reader_facing_evidence_ids(self) -> None:
+        markers = ("E09", "e09", "Ｅ０９", "Ｅ09", "E０9", "E\u200b09")
+        for marker in markers:
+            for label, docx_text, pdf_text in (
+                ("DOCX", self.BASE + " " + marker, self.BASE),
+                ("PDF", self.BASE, self.BASE + " " + marker),
+            ):
+                with self.subTest(label=label, marker=marker), self.assertRaisesRegex(
+                    package_submission.GateError,
+                    rf"{label} contains reader-facing audit evidence IDs \(count=1\)",
+                ) as caught:
+                    package_submission.validate_report_text_contract(
+                        docx_text, pdf_text
+                    )
+                self.assertNotIn(marker, str(caught.exception))
+
     def test_docx_extractor_preserves_only_explicit_separators(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             path = Path(raw) / "separators.docx"
@@ -3362,6 +6512,28 @@ class ReportContractTest(unittest.TestCase):
 
     def test_accepts_sbom_and_development_ai_without_attachment_2(self) -> None:
         package_submission.validate_report_text_contract(self.BASE, self.BASE)
+
+    def test_accepts_canonical_report_content_ai_disclosure(self) -> None:
+        content = json.loads(
+            (REPOSITORY_ROOT / "submission" / "report-content.ko.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        ai_row = next(
+            row for row in content["environment"] if row["lead"] == "개발 보조 AI"
+        )
+        self.assertIn(package_submission.NO_RUNTIME_AI_DISCLOSURE, ai_row["text"])
+        canonical_text = (
+            f"{ai_row['lead']} {ai_row['text']} 붙임1 SBOM(소프트웨어 자재명세서)"
+        )
+        package_submission.validate_report_text_contract(
+            canonical_text, canonical_text
+        )
+
+    def test_rejects_missing_canonical_no_runtime_ai_disclosure(self) -> None:
+        text = self.BASE.replace(package_submission.NO_RUNTIME_AI_DISCLOSURE, "")
+        with self.assertRaisesRegex(package_submission.GateError, "no-runtime-AI"):
+            package_submission.validate_report_text_contract(text, text)
 
     def test_visible_binding_accepts_official_table_extraction_reordering(self) -> None:
         content = package_submission.validate_and_materialize_report_content(
@@ -3437,8 +6609,8 @@ class ReportContractTest(unittest.TestCase):
         second_row = next(
             line for line in pdf_text.splitlines() if re.match(r"^\s*2\s+", line)
         )
-        pdf_text = pdf_text.replace(first_row, first_row.replace(first, second), 1)
-        pdf_text = pdf_text.replace(second_row, second_row.replace(second, first), 1)
+        pdf_text = pdf_text.replace(first_row, first_row.replace(first, second, 1), 1)
+        pdf_text = pdf_text.replace(second_row, second_row.replace(second, first, 1), 1)
         with self.assertRaisesRegex(package_submission.GateError, "SBOM row"):
             package_submission.validate_report_visible_content(
                 docx_text, pdf_text, content
@@ -3656,6 +6828,88 @@ class ReportContractTest(unittest.TestCase):
             expected,
             package_submission.expected_report_hyperlink_targets(content, manifest),
         )
+
+    def test_report_hyperlink_errors_report_counts_without_private_values(self) -> None:
+        canary = "PRIVATECANARYSECRETXYZ"
+        content = valid_report_content("rc_only")
+        manifest = valid_manifest()
+        content["metadata"]["repository_url"] = (
+            f"https://user:{canary}@example.test/private"
+        )
+        with self.assertRaisesRegex(
+            package_submission.GateError, "unsafe structured hyperlink"
+        ) as caught:
+            package_submission.expected_report_hyperlink_targets(content, manifest)
+        self.assertNotIn(canary, str(caught.exception))
+
+        actual_url = f"https://actual.example/{canary}"
+        expected_url = f"https://expected.example/{canary}"
+        with patch.object(
+            package_submission,
+            "pdf_hyperlink_rows",
+            return_value=[(1, actual_url)],
+        ), patch.object(
+            package_submission,
+            "expected_report_hyperlink_targets",
+            return_value={expected_url},
+        ), self.assertRaisesRegex(
+            package_submission.GateError,
+            r"missing_count=1, extra_count=1",
+        ) as caught:
+            package_submission.validate_pdf_hyperlinks(
+                Path("report.pdf"), content, manifest, 1
+            )
+        self.assertNotIn(canary, str(caught.exception))
+
+        with tempfile.TemporaryDirectory(dir="/private/tmp") as raw:
+            path = Path(raw) / "links.docx"
+            document = (
+                '<?xml version="1.0" encoding="UTF-8"?>'
+                '<w:document xmlns:w="http://schemas.openxmlformats.org/'
+                'wordprocessingml/2006/main" '
+                'xmlns:r="http://schemas.openxmlformats.org/officeDocument/'
+                '2006/relationships"><w:body><w:p>'
+                '<w:hyperlink r:id="rId1"><w:r><w:t>'
+                f"{canary}</w:t></w:r></w:hyperlink>"
+                "</w:p></w:body></w:document>"
+            )
+            relationships = (
+                '<?xml version="1.0" encoding="UTF-8"?>'
+                '<Relationships xmlns="http://schemas.openxmlformats.org/'
+                'package/2006/relationships"><Relationship Id="rId1" '
+                'Type="http://schemas.openxmlformats.org/officeDocument/2006/'
+                f'relationships/hyperlink" Target="{actual_url}" '
+                'TargetMode="External"/></Relationships>'
+            )
+            with ZipFile(path, "w", compression=ZIP_DEFLATED) as archive:
+                archive.writestr("word/document.xml", document)
+                archive.writestr("word/_rels/document.xml.rels", relationships)
+
+            with patch.object(
+                package_submission,
+                "expected_report_hyperlink_targets",
+                return_value={expected_url},
+            ), self.assertRaisesRegex(
+                package_submission.GateError,
+                r"missing_count=1, extra_count=1",
+            ) as caught:
+                package_submission.validate_docx_hyperlinks(path, content, manifest)
+            self.assertNotIn(canary, str(caught.exception))
+
+            with patch.object(
+                package_submission,
+                "expected_report_hyperlink_targets",
+                return_value={actual_url},
+            ), patch.object(
+                package_submission,
+                "expected_report_hyperlink_bindings",
+                return_value={("expected label", actual_url)},
+            ), self.assertRaisesRegex(
+                package_submission.GateError,
+                r"missing_count=1, extra_count=1",
+            ) as caught:
+                package_submission.validate_docx_hyperlinks(path, content, manifest)
+            self.assertNotIn(canary, str(caught.exception))
 
     def test_pdf_raster_binding_accepts_only_identical_page_pixels(self) -> None:
         docx = Path("canonical.docx")
@@ -3953,6 +7207,604 @@ class ReportContractTest(unittest.TestCase):
 
 
 class ReportContentSbomTest(unittest.TestCase):
+    def test_report_traceability_ledger_matches_structured_public_evidence_contract(
+        self,
+    ) -> None:
+        content = json.loads(
+            (SCRIPT.parents[1] / "report-content.ko.json").read_text(encoding="utf-8")
+        )
+        matrix = (REPOSITORY_ROOT / "docs" / "evidence-matrix.md").read_text(
+            encoding="utf-8"
+        )
+
+        evidence_row = next(
+            row
+            for row in content["other"]
+            if row["lead"] == "오픈소스SW 조합"
+        )
+        evidence = evidence_row["text"]
+        self.assertIn("SQLExecutionHook SPI", evidence)
+        self.assertIn("thin unshaded JAR", evidence)
+        self.assertIn("SBOM·lock·checksum·NOTICE", evidence)
+        self.assertIn("runtime JAR에 없다", evidence)
+
+        application_result = next(
+            row["text"]
+            for row in content["effects"]
+            if row["lead"] == "재현한 적용 결과"
+        )
+        self.assertIn("same-checkout standalone consumer", application_result)
+        self.assertIn("독립 외부 설치·채택 증거가 아니다", application_result)
+
+        determinism = content["features"][3]
+        self.assertEqual("4. 재현성·operation 격리", determinism["lead"])
+        for measured_claim in ("8개", "각 20회", "20쌍", "혼합 0건"):
+            self.assertIn(measured_claim, determinism["text"])
+
+        self.assertEqual(
+            "https://github.com/ym0506/routecontract",
+            content["metadata"]["repository_url"],
+        )
+        self.assertIn(
+            "[[PUBLIC_CI_RUN_URL_REQUIRED_BEFORE_SUBMISSION]]",
+            content["features"][4]["text"],
+        )
+        self.assertEqual(
+            "[[PUBLIC_V0_1_0_RELEASE_AND_INSTALL_COORDINATES]]",
+            content["features"][6]["text"],
+        )
+        self.assertIn(
+            "[[PUBLIC_REPOSITORY_REVISION_AND_RELEASE]]",
+            content["other"][5]["text"],
+        )
+
+        for required in (
+            "## Reader-facing report claim crosswalk",
+            "The report uses descriptive Korean labels instead of inserting audit IDs",
+            "The report's `공개 증거 gate` is an owner-supplied visible prose slot, not a structured evidence object",
+            "the package manifest's structured public-evidence record",
+            "visible exact public URLs in the report",
+            "한 문장 소개; 사용자·검출 공백; 해결 방식 | E02, E04, E05",
+            "검증된 효과; 실제 MySQL business-green / contract-red; 시연; "
+            "재현한 적용 결과 | E04, E05, E06, E08",
+            "later public main run [32440114569]",
+            "설치·릴리스; stable 배포 후 4단계 적용 흐름",
+            "승인 manifest와 structural manifest diff; 활용 경계",
+            "외부 검증 | E10",
+            "품질관리·발전 로드맵 | E13, E14",
+            "`선행 작업 경계` and `개발 소감` are identity/disclosure/provenance/owner-voice blocks",
+            "`ORIGIN_AND_PRIOR_WORK.md` is a participant provenance declaration, not independent proof",
+        ):
+            self.assertIn(required, matrix)
+        self.assertNotRegex(json.dumps(content, ensure_ascii=False), r"\bE(?:0[1-9]|1[0-4])\b")
+        self.assertNotIn("all numbers linked", matrix)
+
+    def test_report_crosswalk_maps_each_evidentiary_block_exactly_once(self) -> None:
+        content = json.loads(
+            (SCRIPT.parents[1] / "report-content.ko.json").read_text(encoding="utf-8")
+        )
+        matrix = (REPOSITORY_ROOT / "docs" / "evidence-matrix.md").read_text(
+            encoding="utf-8"
+        )
+        crosswalk = matrix.split("## Reader-facing report claim crosswalk", 1)[1].split(
+            "## Claim promotion checklist", 1
+        )[0]
+        mapped: list[str] = []
+        actual_groups: dict[str, tuple[str, ...]] = {}
+        for line in crosswalk.splitlines():
+            if not line.startswith("|"):
+                continue
+            cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+            if not cells or cells[0] in {"Reader-facing report block", "---"}:
+                continue
+            self.assertEqual(3, len(cells), line)
+            self.assertNotIn(cells[0], actual_groups)
+            ids = tuple(piece.strip() for piece in cells[1].split(",") if piece.strip())
+            self.assertTrue(ids, line)
+            self.assertEqual(len(ids), len(set(ids)), line)
+            self.assertTrue(
+                all(re.fullmatch(r"E(?:0[1-9]|1[0-4])", evidence_id) for evidence_id in ids),
+                line,
+            )
+            self.assertEqual(", ".join(ids), cells[1])
+            actual_groups[cells[0]] = ids
+            mapped.extend(piece.strip() for piece in cells[0].split(";") if piece.strip())
+
+        expected_groups = {
+            "한 문장 소개; 사용자·검출 공백; 해결 방식": ("E02", "E04", "E05"),
+            "검증된 효과; 실제 MySQL business-green / contract-red; 시연; 재현한 적용 결과": (
+                "E04",
+                "E05",
+                "E06",
+                "E08",
+            ),
+            "공개 문제 근거": ("E01", "E04"),
+            "언어·대상; 빌드·검증; 재현과 패키징; 설치·릴리스; stable 배포 후 4단계 적용 흐름": (
+                "E02",
+                "E08",
+                "E09",
+                "E12",
+            ),
+            "관측·계약 흐름; 상관관계·Fail-closed; 정보 경계; Operation 단위 관측 계약; 승인 manifest와 structural manifest diff; 활용 경계": (
+                "E02",
+                "E03",
+                "E05",
+                "E07",
+                "E08",
+            ),
+            "재현성·operation 격리": ("E06", "E07"),
+            "차별성": ("E11",),
+            "오픈소스SW 조합; 현재 한계; 라이선스 검토 상태": (
+                "E02",
+                "E08",
+                "E11",
+                "E12",
+            ),
+            "공개 증거 gate": ("E08", "E09", "E12", "E13", "E14"),
+            "외부 검증": ("E10",),
+            "품질관리·발전 로드맵": ("E13", "E14"),
+        }
+        self.assertEqual(expected_groups, actual_groups)
+        self.assertEqual(
+            {f"E{index:02d}" for index in range(1, 15)},
+            {evidence_id for ids in actual_groups.values() for evidence_id in ids},
+        )
+
+        normalize = lambda lead: re.sub(r"^[1-9][0-9]*\.\s*", "", lead)
+        excluded = {"개발 장비", "개발 보조 AI", "선행 작업 경계", "개발 소감"}
+        expected = {
+            normalize(row["lead"])
+            for section in (
+                "project_intro",
+                "background",
+                "environment",
+                "architecture",
+                "features",
+                "effects",
+                "other",
+            )
+            for row in content[section]
+            if normalize(row["lead"]) not in excluded
+        }
+        normalized_mapped = [normalize(lead) for lead in mapped]
+        self.assertEqual(expected, set(normalized_mapped))
+        self.assertEqual(
+            [],
+            sorted(
+                lead
+                for lead in set(normalized_mapped)
+                if normalized_mapped.count(lead) != 1
+            ),
+        )
+        self.assertIn(
+            "`개발 장비`, `개발 보조 AI`, `선행 작업 경계` and `개발 소감`",
+            crosswalk,
+        )
+
+    def test_report_content_keeps_information_and_approval_boundaries_explicit(
+        self,
+    ) -> None:
+        content = json.loads(
+            (SCRIPT.parents[1] / "report-content.ko.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual("사용자·검출 공백", content["background"][0]["lead"])
+        self.assertEqual(
+            "기존 기능 테스트는 같은 행을 반환해 통과했지만, 실제 MySQL에서 "
+            "ShardingSphere의 SQLExecutionHook이 보고한 물리 JDBC 실행 시도와 data "
+            "source는 각각 1→2로 늘었다. RouteContract는 1→2 자체를 성능 결함으로 "
+            "단정하지 않고, 분산 실행 정책 변화의 의도 여부를 merge 전 CI 검토 대상으로 "
+            "만든다. 대상은 ShardingSphere-JDBC 5.5.3을 쓰거나 평가하는 Java "
+            "개발자·팀이며, 검증 범위는 저장소의 실제 MySQL 통합 테스트 fixture다. "
+            "지연·부하·비용은 측정하지 않았다.",
+            content["background"][0]["text"],
+        )
+        self.assertEqual("검증된 효과", content["background"][1]["lead"])
+        self.assertEqual(
+            [
+                {
+                    "lead": "한 문장 소개",
+                    "text": "ShardingSphere-JDBC는 하나의 애플리케이션 SQL을 여러 "
+                    "데이터베이스로 분산 실행할 수 있고, RouteContract는 기능 테스트 "
+                    "결과가 같아도 그 과정에서 보고된 JDBC 실행 시도 구조가 승인본과 "
+                    "달라진 변경을 CI에서 차단하는 Java 테스트 라이브러리다.",
+                }
+            ],
+            content["project_intro"],
+        )
+        self.assertNotIn("SQLExecutionHook", content["project_intro"][0]["text"])
+        self.assertNotIn("5.5.3", content["project_intro"][0]["text"])
+        self.assertIn(
+            "보고된 JDBC 실행 시도 구조",
+            content["project_intro"][0]["text"],
+        )
+        for boundary_text in (
+            content["background"][0]["text"],
+            content["background"][2]["text"],
+            content["features"][0]["text"],
+        ):
+            self.assertIn(
+                "SQLExecutionHook이 보고한 물리 JDBC 실행 시도",
+                boundary_text,
+            )
+        serialized = json.dumps(content, ensure_ascii=False)
+        for contradiction in (
+            "complete route plan을 증명",
+            "transaction commit을 증명",
+            "stable Release는 이미 공개",
+            "독립 외부 설치·채택 증거다",
+            "candidate는 approved를 자동으로 덮는다",
+        ):
+            self.assertNotIn(contradiction, serialized)
+
+        information = next(
+            row["text"] for row in content["architecture"] if row["lead"] == "정보 경계"
+        )
+        self.assertEqual(
+            "원문 SQL·bind 값·connection property·exception message는 저장하지 않는다. "
+            "실제 data-source 이름은 메모리에 남고 manifest에서만 alias로 바꾼다. "
+            "operationId·Java type·unsalted SQL fingerprint도 남는다. 비민감 식별자를 "
+            "쓰고 snapshot을 외부 로그로 내보내지 않는다. 최소화는 익명화가 아니다.",
+            information,
+        )
+        for required in (
+            "실제 data-source 이름은 메모리에 남고",
+            "operationId",
+            "manifest에서만 alias",
+            "Java type",
+            "unsalted SQL fingerprint",
+            "최소화는 익명화가 아니다",
+            "원문 SQL·bind 값",
+            "외부 로그로 내보내지 않는다",
+        ):
+            self.assertIn(required, information)
+
+        ai_scope = next(
+            row["text"] for row in content["environment"] if row["lead"] == "개발 보조 AI"
+        )
+        self.assertEqual(
+            "OpenAI ChatGPT·Codex를 조사·설계·코드·테스트·디버깅·문서화·local "
+            "command execution 보조에 쓰고 AI_ASSISTANCE.md에 공개했다. 참가자는 최종 "
+            "source diff·재현 테스트를 직접 검토하고 사실인 manifest attestation만 true로 "
+            "둔다. AI 출력은 근거·독립 검증이 아니며 runtime에는 AI 모델·데이터셋·외부 AI "
+            "API가 없다.",
+            ai_scope,
+        )
+        self.assertIn(package_submission.NO_RUNTIME_AI_DISCLOSURE, ai_scope)
+        self.assertNotIn("코드는 독립 구현", json.dumps(content, ensure_ascii=False))
+
+        build_validation = next(
+            row["text"]
+            for row in content["environment"]
+            if row["lead"] == "빌드·검증"
+        )
+        self.assertEqual(
+            "Gradle Wrapper 8.14.4, JUnit Jupiter 5.14.3, Testcontainers 1.21.4, "
+            "Docker. 라이브러리는 Apache-2.0이며 CycloneDX 1.6 JSON/XML SBOM을 "
+            "생성하고 dependency lock·checksum 검증을 수행한다.",
+            build_validation,
+        )
+
+        development_process = next(
+            row["text"]
+            for row in content["features"]
+            if row["lead"] == "5. 재현과 패키징"
+        )
+        self.assertEqual(
+            "개발은 hook lifecycle 계약→실패경로 단위 테스트→MySQL corpus→"
+            "결정성·격리→standalone consumer→release gate 순이었다. "
+            "clean check·assemble·SBOM으로 52 tests와 배포물을 검증했다. "
+            "[[PUBLIC_CI_RUN_URL_REQUIRED_BEFORE_SUBMISSION]]",
+            development_process,
+        )
+
+        development_effect = next(
+            row["text"]
+            for row in content["effects"]
+            if row["lead"] == "stable 배포 후 4단계 적용 흐름"
+        )
+        self.assertEqual(
+            "최종 package gate가 exact tag·checksum·attestation을 확인한 stable Release "
+            "공개 뒤 ① 설치 ② v0.1 범위의 Java 통합 테스트에서 application operation을 "
+            "capture(operationId)로 감싸 candidate 생성 ③ approved diff 검토·별도 승인 "
+            "④ strict CI 검증을 적용한다. candidate는 approved를 덮지 않고 사람만 diff "
+            "검토 후 baseline을 승인한다.",
+            development_effect,
+        )
+        self.assertIn("최종 package gate", development_effect)
+        self.assertIn("stable Release 공개 뒤 ① 설치", development_effect)
+        self.assertIn("② v0.1 범위의 Java 통합 테스트", development_effect)
+        self.assertIn("application operation", development_effect)
+        self.assertIn("capture(operationId)", development_effect)
+        self.assertIn("③ approved diff 검토·별도 승인", development_effect)
+        self.assertIn("④ strict CI 검증", development_effect)
+        self.assertIn("사람만 diff 검토 후 baseline을 승인", development_effect)
+        self.assertNotIn("의도한 baseline 변경", development_effect)
+
+        reproducible_application = next(
+            row["text"]
+            for row in content["effects"]
+            if row["lead"] == "재현한 적용 결과"
+        )
+        self.assertEqual(
+            "동일한 synthetic MySQL fixture의 한 행 반환 assertion은 통과했지만 "
+            "RouteContract는 SQLExecutionHook이 보고한 물리 JDBC 실행 시도·data source "
+            "1→2를 RCM201·RCM202와 non-zero exit으로 검출했고 quickstart가 재현한다. "
+            "same-checkout standalone consumer는 로컬 게시 JAR의 SPI 자동 발견과 실제 "
+            "MySQL 테스트 1건 통과만 확인하며 1→2 재현·독립 외부 설치·채택 증거가 "
+            "아니다. 외부 결과는 cutoff의 실제 공개 사실만 보고한다.",
+            reproducible_application,
+        )
+
+        application_boundary = next(
+            row["text"] for row in content["effects"] if row["lead"] == "활용 경계"
+        )
+        self.assertEqual(
+            "지원 범위 안에서 SQLExecutionHook이 보고한 물리 JDBC 실행 시도를 "
+            "review·CI 계약으로 만든다. complete route plan·transaction commit·business "
+            "success·성능을 증명하지 않는다. caller-supplied target universe 없이는 "
+            "full-route detection을 주장하지 않는다. 기대 효과(예상)는 기능 assertion이 "
+            "같아도 승인본과 다른 관측 실행 구조를 merge 전 검토 대상으로 드러내는 "
+            "것이다. 이는 성능·비용 개선을 보장하지 않는다. 확장 방향(제안)은 공개 수요 "
+            "기록·최소 재현 fixture·real-MySQL CI 통과를 gate로 version adapter·IDE/CI "
+            "reporter·추가 DB fixture를 검토하는 것이다. 현재 지원은 5.5.3/MySQL 8.4.11 "
+            "범위다.",
+            application_boundary,
+        )
+        for required in (
+            "SQLExecutionHook이 보고한 물리 JDBC 실행 시도",
+            "review·CI 계약",
+            "complete route plan·transaction commit·business success·성능을 증명하지 않는다",
+            "caller-supplied target universe 없이는 full-route detection을 주장하지 않는다",
+        ):
+            self.assertIn(required, application_boundary)
+
+        community = next(
+            row["text"]
+            for row in content["other"]
+            if row["lead"] == "품질관리·발전 로드맵"
+        )
+        self.assertEqual(
+            "Issue #5→PR #6에서 clean Ubuntu CI checksum을 고쳐 Dependency Review·build를 "
+            "통과시켰다. Issue·PR·CI·CONTRIBUTING.md로 관리하며 우선순위는 설치·문서→"
+            "adapter·reporter→기여 CI다. adapter gate는 공개 수요 기록+최소 재현 "
+            "fixture+real-MySQL CI 통과다. 단일 maintainer이며 외부 결과·upstream 반응은 "
+            "실제 링크만 보고한다.",
+            community,
+        )
+        self.assertNotIn("v0.1.0", community)
+        self.assertNotIn("동결", community)
+
+        public_evidence_gate = next(
+            row["text"]
+            for row in content["other"]
+            if row["lead"] == "공개 증거 gate"
+        )
+        self.assertEqual(
+            "[[PUBLIC_REPOSITORY_REVISION_AND_RELEASE]] / "
+            "[[PUBLIC_ISSUE_PR_COMMUNITY_FEEDBACK]]. 실제 링크 전에는 완료형으로 "
+            "쓰지 않는다.",
+            public_evidence_gate,
+        )
+
+        owner_voice = next(
+            row["text"] for row in content["other"] if row["lead"] == "개발 소감"
+        )
+        self.assertEqual(
+            "[[OWNER_VOICE: 실제로 가장 어려웠던 문제, 직접 한 분석/실험, 배운 점, "
+            "능동 유지보수 우선순위·순서와 의도한 기간을 본인이 작성]]",
+            owner_voice,
+        )
+
+        differentiation = next(
+            row["text"] for row in content["other"] if row["lead"] == "차별성"
+        )
+        self.assertEqual(
+            "차별점은 ShardingSphere-JDBC 5.5.3의 SQLExecutionHook이 보고한 물리 JDBC "
+            "실행 시도를 application operation 단위로 묶고, worker 상관관계→value-minimized "
+            "manifest→사람 승인→결정적 structural diff→stable RCM code→CI assertion까지 "
+            "하나의 반복 가능한 workflow로 제공하는 데 있다. ShardingSphere 관측 도구나 "
+            "datasource-proxy를 대체하지 않으며, datasource-proxy로도 물리 data source별 "
+            "연결과 상관관계·canonicalization·diff·assertion을 별도 구현하면 유사한 검사를 "
+            "만들 수 있다.",
+            differentiation,
+        )
+
+        evidence = next(
+            row["text"]
+            for row in content["other"]
+            if row["lead"] == "오픈소스SW 조합"
+        )
+        self.assertEqual(
+            "ShardingSphere-JDBC 5.5.3 SQLExecutionHook SPI를 digest 고정 MySQL 8.4.11과 "
+            "Testcontainers로 검증한다. Apache-2.0 thin unshaded JAR이며 "
+            "SBOM·lock·checksum·NOTICE로 공급망을 추적한다. "
+            "datasource-proxy는 test-only로 runtime JAR에 없다. preflight는 "
+            "5.5.3 infra-executor·infra-spi와 provider 1개만 확인한다. 전체 graph "
+            "호환성 증명은 아니다.",
+            evidence,
+        )
+
+        prior_work = next(
+            row["text"] for row in content["other"] if row["lead"] == "선행 작업 경계"
+        )
+        self.assertEqual(
+            "참가자 provenance 선언: ShardLens의 미구현 Route Guard 설계에서 출발해 "
+            "RouteContract의 독립 라이브러리·manifest/diff·MySQL corpus·설치/CI를 새로 "
+            "구현했고 ShardLens 애플리케이션 코드는 복사하지 않았다"
+            "(ORIGIN_AND_PRIOR_WORK.md). 독립 검증이 아니다.",
+            prior_work,
+        )
+
+        limitations = next(
+            row["text"] for row in content["other"] if row["lead"] == "현재 한계"
+        )
+        self.assertEqual(
+            "5.5.3 정상 반환·비-interrupt 동기식 non-batch PreparedStatement만 지원한다. "
+            "Proxy·reactive·@Async·SQL Federation·route/table plan·commit·business "
+            "success는 제외한다. ShardingSphere-JDBC 5.5.3의 test/example graph에는 SQL "
+            "Federation 경유 Calcite/JTS가 포함되며, calcite-core 1.40.0의 "
+            "GHSA-c2rv-hwqm-wjpg는 2026-08-27 만료의 검토 예외다. SBOM은 법률 검토가 "
+            "아니다.",
+            limitations,
+        )
+        license_disposition = next(
+            row["text"]
+            for row in content["other"]
+            if row["lead"] == "라이선스 검토 상태"
+        )
+        self.assertEqual(
+            "[[LICENSE_REVIEW_DISPOSITION: owner가 JTS/Mahout 비번들 배포경계와 MySQL "
+            "OCI manual-review-required 유지 여부를 1차 자료·최종 payload 재검증 뒤 "
+            "사실대로 작성]]",
+            license_disposition,
+        )
+
+    def test_submission_readme_exactly_pins_privacy_and_owner_boundaries(self) -> None:
+        readme = (SCRIPT.parents[1] / "README.md").read_text(encoding="utf-8")
+
+        privacy_block = "The tracked report body is otherwise closed:" + readme.split(
+            "The tracked report body is otherwise closed:", 1
+        )[1].split("\n\nSet `submission_identity", 1)[0]
+        self.assertEqual(
+            "The tracked report body is otherwise closed: only the documented structured\n"
+            "metadata and six owner free-text overlays may differ, and the external row is\n"
+            "generated. The six `OWNER_FREE_TEXT_OVERLAY_STRING_PATHS` are `개발 장비`,\n"
+            "`재현과 패키징`, `설치·릴리스`, `라이선스 검토 상태`, `공개 증거 gate`, and\n"
+            "`개발 소감`; the high-confidence lexical privacy scanner applies only to those six values. It\n"
+            "rejects common credential, contact, local-path, private-topology and raw-SQL\n"
+            "leak forms, but it is a heuristic and cannot prove that arbitrary prose or\n"
+            "topology is safe. The participant manually attests that those six free-text\n"
+            "values do not introduce an external-result, adoption or stable-validation claim\n"
+            "and sets `report_free_text_privacy_reviewed=true` only after manual privacy\n"
+            "review. These are human attestations, not NLP classifiers. Structured\n"
+            "registration identity is not checked by that lexical scanner: its six\n"
+            "`submission_identity` values are exact-bound to the application, private\n"
+            "manifest, report fields and official filenames where applicable, and the\n"
+            "participant must manually review their exactness and disclosure. Reader-facing\n"
+            "`E01`–`E14` audit IDs are rejected from every private overlay and from the final\n"
+            "DOCX/PDF; the public crosswalk stays in\n"
+            "`docs/evidence-matrix.md`. The check applies after Unicode compatibility and\n"
+            "case normalization, so those tokens are reserved even when they would be part\n"
+            "of a hardware model name; rewrite such a model descriptively in the private\n"
+            "hardware disclosure. Stable Release metadata in its designated fields is allowed; a stable\n"
+            "external-validation claim outside the generated row is not. Packaging verifies every canonical value in\n"
+            "the DOCX, exact generated external text in DOCX/PDF, and the PDF's complete\n"
+            "visible-character inventory and page/table anchors. A\n"
+            "partial placeholder fill, altered generated-text marker, tracking Issue\n"
+            "substituted for a participant result, mismatched tag, unsupported count, future\n"
+            "cutoff, nonexistent public reference, or mixed branch fact is a hard failure.",
+            privacy_block,
+        )
+
+        owner_boundary = "The participant must write the `개발 소감` owner-voice block personally and" + readme.split(
+            "The participant must write the `개발 소감` owner-voice block personally and",
+            1,
+        )[1].split("\n\nDo not replace", 1)[0]
+        self.assertEqual(
+            "The participant must write the `개발 소감` owner-voice block personally and\n"
+            "include a concrete active-maintenance priority, order, and intended period before\n"
+            "setting `owner_voice_written_by_participant=true` and\n"
+            "`maintenance_order_and_period_confirmed=true`. Separately, contest rule Article\n"
+            "10(3) requires a selected excellent or award-winning team to keep the public\n"
+            "repository Public for five years from the award date. Set\n"
+            "`five_year_public_repository_visibility_obligation_if_selected_accepted=true`\n"
+            "only after understanding that conditional visibility obligation; it is not an\n"
+            "active-maintenance promise. Confirm the tracked provenance statement with\n"
+            "`origin_and_prior_work_statement_confirmed=true`; that is a participant\n"
+            "self-attestation, not independent proof. The tool does not semantically decide\n"
+            "whether the owner voice or provenance statement is true or adequate.",
+            owner_boundary,
+        )
+
+    def test_report_diagram_assets_are_self_contained_legible_and_pinned(self) -> None:
+        assets = SCRIPT.parents[1] / "assets"
+        expected = {
+            "architecture": {
+                "svg": "1d314f486fed80d5a1001d1d433530a874fa72506c3a4a654b06282ee7e4d3fe",
+                "png": "c492713c535549fab2abb3571ba780e75e66d99fc2a24fdda978137c182da5f2",
+                "text": (
+                    "COMPARISON INPUTS",
+                    "candidate canonical manifest",
+                    "versioned approved manifest",
+                    "deterministic structural manifest diff",
+                    "stable RCM codes",
+                    "value-minimized",
+                    "no raw SQL / bind values",
+                    "5.5.3 normal return",
+                    "caller non-interrupted",
+                    "synchronous non-batch PreparedStatement",
+                ),
+            },
+            "baseline-candidate": {
+                "svg": "d9d1abc3bab121c2541ca2ad892b36544fcaf9f0642944fc65397c170572ac94",
+                "png": "2cbca82fb84267e092af919c6279290ba279b5350ba4a9f5b8ec0084b0c343a3",
+                "text": (
+                    "same one synthetic fixture row",
+                    "approved baseline",
+                    "candidate",
+                    "structural manifest diff",
+                    "1→2 attempts",
+                    "1→2 aliases",
+                    "RCM201",
+                    "RCM202",
+                    "Hook-reported attempts only",
+                    "not route/table plan, commit, or business success",
+                ),
+            },
+        }
+        namespace = "{http://www.w3.org/2000/svg}"
+
+        for name, contract in expected.items():
+            with self.subTest(asset=name):
+                svg_path = assets / f"{name}.svg"
+                png_path = assets / f"{name}.png"
+                svg_bytes = svg_path.read_bytes()
+                png_bytes = png_path.read_bytes()
+                self.assertEqual(contract["svg"], hashlib.sha256(svg_bytes).hexdigest())
+                self.assertEqual(contract["png"], hashlib.sha256(png_bytes).hexdigest())
+
+                root = ET.fromstring(svg_bytes)
+                self.assertEqual(namespace + "svg", root.tag)
+                self.assertEqual("1200", root.attrib.get("width"))
+                self.assertEqual("675", root.attrib.get("height"))
+                self.assertEqual("0 0 1200 675", root.attrib.get("viewBox"))
+                title = root.find(namespace + "title")
+                desc = root.find(namespace + "desc")
+                self.assertIsNotNone(title)
+                self.assertIsNotNone(desc)
+                self.assertTrue((title.text or "").strip())
+                self.assertTrue((desc.text or "").strip())
+
+                normalized_text = " ".join(
+                    fragment.strip()
+                    for fragment in root.itertext()
+                    if fragment.strip()
+                )
+                for required in contract["text"]:
+                    self.assertIn(required, normalized_text)
+
+                for element in root.iter():
+                    self.assertNotIn(
+                        element.tag.rsplit("}", 1)[-1],
+                        {"foreignObject", "image", "script"},
+                    )
+                    for attribute, value in element.attrib.items():
+                        if attribute.endswith("href"):
+                            self.assertTrue(value.startswith("#"), value)
+                        for reference in re.findall(r"url\(([^)]+)\)", value):
+                            self.assertTrue(reference.startswith("#"), reference)
+                        self.assertFalse(
+                            re.match(r"(?i)^(?:https?:|file:|data:|//)", value),
+                            value,
+                        )
+
+                font_sizes = [
+                    int(size)
+                    for size in re.findall(rb"font-size:\s*([0-9]+)px", svg_bytes)
+                ]
+                self.assertTrue(font_sizes)
+                self.assertGreaterEqual(min(font_sizes), 28)
+
     def test_report_comparison_figure_excludes_fixture_identifiers(self) -> None:
         submission_root = SCRIPT.parents[1]
         svg = (submission_root / "assets" / "baseline-candidate.svg").read_text(
@@ -3967,11 +7819,14 @@ class ReportContentSbomTest(unittest.TestCase):
             with self.subTest(forbidden=forbidden):
                 self.assertNotIn(forbidden, combined)
         self.assertIn("one synthetic fixture row", svg)
+        self.assertIn("structural", svg)
+        self.assertIn("manifest diff", svg)
+        self.assertNotIn("semantic diff", svg)
         self.assertIn("동일한 단일 fixture 행", content)
 
         png = (submission_root / "assets" / "baseline-candidate.png").read_bytes()
         self.assertEqual(
-            "f4e94a5d64c7fde85aae58c36435a4a49ba5929fe67d6ccaf06ac64d2913b537",
+            "2cbca82fb84267e092af919c6279290ba279b5350ba4a9f5b8ec0084b0c343a3",
             hashlib.sha256(png).hexdigest(),
         )
 
@@ -3980,42 +7835,126 @@ class ReportContentSbomTest(unittest.TestCase):
         with content_path.open(encoding="utf-8") as stream:
             content = json.load(stream)
 
-        self.assertEqual(
-            [
-                "MySQL Connector/J",
-                "MySQL Server 컨테이너",
-                "Apache ShardingSphere",
-                "Alibaba TransmittableThreadLocal",
-                "Jackson Core",
-                "Testcontainers (JUnit·MySQL)",
-                "datasource-proxy",
-                "JUnit Jupiter/Launcher",
-                "Gradle Wrapper",
-                "CycloneDX Gradle Plugin",
-            ],
-            [row["name"] for row in content["sbom"]],
+        expected_rows = [
+            {
+                "name": "OpenJDK standard-doclet assets",
+                "version": "17.0.20.1+1",
+                "license": "GPL-2.0-only WITH Classpath-exception-2.0",
+                "url": "https://github.com/openjdk/jdk17u/tree/jdk-17.0.20.1%2B1/src/jdk.javadoc",
+                "purpose": "stable Release Javadoc JAR에 CSS·JavaScript·PNG·legal 파일로 포함; main JAR·runtime 미포함",
+            },
+            {
+                "name": "MySQL Connector/J",
+                "version": "26.7.0",
+                "license": "GPL-2.0-only WITH Universal-FOSS-exception-1.0",
+                "url": "https://github.com/mysql/mysql-connector-j/tree/26.7.0",
+                "purpose": "실제 MySQL 통합 테스트의 JDBC 드라이버로 사용(testRuntimeOnly); 배포 JAR 미포함",
+            },
+            {
+                "name": "Apache ShardingSphere",
+                "version": "5.5.3",
+                "license": "Apache-2.0",
+                "url": "https://github.com/apache/shardingsphere/tree/5.5.3",
+                "purpose": "SQLExecutionHook SPI는 compileOnly, 실제 샤딩 fixture는 testImplementation/testRuntimeOnly로 사용; 배포 JAR 미내장",
+            },
+            {
+                "name": "Alibaba TransmittableThreadLocal",
+                "version": "2.14.2",
+                "license": "Apache-2.0",
+                "url": "https://github.com/alibaba/transmittable-thread-local/tree/v2.14.2",
+                "purpose": "operation context 전달용 runtime 의존성",
+            },
+            {
+                "name": "Jackson Core",
+                "version": "3.1.5",
+                "license": "Apache-2.0",
+                "url": "https://github.com/FasterXML/jackson-core/tree/jackson-core-3.1.5",
+                "purpose": "canonical JSON 생성·읽기용 runtime 의존성",
+            },
+            {
+                "name": "Testcontainers (JUnit·MySQL)",
+                "version": "1.21.4",
+                "license": "MIT",
+                "url": "https://github.com/testcontainers/testcontainers-java/tree/1.21.4",
+                "purpose": "digest 고정 MySQL 통합 테스트 컨테이너 실행용 test 의존성",
+            },
+            {
+                "name": "JUnit Jupiter / Platform Launcher",
+                "version": "5.14.3 / 1.14.3",
+                "license": "EPL-2.0",
+                "url": "https://github.com/junit-team/junit-framework/tree/r5.14.3",
+                "purpose": "단위·통합·실패경로 테스트와 launcher용 test 의존성",
+            },
+            {
+                "name": "jQuery",
+                "version": "3.7.1",
+                "license": "MIT",
+                "url": "https://github.com/jquery/jquery/tree/3.7.1",
+                "purpose": "stable Release Javadoc JAR에 minified JavaScript 파일로 포함; main JAR·runtime 미포함",
+            },
+            {
+                "name": "jQuery UI",
+                "version": "1.14.1",
+                "license": "MIT",
+                "url": "https://github.com/jquery/jquery-ui/tree/1.14.1",
+                "purpose": "stable Release Javadoc JAR에 JavaScript·CSS 파일로 포함; main JAR·runtime 미포함",
+            },
+            {
+                "name": "Gradle Wrapper",
+                "version": "8.14.4",
+                "license": "Apache-2.0",
+                "url": "https://github.com/gradle/gradle/tree/v8.14.4",
+                "purpose": "repo에 Wrapper JAR로 포함; checksum 고정 build·test·package 도구; product runtime 미포함",
+            },
+        ]
+        self.assertEqual(expected_rows, content["sbom"])
+        self.assertTrue(all("GPL-" in row["license"] for row in content["sbom"][:2]))
+        self.assertTrue(
+            all("GPL-" not in row["license"] for row in content["sbom"][2:])
         )
+        self.assertEqual(10, len({row["name"] for row in content["sbom"]}))
+        self.assertEqual(10, len({row["url"] for row in content["sbom"]}))
+        self.assertNotIn(
+            "MySQL Community Server OCI image",
+            {row["name"] for row in content["sbom"]},
+        )
+        self.assertNotIn("NOASSERTION", {row["license"] for row in content["sbom"]})
+        for name in (
+            "OpenJDK standard-doclet assets",
+            "jQuery",
+            "jQuery UI",
+        ):
+            row = next(item for item in content["sbom"] if item["name"] == name)
+            self.assertIn("Javadoc JAR", row["purpose"])
+            self.assertIn("main JAR·runtime 미포함", row["purpose"])
 
-    def test_mysql_container_row_requires_unresolved_manual_review(self) -> None:
+    def test_secondary_test_only_rows_remain_disclosed_outside_top_ten(self) -> None:
         content_path = SCRIPT.parents[1] / "report-content.ko.json"
         with content_path.open(encoding="utf-8") as stream:
             content = json.load(stream)
-        row = next(
-            item for item in content["sbom"] if item["name"] == "MySQL Server 컨테이너"
-        )
+        names = {item["name"] for item in content["sbom"]}
+        self.assertNotIn("HikariCP", names)
+        self.assertNotIn("datasource-proxy", names)
+        self.assertNotIn("MySQL Community Server OCI image", names)
+        self.assertNotIn("CycloneDX Gradle Plugin", names)
 
-        self.assertEqual("8.4.11", row["version"])
-        self.assertEqual(
-            "Image-wide conclusion not asserted; manual review required",
-            row["license"],
+        third_party = (REPOSITORY_ROOT / "THIRD_PARTY.md").read_text(
+            encoding="utf-8"
         )
-        self.assertEqual(
-            "https://dev.mysql.com/doc/refman/8.4/en/preface.html", row["url"]
+        self.assertIn("| HikariCP | 6.2.1 |", third_party)
+        self.assertIn("| datasource-proxy | 1.11.0 |", third_party)
+        self.assertIn("MySQL Community Server container image", third_party)
+        self.assertIn("Image-wide conclusion not asserted", third_party)
+        self.assertIn("manual package-level review required", third_party)
+        self.assertIn(
+            "https://github.com/docker-library/mysql/blob/"
+            "01f90d87012e46cd174073bba02d64e9fc693ed3/8.4/Dockerfile.oracle",
+            third_party,
         )
-        self.assertIn("Testcontainers 별도 프로세스", row["purpose"])
-        self.assertIn("JAR 미포함", row["purpose"])
-        self.assertIn("Oracle Linux·MySQL Server/Shell", row["purpose"])
-        self.assertIn("b3b90af2...857fd3fb", row["purpose"])
+        self.assertIn(
+            "image layers and installed programs are test-only", third_party
+        )
+        self.assertIn("| CycloneDX Gradle plugin | 3.4.0 |", third_party)
 
     def test_report_builder_requirements_pin_the_complete_python_closure(self) -> None:
         requirements_path = SCRIPT.parents[1] / "report-builder-requirements.txt"
@@ -4033,6 +7972,25 @@ class ReportContentSbomTest(unittest.TestCase):
                 "typing_extensions==4.16.0",
             },
             requirements,
+        )
+
+    def test_ci_report_package_lock_pins_exact_linux_wheel_hashes(self) -> None:
+        lock_path = SCRIPT.parents[1] / "report-package-ci-requirements.txt"
+        self.assertEqual(
+            "# CI-only wheel lock for CPython 3.12.14 on ubuntu-24.04 x86_64.\n"
+            "# SHA-256 values are the official PyPI digests for the wheels selected on this platform.\n"
+            "# Keep report-builder-requirements.txt for version-pinned cross-platform local setup.\n"
+            "certifi==2026.7.22 \\\n"
+            "    --hash=sha256:62f22742b58a1a33014a2b6b706588a8d7e2a88ae7bd1a6ebe8c992928483775\n"
+            "Pillow==12.3.0 \\\n"
+            "    --hash=sha256:78cb2c6865a35ab8ff8b75fd122f6033b92a62c82801110e48ddd6c936a45d91\n"
+            "lxml==6.1.1 \\\n"
+            "    --hash=sha256:ebe6af670449830d6d9b752c256a983291c766a1365ba5d5460048f9e33a7818\n"
+            "python-docx==1.2.0 \\\n"
+            "    --hash=sha256:3fd478f3250fbbbfd3b94fe1e985955737c145627498896a8a6bf81f4baf66c7\n"
+            "typing_extensions==4.16.0 \\\n"
+            "    --hash=sha256:481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8\n",
+            lock_path.read_text(encoding="utf-8"),
         )
 
 
@@ -4080,6 +8038,148 @@ Pages: 5
         ):
             with self.assertRaisesRegex(package_submission.GateError, "private path"):
                 package_submission.validate_pdf_privacy(Path("/tmp/report.pdf"))
+
+    def test_rejects_docx_revision_session_identifiers(self) -> None:
+        core = b'''<?xml version="1.0" encoding="UTF-8"?>
+<cp:coreProperties
+ xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties"
+ xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <dc:creator>RouteContract project</dc:creator>
+  <cp:lastModifiedBy>RouteContract project</cp:lastModifiedBy>
+</cp:coreProperties>'''
+        document = b'''<?xml version="1.0" encoding="UTF-8"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body><w:p w:rsidR="00112233"><w:r><w:t>safe</w:t></w:r></w:p></w:body>
+</w:document>'''
+        with tempfile.TemporaryDirectory() as raw:
+            path = Path(raw) / "report.docx"
+            with ZipFile(path, "w", ZIP_DEFLATED) as package:
+                package.writestr("docProps/core.xml", core)
+                package.writestr("word/document.xml", document)
+            with self.assertRaisesRegex(
+                package_submission.GateError, "revision session identifiers"
+            ):
+                package_submission.validate_docx_privacy(path)
+
+    def test_accepts_docx_without_revision_identifiers_in_all_privacy_parts(self) -> None:
+        core = b'''<?xml version="1.0" encoding="UTF-8"?>
+<cp:coreProperties
+ xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties"
+ xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <dc:creator>RouteContract project</dc:creator>
+  <cp:lastModifiedBy>RouteContract project</cp:lastModifiedBy>
+</cp:coreProperties>'''
+        parts = {
+            "word/document.xml": b'''<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>safe</w:t></w:r></w:p></w:body></w:document>''',
+            "word/settings.xml": b'''<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:zoom w:percent="100"/></w:settings>''',
+            "word/styles.xml": b'''<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:style w:type="paragraph"><w:name w:val="Normal"/></w:style></w:styles>''',
+        }
+        with tempfile.TemporaryDirectory() as raw:
+            path = Path(raw) / "report.docx"
+            with ZipFile(path, "w", ZIP_DEFLATED) as package:
+                package.writestr("docProps/core.xml", core)
+                for name, content in parts.items():
+                    package.writestr(name, content)
+
+            package_submission.validate_docx_privacy(path)
+
+    def test_rejects_docx_revision_identifiers_in_settings_and_styles(self) -> None:
+        core = b'''<?xml version="1.0" encoding="UTF-8"?>
+<cp:coreProperties
+ xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties"
+ xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <dc:creator>RouteContract project</dc:creator>
+  <cp:lastModifiedBy>RouteContract project</cp:lastModifiedBy>
+</cp:coreProperties>'''
+        document = b'''<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>safe</w:t></w:r></w:p></w:body></w:document>'''
+        leaks = {
+            "settings-container": (
+                "word/settings.xml",
+                b'''<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:rsids><w:rsidRoot w:val="00112233"/><w:rsid w:val="44556677"/></w:rsids></w:settings>''',
+            ),
+            "styles-element": (
+                "word/styles.xml",
+                b'''<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:style w:type="paragraph"><w:rsid w:val="00112233"/></w:style></w:styles>''',
+            ),
+            "styles-attribute": (
+                "word/styles.xml",
+                b'''<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:style w:type="paragraph" w:rsidR="00112233"/></w:styles>''',
+            ),
+        }
+        for label, (part_name, content) in leaks.items():
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as raw:
+                path = Path(raw) / "report.docx"
+                with ZipFile(path, "w", ZIP_DEFLATED) as package:
+                    package.writestr("docProps/core.xml", core)
+                    package.writestr("word/document.xml", document)
+                    package.writestr(part_name, content)
+                with self.assertRaisesRegex(
+                    package_submission.GateError, "revision session identifiers"
+                ):
+                    package_submission.validate_docx_privacy(path)
+
+    def test_report_metadata_errors_never_echo_private_values(self) -> None:
+        canary = "PRIVATECANARYSECRETXYZ"
+        with self.assertRaisesRegex(
+            package_submission.GateError, "EMAIL_ADDRESS"
+        ) as caught:
+            package_submission.reject_sensitive_metadata(
+                f"owner-{canary}@example.com", "report metadata"
+            )
+        self.assertNotIn(canary, str(caught.exception))
+        self.assertNotIn("example.com", str(caught.exception))
+
+        def run_with_pdf_info_canary(command: list[str]) -> str:
+            value = self.pdf_run(command)
+            if len(command) == 2 and command[0].endswith("pdfinfo"):
+                return value.replace(
+                    "Author: RouteContract project", f"Author: {canary}"
+                )
+            return value
+
+        xmp_canary = self.XMP.replace("RouteContract project", canary)
+
+        def run_with_xmp_canary(command: list[str]) -> str:
+            if "-meta" in command:
+                return xmp_canary
+            return self.pdf_run(command)
+
+        def run_with_attachment_canary(command: list[str]) -> str:
+            if command[0].endswith("pdfdetach"):
+                return f"1 embedded file\n1: {canary}.txt\n"
+            return self.pdf_run(command)
+
+        cases = (
+            (run_with_pdf_info_canary, "field_count=1"),
+            (run_with_xmp_canary, "field=creator"),
+            (run_with_attachment_canary, "EMBEDDED_FILE"),
+        )
+        for side_effect, expected in cases:
+            with self.subTest(expected=expected), patch.object(
+                package_submission.shutil,
+                "which",
+                side_effect=lambda name: f"/bin/{name}",
+            ), patch.object(
+                package_submission, "run", side_effect=side_effect
+            ), self.assertRaisesRegex(
+                package_submission.GateError, expected
+            ) as caught:
+                package_submission.validate_pdf_privacy(Path("/tmp/report.pdf"))
+            self.assertNotIn(canary, str(caught.exception))
+
+        sensitive_key = f"author_{canary}"
+        with self.assertRaisesRegex(
+            package_submission.GateError, "index=0"
+        ) as caught:
+            with patch.object(
+                package_submission,
+                "SENSITIVE_VIDEO_METADATA_TAGS",
+                frozenset({sensitive_key.casefold()}),
+            ):
+                package_submission.validate_video_metadata_tags(
+                    {sensitive_key: "value"}, "format"
+                )
+        self.assertNotIn(canary, str(caught.exception))
 
     def test_rejects_symlink_in_input_path(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
@@ -4477,8 +8577,8 @@ class ReleaseEvidenceTest(unittest.TestCase):
             "schemaVersion": 1,
             "sourceTree": "e" * 40,
             "vulnerabilities": {
-                "acceptedExceptionCount": 3,
-                "findingCount": 3,
+                "acceptedExceptionCount": 1,
+                "findingCount": 1,
                 "findings": findings_for(vulnerability_exceptions),
                 "unreviewedCount": 0,
             },
@@ -4566,13 +8666,13 @@ class ReleaseEvidenceTest(unittest.TestCase):
             self.assertEqual(16, result["release_evidence_file_count"])
             self.assertEqual(17, result["workflow_artifact_file_count"])
             self.assertEqual(12, len(result["public_release_assets"]))
-            self.assertEqual(50, result["test_summary"]["test_count"])
+            self.assertEqual(52, result["test_summary"]["test_count"])
             self.assertIn("SHA256SUMS", result["public_release_assets"])
             self.assertIn("test-summary.txt", result["public_release_assets"])
             self.assertIn("supply-chain-evidence.json", result["public_release_assets"])
             self.assertEqual(0, result["supply_chain"]["unreviewed_count"])
             self.assertEqual(2, result["supply_chain"]["unresolved_license_review_count"])
-            self.assertEqual(3, result["supply_chain"]["finding_count"])
+            self.assertEqual(1, result["supply_chain"]["finding_count"])
             self.assertNotIn("environment.txt", result["public_release_assets"])
             self.assertNotIn(
                 "routecontract-mysql-example-cyclonedx.json",
@@ -4784,7 +8884,7 @@ class ReleaseEvidenceTest(unittest.TestCase):
                 accepted = package_submission.validate_release_evidence(
                     root, artifact, checked, raw_root
                 )
-            self.assertEqual(3, accepted["supply_chain"]["finding_count"])
+            self.assertEqual(1, accepted["supply_chain"]["finding_count"])
 
             evidence["vulnerabilities"]["findings"][0]["reachabilityEvidence"] = {
                 "exampleProfile": 1,
@@ -4970,7 +9070,7 @@ class ReleaseEvidenceTest(unittest.TestCase):
             self.write_public_checksums(root)
             self.rebuild_artifact(root, artifact, manifest)
             checked = package_submission.validate_manifest(manifest)
-            with self.assertRaisesRegex(package_submission.GateError, "7-suite/50-test"):
+            with self.assertRaisesRegex(package_submission.GateError, "7-suite/52-test"):
                 package_submission.validate_release_evidence(
                     root, artifact, checked, raw_root
                 )
@@ -5180,8 +9280,11 @@ class PublicEvidenceTest(unittest.TestCase):
         url = "https://www.youtube.com/watch?v=abcdefghijk"
         commands: list[list[str]] = []
 
-        def fake_run(command: list[str]) -> str:
+        def fake_run(command: list[str], **kwargs: object) -> str:
             commands.append(command)
+            self.assertEqual(
+                "yt-dlp public video metadata probe", kwargs.get("failure_label")
+            )
             return json.dumps(valid_youtube_probe())
 
         with patch.object(
@@ -5211,6 +9314,39 @@ class PublicEvidenceTest(unittest.TestCase):
             ],
             commands[0],
         )
+
+    def test_youtube_probe_rejects_duplicate_nonfinite_and_deep_json_generically(
+        self,
+    ) -> None:
+        canary = "CANARY_YTDLP_PRIVATE_KEY"
+        malformed = (
+            '{"' + canary + '":1,"' + canary + '":2}',
+            '{"value":Infinity}',
+            '{"value":1e999}',
+            PublicJsonTransportTest.nested_json(
+                package_submission.REPORT_CONTENT_CONTRACT.STRICT_JSON_MAX_CONTAINER_DEPTH
+                + 1,
+                "object",
+            ).decode(),
+            "[" * 10_000 + "0" + "]" * 10_000,
+            " " * (package_submission.MAX_JSON_TOOL_OUTPUT_BYTES + 1),
+        )
+        url = "https://www.youtube.com/watch?v=abcdefghijk"
+        for output in malformed:
+            with self.subTest(prefix=output[:24]), patch.object(
+                package_submission, "request_json", return_value={"title": "RouteContract demo"}
+            ), patch.object(
+                package_submission.shutil, "which", return_value="/usr/local/bin/yt-dlp"
+            ), patch.object(
+                package_submission, "run", return_value=output
+            ), self.assertRaisesRegex(
+                package_submission.GateError,
+                "incomplete public video duration metadata",
+            ) as caught:
+                package_submission.public_youtube_metadata(url)
+            self.assertIsNone(caught.exception.__cause__)
+            self.assertNotIn(canary, str(caught.exception))
+            self.assertNotIn("9" * 32, str(caught.exception))
 
     def youtube_probe(self, metadata: object) -> dict:
         url = "https://www.youtube.com/watch?v=abcdefghijk"
@@ -5407,6 +9543,39 @@ class PublicEvidenceTest(unittest.TestCase):
             package_submission.GateError, "incomplete public video duration metadata"
         ):
             self.youtube_probe("not-an-object")
+
+    def test_youtube_schema_diagnostics_never_echo_json_values(self) -> None:
+        canary = "CANARY_YTDLP_PRIVATE_VALUE"
+        cases = []
+        for field in ("duration", "availability", "live_status", "age_limit"):
+            metadata = valid_youtube_probe()
+            metadata[field] = canary
+            cases.append((field, metadata))
+        for field in ("duration", "age_limit"):
+            metadata = valid_youtube_probe()
+            metadata[field] = int("9" * 1_000)
+            cases.append((f"oversized-{field}", metadata))
+        oversized_height = valid_youtube_probe()
+        oversized_height["formats"][1]["height"] = int("9" * 1_000)
+        cases.append(("oversized-height", oversized_height))
+        for field, metadata in cases:
+            with self.subTest(field=field), self.assertRaises(
+                package_submission.GateError
+            ) as caught:
+                self.youtube_probe(metadata)
+            self.assertIsNone(caught.exception.__cause__)
+            self.assertNotIn(canary, str(caught.exception))
+            self.assertNotIn("9" * 32, str(caught.exception))
+
+        manifest = package_submission.validate_manifest(valid_manifest())
+        with self.assertRaises(package_submission.GateError) as caught:
+            package_submission.validate_public_youtube_contract(
+                manifest,
+                {"duration_seconds": 179.5},
+                {"title": canary, "duration_seconds": 179.0},
+            )
+        self.assertIsNone(caught.exception.__cause__)
+        self.assertNotIn(canary, str(caught.exception))
 
     def test_accepts_matching_public_revision_release_and_video(self) -> None:
         manifest = package_submission.validate_manifest(valid_manifest())

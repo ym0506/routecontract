@@ -3,7 +3,7 @@
 RouteContract is licensed under Apache-2.0. The dependencies below keep their
 own licenses. This file is a human-readable inventory of the dependencies
 declared directly by this repository, selected reviewed transitive metadata,
-and the pinned report-builder runtime closure, as of 2026-08-14; it is not a
+and the pinned report-builder runtime closure, as of 2026-08-23; it is not a
 substitute for the machine-readable SBOM or the license text shipped by each
 dependency.
 
@@ -29,6 +29,33 @@ must supply, or already have, an equivalent Jackson 2 alignment to reproduce
 the verified 2.18.9 graph; RouteContract's POM does not provide it. It does not
 replace the separate `tools.jackson` 3.1.5 runtime dependency.
 
+## Javadoc classifier shipped assets
+
+The published Javadoc classifier is generated with **Eclipse Temurin/OpenJDK
+standard-doclet 17.0.20.1+1**. In addition to RouteContract API pages, that
+classifier ships the standard doclet's JavaScript, CSS and two PNG resources.
+The OpenJDK-authored files are distributed under
+`GPL-2.0-only WITH Classpath-exception-2.0`; the classifier also contains
+jQuery 3.7.1 and jQuery UI 1.14.1 under MIT. This does not relicense
+RouteContract or the Apache-2.0 main JAR. The five upstream texts are kept
+inside the classifier under the `legal/` directory as `legal/LICENSE`, `legal/ADDITIONAL_LICENSE_INFO`,
+`legal/ASSEMBLY_EXCEPTION`, `legal/jquery.md` and `legal/jqueryUI.md`.
+
+This is a classifier-only shipped-file boundary. These assets are not present
+in the main library JAR or its runtime dependency graph, and the project does
+not add them as runtime dependencies merely to make a dependency-profile SBOM
+look like a file inventory. The exact release workflow instead pins the JDK,
+records `java -fullversion`, and makes the offline Release installer require
+the legal files, static resources, versions and license markers. The
+authoritative upstream references are the [Eclipse Temurin
+17.0.20.1+1 release](https://github.com/adoptium/temurin17-binaries/releases/tag/jdk-17.0.20.1%2B1),
+the [OpenJDK 17.0.20.1 jdk.javadoc
+source](https://github.com/openjdk/jdk17u/tree/jdk-17.0.20.1%2B1/src/jdk.javadoc),
+[jQuery 3.7.1](https://github.com/jquery/jquery/tree/3.7.1), and [jQuery UI
+1.14.1](https://github.com/jquery/jquery-ui/tree/1.14.1). No whole-file hash is
+predeclared here: the final classifier and `SHA256SUMS` bind the bytes actually
+produced by the pinned release workflow.
+
 ## Tests and MySQL example
 
 | Component | Version | Gradle scope | License |
@@ -52,6 +79,11 @@ therefore omits `licenses` for this one OCI component, records an exact custom
 unresolved-review property, and links the [MySQL 8.4 legal-notices
 index](https://dev.mysql.com/doc/refman/8.4/en/preface.html) as a documentation
 external reference rather than an unsupported image-wide SPDX conclusion.
+The reviewed official image recipe source is the
+[`docker-library/mysql` 8.4 Oracle Dockerfile at commit
+`01f90d87012e46cd174073bba02d64e9fc693ed3`](https://github.com/docker-library/mysql/blob/01f90d87012e46cd174073bba02d64e9fc693ed3/8.4/Dockerfile.oracle).
+The image layers and installed programs are test-only and are not bundled in
+RouteContract's Release JARs.
 That exact review is owned by the RouteContract maintainers and expires
 2026-08-27; it must be resolved, renewed with new evidence or removed before
 then.
@@ -97,13 +129,44 @@ copied source's notice should be carried by the JTS artifact, whose release
 metadata omits it. The expression is therefore concluded while the JTS
 redistribution notice remains an exact manual-review item expiring 2026-08-27.
 
-The aggregate audit currently observes three reviewed advisories, all in that
-same test/example-only ShardingSphere SQL Federation graph:
+That upstream metadata gap remains disclosed and is not treated as upstream
+license clearance. RouteContract's v0.1 distribution boundary is narrower:
+the main JAR accepts only `.class` entry paths under the exact RouteContract
+package namespace plus an exact metadata allowlist. The sources JAR applies the
+same path policy to `.java` entries and requires every declared package to match
+its path; the Javadoc JAR has its own exact inventory. The source ZIP rejects
+JTS/Mahout-named files and package paths, every compiled `.class`, and every
+Java file outside conventional source roots, outside the first-party declared
+namespace, or with a path/declaration mismatch. The published POM declares no
+direct JTS or Mahout dependency and cannot contain a Maven parent or relocation.
+These are name, path, declared-package and dependency gates; they do not determine the
+semantic origin of renamed or copied source/class bytes. The final Release gate
+must recheck those invariants,
+prove the source archive matches the final tagged tracked tree, and retain the
+owner's source/provenance review before the non-bundled test/example review is
+complete. This does not remove JTS from the test/example dependency graph or
+its aggregate SBOM record. The distribution-boundary review reopens if those
+payload invariants change or a JTS/Mahout published dependency enters the
+release; it is not legal advice or a conclusion about the upstream artifact's
+compliance.
+
+The MySQL and standalone fixtures strictly align the following transitive
+versions to the dependency-management values published in the Apache
+ShardingSphere 5.5.3 parent POM:
+
+- `net.hydromatic:aggdesigner-algorithm:6.1`;
+- `net.minidev:json-smart:2.4.10`;
+- `net.minidev:accessors-smart:2.4.9`.
+
+That alignment replaces Calcite's requested `aggdesigner-algorithm:6.0` and
+JSONPath's requested `json-smart:2.5.0` / `accessors-smart:2.5.0` in the exact
+resolved fixture graph. `aggdesigner-algorithm:6.1` also replaces the legacy
+`commons-lang:commons-lang:2.4` edge with Commons Lang 3 and Commons Logging
+1.3.5. The pinned offline audit currently observes one reviewed advisory in
+the remaining test/example-only ShardingSphere SQL Federation graph:
 
 | Coordinate | Advisory | Reviewed upstream status | Policy expiry |
 |---|---|---|---:|
-| `commons-lang:commons-lang:2.4` | [GHSA-j288-q9x7-2f5v](https://github.com/advisories/GHSA-j288-q9x7-2f5v) | No patched release under the legacy `commons-lang` coordinates; the advisory names Commons Lang 3.18.0 as the patched successor line | 2026-08-27 |
-| `net.minidev:json-smart:2.5.0` | [GHSA-pq2g-wx69-c263](https://github.com/advisories/GHSA-pq2g-wx69-c263) | Patched in 2.5.2 | 2026-08-27 |
 | `org.apache.calcite:calcite-core:1.40.0` | [GHSA-c2rv-hwqm-wjpg](https://github.com/advisories/GHSA-c2rv-hwqm-wjpg) | Patched in 1.42.0 | 2026-08-27 |
 
 `test/example-only` describes RouteContract's resolved reachability; it is not

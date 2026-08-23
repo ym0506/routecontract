@@ -112,6 +112,61 @@ class ActivationRecordSchemaTest(unittest.TestCase):
         self.assertEqual(11, len(record.payloads))
         self.assertEqual("independent-rc1-install.yml", record.issue_form_filename)
 
+    def test_exact_object_schema_error_never_echoes_attacker_controlled_keys(
+        self,
+    ) -> None:
+        canary = "CANARY_PRIVATE_SCHEMA_KEY"
+        with self.assertRaises(MODULE.ActivationError) as caught:
+            MODULE._exact_object({canary: True}, {"SECRET_REQUIRED_FIELD"}, "record")
+        self.assertIsNone(caught.exception.__cause__)
+        self.assertIn("missing_count=1", str(caught.exception))
+        self.assertIn("unexpected_count=1", str(caught.exception))
+        self.assertNotIn(canary, str(caught.exception))
+        self.assertNotIn("SECRET_REQUIRED_FIELD", str(caught.exception))
+
+        for scope in ("top", "nested"):
+            document = valid_document()
+            target = document if scope == "top" else document["releaseEvidence"]
+            target[canary] = "CANARY_PRIVATE_SCHEMA_VALUE"
+            with self.subTest(scope=scope, surface="direct"), self.assertRaises(
+                MODULE.ActivationError
+            ) as caught:
+                MODULE.validate_record_schema(document)
+            self.assertIsNone(caught.exception.__cause__)
+            self.assertIn("unexpected_count=1", str(caught.exception))
+            self.assertNotIn(canary, str(caught.exception))
+
+            with self.subTest(scope=scope, surface="cli"), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                record_path = root / "activation.json"
+                assets = root / "assets"
+                assets.mkdir()
+                record_path.write_text(json.dumps(document), encoding="utf-8")
+                process = subprocess.run(
+                    [
+                        sys.executable,
+                        str(SCRIPT),
+                        "--record",
+                        str(record_path),
+                        "--release-assets-dir",
+                        str(assets),
+                        "--repository-root",
+                        str(REPOSITORY_ROOT),
+                    ],
+                    cwd=REPOSITORY_ROOT,
+                    check=False,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                )
+            self.assertEqual(2, process.returncode)
+            self.assertIn("missing_count=0", process.stderr)
+            self.assertIn("unexpected_count=1", process.stderr)
+            self.assertNotIn(canary, process.stdout + process.stderr)
+            self.assertNotIn(
+                "CANARY_PRIVATE_SCHEMA_VALUE", process.stdout + process.stderr
+            )
+
     def test_derives_version_specific_issue_form_for_rc1_and_rc2(self) -> None:
         for tag, filename in (
             ("v0.1.0-rc1", "independent-rc1-install.yml"),
@@ -252,13 +307,222 @@ class ActivationRecordSchemaTest(unittest.TestCase):
             root = Path(temporary)
             duplicate = root / "duplicate.json"
             duplicate.write_text('{"tag":"one","tag":"two"}\n', encoding="utf-8")
-            with self.assertRaisesRegex(MODULE.ActivationError, "duplicate JSON key"):
+            with self.assertRaisesRegex(MODULE.ActivationError, "strict UTF-8 JSON"):
                 MODULE.load_record(duplicate)
 
             directory = root / "directory.json"
             directory.mkdir()
             with self.assertRaisesRegex(MODULE.ActivationError, "regular file"):
                 MODULE.load_record(directory)
+
+
+class ActivationStrictJsonDecoderTest(unittest.TestCase):
+    @staticmethod
+    def nested_payload(kind: str, depth: int) -> bytes:
+        value = "0"
+        for index in range(depth):
+            if kind == "array" or (kind == "mixed" and index % 2 == 0):
+                value = f"[{value}]"
+            else:
+                value = f'{{"level":{value}}}'
+        return value.encode("utf-8")
+
+    @staticmethod
+    def node_payload(kind: str, node_count: int) -> bytes:
+        if node_count < 1:
+            raise AssertionError("node_count must include one root node")
+        if kind == "array":
+            value: object = [0] * (node_count - 1)
+        elif kind == "object":
+            value = {f"k{index}": 0 for index in range(node_count - 1)}
+        elif kind == "mixed":
+            if node_count < 3:
+                raise AssertionError("mixed JSON needs a list, object, and scalar")
+            value = [{"nested": 0}, *([0] * (node_count - 3))]
+        else:  # pragma: no cover - test helper precondition
+            raise AssertionError(f"unknown JSON shape: {kind}")
+        return json.dumps(value, separators=(",", ":")).encode("utf-8")
+
+    def test_accepts_valid_strict_utf8_activation_record(self) -> None:
+        self.assertEqual(64, MODULE.MAX_JSON_NESTING_DEPTH)
+        self.assertEqual(100_000, MODULE.MAX_JSON_NODE_COUNT)
+        self.assertEqual(1_000, MODULE.MAX_JSON_INTEGER_DIGITS)
+        self.assertEqual(8 * 1024 * 1024, MODULE.MAX_GITHUB_JSON_BYTES)
+        encoded = json.dumps(valid_document(), separators=(",", ":")).encode("utf-8")
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "activation.json"
+            path.write_bytes(encoded)
+            raw, document = MODULE.load_record(path)
+        self.assertEqual(encoded, raw)
+        self.assertEqual(TAG, MODULE.validate_record_schema(document).tag)
+
+    def test_integer_digit_and_encoded_byte_boundaries_are_exact(self) -> None:
+        maximum_integer = b"9" * MODULE.MAX_JSON_INTEGER_DIGITS
+        parsed = MODULE._decode_strict_json(b'{"value":' + maximum_integer + b"}")
+        self.assertEqual(int(maximum_integer), parsed["value"])
+        with self.assertRaisesRegex(
+            ValueError, "strict JSON validation failed"
+        ) as caught:
+            MODULE._decode_strict_json(
+                b'{"value":' + maximum_integer + b"9}"
+            )
+        self.assertIsNone(caught.exception.__cause__)
+
+    def test_activation_record_file_size_boundary_is_exactly_one_mibibyte(
+        self,
+    ) -> None:
+        accepted = b"{}" + b" " * (MODULE.MAX_RECORD_BYTES - 2)
+        rejected = accepted + b" "
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "activation.json"
+            path.write_bytes(accepted)
+            raw, document = MODULE.load_record(path)
+            self.assertEqual(accepted, raw)
+            self.assertEqual({}, document)
+
+            path.write_bytes(rejected)
+            with self.assertRaisesRegex(
+                MODULE.ActivationError, "1 MiB safety limit"
+            ) as caught:
+                MODULE.load_record(path)
+            self.assertIsNone(caught.exception.__cause__)
+
+        encoded = b'{"ok":true}'
+        self.assertEqual(
+            {"ok": True},
+            MODULE._decode_strict_json(encoded, maximum_bytes=len(encoded)),
+        )
+        with self.assertRaisesRegex(
+            ValueError, "strict JSON validation failed"
+        ) as caught:
+            MODULE._decode_strict_json(encoded, maximum_bytes=len(encoded) - 1)
+        self.assertIsNone(caught.exception.__cause__)
+
+    def test_rejects_duplicate_nonfinite_overflow_huge_integer_and_encoding_generically(
+        self,
+    ) -> None:
+        canary_key = "CANARY_PRIVATE_DUPLICATE_KEY"
+        canary_value = "CANARY_PRIVATE_DUPLICATE_VALUE"
+        malformed = (
+            f'{{"{canary_key}":"{canary_value}","{canary_key}":0}}'.encode(),
+            f'{{"outer":{{"{canary_key}":1,"{canary_key}":2}}}}'.encode(),
+            b'{"value":NaN}',
+            b'{"value":Infinity}',
+            b'{"value":-Infinity}',
+            b'{"value":1e999}',
+            b'{"value":' + (b"9" * 5_000) + b"}",
+            b'{"value":"\xff"}',
+            '{"value":1}'.encode("utf-16"),
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "activation.json"
+            for raw in malformed:
+                path.write_bytes(raw)
+                with self.subTest(raw_prefix=raw[:24]), self.assertRaisesRegex(
+                    MODULE.ActivationError, "strict UTF-8 JSON"
+                ) as caught:
+                    MODULE.load_record(path)
+                self.assertIsNone(caught.exception.__cause__)
+                self.assertNotIn(canary_key, str(caught.exception))
+                self.assertNotIn(canary_value, str(caught.exception))
+
+    def test_nesting_depth_boundary_for_arrays_objects_and_mixed_trees(self) -> None:
+        for kind in ("array", "object", "mixed"):
+            with self.subTest(kind=kind, boundary="max"):
+                MODULE._decode_strict_json(
+                    self.nested_payload(kind, MODULE.MAX_JSON_NESTING_DEPTH)
+                )
+            with self.subTest(kind=kind, boundary="max-plus-one"), self.assertRaisesRegex(
+                ValueError, "strict JSON validation failed"
+            ) as caught:
+                MODULE._decode_strict_json(
+                    self.nested_payload(kind, MODULE.MAX_JSON_NESTING_DEPTH + 1)
+                )
+            self.assertIsNone(caught.exception.__cause__)
+
+    def test_node_count_boundary_for_arrays_objects_and_mixed_trees(self) -> None:
+        for kind in ("array", "object", "mixed"):
+            with self.subTest(kind=kind, boundary="max"):
+                MODULE._decode_strict_json(
+                    self.node_payload(kind, MODULE.MAX_JSON_NODE_COUNT)
+                )
+            with self.subTest(kind=kind, boundary="max-plus-one"), self.assertRaisesRegex(
+                ValueError, "strict JSON validation failed"
+            ) as caught:
+                MODULE._decode_strict_json(
+                    self.node_payload(kind, MODULE.MAX_JSON_NODE_COUNT + 1)
+                )
+            self.assertIsNone(caught.exception.__cause__)
+
+    def test_deep_1050_and_1200_inputs_fail_without_recursion_details(self) -> None:
+        cases = (
+            ("array", 1_050),
+            ("object", 1_050),
+            ("mixed", 1_200),
+        )
+        for kind, depth in cases:
+            with self.subTest(kind=kind, depth=depth), self.assertRaisesRegex(
+                ValueError, "strict JSON validation failed"
+            ) as caught:
+                MODULE._decode_strict_json(self.nested_payload(kind, depth))
+            self.assertIsNone(caught.exception.__cause__)
+            self.assertNotIn("recursion", str(caught.exception).lower())
+
+    def test_budget_failure_precedes_placeholder_tree_walk(self) -> None:
+        over_budget = self.nested_payload(
+            "object", MODULE.MAX_JSON_NESTING_DEPTH + 1
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "activation.json"
+            path.write_bytes(over_budget)
+            with mock.patch.object(MODULE, "_contains_placeholder") as walker:
+                with self.assertRaisesRegex(
+                    MODULE.ActivationError, "strict UTF-8 JSON"
+                ):
+                    MODULE.load_record(path)
+            walker.assert_not_called()
+
+    def test_duplicate_canary_is_not_echoed_by_cli_or_exception_chain(self) -> None:
+        canary_key = "CANARY_PRIVATE_DUPLICATE_KEY"
+        canary_value = "CANARY_PRIVATE_DUPLICATE_VALUE"
+        raw = (
+            f'{{"{canary_key}":"{canary_value}",'
+            f'"{canary_key}":"SECOND_PRIVATE_VALUE"}}'
+        ).encode("utf-8")
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            path = root / "activation.json"
+            assets = root / "assets"
+            assets.mkdir()
+            path.write_bytes(raw)
+            with self.assertRaises(MODULE.ActivationError) as caught:
+                MODULE.load_record(path)
+            self.assertIsNone(caught.exception.__cause__)
+
+            process = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPT),
+                    "--record",
+                    str(path),
+                    "--release-assets-dir",
+                    str(assets),
+                    "--repository-root",
+                    str(REPOSITORY_ROOT),
+                ],
+                cwd=REPOSITORY_ROOT,
+                check=False,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+        self.assertEqual(2, process.returncode)
+        self.assertIn("RC_ACTIVATION_NO_GO", process.stderr)
+        self.assertNotIn("Traceback", process.stderr)
+        for secret in (canary_key, canary_value, "SECOND_PRIVATE_VALUE"):
+            self.assertNotIn(secret, str(caught.exception))
+            self.assertNotIn(secret, process.stdout)
+            self.assertNotIn(secret, process.stderr)
 
 
 class ActivationAssetSetTest(unittest.TestCase):
@@ -577,6 +841,8 @@ class ActivationPublicMetadataTest(unittest.TestCase):
         }
         return {
             f"repos/{MODULE.REPOSITORY_SLUG}": {
+                "id": 123_456,
+                "node_id": "R_kgDORouteContract",
                 "full_name": MODULE.REPOSITORY_SLUG,
                 "html_url": MODULE.REPOSITORY,
                 "default_branch": "main",
@@ -614,6 +880,29 @@ class ActivationPublicMetadataTest(unittest.TestCase):
             f"repos/{MODULE.REPOSITORY_SLUG}/pulls/{pull_number}": {
                 **copy.deepcopy(pull),
                 "merged": True,
+            },
+            f"graphql:pull/{pull_number}": {
+                "data": {
+                    "repository": {
+                        "id": "R_kgDORouteContract",
+                        "nameWithOwner": MODULE.REPOSITORY_SLUG,
+                        "pullRequest": {
+                            "id": pull["node_id"],
+                            "databaseId": pull["id"],
+                            "number": pull_number,
+                            "url": pull["html_url"],
+                            "state": "MERGED",
+                            "merged": True,
+                            "mergedAt": pull["merged_at"],
+                            "baseRefName": "main",
+                            "baseRepository": {
+                                "id": "R_kgDORouteContract",
+                                "nameWithOwner": MODULE.REPOSITORY_SLUG,
+                            },
+                            "mergeCommit": {"oid": record_commit},
+                        },
+                    }
+                }
             },
             (
                 f"repos/{MODULE.REPOSITORY_SLUG}/contents/{record_path}"
@@ -715,9 +1004,22 @@ class ActivationPublicMetadataTest(unittest.TestCase):
                 raise AssertionError(f"expected object-list fixture for {endpoint}")
             return value
 
+        def response_graphql(
+            _gh: str, _root: Path, pull_number: int
+        ) -> dict[str, object]:
+            key = f"graphql:pull/{pull_number}"
+            calls.append(key)
+            value = copy.deepcopy(fixture[key])
+            if not isinstance(value, dict):
+                raise AssertionError(f"expected GraphQL fixture for {key}")
+            return value
+
         with (
             mock.patch.object(MODULE, "_gh_json", side_effect=response),
             mock.patch.object(MODULE, "_gh_json_list", side_effect=response_list),
+            mock.patch.object(
+                MODULE, "_gh_graphql_activation_pull", side_effect=response_graphql
+            ),
             mock.patch.object(MODULE, "_git", return_value="9" * 40 + "\n"),
         ):
             metadata = MODULE.validate_public_metadata(
@@ -756,6 +1058,339 @@ class ActivationPublicMetadataTest(unittest.TestCase):
             ),
             metadata.release_assets,
         )
+
+    def test_accepts_null_association_merge_sha_only_when_direct_pull_is_exact(
+        self,
+    ) -> None:
+        """The commit/pulls summary may omit the squash SHA for a public repository."""
+        record = MODULE.validate_record_schema(valid_document())
+        record_commit = "f" * 40
+        raw_record = (json.dumps(record.document, sort_keys=True) + "\n").encode()
+        pull_list_endpoint = (
+            f"repos/{MODULE.REPOSITORY_SLUG}/commits/{record_commit}/"
+            "pulls?per_page=100"
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            record_path = (
+                root / f"docs/evidence/independent-rc-activation-{record.tag}.json"
+            )
+            record_path.parent.mkdir(parents=True)
+            record_path.write_bytes(raw_record)
+            fixture = self.metadata_fixture(record, raw_record, record_commit)
+            fixture[pull_list_endpoint][0]["merge_commit_sha"] = None
+            _, metadata = self.invoke(
+                root, record_path, raw_record, record_commit, record, fixture
+            )
+
+        self.assertEqual(123456, metadata.artifact_size)
+
+    def test_accepts_null_direct_merge_sha_only_when_association_is_exact(
+        self,
+    ) -> None:
+        record = MODULE.validate_record_schema(valid_document())
+        record_commit = "f" * 40
+        raw_record = (json.dumps(record.document, sort_keys=True) + "\n").encode()
+        pull_endpoint = f"repos/{MODULE.REPOSITORY_SLUG}/pulls/88"
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            record_path = (
+                root / f"docs/evidence/independent-rc-activation-{record.tag}.json"
+            )
+            record_path.parent.mkdir(parents=True)
+            record_path.write_bytes(raw_record)
+            fixture = self.metadata_fixture(record, raw_record, record_commit)
+            fixture[pull_endpoint]["merge_commit_sha"] = None
+            _, metadata = self.invoke(
+                root, record_path, raw_record, record_commit, record, fixture
+            )
+
+        self.assertEqual(123456, metadata.artifact_size)
+
+    def test_accepts_both_rest_merge_shas_null_when_graphql_is_exact(self) -> None:
+        record = MODULE.validate_record_schema(valid_document())
+        record_commit = "f" * 40
+        raw_record = (json.dumps(record.document, sort_keys=True) + "\n").encode()
+        pull_list_endpoint = (
+            f"repos/{MODULE.REPOSITORY_SLUG}/commits/{record_commit}/"
+            "pulls?per_page=100"
+        )
+        pull_endpoint = f"repos/{MODULE.REPOSITORY_SLUG}/pulls/88"
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            record_path = (
+                root / f"docs/evidence/independent-rc-activation-{record.tag}.json"
+            )
+            record_path.parent.mkdir(parents=True)
+            record_path.write_bytes(raw_record)
+            fixture = self.metadata_fixture(record, raw_record, record_commit)
+            fixture[pull_list_endpoint][0]["merge_commit_sha"] = None
+            fixture[pull_endpoint]["merge_commit_sha"] = None
+            _, metadata = self.invoke(
+                root, record_path, raw_record, record_commit, record, fixture
+            )
+
+        self.assertEqual(123456, metadata.artifact_size)
+
+    def test_rejects_missing_rest_merge_sha_keys(self) -> None:
+        record = MODULE.validate_record_schema(valid_document())
+        record_commit = "f" * 40
+        raw_record = (json.dumps(record.document, sort_keys=True) + "\n").encode()
+        pull_list_endpoint = (
+            f"repos/{MODULE.REPOSITORY_SLUG}/commits/{record_commit}/"
+            "pulls?per_page=100"
+        )
+        pull_endpoint = f"repos/{MODULE.REPOSITORY_SLUG}/pulls/88"
+
+        for surface in ("associated", "direct"):
+            with self.subTest(surface=surface), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                record_path = (
+                    root / f"docs/evidence/independent-rc-activation-{record.tag}.json"
+                )
+                record_path.parent.mkdir(parents=True)
+                record_path.write_bytes(raw_record)
+                fixture = self.metadata_fixture(record, raw_record, record_commit)
+                target = (
+                    fixture[pull_list_endpoint][0]
+                    if surface == "associated"
+                    else fixture[pull_endpoint]
+                )
+                target.pop("merge_commit_sha")
+                with self.assertRaises(MODULE.ActivationError):
+                    self.invoke(
+                        root, record_path, raw_record, record_commit, record, fixture
+                    )
+
+    def test_rejects_noninteger_rest_and_graphql_identities(self) -> None:
+        record = MODULE.validate_record_schema(valid_document())
+        record_commit = "f" * 40
+        raw_record = (json.dumps(record.document, sort_keys=True) + "\n").encode()
+        repo_endpoint = f"repos/{MODULE.REPOSITORY_SLUG}"
+        pull_list_endpoint = (
+            f"repos/{MODULE.REPOSITORY_SLUG}/commits/{record_commit}/"
+            "pulls?per_page=100"
+        )
+        pull_endpoint = f"repos/{MODULE.REPOSITORY_SLUG}/pulls/88"
+        pull_path = ("data", "repository", "pullRequest")
+
+        def reject(mutator) -> None:
+            with tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                record_path = (
+                    root / f"docs/evidence/independent-rc-activation-{record.tag}.json"
+                )
+                record_path.parent.mkdir(parents=True)
+                record_path.write_bytes(raw_record)
+                fixture = self.metadata_fixture(record, raw_record, record_commit)
+                mutator(fixture)
+                with self.assertRaises(MODULE.ActivationError):
+                    self.invoke(
+                        root, record_path, raw_record, record_commit, record, fixture
+                    )
+
+        for value in (True, 1.0, 0, -1):
+            with self.subTest(surface="repository", value=value):
+                reject(lambda fixture, value=value: fixture[repo_endpoint].__setitem__("id", value))
+            for surface, endpoint in (
+                ("associated", pull_list_endpoint),
+                ("direct", pull_endpoint),
+            ):
+                for field in ("id", "number"):
+                    with self.subTest(surface=surface, field=field, value=value):
+                        reject(
+                            lambda fixture, endpoint=endpoint, surface=surface,
+                            field=field, value=value: (
+                                fixture[endpoint][0].__setitem__(field, value)
+                                if surface == "associated"
+                                else fixture[endpoint].__setitem__(field, value)
+                            )
+                        )
+            for field in ("databaseId", "number"):
+                with self.subTest(surface="graphql", field=field, value=value):
+                    reject(
+                        lambda fixture, field=field, value=value: fixture[
+                            "graphql:pull/88"
+                        ]["data"]["repository"]["pullRequest"].__setitem__(
+                            field, value
+                        )
+                    )
+
+        strict_graphql_cases = (
+            ((*pull_path, "merged"), 1),
+            ((*pull_path, "id"), 1),
+            ((*pull_path, "url"), 88),
+            ((*pull_path, "state"), 1),
+            ((*pull_path, "mergedAt"), 1),
+            ((*pull_path, "baseRefName"), 1),
+            (("data", "repository", "id"), 1),
+            (("data", "repository", "nameWithOwner"), 1),
+            ((*pull_path, "baseRepository", "id"), 1),
+            ((*pull_path, "baseRepository", "nameWithOwner"), 1),
+            ((*pull_path, "mergeCommit", "oid"), 1),
+        )
+        for path, value in strict_graphql_cases:
+            def mutate(fixture, path=path, value=value) -> None:
+                target = fixture["graphql:pull/88"]
+                for component in path[:-1]:
+                    target = target[component]
+                target[path[-1]] = value
+
+            with self.subTest(surface="graphql", path=path):
+                reject(mutate)
+
+    def test_rejects_activation_pull_association_drift_or_ambiguity(self) -> None:
+        record = MODULE.validate_record_schema(valid_document())
+        record_commit = "f" * 40
+        raw_record = (json.dumps(record.document, sort_keys=True) + "\n").encode()
+        pull_list_endpoint = (
+            f"repos/{MODULE.REPOSITORY_SLUG}/commits/{record_commit}/"
+            "pulls?per_page=100"
+        )
+        pull_endpoint = f"repos/{MODULE.REPOSITORY_SLUG}/pulls/88"
+
+        def mutate_direct(field: str, value):
+            def mutate(fixture: dict[str, object]) -> None:
+                fixture[pull_list_endpoint][0]["merge_commit_sha"] = None
+                direct = fixture[pull_endpoint]
+                if field == "base_ref":
+                    direct["base"]["ref"] = value
+                elif field == "base_repository":
+                    direct["base"]["repo"]["full_name"] = value
+                else:
+                    direct[field] = value
+
+            return mutate
+
+        mutations = (
+            ("list SHA drift", lambda fixture: fixture[pull_list_endpoint][0].__setitem__("merge_commit_sha", "8" * 40)),
+            ("direct id drift", mutate_direct("id", 9999)),
+            ("direct node drift", mutate_direct("node_id", "PR_drifted")),
+            ("direct number drift", mutate_direct("number", 89)),
+            ("direct URL drift", mutate_direct("html_url", f"{MODULE.REPOSITORY}/pull/89")),
+            ("direct state drift", mutate_direct("state", "open")),
+            ("direct merge drift", mutate_direct("merged", False)),
+            ("direct time missing", mutate_direct("merged_at", None)),
+            ("direct SHA drift", mutate_direct("merge_commit_sha", "8" * 40)),
+            ("direct base drift", mutate_direct("base_ref", "next")),
+            ("direct repository drift", mutate_direct("base_repository", "other/repo")),
+            (
+                "foreign listed repository",
+                lambda fixture: fixture[pull_list_endpoint][0]["base"]["repo"].__setitem__(
+                    "full_name", "other/repo"
+                ),
+            ),
+        )
+        for label, mutate in mutations:
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                record_path = (
+                    root / f"docs/evidence/independent-rc-activation-{record.tag}.json"
+                )
+                record_path.parent.mkdir(parents=True)
+                record_path.write_bytes(raw_record)
+                fixture = self.metadata_fixture(record, raw_record, record_commit)
+                mutate(fixture)
+                with self.assertRaises(MODULE.ActivationError):
+                    self.invoke(
+                        root, record_path, raw_record, record_commit, record, fixture
+                    )
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            record_path = (
+                root / f"docs/evidence/independent-rc-activation-{record.tag}.json"
+            )
+            record_path.parent.mkdir(parents=True)
+            record_path.write_bytes(raw_record)
+            fixture = self.metadata_fixture(record, raw_record, record_commit)
+            first = fixture[pull_list_endpoint][0]
+            first["merge_commit_sha"] = None
+            second = copy.deepcopy(first)
+            second.update(
+                {
+                    "id": 8_900,
+                    "node_id": "PR_kwDOActivation89",
+                    "number": 89,
+                    "html_url": f"{MODULE.REPOSITORY}/pull/89",
+                }
+            )
+            fixture[pull_list_endpoint].append(second)
+            fixture[f"repos/{MODULE.REPOSITORY_SLUG}/pulls/89"] = {
+                **copy.deepcopy(second),
+                "merged": True,
+                "merge_commit_sha": record_commit,
+            }
+            graphql_second = copy.deepcopy(fixture["graphql:pull/88"])
+            graphql_pull = graphql_second["data"]["repository"]["pullRequest"]
+            graphql_pull.update(
+                {
+                    "id": second["node_id"],
+                    "databaseId": second["id"],
+                    "number": second["number"],
+                    "url": second["html_url"],
+                }
+            )
+            fixture["graphql:pull/89"] = graphql_second
+            with self.assertRaises(MODULE.ActivationError):
+                self.invoke(
+                    root, record_path, raw_record, record_commit, record, fixture
+                )
+
+    def test_rejects_graphql_pull_partial_or_identity_drift(self) -> None:
+        record = MODULE.validate_record_schema(valid_document())
+        record_commit = "f" * 40
+        raw_record = (json.dumps(record.document, sort_keys=True) + "\n").encode()
+
+        def mutate(path: tuple[str, ...], value):
+            def apply(payload: dict) -> None:
+                target = payload
+                for key in path[:-1]:
+                    target = target[key]
+                target[path[-1]] = value
+
+            return apply
+
+        pull_path = ("data", "repository", "pullRequest")
+        cases = (
+            (("data", "repository"), None),
+            (("data", "unexpected"), {}),
+            (("data", "repository", "unexpected"), True),
+            (("data", "repository", "id"), "R_wrong"),
+            (("data", "repository", "nameWithOwner"), "other/repo"),
+            ((*pull_path, "id"), "PR_wrong"),
+            ((*pull_path, "databaseId"), 9999),
+            ((*pull_path, "number"), 89),
+            ((*pull_path, "url"), f"{MODULE.REPOSITORY}/pull/89"),
+            ((*pull_path, "state"), "CLOSED"),
+            ((*pull_path, "merged"), False),
+            ((*pull_path, "mergedAt"), None),
+            ((*pull_path, "baseRefName"), "next"),
+            ((*pull_path, "baseRepository", "id"), "R_wrong"),
+            ((*pull_path, "baseRepository", "nameWithOwner"), "other/repo"),
+            ((*pull_path, "mergeCommit"), None),
+            ((*pull_path, "mergeCommit", "oid"), "8" * 40),
+        )
+        for path, value in cases:
+            with self.subTest(path=path), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                record_path = (
+                    root
+                    / f"docs/evidence/independent-rc-activation-{record.tag}.json"
+                )
+                record_path.parent.mkdir(parents=True)
+                record_path.write_bytes(raw_record)
+                fixture = self.metadata_fixture(record, raw_record, record_commit)
+                mutate(path, value)(fixture["graphql:pull/88"])
+                with self.assertRaises(MODULE.ActivationError):
+                    self.invoke(
+                        root,
+                        record_path,
+                        raw_record,
+                        record_commit,
+                        record,
+                        fixture,
+                    )
 
     def test_rejects_wrong_public_run_artifact_release_asset_or_setting(self) -> None:
         record = MODULE.validate_record_schema(valid_document())
@@ -1066,6 +1701,199 @@ class ActivationGitHubCommandTest(unittest.TestCase):
             MODULE._gh_json_list(
                 "/safe/gh", Path(temporary), "repos/owner/repo/commits/a/pulls"
             )
+
+    def test_graphql_pull_transport_is_authenticated_strict_and_duplicate_safe(
+        self,
+    ) -> None:
+        good = subprocess.CompletedProcess(
+            ["/safe/gh"], 0, stdout='{"data":{}}\n', stderr=""
+        )
+        with tempfile.TemporaryDirectory() as temporary, mock.patch.object(
+            MODULE, "_run", return_value=good
+        ) as runner:
+            self.assertEqual(
+                {"data": {}},
+                MODULE._gh_graphql_activation_pull(
+                    "/safe/gh", Path(temporary), 26
+                ),
+            )
+        command = runner.call_args.args[0]
+        self.assertEqual("graphql", command[command.index("api") + 1])
+        self.assertEqual(
+            ["--hostname", "github.com"],
+            command[command.index("--hostname") : command.index("--hostname") + 2],
+        )
+        self.assertIn("number=26", command)
+
+        failures = (
+            subprocess.CompletedProcess(
+                ["/safe/gh"], 1, stdout="", stderr="unavailable"
+            ),
+            subprocess.CompletedProcess(
+                ["/safe/gh"], 0, stdout='{"data":{},"errors":[]}\n', stderr=""
+            ),
+            subprocess.CompletedProcess(
+                ["/safe/gh"], 0, stdout='{"data":{},"data":{}}\n', stderr=""
+            ),
+            subprocess.CompletedProcess(
+                ["/safe/gh"], 0, stdout='{"data":null}\n', stderr=""
+            ),
+        )
+        for result in failures:
+            with self.subTest(stdout=result.stdout), tempfile.TemporaryDirectory() as temporary, mock.patch.object(
+                MODULE, "_run", return_value=result
+            ), self.assertRaises(MODULE.ActivationError):
+                MODULE._gh_graphql_activation_pull(
+                    "/safe/gh", Path(temporary), 26
+                )
+
+    def test_all_public_json_transports_reject_duplicate_nonfinite_and_overflow_values(
+        self,
+    ) -> None:
+        canary = "CANARY_PRIVATE_JSON_KEY"
+        cases = (
+            ("object-duplicate", MODULE._gh_json, f'{{"{canary}":1,"{canary}":2}}'),
+            ("object-nested-duplicate", MODULE._gh_json, f'{{"outer":{{"{canary}":1,"{canary}":2}}}}'),
+            ("object-nan", MODULE._gh_json, '{"value":NaN}'),
+            ("object-overflow", MODULE._gh_json, '{"value":1e999}'),
+            ("list-duplicate", MODULE._gh_json_list, f'[{{"{canary}":1,"{canary}":2}}]'),
+            ("list-infinity", MODULE._gh_json_list, '[{"value":Infinity}]'),
+        )
+        for label, helper, payload in cases:
+            completed = subprocess.CompletedProcess(
+                ["/safe/gh"], 0, stdout=payload, stderr=""
+            )
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as temporary, mock.patch.object(
+                MODULE, "_run", return_value=completed
+            ), self.assertRaises(MODULE.ActivationError) as caught:
+                helper("/safe/gh", Path(temporary), "repos/owner/repo")
+            self.assertNotIn(canary, str(caught.exception))
+
+        graphql_payloads = (
+            f'{{"data":{{"{canary}":1,"{canary}":2}}}}',
+            '{"data":{"value":-Infinity}}',
+            '{"data":{"value":1e999}}',
+        )
+        for payload in graphql_payloads:
+            completed = subprocess.CompletedProcess(
+                ["/safe/gh"], 0, stdout=payload, stderr=""
+            )
+            with self.subTest(surface="graphql", payload=payload), tempfile.TemporaryDirectory() as temporary, mock.patch.object(
+                MODULE, "_run", return_value=completed
+            ), self.assertRaises(MODULE.ActivationError) as caught:
+                MODULE._gh_graphql_activation_pull(
+                    "/safe/gh", Path(temporary), 26
+                )
+            self.assertNotIn(canary, str(caught.exception))
+
+    def test_all_public_json_transports_share_utf8_integer_and_tree_budgets(
+        self,
+    ) -> None:
+        huge_integer = b'{"value":' + (b"9" * 5_000) + b"}"
+        malformed_utf8 = b'{"value":"\xff"}'
+        utf16_object = '{"value":1}'.encode("utf-16")
+        over_depth = ActivationStrictJsonDecoderTest.nested_payload(
+            "object", MODULE.MAX_JSON_NESTING_DEPTH + 1
+        )
+        over_nodes = ActivationStrictJsonDecoderTest.node_payload(
+            "object", MODULE.MAX_JSON_NODE_COUNT + 1
+        )
+        rest_cases = (
+            ("object-huge-integer", MODULE._gh_json, huge_integer),
+            ("object-malformed-utf8", MODULE._gh_json, malformed_utf8),
+            ("object-utf16", MODULE._gh_json, utf16_object),
+            ("object-over-depth", MODULE._gh_json, over_depth),
+            ("object-over-nodes", MODULE._gh_json, over_nodes),
+            (
+                "list-utf16",
+                MODULE._gh_json_list,
+                '[{"value":1}]'.encode("utf-16"),
+            ),
+        )
+        for label, helper, payload in rest_cases:
+            completed = subprocess.CompletedProcess(
+                ["/safe/gh"], 0, stdout=payload, stderr=b""
+            )
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as temporary, mock.patch.object(
+                MODULE, "_run", return_value=completed
+            ), self.assertRaises(MODULE.ActivationError) as caught:
+                helper("/safe/gh", Path(temporary), "repos/owner/repo")
+            self.assertIsNone(caught.exception.__cause__)
+            self.assertNotIn("999999999999", str(caught.exception))
+
+        graphql_cases = (
+            b'{"data":{"value":' + (b"9" * 5_000) + b"}}",
+            '{"data":{}}'.encode("utf-16"),
+            b'{"data":' + over_depth + b"}",
+            b'{"data":' + over_nodes + b"}",
+        )
+        for payload in graphql_cases:
+            completed = subprocess.CompletedProcess(
+                ["/safe/gh"], 0, stdout=payload, stderr=b""
+            )
+            with self.subTest(surface="graphql", payload_prefix=payload[:24]), tempfile.TemporaryDirectory() as temporary, mock.patch.object(
+                MODULE, "_run", return_value=completed
+            ), self.assertRaises(MODULE.ActivationError) as caught:
+                MODULE._gh_graphql_activation_pull(
+                    "/safe/gh", Path(temporary), 26
+                )
+            self.assertIsNone(caught.exception.__cause__)
+            self.assertNotIn("999999999999", str(caught.exception))
+
+    def test_rest_and_graphql_json_outputs_enforce_eight_mib_without_echo(self) -> None:
+        canary = b"CANARY_OVERSIZE_PRIVATE_VALUE"
+        padding = b"x" * MODULE.MAX_GITHUB_JSON_BYTES
+        cases = (
+            (
+                "object",
+                MODULE._gh_json,
+                b'{"' + canary + b'":"' + padding + b'"}',
+            ),
+            (
+                "list",
+                MODULE._gh_json_list,
+                b'[{"' + canary + b'":"' + padding + b'"}]',
+            ),
+        )
+        for label, helper, payload in cases:
+            completed = subprocess.CompletedProcess(
+                ["/safe/gh"], 0, stdout=payload, stderr=b""
+            )
+            with self.subTest(surface=label), tempfile.TemporaryDirectory() as temporary, mock.patch.object(
+                MODULE, "_run", return_value=completed
+            ), self.assertRaises(MODULE.ActivationError) as caught:
+                helper("/safe/gh", Path(temporary), "repos/owner/repo")
+            self.assertIsNone(caught.exception.__cause__)
+            self.assertNotIn(canary.decode("ascii"), str(caught.exception))
+
+        graphql_payload = (
+            b'{"data":{"' + canary + b'":"' + padding + b'"}}'
+        )
+        completed = subprocess.CompletedProcess(
+            ["/safe/gh"], 0, stdout=graphql_payload, stderr=b""
+        )
+        with tempfile.TemporaryDirectory() as temporary, mock.patch.object(
+            MODULE, "_run", return_value=completed
+        ), self.assertRaises(MODULE.ActivationError) as caught:
+            MODULE._gh_graphql_activation_pull(
+                "/safe/gh", Path(temporary), 26
+            )
+        self.assertIsNone(caught.exception.__cause__)
+        self.assertNotIn(canary.decode("ascii"), str(caught.exception))
+
+    def test_command_transport_rejects_timeout_and_malformed_utf8_generically(self) -> None:
+        canary = "CANARY_TRANSPORT_SECRET"
+        failures = (
+            subprocess.TimeoutExpired(["/safe/gh"], 60, output=canary, stderr=canary),
+            UnicodeDecodeError("utf-8", b"\xff", 0, 1, canary),
+        )
+        for failure in failures:
+            with self.subTest(kind=type(failure).__name__), mock.patch.object(
+                MODULE.subprocess, "run", side_effect=failure
+            ), self.assertRaises(MODULE.ActivationError) as caught:
+                MODULE._run(["/safe/gh"], cwd=Path("/private/tmp"), timeout=60)
+            self.assertNotIn(canary, str(caught.exception))
+            self.assertIsNone(caught.exception.__cause__)
 
 
 class ActivationDocumentationContractTest(unittest.TestCase):

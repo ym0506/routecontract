@@ -42,6 +42,18 @@ EXPECTED_PACKAGE_PREFIX = "io/github/ym0506/routecontract/"
 ROUTECONTRACT_PACKAGE_PATTERN = re.compile(
     r"io/github/(?:[^/]+/)*routecontract/"
 )
+FORBIDDEN_DISTRIBUTION_PACKAGE_PARTS = (
+    ("org", "locationtech", "jts"),
+    ("org", "apache", "mahout"),
+)
+FORBIDDEN_DISTRIBUTION_ARTIFACT_PATTERN = re.compile(
+    r"(?:^|[-_.])(?:jts|mahout)(?:[-_.]|$)"
+)
+FORBIDDEN_DEPENDENCY_GROUP_PREFIXES = (
+    "org.locationtech.jts",
+    "org.apache.mahout",
+)
+MAVEN_LITERAL_COORDINATE_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]*")
 MULTI_RELEASE_ENTRY_PATTERN = re.compile(
     r"META-INF/versions/[1-9][0-9]*/(.+)"
 )
@@ -66,6 +78,7 @@ MAX_SUPPLY_CHAIN_EVIDENCE_BYTES = 1024 * 1024
 MAX_JAR_BYTES = 100 * 1024 * 1024
 MAX_JAR_UNCOMPRESSED_BYTES = 200 * 1024 * 1024
 MAX_JAR_ENTRIES = 20_000
+MAX_JAVADOC_NOTICE_BYTES = 2 * 1024 * 1024
 MAX_ARCHIVE_ENTRY_NAME_BYTES = 4 * 1024
 MAX_ARCHIVE_PATH_COMPONENTS = 256
 MAX_ARCHIVE_TOTAL_PATH_COMPONENTS = 100_000
@@ -148,6 +161,66 @@ WINDOWS_RESERVED_BASENAMES = {
     *(f"com{number}" for number in ("¹", "²", "³")),
     *(f"lpt{number}" for number in ("¹", "²", "³")),
 }
+JAVADOC_LEGAL_ENTRIES = {
+    "legal/LICENSE",
+    "legal/ADDITIONAL_LICENSE_INFO",
+    "legal/ASSEMBLY_EXCEPTION",
+    "legal/jquery.md",
+    "legal/jqueryUI.md",
+}
+JAVADOC_STATIC_ENTRIES = {
+    "script.js",
+    "search.js",
+    "stylesheet.css",
+    "jquery-ui.overrides.css",
+    "resources/glass.png",
+    "resources/x.png",
+    "script-dir/jquery-3.7.1.min.js",
+    "script-dir/jquery-ui.min.js",
+    "script-dir/jquery-ui.min.css",
+}
+JAVADOC_ALLOWED_DIRECTORY_ENTRIES = {
+    "META-INF/",
+    "io/",
+    "io/github/",
+    "io/github/ym0506/",
+    "io/github/ym0506/routecontract/",
+    "io/github/ym0506/routecontract/internal/",
+    "io/github/ym0506/routecontract/manifest/",
+    "legal/",
+    "resources/",
+    "script-dir/",
+}
+JAVADOC_ALLOWED_ROOT_ENTRIES = {
+    "allclasses-index.html",
+    "allpackages-index.html",
+    "constant-values.html",
+    "element-list",
+    "help-doc.html",
+    "index-all.html",
+    "index.html",
+    "jquery-ui.overrides.css",
+    "member-search-index.js",
+    "module-search-index.js",
+    "overview-summary.html",
+    "overview-tree.html",
+    "package-search-index.js",
+    "script.js",
+    "search.js",
+    "serialized-form.html",
+    "stylesheet.css",
+    "tag-search-index.js",
+    "type-search-index.js",
+}
+JAVADOC_ALLOWED_META_INF_ENTRIES = {
+    "META-INF/LICENSE",
+    "META-INF/MANIFEST.MF",
+    "META-INF/NOTICE",
+}
+JAVADOC_API_HTML_PATTERN = re.compile(
+    r"io/github/ym0506/routecontract/"
+    r"(?:(?:internal|manifest)/)?[A-Za-z0-9_$.-]+\.html"
+)
 
 
 class InstallError(RuntimeError):
@@ -286,6 +359,35 @@ def forbidden_source_path(relative: str, parts: tuple[str, ...]) -> bool:
     if folded == ".env" or (folded.startswith(".env.") and folded != ".env.example"):
         return True
     return folded.endswith(SOURCE_FORBIDDEN_SUFFIXES)
+
+
+def crosses_jts_or_mahout_distribution_boundary(path: str) -> bool:
+    """Detect JTS/Mahout package paths or JTS/Mahout-named payload files."""
+    parts = tuple(
+        unicodedata.normalize("NFC", part).casefold()
+        for part in PurePosixPath(path).parts
+    )
+    for package_parts in FORBIDDEN_DISTRIBUTION_PACKAGE_PARTS:
+        width = len(package_parts)
+        if any(
+            parts[index : index + width] == package_parts
+            for index in range(len(parts))
+        ):
+            return True
+    if not parts:
+        return False
+    filename = parts[-1]
+    return FORBIDDEN_DISTRIBUTION_ARTIFACT_PATTERN.search(filename) is not None
+
+
+def is_forbidden_jts_or_mahout_java_package(package_name: str | None) -> bool:
+    """Return whether a declared Java package is inside a forbidden namespace."""
+    if package_name is None:
+        return False
+    return any(
+        package_name == prefix or package_name.startswith(f"{prefix}.")
+        for prefix in FORBIDDEN_DEPENDENCY_GROUP_PREFIXES
+    )
 
 
 def translate_java_unicode_escapes(source: str, path: str) -> str:
@@ -593,6 +695,54 @@ def optional_direct_xml_value(root: ET.Element, name: str) -> str | None:
     return scalar_xml_value(elements[0], name) if elements else None
 
 
+def validate_pom_distribution_boundary(root: ET.Element) -> None:
+    """Reject relocation and direct JTS/Mahout coordinates from the Maven model."""
+    if any(child.tag.rsplit("}", 1)[-1] == "parent" for child in root):
+        raise InstallError("release POM must not contain a Maven parent")
+    if any(
+        element.tag.rsplit("}", 1)[-1] == "relocation"
+        for element in root.iter()
+    ):
+        raise InstallError("release POM must not contain Maven relocation")
+    for dependency in root.iter():
+        if dependency.tag.rsplit("}", 1)[-1] != "dependency":
+            continue
+        values: dict[str, str] = {}
+        for child in dependency:
+            name = child.tag.rsplit("}", 1)[-1]
+            if name in {"groupId", "artifactId"}:
+                if name in values:
+                    raise InstallError(
+                        f"release POM dependency contains duplicate {name}"
+                    )
+                values[name] = scalar_xml_value(child, f"dependency {name}")
+        if set(values) != {"groupId", "artifactId"} or any(
+            MAVEN_LITERAL_COORDINATE_PATTERN.fullmatch(values[name]) is None
+            for name in ("groupId", "artifactId")
+        ):
+            raise InstallError(
+                "release POM dependencies must use exactly one literal groupId "
+                "and artifactId"
+            )
+        group_id = unicodedata.normalize("NFC", values.get("groupId", "")).casefold()
+        artifact_id = unicodedata.normalize(
+            "NFC", values.get("artifactId", "")
+        ).casefold()
+        forbidden_group = any(
+            group_id == prefix or group_id.startswith(f"{prefix}.")
+            for prefix in FORBIDDEN_DEPENDENCY_GROUP_PREFIXES
+        )
+        forbidden_artifact = (
+            FORBIDDEN_DISTRIBUTION_ARTIFACT_PATTERN.search(artifact_id) is not None
+        )
+        if forbidden_group or forbidden_artifact:
+            coordinate = f"{values.get('groupId', '')}:{values.get('artifactId', '')}"
+            raise InstallError(
+                "release POM violates the JTS/Mahout distribution boundary: "
+                f"{coordinate}"
+            )
+
+
 def parse_service_descriptor(text: str) -> list[str]:
     """Parse only the CR/LF and ASCII space/tab syntax used by ServiceLoader."""
     providers: list[str] = []
@@ -647,6 +797,7 @@ def parse_coordinate(path: Path) -> tuple[str, str]:
         )
     if packaging not in (None, "jar"):
         raise InstallError("release POM packaging must be jar when specified")
+    validate_pom_distribution_boundary(root)
     return group, version
 
 
@@ -971,8 +1122,8 @@ def validate_supply_chain_evidence(files: dict[str, Path]) -> None:
     )
     if finding_count != len(findings) or accepted_count != len(findings):
         raise InstallError("supply-chain evidence vulnerability counts do not match findings")
-    if len(findings) != 3:
-        raise InstallError("supply-chain evidence must contain exactly three reviewed findings")
+    if len(findings) != 1:
+        raise InstallError("supply-chain evidence must contain exactly one reviewed finding")
     finding_keys = {
         "action",
         "advisory",
@@ -988,16 +1139,6 @@ def validate_supply_chain_evidence(files: dict[str, Path]) -> None:
         "severity",
     }
     expected_finding_identities = {
-        (
-            "OSV-001",
-            "GHSA-j288-q9x7-2f5v",
-            "pkg:maven/commons-lang/commons-lang@2.4",
-        ),
-        (
-            "OSV-002",
-            "GHSA-pq2g-wx69-c263",
-            "pkg:maven/net.minidev/json-smart@2.5.0",
-        ),
         (
             "OSV-003",
             "GHSA-c2rv-hwqm-wjpg",
@@ -1083,6 +1224,218 @@ def parse_jar_main_manifest(raw: bytes) -> dict[str, str]:
     return attributes
 
 
+def require_javadoc_text_markers(
+    archive: ZipFile, entry: str, markers: tuple[str, ...], description: str
+) -> None:
+    info = archive.getinfo(entry)
+    if info.file_size > MAX_JAVADOC_NOTICE_BYTES:
+        raise InstallError(
+            f"Javadoc JAR {entry} exceeds the 2 MiB marker-verification limit"
+        )
+    try:
+        text = archive.read(info).decode("utf-8", errors="strict")
+    except UnicodeDecodeError as error:
+        raise InstallError(f"Javadoc JAR {entry} is not valid UTF-8") from error
+    if any(marker not in text for marker in markers):
+        raise InstallError(f"Javadoc JAR has invalid {description}")
+
+
+def require_javadoc_text_patterns(
+    archive: ZipFile, entry: str, patterns: tuple[str, ...], description: str
+) -> None:
+    info = archive.getinfo(entry)
+    if info.file_size > MAX_JAVADOC_NOTICE_BYTES:
+        raise InstallError(
+            f"Javadoc JAR {entry} exceeds the 2 MiB marker-verification limit"
+        )
+    try:
+        text = archive.read(info).decode("utf-8", errors="strict")
+    except UnicodeDecodeError as error:
+        raise InstallError(f"Javadoc JAR {entry} is not valid UTF-8") from error
+    if any(re.search(pattern, text) is None for pattern in patterns):
+        raise InstallError(f"Javadoc JAR has invalid {description}")
+
+
+def validate_javadoc_classifier_entry_inventory(archive: ZipFile) -> None:
+    """Reject classifier entries outside the pinned doclet and API-doc boundary."""
+    allowed_exact = (
+        JAVADOC_ALLOWED_DIRECTORY_ENTRIES
+        | JAVADOC_ALLOWED_ROOT_ENTRIES
+        | JAVADOC_ALLOWED_META_INF_ENTRIES
+        | JAVADOC_LEGAL_ENTRIES
+        | JAVADOC_STATIC_ENTRIES
+    )
+    unexpected = sorted(
+        info.filename
+        for info in archive.infolist()
+        if info.filename not in allowed_exact
+        and JAVADOC_API_HTML_PATTERN.fullmatch(info.filename) is None
+    )
+    if unexpected:
+        raise InstallError(
+            "Javadoc JAR contains an undeclared classifier entry: "
+            f"{unexpected[0]}"
+        )
+
+
+def validate_javadoc_classifier_contents(archive: ZipFile) -> None:
+    """Fail closed on the version-pinned standard-doclet shipped-file boundary."""
+    validate_javadoc_classifier_entry_inventory(archive)
+    require_javadoc_text_markers(
+        archive,
+        "legal/LICENSE",
+        (
+            "The GNU General Public License (GPL)",
+            "Version 2, June 1991",
+            '"CLASSPATH" EXCEPTION TO THE GPL',
+        ),
+        "OpenJDK GPL-2.0 license markers",
+    )
+    require_javadoc_text_markers(
+        archive,
+        "legal/ADDITIONAL_LICENSE_INFO",
+        (
+            "ADDITIONAL INFORMATION ABOUT LICENSING",
+            "GNU Classpath Exception.",
+        ),
+        "OpenJDK Classpath-exception markers",
+    )
+    require_javadoc_text_markers(
+        archive,
+        "legal/ASSEMBLY_EXCEPTION",
+        (
+            "OPENJDK ASSEMBLY EXCEPTION",
+            'only ("GPL2"), with the following clarification and special exception.',
+        ),
+        "OpenJDK assembly-exception markers",
+    )
+    for entry in ("script.js", "search.js", "jquery-ui.overrides.css"):
+        require_javadoc_text_markers(
+            archive,
+            entry,
+            (
+                "DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.",
+                "GNU General Public License version 2 only",
+                'subject to the "Classpath" exception',
+            ),
+            f"GPL-2.0-only WITH Classpath-exception-2.0 header in {entry}",
+        )
+    require_javadoc_text_markers(
+        archive,
+        "stylesheet.css",
+        ("Javadoc style sheet",),
+        "standard-doclet stylesheet marker",
+    )
+    require_javadoc_text_markers(
+        archive,
+        "legal/jquery.md",
+        (
+            "Copyright OpenJS Foundation and other contributors, https://openjsf.org/",
+            "Permission is hereby granted, free of charge",
+            "The above copyright notice and this permission notice shall be",
+            'THE SOFTWARE IS PROVIDED "AS IS"',
+        ),
+        "jQuery 3.7.1 version/license markers",
+    )
+    require_javadoc_text_patterns(
+        archive,
+        "legal/jquery.md",
+        (r"(?m)^## jQuery v3\.7\.1\r?$",),
+        "jQuery 3.7.1 version/license markers",
+    )
+    require_javadoc_text_patterns(
+        archive,
+        "script-dir/jquery-3.7.1.min.js",
+        (r"(?m)^/\*! jQuery v3\.7\.1 \|", r"jquery\.org/license"),
+        "jQuery 3.7.1 version/license markers",
+    )
+    require_javadoc_text_markers(
+        archive,
+        "legal/jqueryUI.md",
+        (
+            "Copyright OpenJS Foundation and other contributors, https://openjsf.org/",
+            "Permission is hereby granted, free of charge",
+            "The above copyright notice and this permission notice shall be",
+            'THE SOFTWARE IS PROVIDED "AS IS"',
+            "CC0: http://creativecommons.org/publicdomain/zero/1.0/",
+        ),
+        "jQuery UI 1.14.1 version/license markers",
+    )
+    require_javadoc_text_patterns(
+        archive,
+        "legal/jqueryUI.md",
+        (r"(?m)^## jQuery UI v1\.14\.1\r?$",),
+        "jQuery UI 1.14.1 version/license markers",
+    )
+    for entry in (
+        "script-dir/jquery-ui.min.js",
+        "script-dir/jquery-ui.min.css",
+    ):
+        require_javadoc_text_patterns(
+            archive,
+            entry,
+            (
+                r"(?m)^/\*! jQuery UI - v1\.14\.1(?: - [^\r\n]+)?\r?$",
+                r"(?m)^\* Copyright OpenJS Foundation and other contributors; Licensed MIT \*/\r?$",
+            ),
+            "jQuery UI 1.14.1 version/license markers",
+        )
+    for entry in ("resources/glass.png", "resources/x.png"):
+        info = archive.getinfo(entry)
+        with archive.open(info) as stream:
+            if stream.read(8) != b"\x89PNG\r\n\x1a\n":
+                raise InstallError(
+                    f"Javadoc JAR has an invalid standard-doclet PNG marker in {entry}"
+                )
+
+
+def validate_thin_first_party_jar_inventory(names: set[str], label: str) -> None:
+    """Allow only first-party namespace paths and exact Maven metadata paths."""
+    suffix = {"main JAR": ".class", "sources JAR": ".java"}.get(label)
+    if suffix is None:
+        return
+    exact_files = {
+        "META-INF/MANIFEST.MF",
+        "META-INF/LICENSE",
+        "META-INF/NOTICE",
+        SERVICE_DESCRIPTOR,
+    }
+    unexpected = sorted(
+        name
+        for name in names
+        if not name.endswith("/")
+        and name not in exact_files
+        and not (name.startswith(EXPECTED_PACKAGE_PREFIX) and name.endswith(suffix))
+    )
+    if unexpected:
+        raise InstallError(
+            f"{label} violates the thin first-party JAR boundary: {unexpected[0]}"
+        )
+
+
+def validate_sources_classifier_contents(archive: ZipFile, names: set[str]) -> None:
+    """Bind every sources-JAR Java declaration to its first-party namespace path."""
+    for name in sorted(names):
+        if not name.endswith(".java"):
+            continue
+        source = read_archive_text(
+            archive,
+            name,
+            f"sources JAR Java file {name}",
+        )
+        declared_package = declared_java_package(java_tokens(source, name), name)
+        if is_forbidden_jts_or_mahout_java_package(declared_package):
+            raise InstallError(
+                "sources JAR violates the JTS/Mahout distribution boundary: "
+                f"{name}"
+            )
+        expected_package = PurePosixPath(name).parent.as_posix().replace("/", ".")
+        if declared_package != expected_package:
+            raise InstallError(
+                f"sources JAR Java package does not match its path: {name}"
+            )
+
+
 def validate_archive(
     path: Path, *, required_entries: set[str], label: str
 ) -> None:
@@ -1132,6 +1485,11 @@ def validate_archive(
                 if canonical_name != info.filename:
                     raise InstallError(
                         f"{label} contains a non-canonical entry name: {info.filename}"
+                    )
+                if crosses_jts_or_mahout_distribution_boundary(canonical_name):
+                    raise InstallError(
+                        f"{label} violates the JTS/Mahout distribution boundary: "
+                        f"{info.filename}"
                     )
                 if is_directory:
                     if unix_type not in (0, stat.S_IFDIR) or info.file_size != 0:
@@ -1197,6 +1555,9 @@ def validate_archive(
                     f"{label} contains an unexpected RouteContract package namespace: "
                     f"{unexpected_namespaces}"
                 )
+            validate_thin_first_party_jar_inventory(names, label)
+            if label == "sources JAR":
+                validate_sources_classifier_contents(archive, names)
             bad_entry = archive.testzip()
             if bad_entry is not None:
                 raise InstallError(f"{label} has a CRC failure in {bad_entry}")
@@ -1215,6 +1576,8 @@ def validate_archive(
                 )
                 if providers != [EXPECTED_PROVIDER]:
                     raise InstallError("main JAR has an unexpected SQLExecutionHook provider")
+            elif label == "Javadoc JAR":
+                validate_javadoc_classifier_contents(archive)
     except (BadZipFile, UnicodeDecodeError) as error:
         raise InstallError(f"{label} is not a valid RouteContract JAR: {error}") from error
 
@@ -1240,8 +1603,12 @@ def validate_jars(files: dict[str, Path], version: str) -> None:
     validate_archive(
         files[f"{ARTIFACT_ID}-{version}-javadoc.jar"],
         label="Javadoc JAR",
-        required_entries=common_entries
-        | {"io/github/ym0506/routecontract/RouteContract.html"},
+        required_entries=(
+            common_entries
+            | JAVADOC_LEGAL_ENTRIES
+            | JAVADOC_STATIC_ENTRIES
+            | {"io/github/ym0506/routecontract/RouteContract.html"}
+        ),
     )
 
 
@@ -1340,6 +1707,19 @@ def validate_source_archive(path: Path, version: str) -> None:
                 portable_relative = PurePosixPath(
                     *portable_relative_parts
                 ).as_posix()
+                if crosses_jts_or_mahout_distribution_boundary(relative):
+                    raise InstallError(
+                        "source archive violates the JTS/Mahout distribution "
+                        f"boundary: {relative}"
+                    )
+                if (
+                    not is_directory
+                    and PurePosixPath(relative).suffix.casefold() == ".class"
+                ):
+                    raise InstallError(
+                        "source archive contains a compiled Java class: "
+                        f"{relative}"
+                    )
                 if forbidden_source_path(
                     portable_relative, portable_relative_parts
                 ):
@@ -1381,8 +1761,7 @@ def validate_source_archive(path: Path, version: str) -> None:
                 )
             java_token_map: dict[str, list[str]] = {}
             for relative in sorted(source_files):
-                expected_package = expected_java_package(relative)
-                if expected_package is None:
+                if PurePosixPath(relative).suffix.casefold() != ".java":
                     continue
                 archive_name = f"{expected_root}/{relative}"
                 source = read_archive_text(
@@ -1391,8 +1770,26 @@ def validate_source_archive(path: Path, version: str) -> None:
                     f"source archive Java file {relative}",
                 )
                 tokens = java_tokens(source, relative)
-                java_token_map[relative] = tokens
                 declared_package = declared_java_package(tokens, relative)
+                if is_forbidden_jts_or_mahout_java_package(declared_package):
+                    raise InstallError(
+                        "source archive violates the JTS/Mahout distribution "
+                        f"boundary: {relative}"
+                    )
+                expected_package = expected_java_package(relative)
+                if expected_package is None:
+                    raise InstallError(
+                        "source archive Java file is outside the conventional "
+                        f"source roots: {relative}"
+                    )
+                if expected_package != "io.github.ym0506.routecontract" and not (
+                    expected_package.startswith("io.github.ym0506.routecontract.")
+                ):
+                    raise InstallError(
+                        "source archive violates the first-party Java source "
+                        f"boundary: {relative}"
+                    )
+                java_token_map[relative] = tokens
                 if PurePosixPath(relative).name == "module-info.java":
                     if expected_package:
                         raise InstallError(

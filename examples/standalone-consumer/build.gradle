@@ -75,6 +75,18 @@ dependencies {
     testRuntimeOnly 'org.slf4j:slf4j-simple:2.0.17'
 
     constraints {
+        testImplementation('net.hydromatic:aggdesigner-algorithm:6.1') {
+            version { strictly '6.1' }
+            because 'Align with the versions managed by the Apache ShardingSphere 5.5.3 parent POM'
+        }
+        testImplementation('net.minidev:json-smart:2.4.10') {
+            version { strictly '2.4.10' }
+            because 'Align with the versions managed by the Apache ShardingSphere 5.5.3 parent POM'
+        }
+        testImplementation('net.minidev:accessors-smart:2.4.9') {
+            version { strictly '2.4.9' }
+            because 'Align with the versions managed by the Apache ShardingSphere 5.5.3 parent POM'
+        }
         testImplementation('org.apache.commons:commons-compress:1.26.0') {
             because 'Testcontainers 1.21.4 requests a version with published denial-of-service advisories'
         }

@@ -1,13 +1,13 @@
 {
-  "schema_version": 1,
+  "schema_version": 3,
   "official_notice_url": "https://osscontest.kr/notice/39",
   "submission_identity": {
     "receipt_number": "[[APPLICATION_RECEIPT_NUMBER]]",
     "team_name": "[[TEAM_NAME]]",
     "registered_project_name": "[[REGISTERED_PROJECT_NAME]]",
     "team_size": "[[TEAM_SIZE_FROM_APPLICATION]]",
-    "division": "학생",
-    "task_type": "자유과제"
+    "division": "[[APPLICATION_DIVISION: 학생|일반]]",
+    "task_type": "[[APPLICATION_TASK_TYPE]]"
   },
   "project": {
     "slug": "routecontract",
@@ -26,7 +26,8 @@
     "youtube_url": "[[PUBLIC_YOUTUBE_WATCH_URL]]",
     "title": "[[YOUTUBE_VIDEO_TITLE]]",
     "duration_seconds": "[[FFPROBE_DURATION_SECONDS]]",
-    "local_file_sha256": "[[FINAL_VIDEO_SHA256]]"
+    "local_file_sha256": "[[FINAL_VIDEO_SHA256]]",
+    "external_evidence_branch": "[[EXTERNAL_EVIDENCE_BRANCH: rc_only|zero]]"
   },
   "release_evidence": {
     "workflow_artifact_id": "[[RELEASE_EVIDENCE_ARTIFACT_ID]]",
@@ -42,16 +43,20 @@
     "single_entry_per_participant_confirmed": false,
     "duplicate_benefit_status_reviewed": false,
     "ai_assistance_scope_confirmed": false,
-    "all_submitted_code_reviewed_and_explainable": false,
+    "core_behavior_boundaries_artifacts_and_dependency_roles_reviewed_and_explainable": false,
     "report_free_text_contains_no_external_evidence_claims": false,
+    "report_free_text_privacy_reviewed": false,
     "public_external_evidence_history_and_maintainer_edits_reviewed": false,
     "source_and_dependency_licenses_reviewed": false,
     "final_pdf_visual_qa_completed": false,
     "final_video_watchthrough_completed": false,
-    "public_repository_maintenance_obligation_accepted": false
+    "five_year_public_repository_visibility_obligation_if_selected_accepted": false,
+    "owner_voice_written_by_participant": false,
+    "maintenance_order_and_period_confirmed": false,
+    "origin_and_prior_work_statement_confirmed": false
   },
   "duplicate_benefit_confirmation": {
-    "status": "not_applicable",
+    "status": "[[DUPLICATE_BENEFIT_STATUS: not_applicable|required]]",
     "sha256": null
   }
 }

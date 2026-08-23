@@ -6,7 +6,7 @@ Release, immutable asset set, release-evidence run, or independent-user result e
 
 ## 1. User-visible problem
 
-A repository or ORM test can keep returning the expected rows while a SQL or sharding-rule change
+An application integration test can keep returning the expected rows while a SQL or sharding-rule change
 changes one ShardingSphere-JDBC 5.5.3 `SQLExecutionHook`-reported physical JDBC execution attempt
 on one data source into multiple reported attempts across data sources. Ordinary result assertions
 stay green, so the change can reach production with higher database load or an unintended target.
@@ -150,7 +150,8 @@ The v0.1 verifier supports:
 - maximum distinct observed data-source names;
 - allowed observed data-source-name set;
 - complete capture and no callback-reported execution failures;
-- approved canonical manifest equality with semantic added/removed signatures.
+- approved canonical manifest equality with deterministic structural added/removed attempt
+  signatures; this does not establish SQL semantic equivalence.
 
 An automatic `FULL_ROUTE` or `BROADCAST` policy is not provided without an explicitly declared target universe.
 

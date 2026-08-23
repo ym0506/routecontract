@@ -93,30 +93,6 @@
   ],
   "vulnerabilityExceptions": [
     {
-      "advisory": "GHSA-j288-q9x7-2f5v",
-      "exceptionId": "OSV-001",
-      "expires": "2026-08-27",
-      "fixedVersion": null,
-      "owner": "RouteContract maintainers",
-      "purl": "pkg:maven/commons-lang/commons-lang@2.4",
-      "rationaleCode": "SHARDINGSPHERE_5_5_3_TEST_GRAPH",
-      "reviewedAt": "2026-08-12",
-      "scope": "aggregate-test-only",
-      "severity": "MODERATE"
-    },
-    {
-      "advisory": "GHSA-pq2g-wx69-c263",
-      "exceptionId": "OSV-002",
-      "expires": "2026-08-27",
-      "fixedVersion": "2.5.2",
-      "owner": "RouteContract maintainers",
-      "purl": "pkg:maven/net.minidev/json-smart@2.5.0",
-      "rationaleCode": "SHARDINGSPHERE_5_5_3_TEST_GRAPH",
-      "reviewedAt": "2026-08-12",
-      "scope": "aggregate-test-only",
-      "severity": "HIGH"
-    },
-    {
       "advisory": "GHSA-c2rv-hwqm-wjpg",
       "exceptionId": "OSV-003",
       "expires": "2026-08-27",

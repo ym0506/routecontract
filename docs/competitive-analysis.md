@@ -1,6 +1,6 @@
 # Competitive analysis and claim boundary
 
-Last checked: 2026-08-11
+Comparison sources last checked: 2026-08-11. RouteContract implementation status below reflects this source tree; evidence and publication status are date-scoped separately.
 
 This document answers a narrow question: does an existing tool already provide RouteContract's proposed workflow for Apache ShardingSphere-JDBC 5.5.3? It is a source-based comparison, not a benchmark and not a claim that every related project on the Internet was exhaustively searched.
 
@@ -8,7 +8,7 @@ RouteContract's v0.1 comparison target is:
 
 > Run one named, synchronous application operation; collect the physical JDBC execution attempts reported by ShardingSphere's `SQLExecutionHook`, including the hook-reported data-source names; reduce SQL and parameters to a value-minimized deterministic representation; and fail CI when an explicit budget or an approved observed-execution manifest changes.
 
-Some of that target is implemented in the current worktree and some remains pending. [The evidence matrix](evidence-matrix.md) is the authority for implementation and verification status. This document must not be used by itself as proof that RouteContract works.
+The v0.1 target above is implemented in this tree. Implementation alone does not prove publication or evidence maturity; [the evidence matrix](evidence-matrix.md) is authoritative for evidence status at its declared snapshot. This document must not be used by itself as proof that RouteContract passed on the submitted revision.
 
 ## What is and is not new
 
@@ -20,7 +20,7 @@ The following ingredients are **not novel by themselves**:
 - tracing SQL execution through an observability agent;
 - asserting over captured database interactions.
 
-The candidate contribution is the combination of an application-operation boundary, ShardingSphere-JDBC worker correlation, hook-reported physical-attempt evidence, deterministic value-minimized manifests, semantic baseline diff and CI-oriented assertions. The reviewed official documentation did not identify that complete packaged workflow. This is evidence of differentiation among the compared tools, **not** proof of patent novelty or proof that no equivalent project exists.
+The candidate contribution is the combination of an application-operation boundary, ShardingSphere-JDBC worker correlation, hook-reported physical-attempt evidence, deterministic value-minimized manifests, a structural manifest/attempt diff with stable RCM codes and CI-oriented assertions. The reviewed official documentation did not identify that complete packaged workflow. This is evidence of differentiation among the compared tools, **not** proof of patent novelty or proof that no equivalent project exists.
 
 ## Apache ShardingSphere facilities
 
@@ -62,7 +62,7 @@ Conclusion: Audit is an execution policy and extension point. RouteContract is i
 
 ShardingSphere-Agent is the project's Java-agent-based observability framework. Its documented plugins provide metrics, tracing and logging, including integration with systems such as Prometheus and OpenTelemetry ([5.5.3 Agent documentation](https://shardingsphere.apache.org/document/5.5.3/en/user-manual/shardingsphere-agent/)). The metrics catalog includes routed-SQL and route-result counters as well as JDBC statement counts, failures and latency ([5.5.3 metrics documentation](https://shardingsphere.apache.org/document/5.5.3/en/user-manual/shardingsphere-agent/metrics/)). The official tracing article describes parse and execute spans and shows how tracing helps analyze the time spent at storage nodes ([official SQL trace article](https://shardingsphere.apache.org/blog/en/material/2023_06_07_how_to_run_sql_trace_with_shardingsphere/)).
 
-Agent is broader and stronger for operational telemetry than RouteContract. Its tagged OpenTelemetry advice observes each JDBC executor callback and attaches the data-source name, rewritten SQL and bind-variable representation to a span ([5.5.3 callback advice](https://github.com/apache/shardingsphere/blob/8d35894433416ef249ebb6ea21f8a8749648e9b6/agent/plugins/tracing/type/opentelemetry/src/main/java/org/apache/shardingsphere/agent/plugin/tracing/opentelemetry/advice/OpenTelemetryJDBCExecutorCallbackAdvice.java#L41-L74)). RouteContract therefore must not claim that Agent cannot observe physical execution. The difference is that the cited Agent material does not present a test assertion library with an application-defined multi-statement operation, approved value-minimized manifest, deterministic semantic diff, or fail-the-build budget. RouteContract should not claim to replace Agent, distributed tracing, latency analysis or production monitoring.
+Agent is broader and stronger for operational telemetry than RouteContract. Its tagged OpenTelemetry advice observes each JDBC executor callback and attaches the data-source name, rewritten SQL and bind-variable representation to a span ([5.5.3 callback advice](https://github.com/apache/shardingsphere/blob/8d35894433416ef249ebb6ea21f8a8749648e9b6/agent/plugins/tracing/type/opentelemetry/src/main/java/org/apache/shardingsphere/agent/plugin/tracing/opentelemetry/advice/OpenTelemetryJDBCExecutorCallbackAdvice.java#L41-L74)). RouteContract therefore must not claim that Agent cannot observe physical execution. The difference is that the cited Agent material does not present a test assertion library with an application-defined multi-statement operation, approved value-minimized manifest, deterministic structural manifest/attempt diff with stable RCM codes, or fail-the-build budget. RouteContract should not claim to replace Agent, distributed tracing, latency analysis or production monitoring.
 
 Conclusion: Agent answers "what happened and how long did it take in an observed system?" RouteContract's proposed narrow question is "did this named test operation stay within its approved observed-execution contract?"
 
@@ -117,7 +117,7 @@ pg-plan-guard is not a direct substitute for the scoped RouteContract product. I
 
 `Documented` means the linked upstream documentation explicitly supports the capability. `Not identified` means it was not found in the cited material; it does not mean the capability is impossible or absent from every extension.
 
-| Tool/facility | Primary observation point | Documented test assertion | Hook-reported ShardingSphere data-source name | Canonical approved manifest + semantic diff | Appropriate conclusion |
+| Tool/facility | Primary observation point | Documented test assertion | Hook-reported ShardingSphere data-source name | Canonical approved manifest + structural manifest/attempt diff | Appropriate conclusion |
 |---|---|---|---|---|---|
 | ShardingSphere `PREVIEW` | Proxy plan preview | Not identified | Returns planned `data_source_name` | Not identified | Complementary planned-route diagnostic; Proxy-only DistSQL |
 | ShardingSphere `sql-show` | Diagnostic logs | Not identified | Routed data source appears in logs | Not identified | Useful debugging source; extra product code is needed for contracts |
@@ -127,7 +127,7 @@ pg-plan-guard is not a direct substitute for the scoped RouteContract product. I
 | datasource-proxy | Proxied `DataSource` listeners | Metrics; custom assertions are buildable | Wrapper-defined data-source identity, not the hook field | Buildable with custom code; not identified as built-in workflow | Most credible DIY alternative |
 | datasource-assert | `ProxyTestDataSource` | Fluent execution/query assertions | Not identified | Not identified | Direct assertion-API precedent |
 | pg-plan-guard | PostgreSQL planned `EXPLAIN` shape | CI check with configurable failure severity | No | Deterministic plan lock and structural diff | Adjacent database-regression precedent, not a ShardingSphere execution-attempt tool |
-| RouteContract v0.1 target | ShardingSphere 5.5.3 `SQLExecutionHook` within a named synchronous operation | Budgets, completeness, failures and approved manifest | Yes, exactly the hook argument | Target capability; see evidence matrix for current status | Narrow ShardingSphere-JDBC regression-testing package |
+| RouteContract v0.1 implemented surface | ShardingSphere 5.5.3 `SQLExecutionHook` within a named synchronous operation | Budgets, completeness, failures and approved manifest | Yes, exactly the hook argument | Implemented in this tree; see the evidence matrix for dated verification and publication status | Narrow ShardingSphere-JDBC regression-testing package |
 
 ## Positioning that survives scrutiny
 
@@ -159,6 +159,6 @@ The project should be stopped or repositioned if any of the following occurs:
 
 ## Current external evidence
 
-Apache ShardingSphere issue [#38456](https://github.com/apache/shardingsphere/issues/38456) is a public example in which a subquery was reported to expand to many actual SQLs while an equivalent JOIN produced one. The issue is open at the time of this review. RouteContract's local corpus contains an **issue-inspired reduced and modified fixture**; it is not an exact reproduction of the upstream report and must not be described as one. The related kernel-fix [PR #39112](https://github.com/apache/shardingsphere/pull/39112) was opened by GitHub user `Develop-KIM` and closed without merge after review identified a cross-layer routing-contract problem. Until the participant's ownership of that account is confirmed, this repository does not claim the PR as participant prior work. In all cases, that public history supports the reality and subtlety of route regressions; it does **not** establish acceptance, endorsement or usage of RouteContract.
+Apache ShardingSphere issue [#38456](https://github.com/apache/shardingsphere/issues/38456) is a public example in which a subquery was reported to expand to many actual SQLs while an equivalent JOIN produced one. The issue is open at the time of this review. RouteContract's local corpus contains an **issue-inspired reduced and modified fixture**; it is not an exact reproduction of the upstream report and must not be described as one. The related kernel-fix [PR #39112](https://github.com/apache/shardingsphere/pull/39112) was opened by GitHub user `Develop-KIM` and closed without merge after review identified a cross-layer routing-contract problem. `Develop-KIM` is not the participant's account, so this repository does not claim the PR as participant prior work. In all cases, that public history supports the reality and subtlety of route regressions; it does **not** establish acceptance, endorsement or usage of RouteContract.
 
 As of 2026-08-11 there is no public RouteContract release, no external RouteContract user, no independent installation result and no upstream acceptance. Those items remain evidence gates, not report claims.

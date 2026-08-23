@@ -8,3 +8,7 @@ bundled in the RouteContract thin JAR.
 Apache, Apache ShardingSphere, ShardingSphere, and the Apache feather logo are
 trademarks of the Apache Software Foundation. RouteContract is an independent
 project and is not affiliated with or endorsed by the Apache Software Foundation.
+
+The Javadoc classifier generated with Eclipse Temurin/OpenJDK 17.0.20.1+1
+contains standard-doclet static assets and their upstream license texts under
+legal/. See THIRD_PARTY.md; these files are not in the main library JAR.

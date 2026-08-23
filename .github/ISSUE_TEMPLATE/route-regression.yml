@@ -12,7 +12,7 @@ body:
     attributes:
       label: Exact versions
       description: Include RouteContract, ShardingSphere, Java, database, driver, and OS versions.
-      placeholder: RouteContract 0.1.0-rc2; ShardingSphere-JDBC 5.5.3; Java 17; MySQL 8.4.11
+      placeholder: RouteContract 0.1.0; ShardingSphere-JDBC 5.5.3; Java 17; MySQL 8.4.11
     validations:
       required: true
   - type: textarea

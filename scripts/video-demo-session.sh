@@ -6,7 +6,7 @@ script_directory="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 repository_root="$(cd -- "$script_directory/.." && pwd)"
 
 mysql_marker='ROUTECONTRACT_MANIFEST_DEMO businessResult=UNCHANGED observedPhysicalAttempts=1->2 verificationStatus=POLICY_VIOLATION blockingCodes=[RCM201,RCM202] privacy=MINIMIZED'
-fingerprint_marker='ROUTECONTRACT_FINGERPRINT_DRIFT_DEMO businessResult=UNCHANGED observedPhysicalAttempts=1->1 observedDataSourceAliases=[orders-odd]->[orders-odd] fingerprintMultiset=CHANGED verificationStatus=DRIFT blockingCodes=[RCM301,RCM302] privacy=MINIMIZED'
+fingerprint_marker='ROUTECONTRACT_FINGERPRINT_DRIFT_DEMO businessResult=UNCHANGED observedPhysicalAttempts=1->1 observedDataSourceAliases=[orders-odd]->[orders-odd] fingerprintMultiset=CHANGED parameterTypeShape=[Long]->[Long,Long] verificationStatus=DRIFT blockingCodes=[RCM301,RCM302] privacy=MINIMIZED'
 ci_marker='ROUTECONTRACT_FILE_CI_DEMO approvedAttempts=1 candidateAttempts=2 status=POLICY_VIOLATION blockingCodes=[RCM201,RCM202]'
 ci_attempt_diff='RCM201 BLOCKING ATTEMPT_BUDGET_EXCEEDED: maximum=1, observed=2'
 ci_data_source_diff='RCM202 BLOCKING DATA_SOURCE_BUDGET_EXCEEDED: maximum=1, observed=2'
@@ -73,6 +73,7 @@ RCM201                  ATTEMPT_BUDGET_EXCEEDED: maximum=1, observed=2
 RCM202                  DATA_SOURCE_BUDGET_EXCEEDED: maximum=1, observed=2
 privacy                 raw child output withheld | raw SQL/binds not retained
 aliases                 reviewed aliases remain | minimized != anonymized
+demoMeaning             expected violation verified
 demo_exit               0
 EOF
 }
@@ -111,6 +112,7 @@ observedAttempts        1 -> 1
 observedDataSources     1 -> 1
 observedAliases         [orders-odd] -> [orders-odd]
 fingerprintMultiset     CHANGED
+parameterTypeShape      1xLong -> 2xLong (values not retained)
 verificationStatus      DRIFT
 blockingCodes           [RCM301,RCM302]
 privacy                 raw child output withheld | raw SQL/binds not retained
