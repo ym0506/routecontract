@@ -1566,7 +1566,7 @@ class ReportExternalEvidenceContractTest(unittest.TestCase):
             ),
             ("PRIVATECANARY Cafe\u0301", "COMBINING_OR_ENCLOSING_MARK"),
         )
-        with tempfile.TemporaryDirectory(dir="/private/tmp") as raw:
+        with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
             template = root / "template.docx"
             template.write_bytes(b"not reached")
@@ -1671,7 +1671,7 @@ class ReportExternalEvidenceContractTest(unittest.TestCase):
             self.assertNotIn(marker, str(caught.exception))
             self.assertNotIn("canary-secret-value", str(caught.exception))
 
-        with tempfile.TemporaryDirectory(dir="/private/tmp") as raw:
+        with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
             manifest = root / "manifest.json"
             manifest_value = valid_manifest()
@@ -1725,7 +1725,7 @@ class ReportExternalEvidenceContractTest(unittest.TestCase):
         self.assertNotIn(marker, str(caught.exception))
         self.assertNotIn("builder-canary-secret", str(caught.exception))
 
-        with tempfile.TemporaryDirectory(dir="/private/tmp") as raw:
+        with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
             content = valid_report_content("zero")
             content["metadata"]["team_name"] = marker
@@ -1757,7 +1757,7 @@ class ReportExternalEvidenceContractTest(unittest.TestCase):
 
     def test_report_builder_strict_final_rejects_normalized_evidence_ids(self) -> None:
         markers = ("E09", "e09", "Ｅ０９", "Ｅ09", "E０9", "E\u200b09")
-        with tempfile.TemporaryDirectory(dir="/private/tmp") as raw:
+        with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
             template = root / "template.docx"
             template.write_bytes(b"not reached")
@@ -1843,7 +1843,7 @@ class ReportExternalEvidenceContractTest(unittest.TestCase):
                 self.assertNotIn(marker, str(caught.exception))
                 self.assertNotIn("PRIVATECANARYSECRETXYZ", str(caught.exception))
 
-            with tempfile.TemporaryDirectory(dir="/private/tmp") as raw:
+            with tempfile.TemporaryDirectory() as raw:
                 root = Path(raw)
                 manifest_path = root / "manifest.json"
                 manifest = valid_manifest()
@@ -1932,7 +1932,7 @@ class ReportExternalEvidenceContractTest(unittest.TestCase):
                 call()
             self.assertNotIn(canary, str(caught.exception))
 
-        with tempfile.TemporaryDirectory(dir="/private/tmp") as raw:
+        with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
             content = valid_report_content("zero")
             content[canary] = True
@@ -2571,7 +2571,7 @@ module._decode_activation_record(payload, url, 'record.json')
             '{"value":1}'.encode("utf-16"),
             b"\xff",
         )
-        with tempfile.TemporaryDirectory(dir="/private/tmp") as raw_root:
+        with tempfile.TemporaryDirectory() as raw_root:
             root = Path(raw_root)
             path = root / "input.json"
             for raw in malformed:
@@ -2674,7 +2674,7 @@ module._decode_activation_record(payload, url, 'record.json')
 
     def test_private_and_supply_loader_cli_errors_never_echo_values(self) -> None:
         canary = "CANARY_PRIVATE_DUPLICATE_KEY"
-        with tempfile.TemporaryDirectory(dir="/private/tmp") as raw_root:
+        with tempfile.TemporaryDirectory() as raw_root:
             root = Path(raw_root)
             path = root / "input.json"
             path.write_text(
@@ -7240,7 +7240,7 @@ class ReportContractTest(unittest.TestCase):
             )
         self.assertNotIn(canary, str(caught.exception))
 
-        with tempfile.TemporaryDirectory(dir="/private/tmp") as raw:
+        with tempfile.TemporaryDirectory() as raw:
             path = Path(raw) / "links.docx"
             document = (
                 '<?xml version="1.0" encoding="UTF-8"?>'
