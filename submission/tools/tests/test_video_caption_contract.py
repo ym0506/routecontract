@@ -16,7 +16,7 @@ from submission.tools.tests.test_package_submission import (
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 SOURCE = REPOSITORY_ROOT / "submission" / "video-caption-cues.json"
-SOURCE_SHA256 = "4ce01e35bd4a0984f22220ee47dec8a6802bd21f44763a0f4d2cb015ff9efeb4"
+SOURCE_SHA256 = "e698947f8b5a8df610d5b4e521758ef781a11e4f694618340aff2f54721f3f83"
 
 
 class VideoCaptionContractTest(unittest.TestCase):
@@ -73,19 +73,19 @@ class VideoCaptionContractTest(unittest.TestCase):
         self.assertEqual(
             [
                 "독립 검증은 공개 양식으로 모집했습니다",
-                "증거 마감까지 참가 요청은 0건입니다",
+                "안정판 외부 검증은 확보하지 못했습니다",
             ],
             contract["cues"][20]["lines"],
         )
         expected = {
             "zero": {
                 "selected_cues_sha256": (
-                    "2156eeee8d3844511b8cc9c8d38e4cb6"
-                    "f4cd9e00d4b0def2f13ef1bc14b38838"
+                    "3c1af19e852d23efc0e30176cddf7cac"
+                    "e2f44814f2150cc91514a87df2ad1d74"
                 ),
                 "srt_sha256": (
-                    "be872c80920379dd71cbae434f92a6327"
-                    "9b81be0eb6374d7f914e1833bd4db44"
+                    "19cedeec8699f0977a4159612455cdf47"
+                    "9936c3736ffdcc5fa21bb957b1babb6"
                 ),
                 "included": "독립 검증은 공개 양식으로 모집했습니다",
                 "excluded": "정해진 양식의 RC 결과 접수는 1건",

@@ -71,7 +71,7 @@ mirror이며 JSON의 cue 문구·시각·분기와 의미상 정확히 일치해
 | 공통 | 2:02.000 | 2:06.500 | 의도치 않은 차이는 CI 실패 | 승인 기준은 자동으로 바뀌지 않습니다 |
 | 공통 | 2:07.500 | 2:15.000 | 제출 코드와 안정판이 같은 코드인지 | 공개 이력에서 직접 확인합니다 |
 | 공통 | 2:15.500 | 2:24.500 | 코드 변경 검사와 main 검사 결과를 | 실제 공개 화면에서 확인합니다 |
-| zero | 2:25.500 | 2:33.500 | 독립 검증은 공개 양식으로 모집했습니다 | 증거 마감까지 참가 요청은 0건입니다 |
+| zero | 2:25.500 | 2:33.500 | 독립 검증은 공개 양식으로 모집했습니다 | 안정판 외부 검증은 확보하지 못했습니다 |
 | rc_only | 2:25.500 | 2:33.500 | 정해진 양식의 RC 결과 접수는 1건 | 자기 확인 진술이며 안정판 검증은 아닙니다 |
 | 공통 | 2:34.500 | 2:41.000 | 검증 범위는 5.5.3 동기 실행 | 성능·거래 완료를 판단하지 않습니다 |
 | 공통 | 2:41.500 | 2:48.000 | 기능 결과가 같아도 hook 보고 실행 시도는 | 한 번에서 두 번으로 달라질 수 있습니다 |
@@ -271,12 +271,14 @@ verified_child_exit     0
 
 실제 화면 흐름:
 
-1. **실제 browser 화면:** 공개 Actions run의 실제 log search로
+1. **실제 browser 화면:** `1:40.000–1:47.000`에 공개 Actions run의 실제 log search로
    `ROUTECONTRACT_CORPUS repetitions=20 cases=8 uniqueSignaturesPerCase=1` marker를 찾아 해당
-   줄을 선택한다.
-2. **같은 실제 browser 화면:** `simultaneousPairs=20`과 `mixedCaptures=0` marker로 이동한다.
-3. **실제 source 화면:** `docs/architecture.md`의 동시성 limitation 줄을 열어 physical callback
-   overlap을 force하거나 measure하지 않았다는 실제 문장을 보여 준다.
+   줄을 선택한다. marker는 `1:40.500` cue 시작 전에 이미 선택되어 보여야 한다.
+2. **같은 실제 browser 화면:** `1:47.000–1:50.500`에 `simultaneousPairs=20`과
+   `mixedCaptures=0` marker로 이동한다. marker는 `1:47.500` cue 시작 전에 이미 선택되어
+   보여야 한다.
+3. **실제 source 화면:** `1:50.500–1:55.000`에 `docs/architecture.md`의 동시성 limitation 줄을
+   열어 physical callback overlap을 force하거나 measure하지 않았다는 실제 문장을 보여 준다.
 
 화면 자막: `submission/video-caption-cues.json`의 `1:40–1:55` 공통 cue 2개를 그대로 사용한다. 이 결과는 정상
 반환하고 caller가 interrupt되지 않은 동기식 PreparedStatement 범위다. 동시 physical callback
@@ -335,7 +337,7 @@ full SHA·tree·run ID·PR 번호·Release URL을 별도 요약 화면에 옮겨
 `rc_only` ↔ `rc-only-result`, `zero` ↔ `0-result`.
 
 - **rc-only-result 분기:** 선택한 분기의 결정적 공개 화면 하나인 실제 result Issue만 보여 준다. `정해진 양식의 RC 결과 접수 1건`, `참가자의 자기 확인 진술`, `stable 검증·adoption 아님`을 그 Issue의 실제 문구로 확인한다. activation·모집·프로토콜 링크는 보고서와 영상 설명에 남기고 이 9초에 다른 화면으로 전환하지 않는다. API·form 검사는 진술 형식과 public account association을 확인할 뿐 실제 사람·독립성을 자동 증명하지 않는다.
-- **0-result 분기:** 선택한 분기의 결정적 공개 화면 하나인 실제 Discussion #28만 보여 준다. 공개 평가 절차와 `slot request` 경로를 실제 문구로 확인하고, 구조화 증거 마감 시각까지 공개된 참가 요청이 0건이라는 실제 상태를 숨기지 않는다. `stable 외부 검증 미확보`와 exact cutoff·결과 수는 보고서와 package evidence에 남기고 이 9초에 다른 화면으로 전환하지 않는다. 없는 결과를 만들거나 사용자 수·채택을 추정하지 않고, protocol URL만으로 모집했다고 주장하지 않는다. 자막의 `증거 마감`은 contest deadline이 아니라 보고서와 package에 고정한 evidence cutoff를 뜻한다.
+- **0-result 분기:** 선택한 분기의 결정적 공개 화면 하나인 실제 Discussion #28만 보여 준다. 공개 평가 절차와 `slot request` 경로를 실제 문구로 확인하고, 안정판 외부 검증을 확보하지 못한 실제 상태를 숨기지 않는다. `stable 외부 검증 미확보`와 exact cutoff·결과 수는 보고서와 package evidence에 남기고 이 9초에 다른 화면으로 전환하지 않는다. 없는 결과를 만들거나 사용자 수·채택을 추정하지 않고, protocol URL만으로 모집했다고 주장하지 않는다. 자막의 `안정판 외부 검증`은 final stable tag와 activated public protocol에 결박된 eligible result를 뜻하며 전체 사용자 수·adoption을 뜻하지 않는다.
 
 실제 화면 흐름:
 
