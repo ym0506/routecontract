@@ -57,21 +57,21 @@ mirror이며 JSON의 cue 문구·시각·분기와 의미상 정확히 일치해
 | 공통 | 0:19.500 | 0:27.000 | 승인된 기록은 실행 한 번입니다 | 변경된 기록은 두 번입니다 |
 | 공통 | 0:27.500 | 0:35.000 | 기능 결과는 그대로 한 행입니다 | 달라진 것은 내부 실행 모습입니다 |
 | 공통 | 0:35.500 | 0:44.500 | 정한 한도를 넘자 두 위반을 냈습니다 | 자동 승인하지 않고 검토를 요구합니다 |
-| 공통 | 0:46.500 | 0:52.500 | CI에 연결하면 exit 1 | 의도한 실패로 빌드를 멈춥니다 |
-| 공통 | 0:53.000 | 0:59.500 | 승인 기록은 자동으로 바뀌지 않습니다 | 사람이 차이를 본 뒤에만 바꿉니다 |
+| 공통 | 0:46.500 | 0:52.500 | 승인본 차이를 실패로 바꾸는 | CI용 검사를 지금 실행합니다 |
+| 공통 | 0:54.000 | 0:59.500 | 실제 exit 1로 빌드가 멈췄습니다 | 차이는 사람이 승인해야 합니다 |
 | 공통 | 1:00.500 | 1:07.000 | 공개 배포 파일과 검사값을 확인합니다 | 빈 저장소에 직접 설치합니다 |
 | 공통 | 1:07.500 | 1:14.500 | 설치한 파일로 실제 MySQL을 실행합니다 | 통과한 공개 기록을 직접 봅니다 |
 | 공통 | 1:15.000 | 1:21.500 | 기존 기능 테스트를 그대로 감쌉니다 | 새 기록은 승인본과 비교됩니다 |
-| 공통 | 1:22.500 | 1:28.500 | 실행 횟수는 그대로 한 번입니다 | 그래도 기록의 모양은 달라졌습니다 |
-| 공통 | 1:29.000 | 1:35.000 | 입력값은 저장하지 않습니다 | 자료형 개수만 한 개에서 두 개로 바뀝니다 |
-| 공통 | 1:35.500 | 1:39.500 | 횟수만 같아도 승인하지 않습니다 | SQL 뜻은 판단하지 않습니다 |
-| 공통 | 1:40.500 | 1:47.000 | 실제 MySQL 여덟 사례를 스무 번씩 | 모두 같은 기록으로 되풀이했습니다 |
+| 공통 | 1:22.500 | 1:28.500 | 실행 횟수가 같아도 구조가 달라질까요? | 실제 MySQL로 다시 확인합니다 |
+| 공통 | 1:29.000 | 1:35.000 | 입력값은 저장하지 않습니다 | 매개변수 수는 한 개에서 두 개입니다 |
+| 공통 | 1:35.500 | 1:39.500 | 횟수가 같아도 자동 승인하지 않습니다 | SQL 뜻은 판단하지 않습니다 |
+| 공통 | 1:40.500 | 1:47.000 | 실제 MySQL 여덟 사례를 스무 번씩 | 각 사례에서 같은 기록이 나왔습니다 |
 | 공통 | 1:47.500 | 1:54.500 | 동시에 실행한 20쌍은 섞이지 않았습니다 | 실제 호출의 겹침은 측정하지 않았습니다 |
 | 공통 | 1:55.500 | 2:01.500 | 기록을 한 작업별로 묶고 | 사람이 승인한 기준과 비교합니다 |
 | 공통 | 2:02.000 | 2:06.500 | 의도치 않은 차이는 CI 실패 | 승인 기준은 자동으로 바뀌지 않습니다 |
 | 공통 | 2:07.500 | 2:15.000 | 제출 코드와 안정판이 같은 코드인지 | 공개 이력에서 직접 확인합니다 |
 | 공통 | 2:15.500 | 2:24.500 | 코드 변경 검사와 main 검사 결과를 | 실제 공개 화면에서 확인합니다 |
-| zero | 2:25.500 | 2:33.500 | 독립 검증은 공개 양식으로 모집했습니다 | 없는 결과는 만들지 않았습니다 |
+| zero | 2:25.500 | 2:33.500 | 독립 검증은 공개 양식으로 모집했습니다 | 증거 마감까지 참가 요청은 0건입니다 |
 | rc_only | 2:25.500 | 2:33.500 | 정해진 양식의 RC 결과 접수는 1건 | 자기 확인 진술이며 안정판 검증은 아닙니다 |
 | 공통 | 2:34.500 | 2:41.000 | 검증 범위는 5.5.3 동기 실행 | 성능·거래 완료를 판단하지 않습니다 |
 | 공통 | 2:41.500 | 2:48.000 | 기능 결과가 같아도 hook 보고 실행 시도는 | 한 번에서 두 번으로 달라질 수 있습니다 |
@@ -204,8 +204,9 @@ verified_child_exit     1
 take의 실제 값이며, wrapper가 덧붙이는 값은 검증한 `verified_child_exit`뿐이다. tracked
 approved/candidate JSON과 diff는 0:12–0:46에서 이미 보여 줬으므로 반복하지 않는다.
 
-화면 자막: `submission/video-caption-cues.json`의 `0:46–1:00` 공통 cue 2개를 그대로 사용한다. 실제 화면과 자막은
-`CI에 연결하면 exit 1`이라고 조건부로만 설명한다. 이 local task 자체가 required CI check이거나
+화면 자막: `submission/video-caption-cues.json`의 `0:46–1:00` 공통 cue 2개를 그대로 사용한다.
+첫 cue는 command 입력과 실제 대기 중인 화면에만 겹치고, 결과를 말하는 둘째 cue는 marker와
+`BUILD FAILED`가 나타나는 `0:54.000`에 시작한다. 이 local task 자체가 required CI check이거나
 실제 PR을 막았다고 말하지 않는다.
 
 ## 1:00–1:22 — 실제 공개 Release와 실제 사용 source
@@ -243,12 +244,14 @@ RouteAssertions.assertThat(snapshot).hasExactlyObservedPhysicalAttempts(1);
 
 실제 화면 흐름:
 
-1. **실제 terminal 화면:** `./scripts/video-demo-session.sh --final-recording fingerprint`를 직접 입력한다.
-2. **같은 실제 terminal 화면:** 실제 대기만 8배속하고 machine-readable test 출력에서 그대로
+1. **실제 terminal 화면:** `1:22.000–1:24.000`에
+   `./scripts/video-demo-session.sh --final-recording fingerprint`를 직접 입력하고 Enter를 누른다.
+2. **같은 실제 terminal 화면:** `1:24.000–1:29.000`에는 실제 대기만 8배속한다.
+3. **같은 실제 terminal 화면:** `1:29.000–1:35.000`에는 machine-readable test 출력에서 그대로
    추출된 `ROUTECONTRACT_FINGERPRINT_DRIFT_DEMO` marker의
    `observedPhysicalAttempts=1->1`, `fingerprintMultiset=CHANGED`,
    `parameterTypeShape=[Long]->[Long,Long]`과 `verified_child_exit 0`을 차례로 선택한다.
-3. **바로 이어지는 실제 source 화면:** final revision의
+4. **바로 이어지는 실제 source 화면:** `1:35.000–1:40.000`에 final revision의
    `find-order-by-user-after-strategy-change.expected-diff.txt`를 열어 실제 RCM301·RCM302 줄을
    짧게 scroll한다.
 
@@ -257,8 +260,10 @@ ROUTECONTRACT_FINGERPRINT_DRIFT_DEMO businessResult=UNCHANGED observedPhysicalAt
 verified_child_exit     0
 ```
 
-화면 자막: `submission/video-caption-cues.json`의 `1:22–1:40` 공통 cue 3개를 그대로 사용한다. 결과 줄과 source는
-배속하지 않는다. RouteContract가 SQL 의미 동치를 판단한다고 말하지 않는다.
+화면 자막: `submission/video-caption-cues.json`의 `1:22–1:40` 공통 cue 3개를 그대로 사용한다.
+질문형 첫 cue는 command 입력과 8배속 대기에만 겹치며, marker 결과를 말하는 둘째 cue는
+`1:29.000`에 시작한다. 결과 줄과 source는 배속하지 않는다. RouteContract가 SQL 의미 동치를
+판단한다고 말하지 않는다.
 
 ## 1:40–1:55 — 실제 공개 실행 로그에서 반복 결과 확인
 
@@ -330,7 +335,7 @@ full SHA·tree·run ID·PR 번호·Release URL을 별도 요약 화면에 옮겨
 `rc_only` ↔ `rc-only-result`, `zero` ↔ `0-result`.
 
 - **rc-only-result 분기:** 선택한 분기의 결정적 공개 화면 하나인 실제 result Issue만 보여 준다. `정해진 양식의 RC 결과 접수 1건`, `참가자의 자기 확인 진술`, `stable 검증·adoption 아님`을 그 Issue의 실제 문구로 확인한다. activation·모집·프로토콜 링크는 보고서와 영상 설명에 남기고 이 9초에 다른 화면으로 전환하지 않는다. API·form 검사는 진술 형식과 public account association을 확인할 뿐 실제 사람·독립성을 자동 증명하지 않는다.
-- **0-result 분기:** 선택한 분기의 결정적 공개 화면 하나인 실제 Discussion #28만 보여 준다. 공개 평가 절차와 `slot request` 경로를 실제 문구로 확인하고, 댓글 0건 상태를 숨기지 않는다. `stable 외부 검증 미확보`와 exact cutoff·결과 수는 보고서와 package evidence에 남기고 이 9초에 다른 화면으로 전환하지 않는다. 없는 결과를 만들거나 사용자 수·채택을 추정하지 않고, protocol URL만으로 모집했다고 주장하지 않는다.
+- **0-result 분기:** 선택한 분기의 결정적 공개 화면 하나인 실제 Discussion #28만 보여 준다. 공개 평가 절차와 `slot request` 경로를 실제 문구로 확인하고, 구조화 증거 마감 시각까지 공개된 참가 요청이 0건이라는 실제 상태를 숨기지 않는다. `stable 외부 검증 미확보`와 exact cutoff·결과 수는 보고서와 package evidence에 남기고 이 9초에 다른 화면으로 전환하지 않는다. 없는 결과를 만들거나 사용자 수·채택을 추정하지 않고, protocol URL만으로 모집했다고 주장하지 않는다. 자막의 `증거 마감`은 contest deadline이 아니라 보고서와 package에 고정한 evidence cutoff를 뜻한다.
 
 실제 화면 흐름:
 
@@ -389,8 +394,8 @@ YouTube 접근성 자막도 같은 문구·시각으로 올리되 영상에 이�
 - [ ] main ruleset이 `Java 17 / MySQL integration / SBOM`과 `Dependency review`를 required로
   지정하고, 전자 job이 contract assertion semantics를 test한다. intentional-red task 자체를
   required check이라고 말하지 않는다.
-- [ ] local intentional-red 구간은 `CI에 연결하면 exit 1`이라고만 설명하며 실제 GitHub Actions
-  failure나 실제 PR 차단이라고 부르지 않는다.
+- [ ] local intentional-red 구간은 실행 중 cue와 실제 `exit 1` 결과 cue를 분리하며 실제 GitHub
+  Actions failure나 실제 PR 차단이라고 부르지 않는다.
 - [ ] baseline/candidate의 실제 `ROUTECONTRACT_MANIFEST_DEMO` marker와
   `verified_child_exit 0`을 재확인하고, 곧바로 tracked JSON·diff를 보여 줬다.
 - [ ] intentional-red script가 실제 child output에서 추출한 marker·RCM201·RCM202·

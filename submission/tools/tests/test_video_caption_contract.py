@@ -16,7 +16,7 @@ from submission.tools.tests.test_package_submission import (
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 SOURCE = REPOSITORY_ROOT / "submission" / "video-caption-cues.json"
-SOURCE_SHA256 = "f5cbdf09e7d866dd4e2eaf767a25ea00a97b69c2effa0985832398c5c5eb6dcb"
+SOURCE_SHA256 = "4ce01e35bd4a0984f22220ee47dec8a6802bd21f44763a0f4d2cb015ff9efeb4"
 
 
 class VideoCaptionContractTest(unittest.TestCase):
@@ -36,27 +36,68 @@ class VideoCaptionContractTest(unittest.TestCase):
         )
         self.assertNotIn("1→2", "".join(early_process_cue["lines"]))
         self.assertNotIn("관측된", "".join(early_process_cue["lines"]))
+        self.assertEqual(
+            ["승인본 차이를 실패로 바꾸는", "CI용 검사를 지금 실행합니다"],
+            contract["cues"][6]["lines"],
+        )
+        self.assertEqual(
+            (54_000, 59_500),
+            (contract["cues"][7]["start_ms"], contract["cues"][7]["end_ms"]),
+        )
+        self.assertEqual(
+            ["실제 exit 1로 빌드가 멈췄습니다", "차이는 사람이 승인해야 합니다"],
+            contract["cues"][7]["lines"],
+        )
+        self.assertEqual(
+            [
+                "실행 횟수가 같아도 구조가 달라질까요?",
+                "실제 MySQL로 다시 확인합니다",
+            ],
+            contract["cues"][11]["lines"],
+        )
+        self.assertEqual(
+            ["입력값은 저장하지 않습니다", "매개변수 수는 한 개에서 두 개입니다"],
+            contract["cues"][12]["lines"],
+        )
+        self.assertEqual(
+            ["횟수가 같아도 자동 승인하지 않습니다", "SQL 뜻은 판단하지 않습니다"],
+            contract["cues"][13]["lines"],
+        )
+        self.assertEqual(
+            [
+                "실제 MySQL 여덟 사례를 스무 번씩",
+                "각 사례에서 같은 기록이 나왔습니다",
+            ],
+            contract["cues"][14]["lines"],
+        )
+        self.assertEqual(
+            [
+                "독립 검증은 공개 양식으로 모집했습니다",
+                "증거 마감까지 참가 요청은 0건입니다",
+            ],
+            contract["cues"][20]["lines"],
+        )
         expected = {
             "zero": {
                 "selected_cues_sha256": (
-                    "1648c229a3eafa8539db6850bdc616e3"
-                    "8fbfd519ed171533aacf4b8ae2351754"
+                    "2156eeee8d3844511b8cc9c8d38e4cb6"
+                    "f4cd9e00d4b0def2f13ef1bc14b38838"
                 ),
                 "srt_sha256": (
-                    "9f7c7a88ec91d2f0df21fe8bc38c2f83"
-                    "b06658649e4a322e43e9c9545a7f0b1c"
+                    "be872c80920379dd71cbae434f92a6327"
+                    "9b81be0eb6374d7f914e1833bd4db44"
                 ),
                 "included": "독립 검증은 공개 양식으로 모집했습니다",
                 "excluded": "정해진 양식의 RC 결과 접수는 1건",
             },
             "rc_only": {
                 "selected_cues_sha256": (
-                    "3d620803ad05d5e2bd9d2cece65bff30"
-                    "a6e9058bce15d2b877c24ae5a05b8e34"
+                    "6fef3efa8bb7b5e8c191bd2653cfc656"
+                    "2d1c2dd997d63a9ece69f0d681b8f292"
                 ),
                 "srt_sha256": (
-                    "0fada192b7b316a1e759795652f7061d5"
-                    "cc5f6d76706e1ffdd9198f8763d997e"
+                    "310a6e6cba9a73c1b948dd756937ae40"
+                    "d73977c671ae3b8a7a53af71303a93fb"
                 ),
                 "included": "정해진 양식의 RC 결과 접수는 1건",
                 "excluded": "독립 검증은 공개 양식으로 모집했습니다",

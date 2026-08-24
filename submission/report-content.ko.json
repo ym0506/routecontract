@@ -108,7 +108,7 @@
     },
     {
       "lead": "시연",
-      "text": "./scripts/quickstart-demo.sh가 한 행의 1 attempt·1 alias→2 attempts·2 aliases와 RCM201·RCM202를 재현한다. exit은 real-MySQL child 0, intentional CI child 1, quickstart wrapper 0이다."
+      "text": "quickstart는 MySQL 한 행에서 시도·alias 각각 1→2와 RCM201·RCM202를 재현한다. 종료값은 실제 MySQL child 0, 의도한 CI child 1, wrapper 0이다."
     },
     {
       "lead": "설치·릴리스",

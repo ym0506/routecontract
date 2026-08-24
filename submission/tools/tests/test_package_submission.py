@@ -140,8 +140,8 @@ def valid_manifest() -> dict:
                 "schema_version": 1,
                 "source_path": "submission/video-caption-cues.json",
                 "source_sha256": (
-                    "f5cbdf09e7d866dd4e2eaf767a25ea00"
-                    "a97b69c2effa0985832398c5c5eb6dcb"
+                    "4ce01e35bd4a0984f22220ee47dec8a6"
+                    "802bd21f44763a0f4d2cb015ff9efeb4"
                 ),
             },
         },
@@ -451,9 +451,17 @@ class SubmissionClaimTextTest(unittest.TestCase):
             "실제 MySQL 검증을 실행 중입니다",
             "결과가 나오면 기록 차이를 확인합니다",
             "방금 실행한 실제 MySQL 결과입니다",
-            "CI에 연결하면 exit 1",
-            "승인 기록은 자동으로 바뀌지 않습니다",
+            "승인본 차이를 실패로 바꾸는",
+            "CI용 검사를 지금 실행합니다",
+            "실제 exit 1로 빌드가 멈췄습니다",
+            "차이는 사람이 승인해야 합니다",
+            "결과를 말하는 둘째 cue는 marker와",
+            "`BUILD FAILED`가 나타나는 `0:54.000`에 시작한다",
+            "실행 횟수가 같아도 구조가 달라질까요?",
             "입력값은 저장하지 않습니다",
+            "매개변수 수는 한 개에서 두 개입니다",
+            "횟수가 같아도 자동 승인하지 않습니다",
+            "각 사례에서 같은 기록이 나왔습니다",
             "사람이 승인한 기준과 비교합니다",
             "성능·거래 완료를 판단하지 않습니다",
             "이 구간은 실제 GitHub Actions 실패 화면이 아니다",
@@ -487,7 +495,9 @@ class SubmissionClaimTextTest(unittest.TestCase):
             "hasExactlyObservedPhysicalAttempts(1)",
             "독립 검증은 공개 양식으로 모집했습니다",
             "stable 외부 검증 미확보",
-            "없는 결과는 만들지 않았습니다",
+            "증거 마감까지 참가 요청은 0건입니다",
+            "구조화 증거 마감 시각까지 공개된 참가 요청이 0건",
+            "자막의 `증거 마감`은 contest deadline이 아니라",
             "실제 사람·독립성을 자동 증명하지 않는다",
             "Tab 자동완성",
             "선택한 분기의 결정적 공개 화면 하나",
@@ -563,10 +573,27 @@ class SubmissionClaimTextTest(unittest.TestCase):
         self.assertIn("0:46.000–0:51.000", ci_section)
         self.assertIn("./scripts/video-demo-session.sh --final-recording ci", ci_section)
         self.assertIn("0:51.000–0:54.000", ci_section)
+        self.assertIn("`0:54.000`에 시작한다", ci_section)
         self.assertIn("0:58.000", ci_section)
         self.assertIn("이 구간에는 source나 다른 화면을 끼우지 않는다", ci_section)
         self.assertIn("0:12–0:46에서 이미 보여 줬으므로 반복하지 않는다", ci_section)
         self.assertNotIn("**바로 이어지는 실제 source 화면:**", ci_section)
+
+        fingerprint_section = storyboard.split(
+            "## 1:22–1:40 — 같은 횟수의 구조 변화도 실제 terminal에서 확인",
+            1,
+        )[1].split(
+            "## 1:40–1:55 — 실제 공개 실행 로그에서 반복 결과 확인", 1
+        )[0]
+        for required in (
+            "`1:22.000–1:24.000`",
+            "`1:24.000–1:29.000`",
+            "`1:29.000–1:35.000`",
+            "`1:35.000–1:40.000`",
+            "질문형 첫 cue는 command 입력과 8배속 대기에만 겹치며",
+            "marker 결과를 말하는 둘째 cue는\n`1:29.000`에 시작한다",
+        ):
+            self.assertIn(required, fingerprint_section)
 
         self.assertEqual(
             3,
@@ -628,21 +655,21 @@ class SubmissionClaimTextTest(unittest.TestCase):
             ("공통", "0:19.500", "0:27.000", "승인된 기록은 실행 한 번입니다", "변경된 기록은 두 번입니다"),
             ("공통", "0:27.500", "0:35.000", "기능 결과는 그대로 한 행입니다", "달라진 것은 내부 실행 모습입니다"),
             ("공통", "0:35.500", "0:44.500", "정한 한도를 넘자 두 위반을 냈습니다", "자동 승인하지 않고 검토를 요구합니다"),
-            ("공통", "0:46.500", "0:52.500", "CI에 연결하면 exit 1", "의도한 실패로 빌드를 멈춥니다"),
-            ("공통", "0:53.000", "0:59.500", "승인 기록은 자동으로 바뀌지 않습니다", "사람이 차이를 본 뒤에만 바꿉니다"),
+            ("공통", "0:46.500", "0:52.500", "승인본 차이를 실패로 바꾸는", "CI용 검사를 지금 실행합니다"),
+            ("공통", "0:54.000", "0:59.500", "실제 exit 1로 빌드가 멈췄습니다", "차이는 사람이 승인해야 합니다"),
             ("공통", "1:00.500", "1:07.000", "공개 배포 파일과 검사값을 확인합니다", "빈 저장소에 직접 설치합니다"),
             ("공통", "1:07.500", "1:14.500", "설치한 파일로 실제 MySQL을 실행합니다", "통과한 공개 기록을 직접 봅니다"),
             ("공통", "1:15.000", "1:21.500", "기존 기능 테스트를 그대로 감쌉니다", "새 기록은 승인본과 비교됩니다"),
-            ("공통", "1:22.500", "1:28.500", "실행 횟수는 그대로 한 번입니다", "그래도 기록의 모양은 달라졌습니다"),
-            ("공통", "1:29.000", "1:35.000", "입력값은 저장하지 않습니다", "자료형 개수만 한 개에서 두 개로 바뀝니다"),
-            ("공통", "1:35.500", "1:39.500", "횟수만 같아도 승인하지 않습니다", "SQL 뜻은 판단하지 않습니다"),
-            ("공통", "1:40.500", "1:47.000", "실제 MySQL 여덟 사례를 스무 번씩", "모두 같은 기록으로 되풀이했습니다"),
+            ("공통", "1:22.500", "1:28.500", "실행 횟수가 같아도 구조가 달라질까요?", "실제 MySQL로 다시 확인합니다"),
+            ("공통", "1:29.000", "1:35.000", "입력값은 저장하지 않습니다", "매개변수 수는 한 개에서 두 개입니다"),
+            ("공통", "1:35.500", "1:39.500", "횟수가 같아도 자동 승인하지 않습니다", "SQL 뜻은 판단하지 않습니다"),
+            ("공통", "1:40.500", "1:47.000", "실제 MySQL 여덟 사례를 스무 번씩", "각 사례에서 같은 기록이 나왔습니다"),
             ("공통", "1:47.500", "1:54.500", "동시에 실행한 20쌍은 섞이지 않았습니다", "실제 호출의 겹침은 측정하지 않았습니다"),
             ("공통", "1:55.500", "2:01.500", "기록을 한 작업별로 묶고", "사람이 승인한 기준과 비교합니다"),
             ("공통", "2:02.000", "2:06.500", "의도치 않은 차이는 CI 실패", "승인 기준은 자동으로 바뀌지 않습니다"),
             ("공통", "2:07.500", "2:15.000", "제출 코드와 안정판이 같은 코드인지", "공개 이력에서 직접 확인합니다"),
             ("공통", "2:15.500", "2:24.500", "코드 변경 검사와 main 검사 결과를", "실제 공개 화면에서 확인합니다"),
-            ("zero", "2:25.500", "2:33.500", "독립 검증은 공개 양식으로 모집했습니다", "없는 결과는 만들지 않았습니다"),
+            ("zero", "2:25.500", "2:33.500", "독립 검증은 공개 양식으로 모집했습니다", "증거 마감까지 참가 요청은 0건입니다"),
             ("rc_only", "2:25.500", "2:33.500", "정해진 양식의 RC 결과 접수는 1건", "자기 확인 진술이며 안정판 검증은 아닙니다"),
             ("공통", "2:34.500", "2:41.000", "검증 범위는 5.5.3 동기 실행", "성능·거래 완료를 판단하지 않습니다"),
             ("공통", "2:41.500", "2:48.000", "기능 결과가 같아도 hook 보고 실행 시도는", "한 번에서 두 번으로 달라질 수 있습니다"),
@@ -1194,6 +1221,7 @@ class SubmissionClaimTextTest(unittest.TestCase):
             "실제 result Issue만 보여 준다",
             "**0-result 분기:**",
             "독립 검증은 공개 양식으로 모집했습니다",
+            "증거 마감까지 참가 요청은 0건입니다",
             "stable 외부 검증 미확보",
             "실제 Discussion #28만 보여 준다",
             "activation·모집·프로토콜 링크는 보고서와 영상 설명에 남기고",
@@ -6515,8 +6543,8 @@ class ReportContractTest(unittest.TestCase):
             )
 
         self.assertEqual(13, len(table.rows))
-        self.assertEqual(blocks[:1], block.call_args_list[0].args[1])
-        self.assertEqual(blocks[1:], block.call_args_list[1].args[1])
+        self.assertEqual(blocks[:3], block.call_args_list[0].args[1])
+        self.assertEqual(blocks[3:], block.call_args_list[1].args[1])
         plain.assert_called_once_with((12, 0), "")
         marker.assert_called_once_with([table.rows[12]])
 
@@ -6539,14 +6567,19 @@ class ReportContractTest(unittest.TestCase):
                 original_row_index=11,
             )
 
-    def test_report_installation_has_an_unsplittable_continuation_row(self) -> None:
+    def test_report_demo_and_installation_have_an_unsplittable_continuation_row(
+        self,
+    ) -> None:
         from docx import Document
 
         table = Document().add_table(rows=12, cols=2)
         blocks = [
             {"lead": f"기능 {index}", "text": f"본문 {index}"}
-            for index in range(6)
-        ] + [{"lead": "설치·릴리스", "text": "검증된 stable 설치 경로"}]
+            for index in range(5)
+        ] + [
+            {"lead": "시연", "text": "실제 시연 경계"},
+            {"lead": "설치·릴리스", "text": "검증된 stable 설치 경로"},
+        ]
 
         with (
             patch.object(build_official_report, "set_plain_cell") as plain,
@@ -6564,8 +6597,8 @@ class ReportContractTest(unittest.TestCase):
             )
 
         self.assertEqual(13, len(table.rows))
-        self.assertEqual(blocks[:6], block.call_args_list[0].args[1])
-        self.assertEqual(blocks[6:], block.call_args_list[1].args[1])
+        self.assertEqual(blocks[:5], block.call_args_list[0].args[1])
+        self.assertEqual(blocks[5:], block.call_args_list[1].args[1])
         self.assertIs(plain.call_args.args[0]._tc, table.cell(10, 0)._tc)
         plain.assert_called_once_with(plain.call_args.args[0], "")
         marker.assert_called_once()
@@ -6610,7 +6643,9 @@ class ReportContractTest(unittest.TestCase):
             13: "",
         }.items():
             table.cell(index, 0).text = label
-        table.cell(10, 1).text = "설치·릴리스: 검증된 stable 설치 경로"
+        table.cell(10, 1).text = (
+            "시연: 실제 시연 경계\n설치·릴리스: 검증된 stable 설치 경로"
+        )
         for index in (7, 10, 11, 13):
             table.rows[index]._tr.get_or_add_trPr().append(
                 OxmlElement("w:cantSplit")
@@ -7949,10 +7984,15 @@ class ReportContentSbomTest(unittest.TestCase):
         quickstart = next(
             row["text"] for row in content["features"] if row["lead"] == "시연"
         )
+        self.assertEqual(
+            "quickstart는 MySQL 한 행에서 시도·alias 각각 1→2와 RCM201·RCM202를 "
+            "재현한다. 종료값은 실제 MySQL child 0, 의도한 CI child 1, wrapper 0이다.",
+            quickstart,
+        )
         for exit_boundary in (
-            "real-MySQL child 0",
-            "intentional CI child 1",
-            "quickstart wrapper 0",
+            "실제 MySQL child 0",
+            "의도한 CI child 1",
+            "wrapper 0",
         ):
             self.assertIn(exit_boundary, quickstart)
             self.assertNotIn(exit_boundary, reproducible_application)

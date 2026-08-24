@@ -532,12 +532,12 @@ def fill_feature_report_rows(
     image_caption: str,
     hyperlink_targets: Iterable[str] = (),
 ) -> None:
-    """Place installation in its own unsplittable continuation row."""
+    """Place the demo and installation in one unsplittable continuation row."""
     split_indexes = [
-        index for index, block in enumerate(blocks) if block.get("lead") == "설치·릴리스"
+        index for index, block in enumerate(blocks) if block.get("lead") == "시연"
     ]
-    if split_indexes != [6]:
-        raise ValueError("report feature blocks must place 설치·릴리스 at index 6")
+    if split_indexes != [5]:
+        raise ValueError("report feature blocks must place 시연 at index 5")
 
     original_row_index = 9
     continuation_row = insert_row_after(table, table.rows[original_row_index])
@@ -566,16 +566,14 @@ def fill_other_report_rows(
     hyperlink_targets: Iterable[str] = (),
     hyperlink_aliases: dict[str, str] | None = None,
 ) -> None:
-    """Put the roadmap and later evidence blocks in one unsplittable row."""
+    """Put the limitations and later evidence blocks in one unsplittable row."""
     split_indexes = [
         index
         for index, block in enumerate(blocks)
-        if block.get("lead") == "품질관리·발전 로드맵"
+        if block.get("lead") == "현재 한계"
     ]
-    if split_indexes != [1]:
-        raise ValueError(
-            "report 기타 blocks must place 품질관리·발전 로드맵 at index 1"
-        )
+    if split_indexes != [3]:
+        raise ValueError("report 기타 blocks must place 현재 한계 at index 3")
     if original_row_index != len(table.rows) - 1:
         raise ValueError("report 기타 source row must be the final row before continuation")
 
@@ -769,8 +767,12 @@ def assert_main_report_table_structure(table) -> None:
     }
     if actual_labels != expected_labels:
         raise ValueError("main report continuation row labels changed")
-    if not table.cell(10, 1).text.strip().startswith("설치·릴리스:"):
-        raise ValueError("main report installation continuation changed")
+    continuation_text = table.cell(10, 1).text.strip()
+    if (
+        not continuation_text.startswith("시연:")
+        or "설치·릴리스:" not in continuation_text
+    ):
+        raise ValueError("main report demo/installation continuation changed")
     missing_cannot_split = [
         index for index in (7, 10, 11, 13) if not row_cannot_split(table.rows[index])
     ]
