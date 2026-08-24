@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import copy
 import json
 import os
 from pathlib import Path
@@ -23,8 +24,12 @@ JAKARTA_EXPRESSION = (
 JNA_EXPRESSION = "(Apache-2.0 OR LGPL-2.1-or-later) AND MIT"
 JTS_EXPRESSIONS = {
     "jts-core": "EPL-2.0 OR BSD-3-Clause",
-    "jts-io-common": "(EPL-2.0 OR BSD-3-Clause) AND Apache-2.0",
 }
+REQUIRED_EXAMPLE_COORDINATES = (
+    ("org.apache.shardingsphere", "shardingsphere-jdbc", "5.5.3"),
+    ("org.apache.calcite", "calcite-core", "1.42.0"),
+    ("org.apache.calcite", "calcite-linq4j", "1.42.0"),
+)
 MYSQL_DOCUMENTATION_URL = "https://dev.mysql.com/doc/refman/8.4/en/preface.html"
 
 
@@ -134,13 +139,10 @@ class FinalizeSbomTest(unittest.TestCase):
                 ],
             ),
             maven_component(
-                "org.locationtech.jts.io",
-                "jts-io-common",
-                "1.19.0",
-                [
-                    {"license": {"id": "EPL-2.0"}},
-                    {"license": {"id": "BSD-3-Clause"}},
-                ],
+                "org.apache.shardingsphere",
+                "shardingsphere-jdbc",
+                "5.5.3",
+                [{"license": {"id": "Apache-2.0"}}],
             ),
             maven_component(
                 "com.mysql",
@@ -152,6 +154,18 @@ class FinalizeSbomTest(unittest.TestCase):
                 "com.example",
                 "safe",
                 "1.0.0",
+                [{"license": {"id": "Apache-2.0"}}],
+            ),
+            maven_component(
+                "org.apache.calcite",
+                "calcite-core",
+                "1.42.0",
+                [{"license": {"id": "Apache-2.0"}}],
+            ),
+            maven_component(
+                "org.apache.calcite",
+                "calcite-linq4j",
+                "1.42.0",
                 [{"license": {"id": "Apache-2.0"}}],
             ),
         ]
@@ -274,13 +288,6 @@ class FinalizeSbomTest(unittest.TestCase):
             self.assertEqual(
                 [{"expression": expression}], by_name[name]["licenses"]
             )
-        self.assertIn(
-            {
-                "name": "routecontract:license-review",
-                "value": "manual-review-required",
-            },
-            by_name["jts-io-common"]["properties"],
-        )
         self.assertNotIn("licenses", by_name["mysql"])
         self.assertEqual(
             [{"type": "documentation", "url": MYSQL_DOCUMENTATION_URL}],
@@ -320,16 +327,6 @@ class FinalizeSbomTest(unittest.TestCase):
                     f"{qname('licenses')}/{qname('expression')}"
                 ),
             )
-        self.assertEqual(
-            "manual-review-required",
-            next(
-                item
-                for item in xml_by_name["jts-io-common"].findall(
-                    f"{qname('properties')}/{qname('property')}"
-                )
-                if item.get("name") == "routecontract:license-review"
-            ).text,
-        )
         self.assertIsNone(xml_by_name["mysql"].find(qname("licenses")))
         self.assertEqual(
             MYSQL_DOCUMENTATION_URL,
@@ -536,6 +533,186 @@ class FinalizeSbomTest(unittest.TestCase):
         self.assertNotEqual(0, result.returncode)
         self.assertIn("Reviewed Maven component identity differs", result.stderr)
 
+    def test_rejects_each_missing_required_example_coordinate(self) -> None:
+        original = copy.deepcopy(self.components)
+        for group, name, version in REQUIRED_EXAMPLE_COORDINATES:
+            with self.subTest(coordinate=f"{group}:{name}:{version}"):
+                self.components = [
+                    component
+                    for component in copy.deepcopy(original)
+                    if not (
+                        component.get("group") == group
+                        and component.get("name") == name
+                    )
+                ]
+                self.write_sources()
+
+                result = self.finalize()
+
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn(
+                    "Example SBOM must contain exactly one pinned Maven component",
+                    result.stderr,
+                )
+        self.components = original
+
+    def test_rejects_each_wrong_required_example_version(self) -> None:
+        original = copy.deepcopy(self.components)
+        for group, name, version in REQUIRED_EXAMPLE_COORDINATES:
+            with self.subTest(coordinate=f"{group}:{name}:{version}"):
+                self.components = copy.deepcopy(original)
+                component = next(
+                    item
+                    for item in self.components
+                    if item.get("group") == group and item.get("name") == name
+                )
+                component["version"] = "0.0.0"
+                component["purl"] = f"pkg:maven/{group}/{name}@0.0.0?type=jar"
+                component["bom-ref"] = component["purl"]
+                self.write_sources()
+
+                result = self.finalize()
+
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn("Reviewed Maven component identity differs", result.stderr)
+        self.components = original
+
+    def test_rejects_percent_encoded_required_coordinate_alias_duplicates(self) -> None:
+        original = copy.deepcopy(self.components)
+        coordinates = (
+            ("org.apache.shardingsphere", "shardingsphere-jdbc", "5.5.3"),
+            ("org.apache.calcite", "calcite-core", "1.42.0"),
+        )
+        for group, name, version in coordinates:
+            alias_group = group.replace(".", "%2E", 1)
+            alias = maven_component(
+                alias_group,
+                name,
+                version,
+                [{"license": {"id": "Apache-2.0"}}],
+            )
+            for input_format in ("json", "xml"):
+                with self.subTest(
+                    coordinate=f"{group}:{name}:{version}",
+                    input_format=input_format,
+                ):
+                    self.components = copy.deepcopy(original)
+                    self.write_sources()
+                    if input_format == "json":
+                        document = json.loads(
+                            self.source_json.read_text(encoding="utf-8")
+                        )
+                        document["components"].append(alias)
+                        self.source_json.write_text(
+                            json.dumps(document) + "\n", encoding="utf-8"
+                        )
+                    else:
+                        qname = lambda field: f"{{{NAMESPACE}}}{field}"
+                        tree = ET.parse(self.source_xml)
+                        components = tree.getroot().find(qname("components"))
+                        self.assertIsNotNone(components)
+                        append_xml_component(components, alias)
+                        tree.write(
+                            self.source_xml,
+                            encoding="utf-8",
+                            xml_declaration=True,
+                        )
+
+                    result = self.finalize()
+
+                    self.assertNotEqual(0, result.returncode)
+                    self.assertIn(
+                        "Maven purl differs from the pinned producer profile",
+                        result.stderr,
+                    )
+        self.components = original
+
+    def test_rejects_equivalent_noncanonical_maven_prefix_aliases(self) -> None:
+        for prefix in ("pkg:Maven/", "PKG:maven/", "pkg://maven/"):
+            alias = maven_component(
+                "com.example",
+                "safe-alias",
+                "1.19.0",
+                [{"license": {"id": "Apache-2.0"}}],
+            )
+            alias_purl = (
+                f"{prefix}org.locationtech.jts.io/jts-io-common@1.19.0?type=jar"
+            )
+            alias["purl"] = alias_purl
+            alias["bom-ref"] = alias_purl
+            for input_format in ("json", "xml"):
+                with self.subTest(prefix=prefix, input_format=input_format):
+                    self.write_sources()
+                    if input_format == "json":
+                        document = json.loads(
+                            self.source_json.read_text(encoding="utf-8")
+                        )
+                        document["components"].append(alias)
+                        self.source_json.write_text(
+                            json.dumps(document) + "\n", encoding="utf-8"
+                        )
+                    else:
+                        qname = lambda field: f"{{{NAMESPACE}}}{field}"
+                        tree = ET.parse(self.source_xml)
+                        components = tree.getroot().find(qname("components"))
+                        self.assertIsNotNone(components)
+                        append_xml_component(components, alias)
+                        tree.write(
+                            self.source_xml,
+                            encoding="utf-8",
+                            xml_declaration=True,
+                        )
+
+                    result = self.finalize()
+
+                    self.assertNotEqual(0, result.returncode)
+                    self.assertIn("invalid Maven purl", result.stderr)
+
+    def test_rejects_noncanonical_maven_qualifier_keys_in_each_format(self) -> None:
+        for qualifier_key in ("Type", "1type", "%74ype", "type!"):
+            alias = maven_component(
+                "com.example",
+                "qualifier-alias",
+                "1.0.0",
+                [{"license": {"id": "Apache-2.0"}}],
+            )
+            alias_purl = (
+                "pkg:maven/com.example/qualifier-alias@1.0.0?"
+                f"{qualifier_key}=jar"
+            )
+            alias["purl"] = alias_purl
+            alias["bom-ref"] = alias_purl
+            for input_format in ("json", "xml"):
+                with self.subTest(
+                    qualifier_key=qualifier_key,
+                    input_format=input_format,
+                ):
+                    self.write_sources()
+                    if input_format == "json":
+                        document = json.loads(
+                            self.source_json.read_text(encoding="utf-8")
+                        )
+                        document["components"].append(alias)
+                        self.source_json.write_text(
+                            json.dumps(document) + "\n", encoding="utf-8"
+                        )
+                    else:
+                        qname = lambda field: f"{{{NAMESPACE}}}{field}"
+                        tree = ET.parse(self.source_xml)
+                        components = tree.getroot().find(qname("components"))
+                        self.assertIsNotNone(components)
+                        append_xml_component(components, alias)
+                        tree.write(
+                            self.source_xml,
+                            encoding="utf-8",
+                            xml_declaration=True,
+                        )
+
+                    result = self.finalize()
+
+                    self.assertNotEqual(0, result.returncode)
+                    self.assertIn("invalid Maven purl qualifier key", result.stderr)
+
     def test_verify_rejects_each_jts_license_list_instead_of_expression(self) -> None:
         qname = lambda name: f"{{{NAMESPACE}}}{name}"
         for component_name in JTS_EXPRESSIONS:
@@ -579,44 +756,102 @@ class FinalizeSbomTest(unittest.TestCase):
                 self.assertNotEqual(0, result.returncode)
                 self.assertIn("Reviewed license metadata is missing", result.stderr)
 
-    def test_verify_rejects_missing_jts_io_review_marker(self) -> None:
-        finalized = self.finalize()
-        self.assertEqual(0, finalized.returncode, finalized.stderr)
-        document = json.loads(self.output_json.read_text(encoding="utf-8"))
-        component = next(
-            item
-            for item in document["components"]
-            if item["name"] == "jts-io-common"
-        )
-        component["properties"] = [
-            item
-            for item in component["properties"]
-            if item["name"] != "routecontract:license-review"
-        ]
-        self.output_json.write_text(json.dumps(document) + "\n", encoding="utf-8")
+    def test_rejects_every_reintroduced_jts_io_version(self) -> None:
+        original = copy.deepcopy(self.components)
+        for version in ("1.18.2", "1.19.0", "1.20.0"):
+            with self.subTest(version=version):
+                self.components = copy.deepcopy(original)
+                self.components.append(
+                    maven_component(
+                        "org.locationtech.jts.io",
+                        "jts-io-common",
+                        version,
+                        [{"license": {"id": "Apache-2.0"}}],
+                    )
+                )
+                self.write_sources()
 
-        qname = lambda name: f"{{{NAMESPACE}}}{name}"
-        tree = ET.parse(self.output_xml)
-        xml_component = next(
-            item
-            for item in tree.getroot().findall(
-                f"{qname('components')}/{qname('component')}"
+                result = self.finalize()
+
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn(
+                    "JTS I/O Common is forbidden by the pinned dependency contract",
+                    result.stderr,
+                )
+        self.components = original
+
+    def test_rejects_jts_io_reintroduced_only_in_json(self) -> None:
+        document = json.loads(self.source_json.read_text(encoding="utf-8"))
+        document["components"].append(
+            maven_component(
+                "org.locationtech.jts.io",
+                "jts-io-common",
+                "99.0.0",
+                [{"license": {"id": "Apache-2.0"}}],
             )
-            if item.findtext(qname("name")) == "jts-io-common"
         )
-        properties = xml_component.find(qname("properties"))
-        self.assertIsNotNone(properties)
-        for item in list(properties):
-            if item.get("name") == "routecontract:license-review":
-                properties.remove(item)
-        tree.write(self.output_xml, encoding="utf-8", xml_declaration=True)
+        self.source_json.write_text(json.dumps(document) + "\n", encoding="utf-8")
 
-        result = self.run_finalizer(
-            "--verify-pair", str(self.output_json), str(self.output_xml)
-        )
+        result = self.finalize()
 
         self.assertNotEqual(0, result.returncode)
-        self.assertIn("JTS I/O Common review metadata is missing", result.stderr)
+        self.assertIn("JTS I/O Common is forbidden", result.stderr)
+
+    def test_rejects_jts_io_reintroduced_only_in_xml(self) -> None:
+        qname = lambda name: f"{{{NAMESPACE}}}{name}"
+        tree = ET.parse(self.source_xml)
+        components = tree.getroot().find(qname("components"))
+        self.assertIsNotNone(components)
+        append_xml_component(
+            components,
+            maven_component(
+                "org.locationtech.jts.io",
+                "jts-io-common",
+                "99.0.0",
+                [{"license": {"id": "Apache-2.0"}}],
+            ),
+        )
+        tree.write(self.source_xml, encoding="utf-8", xml_declaration=True)
+
+        result = self.finalize()
+
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("JTS I/O Common is forbidden", result.stderr)
+
+    def test_rejects_percent_encoded_jts_io_alias_only_in_json(self) -> None:
+        component = maven_component(
+            "org.locationtech.jts%2Eio",
+            "jts-io-common",
+            "1.19.0",
+            [{"license": {"id": "Apache-2.0"}}],
+        )
+        document = json.loads(self.source_json.read_text(encoding="utf-8"))
+        document["components"].append(component)
+        self.source_json.write_text(json.dumps(document) + "\n", encoding="utf-8")
+
+        result = self.finalize()
+
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("JTS I/O Common is forbidden", result.stderr)
+
+    def test_rejects_percent_encoded_jts_io_alias_only_in_xml(self) -> None:
+        component = maven_component(
+            "org.locationtech.jts%2Eio",
+            "jts-io-common",
+            "1.19.0",
+            [{"license": {"id": "Apache-2.0"}}],
+        )
+        qname = lambda name: f"{{{NAMESPACE}}}{name}"
+        tree = ET.parse(self.source_xml)
+        components = tree.getroot().find(qname("components"))
+        self.assertIsNotNone(components)
+        append_xml_component(components, component)
+        tree.write(self.source_xml, encoding="utf-8", xml_declaration=True)
+
+        result = self.finalize()
+
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("JTS I/O Common is forbidden", result.stderr)
 
     def test_rejects_reviewed_component_missing_from_only_xml(self) -> None:
         qname = lambda name: f"{{{NAMESPACE}}}{name}"
@@ -959,7 +1194,7 @@ class FinalizeSbomTest(unittest.TestCase):
         )
 
         self.assertNotEqual(0, result.returncode)
-        self.assertIn("JSON/XML component records differ", result.stderr)
+        self.assertIn("Maven purl does not match group/name/version", result.stderr)
 
     def test_verify_rejects_every_supported_component_field_drift(self) -> None:
         self.assertEqual(0, self.finalize().returncode)

@@ -48,7 +48,36 @@ PACKAGE_METADATA_NAME = "PACKAGE-METADATA.json"
 PACKAGE_METADATA_SCHEMA_VERSION = 4
 CHECKSUMS_NAME = "SHA256SUMS"
 SUPPLY_CHAIN_EVIDENCE_NAME = "supply-chain-evidence.json"
-MIN_VIDEO_SECONDS = 170.0
+MYSQL_CONTAINER_DIGEST = (
+    "b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb"
+)
+MYSQL_DOCUMENTATION_URL = "https://dev.mysql.com/doc/refman/8.4/en/preface.html"
+EXPECTED_MYSQL_LICENSE_REVIEW = {
+    "action": (
+        "re-review immediately if the MySQL OCI digest, selected platform, embedded "
+        "LICENSE/INFO_SRC evidence, or test-container use boundary changes; otherwise "
+        "resolve, renew with new evidence, or remove the MySQL OCI package-level "
+        "license review before the 2026-12-05 expiry"
+    ),
+    "componentName": "mysql",
+    "componentVersion": "8.4.11",
+    "expires": "2026-12-05",
+    "owner": "RouteContract maintainers",
+    "purl": (
+        "pkg:oci/mysql@sha256%3A"
+        f"{MYSQL_CONTAINER_DIGEST}?repository_url=registry-1.docker.io&tag=8.4.11"
+    ),
+    "rationaleCode": "MYSQL_OCI_PACKAGE_LICENSE_CONCLUSION_INCOMPLETE",
+    "reviewedAt": "2026-08-24",
+    "scope": "test-container",
+    "status": "manual-review-required",
+}
+EXPECTED_MYSQL_POLICY_LICENSE_REVIEW = {
+    **EXPECTED_MYSQL_LICENSE_REVIEW,
+    "documentationUrl": MYSQL_DOCUMENTATION_URL,
+    "sha256": MYSQL_CONTAINER_DIGEST,
+}
+MIN_VIDEO_SECONDS = 173.0
 MAX_VIDEO_SECONDS = 175.0
 MIN_VIDEO_WIDTH = 1920
 MIN_VIDEO_HEIGHT = 1080
@@ -714,7 +743,7 @@ def validate_manifest(data: dict[str, Any]) -> dict[str, Any]:
     duration = float(video["duration_seconds"])
     if not MIN_VIDEO_SECONDS <= duration <= MAX_VIDEO_SECONDS:
         raise GateError(
-            "video.duration_seconds must be from 170 through 175 seconds inclusive"
+            "video.duration_seconds must be from 173 through 175 seconds inclusive"
         )
     require_digest(video["local_file_sha256"], "video.local_file_sha256")
     branch = video["external_evidence_branch"]
@@ -1207,9 +1236,9 @@ def validate_supply_chain_evidence(
         aggregate["unresolvedLicenseReviewCount"],
         "supply-chain evidence sbom.unresolvedLicenseReviewCount",
     )
-    if unresolved_review_count != 2:
+    if unresolved_review_count != 1:
         raise GateError(
-            "supply-chain evidence must retain exactly two unresolved license reviews"
+            "supply-chain evidence must retain exactly one unresolved license review"
         )
     expected_aggregate_hashes = {
         "sha256": sha256(actual_files["routecontract-aggregate-cyclonedx.json"]),
@@ -1390,8 +1419,14 @@ def validate_supply_chain_evidence(
         or vulnerabilities["acceptedExceptionCount"] != len(findings)
     ):
         raise GateError("supply-chain evidence finding counts are inconsistent")
-    if len(findings) != 1:
-        raise GateError("supply-chain evidence must contain exactly one reviewed finding")
+    if (
+        vulnerabilities["acceptedExceptionCount"] != 0
+        or vulnerabilities["findingCount"] != 0
+        or findings
+    ):
+        raise GateError(
+            "supply-chain evidence must contain zero vulnerability findings and accepted exceptions"
+        )
 
     policy = load_strict_json(
         repository_root / "security/supply-chain-policy.json", "supply-chain policy"
@@ -1414,8 +1449,8 @@ def validate_supply_chain_evidence(
     policy_reviews = policy["licenseReviewExceptions"]
     if not isinstance(reviews, list) or not isinstance(policy_reviews, list):
         raise GateError("supply-chain license reviews must be arrays")
-    if len(reviews) != 2 or len(policy_reviews) != 2:
-        raise GateError("supply-chain evidence and policy must contain exactly two license reviews")
+    if len(reviews) != 1 or len(policy_reviews) != 1:
+        raise GateError("supply-chain evidence and policy must contain exactly one license review")
     review_keys = {
         "action",
         "componentName",
@@ -1428,29 +1463,26 @@ def validate_supply_chain_evidence(
         "scope",
         "status",
     }
-    expected_review_order = (
-        "MYSQL_OCI_PACKAGE_LICENSE_CONCLUSION_INCOMPLETE",
-        "JTS_IO_COMMON_REDISTRIBUTION_NOTICE_TREATMENT_UNCONFIRMED",
-    )
+    policy_review_keys = review_keys | {"documentationUrl", "sha256"}
     projected_policy_reviews: list[dict[str, Any]] = []
     policy_review_codes: set[str] = set()
     for index, raw_policy_review in enumerate(policy_reviews):
-        if not isinstance(raw_policy_review, dict):
-            raise GateError(f"supply-chain policy license review {index} must be an object")
-        missing = review_keys - set(raw_policy_review)
-        if missing:
-            raise GateError(
-                f"supply-chain policy license review {index} is missing {sorted(missing)}"
-            )
-        rationale = raw_policy_review["rationaleCode"]
+        policy_review = require_exact_keys(
+            raw_policy_review,
+            policy_review_keys,
+            f"supply-chain policy license review {index}",
+        )
+        rationale = policy_review["rationaleCode"]
         if not isinstance(rationale, str) or not rationale or rationale in policy_review_codes:
             raise GateError("supply-chain policy license review rationaleCode is invalid or duplicate")
         policy_review_codes.add(rationale)
         projected_policy_reviews.append(
-            {field: raw_policy_review[field] for field in review_keys}
+            {field: policy_review[field] for field in review_keys}
         )
-    if tuple(review["rationaleCode"] for review in projected_policy_reviews) != expected_review_order:
-        raise GateError("supply-chain policy license reviews have an unexpected order")
+    if policy_reviews != [EXPECTED_MYSQL_POLICY_LICENSE_REVIEW]:
+        raise GateError(
+            "supply-chain policy license review must exactly identify the pinned MySQL OCI image"
+        )
 
     validated_reviews: list[dict[str, Any]] = []
     for index, raw_review in enumerate(reviews):
@@ -1474,101 +1506,8 @@ def validate_supply_chain_evidence(
     exceptions = policy["vulnerabilityExceptions"]
     if not isinstance(exceptions, list):
         raise GateError("supply-chain vulnerabilityExceptions must be an array")
-    if len(exceptions) != 1:
-        raise GateError("supply-chain policy must contain exactly one vulnerability exception")
-    exception_map: dict[tuple[str, str], dict[str, Any]] = {}
-    exception_keys = {
-        "advisory",
-        "exceptionId",
-        "expires",
-        "fixedVersion",
-        "owner",
-        "purl",
-        "rationaleCode",
-        "reviewedAt",
-        "scope",
-        "severity",
-    }
-    for index, raw_exception in enumerate(exceptions):
-        item = require_exact_keys(
-            raw_exception,
-            exception_keys,
-            f"supply-chain vulnerability exception {index}",
-        )
-        if not isinstance(item["purl"], str) or not item["purl"]:
-            raise GateError("supply-chain vulnerability exception purl must be non-empty")
-        if not isinstance(item["advisory"], str) or not item["advisory"]:
-            raise GateError("supply-chain vulnerability exception advisory must be non-empty")
-        key = (item["purl"], item["advisory"])
-        if key in exception_map:
-            raise GateError("supply-chain policy contains a duplicate vulnerability exception")
-        exception_map[key] = item
-    observed_keys: set[tuple[str, str]] = set()
-    finding_keys = {
-        "action",
-        "advisory",
-        "exceptionExpires",
-        "exceptionId",
-        "fixedVersion",
-        "owner",
-        "purl",
-        "rationaleCode",
-        "reachabilityEvidence",
-        "reviewedAt",
-        "scope",
-        "severity",
-    }
-    for index, raw_finding in enumerate(findings):
-        finding = require_exact_keys(
-            raw_finding, finding_keys, f"supply-chain evidence finding {index}"
-        )
-        reachability = require_exact_keys(
-            finding["reachabilityEvidence"],
-            {"exampleProfile", "publishedProfile", "publishedRuntime"},
-            f"supply-chain evidence finding {index} reachability",
-        )
-        if any(not isinstance(value, bool) for value in reachability.values()):
-            raise GateError("supply-chain evidence finding reachability flags must be booleans")
-        if reachability != {
-            "exampleProfile": True,
-            "publishedProfile": False,
-            "publishedRuntime": False,
-        }:
-            raise GateError("supply-chain evidence finding is not example/test-profile confined")
-        if not isinstance(finding["purl"], str) or not finding["purl"]:
-            raise GateError("supply-chain evidence finding purl must be non-empty")
-        if not isinstance(finding["advisory"], str) or not finding["advisory"]:
-            raise GateError("supply-chain evidence finding advisory must be non-empty")
-        key = (finding["purl"], finding["advisory"])
-        exception = exception_map.get(key)
-        if exception is None or key in observed_keys:
-            raise GateError("supply-chain evidence finding has no unique source-policy exception")
-        observed_keys.add(key)
-        mapped = {
-            "advisory": exception["advisory"],
-            "exceptionExpires": exception["expires"],
-            "exceptionId": exception["exceptionId"],
-            "fixedVersion": exception["fixedVersion"],
-            "owner": exception["owner"],
-            "purl": exception["purl"],
-            "rationaleCode": exception["rationaleCode"],
-            "reviewedAt": exception["reviewedAt"],
-            "scope": exception["scope"],
-            "severity": exception["severity"],
-        }
-        for field, expected in mapped.items():
-            if finding[field] != expected:
-                raise GateError(f"supply-chain evidence finding {field} differs from policy")
-        if finding["action"] != "time-bounded reviewed exception; re-evaluate by expiry":
-            raise GateError("supply-chain evidence finding action is unexpected")
-        try:
-            expires = datetime.strptime(finding["exceptionExpires"], "%Y-%m-%d").date()
-        except (TypeError, ValueError) as error:
-            raise GateError("supply-chain evidence finding expiry is invalid") from error
-        if expires < datetime.now(timezone.utc).date():
-            raise GateError("supply-chain evidence contains an expired exception")
-    if observed_keys != set(exception_map):
-        raise GateError("supply-chain evidence does not account for every policy exception")
+    if exceptions:
+        raise GateError("supply-chain policy must contain zero vulnerability exceptions")
 
     return {
         "sha256": sha256(path),
@@ -2203,7 +2142,7 @@ def validate_local_video(path: Path, manifest: dict[str, Any]) -> dict[str, Any]
     duration = float(metadata["duration_seconds"])
     if not MIN_VIDEO_SECONDS <= duration <= MAX_VIDEO_SECONDS:
         raise GateError(
-            "local video duration must be from 170 through 175 seconds inclusive"
+            "local video duration must be from 173 through 175 seconds inclusive"
         )
     require_caption_cues_fit_duration(
         manifest_video_caption_evidence(manifest), duration, "local video"
@@ -2537,7 +2476,7 @@ def validate_public_youtube_contract(
         raise GateError("public YouTube title mismatch")
     if not MIN_VIDEO_SECONDS <= youtube["duration_seconds"] <= MAX_VIDEO_SECONDS:
         raise GateError(
-            "public YouTube video duration must be from 170 through 175 seconds inclusive"
+            "public YouTube video duration must be from 173 through 175 seconds inclusive"
         )
     require_caption_cues_fit_duration(
         manifest_video_caption_evidence(manifest),

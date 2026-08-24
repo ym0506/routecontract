@@ -9,6 +9,7 @@ then pass that directory and an isolated, absolute Maven repository path.
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 import hashlib
 import hmac
 import json
@@ -39,6 +40,29 @@ EXPECTED_PROVIDER = (
 )
 EXPECTED_GROUP_ID = "io.github.ym0506.routecontract"
 EXPECTED_PACKAGE_PREFIX = "io/github/ym0506/routecontract/"
+MYSQL_CONTAINER_DIGEST = (
+    "b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb"
+)
+EXPECTED_MYSQL_LICENSE_REVIEW = {
+    "action": (
+        "re-review immediately if the MySQL OCI digest, selected platform, embedded "
+        "LICENSE/INFO_SRC evidence, or test-container use boundary changes; otherwise "
+        "resolve, renew with new evidence, or remove the MySQL OCI package-level "
+        "license review before the 2026-12-05 expiry"
+    ),
+    "componentName": "mysql",
+    "componentVersion": "8.4.11",
+    "expires": "2026-12-05",
+    "owner": "RouteContract maintainers",
+    "purl": (
+        "pkg:oci/mysql@sha256%3A"
+        f"{MYSQL_CONTAINER_DIGEST}?repository_url=registry-1.docker.io&tag=8.4.11"
+    ),
+    "rationaleCode": "MYSQL_OCI_PACKAGE_LICENSE_CONCLUSION_INCOMPLETE",
+    "reviewedAt": "2026-08-24",
+    "scope": "test-container",
+    "status": "manual-review-required",
+}
 ROUTECONTRACT_PACKAGE_PATTERN = re.compile(
     r"io/github/(?:[^/]+/)*routecontract/"
 )
@@ -936,13 +960,13 @@ def validate_supply_chain_evidence(files: dict[str, Path]) -> None:
         aggregate["unresolvedLicenseReviewCount"],
         "supply-chain evidence sbom.unresolvedLicenseReviewCount",
     )
-    if unresolved_review_count != 2:
+    if unresolved_review_count != 1:
         raise InstallError(
-            "supply-chain evidence must retain exactly two unresolved license reviews"
+            "supply-chain evidence must retain exactly one unresolved license review"
         )
     reviews = aggregate["licenseReviews"]
-    if not isinstance(reviews, list) or len(reviews) != 2:
-        raise InstallError("supply-chain evidence must contain exactly two license reviews")
+    if not isinstance(reviews, list) or len(reviews) != 1:
+        raise InstallError("supply-chain evidence must contain exactly one license review")
     review_keys = {
         "action",
         "componentName",
@@ -955,47 +979,19 @@ def validate_supply_chain_evidence(files: dict[str, Path]) -> None:
         "scope",
         "status",
     }
-    expected_review_contracts = (
-        (
-            "MYSQL_OCI_PACKAGE_LICENSE_CONCLUSION_INCOMPLETE",
-            "mysql",
-            "test-container",
-        ),
-        (
-            "JTS_IO_COMMON_REDISTRIBUTION_NOTICE_TREATMENT_UNCONFIRMED",
-            "jts-io-common",
-            "test-runtime",
-        ),
+    review = _exact_json_keys(
+        reviews[0], review_keys, "supply-chain evidence license review 0"
     )
-    for index, (raw_review, expected_contract) in enumerate(
-        zip(reviews, expected_review_contracts, strict=True)
-    ):
-        review = _exact_json_keys(
-            raw_review, review_keys, f"supply-chain evidence license review {index}"
+    try:
+        review_expiry = datetime.strptime(review["expires"], "%Y-%m-%d").date()
+    except (TypeError, ValueError) as error:
+        raise InstallError("supply-chain evidence license review expiry is invalid") from error
+    if review_expiry < datetime.now(timezone.utc).date():
+        raise InstallError("supply-chain evidence contains an expired license review")
+    if review != EXPECTED_MYSQL_LICENSE_REVIEW:
+        raise InstallError(
+            "supply-chain evidence license review must exactly identify the pinned MySQL OCI image"
         )
-        expected_rationale, expected_component, expected_scope = expected_contract
-        if (
-            review["rationaleCode"],
-            review["componentName"],
-            review["scope"],
-        ) != (expected_rationale, expected_component, expected_scope):
-            raise InstallError(
-                "supply-chain evidence license reviews do not use the exact required order"
-            )
-        if review["status"] != "manual-review-required":
-            raise InstallError("supply-chain evidence license review status is unexpected")
-        for key in (
-            "action",
-            "componentVersion",
-            "expires",
-            "owner",
-            "purl",
-            "reviewedAt",
-        ):
-            if not isinstance(review[key], str) or not review[key]:
-                raise InstallError(
-                    f"supply-chain evidence license review {index}.{key} must be non-empty text"
-                )
     expected_aggregate_hashes = {
         "sha256": sha256(files["routecontract-aggregate-cyclonedx.json"]),
         "xmlSha256": sha256(files["routecontract-aggregate-cyclonedx.xml"]),
@@ -1122,78 +1118,10 @@ def validate_supply_chain_evidence(files: dict[str, Path]) -> None:
     )
     if finding_count != len(findings) or accepted_count != len(findings):
         raise InstallError("supply-chain evidence vulnerability counts do not match findings")
-    if len(findings) != 1:
-        raise InstallError("supply-chain evidence must contain exactly one reviewed finding")
-    finding_keys = {
-        "action",
-        "advisory",
-        "exceptionExpires",
-        "exceptionId",
-        "fixedVersion",
-        "owner",
-        "purl",
-        "rationaleCode",
-        "reachabilityEvidence",
-        "reviewedAt",
-        "scope",
-        "severity",
-    }
-    expected_finding_identities = {
-        (
-            "OSV-003",
-            "GHSA-c2rv-hwqm-wjpg",
-            "pkg:maven/org.apache.calcite/calcite-core@1.40.0",
-        ),
-    }
-    observed_finding_identities: set[tuple[object, object, object]] = set()
-    for index, raw_finding in enumerate(findings):
-        finding = _exact_json_keys(
-            raw_finding, finding_keys, f"supply-chain evidence finding {index}"
+    if accepted_count != 0 or finding_count != 0 or findings:
+        raise InstallError(
+            "supply-chain evidence must contain zero vulnerability findings and accepted exceptions"
         )
-        reachability = _exact_json_keys(
-            finding["reachabilityEvidence"],
-            {"exampleProfile", "publishedProfile", "publishedRuntime"},
-            f"supply-chain evidence finding {index} reachability",
-        )
-        if any(not isinstance(value, bool) for value in reachability.values()):
-            raise InstallError(
-                f"supply-chain evidence finding {index} reachability flags must be booleans"
-            )
-        if reachability != {
-            "exampleProfile": True,
-            "publishedProfile": False,
-            "publishedRuntime": False,
-        }:
-            raise InstallError(
-                f"supply-chain evidence finding {index} is not confined to the example profile"
-            )
-        if finding["scope"] != "aggregate-test-only":
-            raise InstallError(f"supply-chain evidence finding {index} has an unexpected scope")
-        if finding["action"] != "time-bounded reviewed exception; re-evaluate by expiry":
-            raise InstallError(f"supply-chain evidence finding {index} has an unexpected action")
-        identity = (finding["exceptionId"], finding["advisory"], finding["purl"])
-        if identity not in expected_finding_identities or identity in observed_finding_identities:
-            raise InstallError(
-                f"supply-chain evidence finding {index} identity is unexpected or duplicate"
-            )
-        observed_finding_identities.add(identity)
-        for key in (
-            "action",
-            "advisory",
-            "exceptionExpires",
-            "exceptionId",
-            "owner",
-            "purl",
-            "rationaleCode",
-            "reviewedAt",
-            "severity",
-        ):
-            if not isinstance(finding[key], str) or not finding[key]:
-                raise InstallError(
-                    f"supply-chain evidence finding {index}.{key} must be non-empty text"
-                )
-    if observed_finding_identities != expected_finding_identities:
-        raise InstallError("supply-chain evidence reviewed finding set is incomplete")
 
 
 def parse_jar_main_manifest(raw: bytes) -> dict[str, str]:

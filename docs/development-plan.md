@@ -129,14 +129,22 @@ The report body must stay within the organizer's five-page limit:
 4. Utility, competitive comparison and open-source/community evidence.
 5. Reproducibility, license/SBOM, project-management trail, limitations and roadmap.
 
-The video target is 2:50-2:58, leaving upload/player timing margin:
+The final video must be 2:53-2:55 (173-175 seconds), matching the strict package
+gate and the authoritative storyboard:
 
-- 0:00-0:20: business tests can stay green while observed JDBC work expands.
-- 0:20-0:40: existing facilities and the precise gap.
-- 0:40-1:40: clean `record/verify` demo with the business-green/contract-red mutation.
-- 1:40-2:15: structural diff and two or three measured corpus results.
-- 2:15-2:40: package, CI, release, docs and external feedback.
-- 2:40-2:55: exact supported scope and one-sentence conclusion.
+- 0:00-0:46: real-MySQL business-green/contract-red baseline and candidate.
+- 0:46-1:00: the local intentional-red manifest gate and verified child exit.
+- 1:00-1:22: the public Release, exact-tag consumer evidence and integration source.
+- 1:22-1:40: same-budget fingerprint/type-shape drift.
+- 1:40-1:55: measured corpus determinism and caller-scope isolation.
+- 1:55-2:07: the operation-to-manifest-to-CI source path.
+- 2:07-2:25: final commit, annotated tag, merge-PR checks and main-push checks.
+- 2:25-2:34: the truthful cutoff branch for external evidence.
+- 2:34-2:53: exact supported scope and one-sentence conclusion.
+
+If the encoded file runs beyond 2:53, the remaining at-most-two seconds keep the
+same live final-source screen moving; they are not a freeze frame, black frame or
+separate end card.
 
 Do not spend video time listing every feature. The evaluator should see the failure, understand why ordinary assertions missed it, and know how to reproduce it.
 

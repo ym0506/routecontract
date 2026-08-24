@@ -13,12 +13,27 @@ exclusive repository rule for the RouteContract group. The test verifies that:
 This standalone build has its own dependency lockfile and SHA-256 verification metadata because it
 does not inherit the root build's dependency controls.
 
-It also declares the ShardingSphere 5.5.3 Jackson 2 compatibility alignment explicitly:
+It also declares the verified ShardingSphere 5.5.3 dependency controls
+explicitly: Jackson 2 alignment, JTS I/O Common exclusion, and strict Calcite
+Core/linq4j 1.42.0 constraints.
 
 ```groovy
-testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))
-testImplementation("${routeContractGroup}:routecontract-shardingsphere-5.5:${routeContractVersion}")
-testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:5.5.3")
+dependencies {
+    testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))
+    testImplementation("${routeContractGroup}:routecontract-shardingsphere-5.5:${routeContractVersion}")
+    testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:5.5.3") {
+        exclude group: "org.locationtech.jts.io", module: "jts-io-common"
+    }
+
+    constraints {
+        testImplementation("org.apache.calcite:calcite-core:1.42.0") {
+            version { strictly "1.42.0" }
+        }
+        testImplementation("org.apache.calcite:calcite-linq4j:1.42.0") {
+            version { strictly "1.42.0" }
+        }
+    }
+}
 ```
 
 The published RouteContract artifact is a thin JAR. Its module-level
@@ -26,7 +41,9 @@ The published RouteContract artifact is a thin JAR. Its module-level
 version constraints, so the standalone consumer owns the alignment. The BOM
 resolves ShardingSphere's Jackson 2 core, databind, datatype-jdk8, and
 datatype-jsr310 compatibility modules to 2.18.9 in this verified Gradle test
-graph. In this verified runtime, the annotations artifact shared with Jackson 3
+graph. The strict constraints resolve Calcite Core and linq4j to 1.42.0; JTS
+Core 1.19.0 remains, while JTS I/O Common must be absent. In this verified
+runtime, the annotations artifact shared with Jackson 3
 resolves to 2.21. The BOM does not replace or downgrade RouteContract's separate
 `tools.jackson.core:jackson-core:3.1.5` product runtime.
 

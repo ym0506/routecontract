@@ -7,7 +7,9 @@ description = 'MySQL Testcontainers example and regression fixture for RouteCont
 dependencies {
     testImplementation project(':routecontract-shardingsphere-5.5')
     testImplementation platform("com.fasterxml.jackson:jackson-bom:${shardingSphereJacksonVersion}")
-    testImplementation "org.apache.shardingsphere:shardingsphere-jdbc:${shardingSphereVersion}"
+    testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:${shardingSphereVersion}") {
+        exclude group: 'org.locationtech.jts.io', module: 'jts-io-common'
+    }
     testRuntimeOnly "org.apache.shardingsphere:shardingsphere-infra-url-absolutepath:${shardingSphereVersion}"
     testRuntimeOnly "org.apache.shardingsphere:shardingsphere-infra-data-source-pool-hikari:${shardingSphereVersion}"
     testRuntimeOnly "org.apache.shardingsphere:shardingsphere-standalone-mode-repository-memory:${shardingSphereVersion}"
@@ -44,6 +46,14 @@ dependencies {
         }
         testImplementation("org.apache.commons:commons-compress:${commonsCompressVersion}") {
             because 'Testcontainers 1.21.4 requests a version with published denial-of-service advisories'
+        }
+        testImplementation('org.apache.calcite:calcite-core:1.42.0') {
+            version { strictly '1.42.0' }
+            because "Apache ShardingSphere 5.5.3 requests Calcite 1.40.0; align to the advisory-fixed 1.42.0 release verified by RouteContract's MySQL integration and standalone-consumer tests"
+        }
+        testImplementation('org.apache.calcite:calcite-linq4j:1.42.0') {
+            version { strictly '1.42.0' }
+            because "Apache ShardingSphere 5.5.3 requests Calcite 1.40.0; align to the advisory-fixed 1.42.0 release verified by RouteContract's MySQL integration and standalone-consumer tests"
         }
     }
 }

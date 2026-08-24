@@ -30,6 +30,10 @@ assert SPEC is not None and SPEC.loader is not None
 package_submission = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(package_submission)
 TEST_CURRENT_UTC = datetime(2026, 8, 14, 0, 0, 0, tzinfo=timezone.utc)
+MYSQL_CONTAINER_DIGEST = (
+    "b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb"
+)
+MYSQL_DOCUMENTATION_URL = "https://dev.mysql.com/doc/refman/8.4/en/preface.html"
 
 
 def digest(character: str = "a") -> str:
@@ -39,74 +43,35 @@ def digest(character: str = "a") -> str:
 def valid_license_reviews() -> list[dict[str, object]]:
     return [
         {
-            "action": "resolve or renew the OCI license review before expiry",
+            "action": (
+                "re-review immediately if the MySQL OCI digest, selected platform, "
+                "embedded LICENSE/INFO_SRC evidence, or test-container use boundary "
+                "changes; otherwise resolve, renew with new evidence, or remove the "
+                "MySQL OCI package-level license review before the 2026-12-05 expiry"
+            ),
             "componentName": "mysql",
             "componentVersion": "8.4.11",
-            "expires": "2099-01-01",
-            "owner": "test maintainers",
-            "purl": "pkg:oci/mysql@sha256%3A" + "b" * 64,
+            "expires": "2026-12-05",
+            "owner": "RouteContract maintainers",
+            "purl": (
+                "pkg:oci/mysql@sha256%3A"
+                f"{MYSQL_CONTAINER_DIGEST}?repository_url=registry-1.docker.io&tag=8.4.11"
+            ),
             "rationaleCode": "MYSQL_OCI_PACKAGE_LICENSE_CONCLUSION_INCOMPLETE",
-            "reviewedAt": "2026-08-13",
+            "reviewedAt": "2026-08-24",
             "scope": "test-container",
             "status": "manual-review-required",
         },
-        {
-            "action": "resolve the redistribution NOTICE review before expiry",
-            "componentName": "jts-io-common",
-            "componentVersion": "1.19.0",
-            "expires": "2099-01-01",
-            "owner": "test maintainers",
-            "purl": "pkg:maven/org.locationtech.jts.io/jts-io-common@1.19.0",
-            "rationaleCode": "JTS_IO_COMMON_REDISTRIBUTION_NOTICE_TREATMENT_UNCONFIRMED",
-            "reviewedAt": "2026-08-13",
-            "scope": "test-runtime",
-            "status": "manual-review-required",
-        },
     ]
 
 
-def valid_vulnerability_exceptions() -> list[dict[str, object]]:
-    coordinates = (
-        ("OSV-003", "GHSA-c2rv-hwqm-wjpg", "pkg:maven/org.apache.calcite/calcite-core@1.40.0", "1.42.0", "MODERATE"),
-    )
+def valid_policy_license_reviews() -> list[dict[str, object]]:
     return [
         {
-            "advisory": advisory,
-            "exceptionId": exception_id,
-            "expires": "2099-01-01",
-            "fixedVersion": fixed_version,
-            "owner": "test maintainers",
-            "purl": purl,
-            "rationaleCode": "SHARDINGSPHERE_5_5_3_TEST_GRAPH",
-            "reviewedAt": "2026-08-12",
-            "scope": "aggregate-test-only",
-            "severity": severity,
+            **valid_license_reviews()[0],
+            "documentationUrl": MYSQL_DOCUMENTATION_URL,
+            "sha256": MYSQL_CONTAINER_DIGEST,
         }
-        for exception_id, advisory, purl, fixed_version, severity in coordinates
-    ]
-
-
-def findings_for(exceptions: list[dict[str, object]]) -> list[dict[str, object]]:
-    return [
-        {
-            "action": "time-bounded reviewed exception; re-evaluate by expiry",
-            "advisory": item["advisory"],
-            "exceptionExpires": item["expires"],
-            "exceptionId": item["exceptionId"],
-            "fixedVersion": item["fixedVersion"],
-            "owner": item["owner"],
-            "purl": item["purl"],
-            "rationaleCode": item["rationaleCode"],
-            "reachabilityEvidence": {
-                "exampleProfile": True,
-                "publishedProfile": False,
-                "publishedRuntime": False,
-            },
-            "reviewedAt": item["reviewedAt"],
-            "scope": item["scope"],
-            "severity": item["severity"],
-        }
-        for item in exceptions
     ]
 
 
@@ -175,8 +140,8 @@ def valid_manifest() -> dict:
                 "schema_version": 1,
                 "source_path": "submission/video-caption-cues.json",
                 "source_sha256": (
-                    "19560225c18ca8156a13760e8412e464"
-                    "62383df5e80a92bc2dd7d4615a1f0158"
+                    "8bce0ad5761820aa1e0433a0e8442c35"
+                    "667e2aa9f0f7c3da725ce8ab904720b1"
                 ),
             },
         },
@@ -434,7 +399,8 @@ class SubmissionClaimTextTest(unittest.TestCase):
             "owner's source/provenance review",
             "published POM declares no direct JTS or Mahout dependency",
             "cannot contain a Maven parent or relocation",
-            "upstream metadata gap remains disclosed",
+            "JTS I/O Common is not a component of the verified graph",
+            "supply-chain gate forbids its exact Maven coordinate identity in the pinned producer profile",
         ):
             self.assertIn(required, normalized_third_party)
         for required in (
@@ -442,7 +408,7 @@ class SubmissionClaimTextTest(unittest.TestCase):
             "not a shipped-file inventory",
             "Javadoc classifier",
             "do not add them as runtime or direct dependency components",
-            "non-bundled distribution boundary is distinct from the unresolved upstream metadata gap",
+            "non-bundled distribution boundary remains a separate defense-in-depth check",
             "do not determine the semantic origin of renamed or copied source/class bytes",
             "reopens if those payload invariants change or a JTS/Mahout published dependency enters the release",
         ):
@@ -480,10 +446,10 @@ class SubmissionClaimTextTest(unittest.TestCase):
             "쉬운 한국어",
             "`submission/video-caption-cues.json`이 cue 시각·문구·분기의 유일한 원본",
             "generated/reference-only",
-            "JSON과 byte-for-byte 같아야 한다",
+            "JSON의 cue 문구·시각·분기와 의미상 정확히 일치해야 한다",
             "RouteContract는 JDBC 실행 기록을",
-            "ShardingSphere의 기능 결과는 같아도",
-            "관측된 실행 시도는 1회→2회",
+            "실제 MySQL 검증을 실행 중입니다",
+            "결과가 나오면 기록 차이를 확인합니다",
             "방금 실행한 실제 MySQL 결과입니다",
             "CI에 연결하면 exit 1",
             "승인 기록은 자동으로 바뀌지 않습니다",
@@ -495,6 +461,13 @@ class SubmissionClaimTextTest(unittest.TestCase):
             "실제 PR을 막았다고 말하지 않는다",
             "machine-readable test/verifier 출력에서 실제로 일치한",
             "고정 요약문은 출력하지",
+            "--final-recording",
+            "ROUTECONTRACT_FINAL_COMMIT",
+            "ROUTECONTRACT_FINAL_TREE",
+            "ROUTECONTRACT_FINAL_ORIGIN",
+            "ROUTECONTRACT_FINAL_TAG",
+            "video_recording_preflight status=VERIFIED",
+            "현재 checkout에서 계산하지 않는다",
             "ROUTECONTRACT_MANIFEST_DEMO businessResult=UNCHANGED",
             "ROUTECONTRACT_FILE_CI_DEMO approvedAttempts=1 candidateAttempts=2",
             "ROUTECONTRACT_FINGERPRINT_DRIFT_DEMO businessResult=UNCHANGED",
@@ -519,6 +492,8 @@ class SubmissionClaimTextTest(unittest.TestCase):
             "Tab 자동완성",
             "선택한 분기의 결정적 공개 화면 하나",
             "같은 화면에서 8초 동안",
+            "남은 최대 2초도 같은 final source 화면",
+            "재생시간이 2:53~2:55",
         ):
             self.assertIn(required, storyboard)
 
@@ -539,6 +514,8 @@ class SubmissionClaimTextTest(unittest.TestCase):
             "Maven Central",
             "Apache ShardingSphere PR #39535",
             "Task A",
+            "JSON과 byte-for-byte 같아야 한다",
+            "재생시간이 2:50~2:55",
         ):
             self.assertNotIn(stale_visual_or_claim, storyboard)
 
@@ -584,11 +561,17 @@ class SubmissionClaimTextTest(unittest.TestCase):
             "## 1:00–1:22 — 실제 공개 Release와 실제 사용 source", 1
         )[0]
         self.assertIn("0:46.000–0:51.000", ci_section)
+        self.assertIn("./scripts/video-demo-session.sh --final-recording ci", ci_section)
         self.assertIn("0:51.000–0:54.000", ci_section)
         self.assertIn("0:58.000", ci_section)
         self.assertIn("이 구간에는 source나 다른 화면을 끼우지 않는다", ci_section)
         self.assertIn("0:12–0:46에서 이미 보여 줬으므로 반복하지 않는다", ci_section)
         self.assertNotIn("**바로 이어지는 실제 source 화면:**", ci_section)
+
+        self.assertEqual(
+            3,
+            storyboard.count("./scripts/video-demo-session.sh --final-recording"),
+        )
 
         stable_section = storyboard.split(
             "## 2:07–2:25 — 실제 공개 GitHub 화면에서 안정판 증거 확인", 1
@@ -601,6 +584,8 @@ class SubmissionClaimTextTest(unittest.TestCase):
             "같은 final SHA의 main-push `Java 17 / MySQL integration / SBOM` success",
             "logged-out GitHub commit page",
             "merge PR의 Checks tab",
+            "ruleset-required `Java 17 / MySQL integration / SBOM`과\n"
+            "   `Dependency review` 두 check 이름 및 PASS 상태",
             "final main-push Actions run으로",
             "PR-only라 main push 증거로 세지 않는다",
             "2:07.000–2:15.000 (8초 dwell)",
@@ -613,6 +598,7 @@ class SubmissionClaimTextTest(unittest.TestCase):
             "별도 요약 화면에 옮겨 적지 않는다",
         ):
             self.assertIn(required, stable_section)
+        self.assertNotIn("check 이름 네 개", stable_section)
         for duplicated_release_proof in (
             "exact tag SHA의 successful `Release evidence` run",
             "immutable Release의 JAR·sources·Javadoc·POM·SBOM·`SHA256SUMS`",
@@ -637,7 +623,7 @@ class SubmissionClaimTextTest(unittest.TestCase):
         )
         expected_rows = [
             ("공통", "0:00.500", "0:05.200", "RouteContract는 JDBC 실행 기록을", "승인본과 비교합니다"),
-            ("공통", "0:05.700", "0:11.500", "ShardingSphere의 기능 결과는 같아도", "관측된 실행 시도는 1회→2회"),
+            ("공통", "0:05.700", "0:11.500", "실제 MySQL 검증을 실행 중입니다", "결과가 나오면 기록 차이를 확인합니다"),
             ("공통", "0:12.500", "0:19.000", "방금 실행한 실제 MySQL 결과입니다", "명령과 종료 상태를 함께 봅니다"),
             ("공통", "0:19.500", "0:27.000", "승인된 기록은 실행 한 번입니다", "변경된 기록은 두 번입니다"),
             ("공통", "0:27.500", "0:35.000", "기능 결과는 그대로 한 행입니다", "달라진 것은 내부 실행 모습입니다"),
@@ -666,6 +652,10 @@ class SubmissionClaimTextTest(unittest.TestCase):
         self.assertEqual(23, sum(branch == "공통" for branch, *_ in caption_rows))
         self.assertEqual(1, sum(branch == "zero" for branch, *_ in caption_rows))
         self.assertEqual(1, sum(branch == "rc_only" for branch, *_ in caption_rows))
+        early_process_cue = caption_rows[1]
+        self.assertEqual(("0:05.700", "0:11.500"), early_process_cue[1:3])
+        self.assertNotIn("1→2", "".join(early_process_cue[3:]))
+        self.assertNotIn("관측된", "".join(early_process_cue[3:]))
 
         for branch, start_text, end_text, line_one, line_two in caption_rows:
             with self.subTest(branch=branch, start=start_text, text=line_one):
@@ -755,7 +745,7 @@ class SubmissionClaimTextTest(unittest.TestCase):
         for required in (
             "at least 1920x1080",
             "exactly zero audio",
-            "170 through 175 seconds inclusive",
+            "173 through 175 seconds inclusive",
             "at least 20 decoded frames per second on average",
             "a complete selected-stream decode",
             "post-decode file-hash recheck",
@@ -767,6 +757,8 @@ class SubmissionClaimTextTest(unittest.TestCase):
             "owner must still watch the checksummed local file",
             "`ffmpeg` for a full decode",
             "download the entire public video",
+            "`--final-recording`",
+            "exact sealed commit, tree, canonical origin and annotated stable tag",
         ):
             self.assertIn(required, readme)
         for required in (
@@ -862,6 +854,19 @@ class SubmissionClaimTextTest(unittest.TestCase):
             for block in re.findall(r"```groovy\n(.*?)```", readme, re.DOTALL):
                 if "routecontract-shardingsphere-5.5:0.1.0" not in block:
                     continue
+                self.assertIn(
+                    'exclude group: "org.locationtech.jts.io", module: "jts-io-common"',
+                    block,
+                )
+                self.assertEqual(2, block.count('version { strictly "1.42.0" }'))
+                self.assertIn(
+                    'testImplementation("org.apache.calcite:calcite-core:1.42.0")',
+                    block,
+                )
+                self.assertIn(
+                    'testImplementation("org.apache.calcite:calcite-linq4j:1.42.0")',
+                    block,
+                )
                 self.assertLess(block.index("jackson-bom:2.18.9"), block.index(driver_coordinate))
                 self.assertLess(
                     block.index(driver_coordinate),
@@ -1143,7 +1148,7 @@ class SubmissionClaimTextTest(unittest.TestCase):
             for line in section.splitlines()
             if line.startswith("| 오픈소스SW 적절성 |")
         )
-        self.assertIn("owner license/NOTICE", oss_row)
+        self.assertIn("one unresolved MySQL OCI owner review", oss_row)
         self.assertNotIn("external consumption", oss_row)
 
     def test_independent_rc_protocol_uses_twelve_asset_supply_chain_contract(self) -> None:
@@ -1567,7 +1572,7 @@ class ReportExternalEvidenceContractTest(unittest.TestCase):
             ("PRIVATECANARY Cafe\u0301", "COMBINING_OR_ENCLOSING_MARK"),
         )
         with tempfile.TemporaryDirectory() as raw:
-            root = Path(raw)
+            root = Path(raw).resolve()
             template = root / "template.docx"
             template.write_bytes(b"not reached")
             for index, (value, category) in enumerate(cases):
@@ -1672,7 +1677,7 @@ class ReportExternalEvidenceContractTest(unittest.TestCase):
             self.assertNotIn("canary-secret-value", str(caught.exception))
 
         with tempfile.TemporaryDirectory() as raw:
-            root = Path(raw)
+            root = Path(raw).resolve()
             manifest = root / "manifest.json"
             manifest_value = valid_manifest()
             manifest_value["submission_identity"]["team_name"] = marker
@@ -1726,7 +1731,7 @@ class ReportExternalEvidenceContractTest(unittest.TestCase):
         self.assertNotIn("builder-canary-secret", str(caught.exception))
 
         with tempfile.TemporaryDirectory() as raw:
-            root = Path(raw)
+            root = Path(raw).resolve()
             content = valid_report_content("zero")
             content["metadata"]["team_name"] = marker
             content_path = root / "report-content.json"
@@ -1758,7 +1763,7 @@ class ReportExternalEvidenceContractTest(unittest.TestCase):
     def test_report_builder_strict_final_rejects_normalized_evidence_ids(self) -> None:
         markers = ("E09", "e09", "Ｅ０９", "Ｅ09", "E０9", "E\u200b09")
         with tempfile.TemporaryDirectory() as raw:
-            root = Path(raw)
+            root = Path(raw).resolve()
             template = root / "template.docx"
             template.write_bytes(b"not reached")
             for index, marker in enumerate(markers):
@@ -1844,7 +1849,7 @@ class ReportExternalEvidenceContractTest(unittest.TestCase):
                 self.assertNotIn("PRIVATECANARYSECRETXYZ", str(caught.exception))
 
             with tempfile.TemporaryDirectory() as raw:
-                root = Path(raw)
+                root = Path(raw).resolve()
                 manifest_path = root / "manifest.json"
                 manifest = valid_manifest()
                 manifest["submission_identity"]["team_name"] = marker
@@ -1933,7 +1938,7 @@ class ReportExternalEvidenceContractTest(unittest.TestCase):
             self.assertNotIn(canary, str(caught.exception))
 
         with tempfile.TemporaryDirectory() as raw:
-            root = Path(raw)
+            root = Path(raw).resolve()
             content = valid_report_content("zero")
             content[canary] = True
             content_path = root / "report-content.json"
@@ -2572,7 +2577,7 @@ module._decode_activation_record(payload, url, 'record.json')
             b"\xff",
         )
         with tempfile.TemporaryDirectory() as raw_root:
-            root = Path(raw_root)
+            root = Path(raw_root).resolve()
             path = root / "input.json"
             for raw in malformed:
                 path.write_bytes(raw)
@@ -2675,7 +2680,7 @@ module._decode_activation_record(payload, url, 'record.json')
     def test_private_and_supply_loader_cli_errors_never_echo_values(self) -> None:
         canary = "CANARY_PRIVATE_DUPLICATE_KEY"
         with tempfile.TemporaryDirectory() as raw_root:
-            root = Path(raw_root)
+            root = Path(raw_root).resolve()
             path = root / "input.json"
             path.write_text(
                 '{"' + canary + '":1,"' + canary + '":2}', encoding="utf-8"
@@ -5419,25 +5424,17 @@ class ManifestTest(unittest.TestCase):
             package_submission.validate_submission_deadline(at_deadline)
 
     def test_video_duration_window_and_caption_end_are_inclusive(self) -> None:
-        for duration in (172.5, 175.0):
+        for duration in (173.0, 175.0):
             manifest = valid_manifest()
             manifest["video"]["duration_seconds"] = duration
             with self.subTest(duration=duration):
                 package_submission.validate_manifest(manifest)
 
-        for duration in (169.9, 175.1):
+        for duration in (172.999, 175.1):
             manifest = valid_manifest()
             manifest["video"]["duration_seconds"] = duration
             with self.subTest(duration=duration), self.assertRaisesRegex(
-                package_submission.GateError, "170 through 175 seconds inclusive"
-            ):
-                package_submission.validate_manifest(manifest)
-
-        for duration in (170.0, 172.499):
-            manifest = valid_manifest()
-            manifest["video"]["duration_seconds"] = duration
-            with self.subTest(duration=duration), self.assertRaisesRegex(
-                package_submission.GateError, "selected caption branch's final cue"
+                package_submission.GateError, "173 through 175 seconds inclusive"
             ):
                 package_submission.validate_manifest(manifest)
 
@@ -6057,14 +6054,14 @@ class LocalVideoEvidenceTest(unittest.TestCase):
                 "local_video_metadata",
                 return_value={"duration_seconds": 175.1},
             ), self.assertRaisesRegex(
-                package_submission.GateError, "170 through 175 seconds inclusive"
+                package_submission.GateError, "173 through 175 seconds inclusive"
             ):
                 package_submission.validate_local_video(video, manifest)
 
             with patch.object(
                 package_submission,
                 "local_video_metadata",
-                return_value={"duration_seconds": 172.6},
+                return_value={"duration_seconds": 173.2},
             ), self.assertRaisesRegex(package_submission.GateError, "differs from manifest"):
                 package_submission.validate_local_video(video, manifest)
 
@@ -6074,7 +6071,7 @@ class LocalVideoEvidenceTest(unittest.TestCase):
             video.write_bytes(b"final video fixture")
             expected_hash = hashlib.sha256(video.read_bytes()).hexdigest()
 
-            for duration in (172.5, 175.0):
+            for duration in (173.0, 175.0):
                 manifest = package_submission.validate_manifest(valid_manifest())
                 manifest["video"]["duration_seconds"] = duration
                 manifest["video"]["local_file_sha256"] = expected_hash
@@ -6097,7 +6094,7 @@ class LocalVideoEvidenceTest(unittest.TestCase):
                 ):
                     package_submission.validate_local_video(video, manifest)
 
-            for duration in (169.9, 175.1):
+            for duration in (172.999, 175.1):
                 manifest = package_submission.validate_manifest(valid_manifest())
                 manifest["video"]["duration_seconds"] = duration
                 manifest["video"]["local_file_sha256"] = expected_hash
@@ -6107,21 +6104,7 @@ class LocalVideoEvidenceTest(unittest.TestCase):
                     return_value={"duration_seconds": duration},
                 ), self.assertRaisesRegex(
                     package_submission.GateError,
-                    "170 through 175 seconds inclusive",
-                ):
-                    package_submission.validate_local_video(video, manifest)
-
-            for duration in (170.0, 172.499):
-                manifest = package_submission.validate_manifest(valid_manifest())
-                manifest["video"]["duration_seconds"] = duration
-                manifest["video"]["local_file_sha256"] = expected_hash
-                with self.subTest(duration=duration), patch.object(
-                    package_submission,
-                    "local_video_metadata",
-                    return_value={"duration_seconds": duration},
-                ), self.assertRaisesRegex(
-                    package_submission.GateError,
-                    "selected caption branch's final cue",
+                    "173 through 175 seconds inclusive",
                 ):
                     package_submission.validate_local_video(video, manifest)
 
@@ -7241,7 +7224,7 @@ class ReportContractTest(unittest.TestCase):
         self.assertNotIn(canary, str(caught.exception))
 
         with tempfile.TemporaryDirectory() as raw:
-            path = Path(raw) / "links.docx"
+            path = Path(raw).resolve() / "links.docx"
             document = (
                 '<?xml version="1.0" encoding="UTF-8"?>'
                 '<w:document xmlns:w="http://schemas.openxmlformats.org/'
@@ -7603,10 +7586,14 @@ class ReportContentSbomTest(unittest.TestCase):
         )
         evidence = evidence_row["text"]
         self.assertIn("SQLExecutionHook SPI", evidence)
-        self.assertIn("JAR build에는 shading 설정이 없다", evidence)
-        self.assertIn("부재나 의미적 출처를 증명하지 않는다", evidence)
+        self.assertIn(
+            "RouteContract build는 dependency shading/embedding을 구성하지 않으며",
+            evidence,
+        )
+        self.assertIn("이름 변경·복사 바이트 부재나 의미적 출처를 증명하지 않고", evidence)
         self.assertIn("SBOM·lock·checksum·NOTICE", evidence)
         self.assertIn("runtime POM에 없다", evidence)
+        self.assertIn("preflight도 전체 graph 증명이 아니다", evidence)
 
         application_result = next(
             row["text"]
@@ -7769,40 +7756,85 @@ class ReportContentSbomTest(unittest.TestCase):
         )
         self.assertEqual("사용자·검출 공백", content["background"][0]["lead"])
         self.assertEqual(
-            "기능 테스트는 같은 한 행으로 통과했지만 실제 MySQL의 SQLExecutionHook이 "
-            "보고한 물리 JDBC 실행 시도·data source는 1→2였다. 이를 성능 결함으로 "
-            "단정하지 않고 merge 전 검토 대상으로 만든다. 대상은 ShardingSphere-JDBC "
-            "5.5.3 Java 팀, 증거는 저장소 MySQL fixture다. "
-            "지연·부하·비용은 측정하지 않았다.",
+            "한 행이 같아도 SQLExecutionHook이 보고한 물리 JDBC 실행 시도는 달라질 "
+            "수 있다. 성능 결함으로 단정하지 않고 merge 전 검토 대상으로 삼는다.",
             content["background"][0]["text"],
         )
         self.assertEqual("검증된 효과", content["background"][1]["lead"])
         self.assertEqual(
+            "같은 MySQL 행의 시도·data source 1→2는 RCM201·RCM202로 검출했다. "
+            "시도 수·alias·outcome이 같은 structural signature 변화는 strict "
+            "policy에서 RCM301·RCM302로 차단했다. 승인본은 자동 갱신하지 않는다.",
+            content["background"][1]["text"],
+        )
+        self.assertEqual("해결 방식", content["background"][2]["lead"])
+        self.assertEqual("공개 문제 근거", content["background"][3]["lead"])
+        self.assertEqual(
             [
                 {
                     "lead": "한 문장 소개",
-                    "text": "ShardingSphere-JDBC는 한 SQL을 여러 DB로 나눠 실행할 수 "
-                    "있다. RouteContract는 기능 결과가 같아도 보고된 JDBC 실행 구조가 "
-                    "승인본과 달라지면 CI에서 검토·차단하는 Java 테스트 라이브러리다.",
+                    "text": "ShardingSphere-JDBC는 규칙에 따라 한 논리 SQL을 하나 이상의 "
+                    "data source로 라우팅·재작성할 수 있는 JDBC 계층 Java framework다. "
+                    "기능 결과가 같아도 실행 변화가 숨을 수 있고, 실제 MySQL 한 "
+                    "행에서도 보고된 JDBC 실행 시도·data source가 1→2였다. "
+                    "RouteContract는 새 기록(candidate)을 승인본(approved)과 비교해 "
+                    "CI에서 검토·차단하며, 범위는 5.5.3 Java 통합 테스트다.",
                 }
             ],
             content["project_intro"],
         )
         self.assertNotIn("SQLExecutionHook", content["project_intro"][0]["text"])
-        self.assertNotIn("5.5.3", content["project_intro"][0]["text"])
+        intro = content["project_intro"][0]["text"]
         self.assertIn(
-            "보고된 JDBC 실행 구조",
-            content["project_intro"][0]["text"],
+            "규칙에 따라 한 논리 SQL을 하나 이상의 data source로 라우팅·재작성할 수 "
+            "있는 JDBC 계층 Java framework",
+            intro,
+        )
+        self.assertEqual(1, intro.count("candidate"))
+        self.assertEqual(1, intro.count("approved"))
+        first_page_order = (
+            "기능 결과가 같아도 실행 변화가 숨을 수",
+            "실제 MySQL 한 행에서도 보고된 JDBC 실행 시도·data source가 1→2",
+            "새 기록(candidate)을 승인본(approved)과 비교",
+            "범위는 5.5.3 Java 통합 테스트",
+        )
+        self.assertEqual(
+            sorted(intro.index(marker) for marker in first_page_order),
+            [intro.index(marker) for marker in first_page_order],
         )
         for boundary_text in (
             content["background"][0]["text"],
-            content["background"][2]["text"],
             content["features"][0]["text"],
+            next(
+                row["text"]
+                for row in content["effects"]
+                if row["lead"] == "재현한 적용 결과"
+            ),
         ):
             self.assertIn(
                 "SQLExecutionHook이 보고한 물리 JDBC 실행 시도",
                 boundary_text,
             )
+        self.assertIn("callback", content["background"][2]["text"])
+        self.assertIn("승인본", content["background"][2]["text"])
+        architecture_flow = content["architecture"][0]["text"]
+        self.assertEqual(
+            "API 역할: capture(operationId)→SQLExecutionHook callback의 raw-name "
+            "RouteSnapshot; ObservedExecutionManifest.from(..., "
+            "ManifestPolicy.strict(...))→검토 alias 새 기록; "
+            "ManifestStore.writeCandidate→파일; RouteAssertions→snapshot 직접 검증; "
+            "ManifestVerifier.verify→승인본 비교 결과; "
+            "ManifestAssertions.assertMatched→CI 차단. diff·RCM code는 결정적·stable이며 "
+            "SQL 의미 동치는 판단하지 않는다.",
+            architecture_flow,
+        )
+        operation_contract = content["features"][0]["text"]
+        self.assertEqual(
+            "capture는 SQLExecutionHook이 보고한 물리 JDBC 실행 시도를 raw-name "
+            "RouteSnapshot으로 모으고, RouteAssertions가 시도 수·data-source·완전성·"
+            "failure를 operation별 직접 검증한다.",
+            operation_contract,
+        )
         serialized = json.dumps(content, ensure_ascii=False)
         for contradiction in (
             "complete route plan을 증명",
@@ -7817,21 +7849,21 @@ class ReportContentSbomTest(unittest.TestCase):
             row["text"] for row in content["architecture"] if row["lead"] == "정보 경계"
         )
         self.assertEqual(
-            "원문 SQL·bind 값·connection property·exception message는 저장하지 않는다. "
-            "실제 data-source 이름은 메모리에 남고 manifest에서만 alias로 바꾼다. "
-            "operationId·Java type·unsalted SQL fingerprint도 남는다. 비민감 식별자를 "
-            "쓰고 snapshot을 외부 로그로 내보내지 않는다. 최소화는 익명화가 아니다.",
+            "미저장: 원문 SQL·bind 값·connection property·exception message. "
+            "data-source 실명은 메모리에, alias는 manifest에만 둔다. operationId·Java "
+            "type·unsalted SQL fingerprint는 남는다. 비민감 ID를 쓰고 외부 로그에 "
+            "내보내지 않는다. 최소화는 익명화가 아니다.",
             information,
         )
         for required in (
-            "실제 data-source 이름은 메모리에 남고",
+            "data-source 실명은 메모리에",
             "operationId",
-            "manifest에서만 alias",
+            "alias는 manifest에만",
             "Java type",
             "unsalted SQL fingerprint",
             "최소화는 익명화가 아니다",
             "원문 SQL·bind 값",
-            "외부 로그로 내보내지 않는다",
+            "외부 로그에 내보내지 않는다",
         ):
             self.assertIn(required, information)
 
@@ -7839,10 +7871,10 @@ class ReportContentSbomTest(unittest.TestCase):
             row["text"] for row in content["environment"] if row["lead"] == "개발 보조 AI"
         )
         self.assertEqual(
-            "OpenAI ChatGPT·Codex를 조사·설계·구현·테스트·문서(소감 초안 포함)·local "
-            "command 보조에 사용하고 AI_ASSISTANCE.md에 공개했다. 참가자는 최종 "
-            "diff·재현 테스트·소감 사실을 검토해 사실인 attestation만 true로 "
-            "둔다. AI 출력은 증거가 아니며 runtime에는 AI 모델·데이터셋·외부 AI API가 없다.",
+            "OpenAI ChatGPT·Codex를 조사·설계·구현·테스트·문서(소감 초안)·local "
+            "command에 썼다(AI_ASSISTANCE.md). 참가자가 최종 diff·재현 테스트·소감의 "
+            "사실성을 확인하고 사실인 attestation만 둔다. AI 출력은 증거가 아니고 "
+            "runtime에는 AI 모델·데이터셋·외부 AI API가 없다.",
             ai_scope,
         )
         self.assertIn(package_submission.NO_RUNTIME_AI_DISCLOSURE, ai_scope)
@@ -7855,8 +7887,8 @@ class ReportContentSbomTest(unittest.TestCase):
         )
         self.assertEqual(
             "Gradle Wrapper 8.14.4, JUnit Jupiter 5.14.3, Testcontainers 1.21.4, "
-            "Docker. 라이브러리는 Apache-2.0이며 CycloneDX 1.6 JSON/XML SBOM을 "
-            "생성하고 dependency lock·checksum 검증을 수행한다.",
+            "Docker를 쓴다. RouteContract는 Apache-2.0이며 CycloneDX 1.6 JSON/XML "
+            "SBOM, dependency lock·checksum을 검증한다.",
             build_validation,
         )
 
@@ -7866,9 +7898,9 @@ class ReportContentSbomTest(unittest.TestCase):
             if row["lead"] == "5. 재현과 패키징"
         )
         self.assertEqual(
-            "개발은 hook lifecycle 계약→실패경로 단위 테스트→MySQL corpus→"
-            "결정성·격리→standalone consumer→release gate 순이었다. "
-            "clean check·assemble·SBOM으로 52 tests와 배포물을 검증했다. "
+            "개발: hook lifecycle→실패경로 테스트→MySQL corpus→결정성·격리→"
+            "standalone consumer→release gate. clean check·assemble·SBOM으로 52 tests와 "
+            "배포물을 검증했다. "
             "[[PUBLIC_CI_RUN_URL_REQUIRED_BEFORE_SUBMISSION]]",
             development_process,
         )
@@ -7879,21 +7911,19 @@ class ReportContentSbomTest(unittest.TestCase):
             if row["lead"] == "stable 배포 후 4단계 적용 흐름"
         )
         self.assertEqual(
-            "stable Release 공개 후 package gate로 exact tag·checksum·attestation을 "
-            "확인하고 ① 설치 ② v0.1 Java 테스트의 application operation을 "
-            "capture(operationId)로 감싸 candidate 생성 ③ 사람이 approved diff 검토·승인 "
-            "④ strict CI 순으로 적용한다. candidate는 "
-            "approved를 자동 갱신하지 않는다.",
+            "stable Release 공개 뒤 package gate로 tag·checksum·attestation을 확인한다. "
+            "① 설치 ② v0.1 Java 테스트에서 raw-name snapshot 생성·직접 검증 ③ 검토 "
+            "alias의 새 기록을 별도 파일로 써 사람이 승인본 diff를 검토·승인 ④ strict "
+            "policy 비교 결과를 assertion해 CI 차단. 승인본은 자동 갱신하지 않는다.",
             development_effect,
         )
         self.assertIn("package gate", development_effect)
-        self.assertIn("stable Release 공개 후", development_effect)
+        self.assertIn("stable Release 공개 뒤", development_effect)
         self.assertIn("① 설치", development_effect)
         self.assertIn("② v0.1 Java 테스트", development_effect)
-        self.assertIn("application operation", development_effect)
-        self.assertIn("capture(operationId)", development_effect)
-        self.assertIn("③ 사람이 approved diff 검토·승인", development_effect)
-        self.assertIn("④ strict CI", development_effect)
+        self.assertIn("raw-name snapshot 생성·직접 검증", development_effect)
+        self.assertIn("사람이 승인본 diff를 검토·승인", development_effect)
+        self.assertIn("strict policy 비교 결과를 assertion해 CI 차단", development_effect)
         self.assertNotIn("의도한 baseline 변경", development_effect)
 
         reproducible_application = next(
@@ -7902,32 +7932,40 @@ class ReportContentSbomTest(unittest.TestCase):
             if row["lead"] == "재현한 적용 결과"
         )
         self.assertEqual(
-            "동일 MySQL 한 행 assertion은 통과했지만 SQLExecutionHook이 보고한 "
-            "물리 JDBC 실행 시도·data source 1→2를 RCM201·RCM202/non-zero exit으로 "
-            "검출해 quickstart로 재현한다. same-checkout standalone consumer는 JAR "
-            "SPI·MySQL 1건만 확인하므로 1→2 재현·독립 외부 설치·채택 증거가 아니다. 외부 결과는 "
-            "cutoff 공개 사실만 보고한다.",
+            "quickstart는 MySQL 한 행 통과와 SQLExecutionHook이 보고한 물리 JDBC "
+            "실행 시도·data source 1→2·RCM201·RCM202를 함께 재현한다. same-checkout "
+            "standalone consumer의 JAR SPI·MySQL 1건은 1→2·독립 외부 설치·채택 "
+            "증거가 아니다. 외부 결과는 cutoff 공개 사실만 보고한다.",
             reproducible_application,
         )
+
+        quickstart = next(
+            row["text"] for row in content["features"] if row["lead"] == "시연"
+        )
+        for exit_boundary in (
+            "real-MySQL child 0",
+            "intentional CI child 1",
+            "quickstart wrapper 0",
+        ):
+            self.assertIn(exit_boundary, quickstart)
+            self.assertNotIn(exit_boundary, reproducible_application)
 
         application_boundary = next(
             row["text"] for row in content["effects"] if row["lead"] == "활용 경계"
         )
         self.assertEqual(
-            "지원 범위에서 SQLExecutionHook이 보고한 물리 JDBC 실행 시도를 "
-            "review·CI 계약으로 만든다. complete route plan·transaction commit·business "
-            "success·성능을 증명하지 않는다. caller-supplied target universe 없이는 "
-            "full-route detection을 주장하지 않는다. 기대 효과는 승인본과 다른 구조의 "
-            "merge 전 노출이며 성능·비용 개선 보장은 없다. 공개 수요+fixture+"
-            "real-MySQL CI를 gate로 확장한다. "
-            "현재는 5.5.3/MySQL 8.4.11이다.",
+            "complete route plan·transaction commit·business success·성능, "
+            "caller-supplied target universe 없는 full-route detection은 증명하지 않는다. "
+            "승인본과 다른 구조를 merge 전에 드러내지만 성능·비용 개선은 보장하지 "
+            "않는다. 확장은 공개 수요·fixture·real-MySQL CI 뒤, 현재 범위는 "
+            "5.5.3/MySQL 8.4.11이다.",
             application_boundary,
         )
         for required in (
-            "SQLExecutionHook이 보고한 물리 JDBC 실행 시도",
-            "review·CI 계약",
-            "complete route plan·transaction commit·business success·성능을 증명하지 않는다",
-            "caller-supplied target universe 없이는 full-route detection을 주장하지 않는다",
+            "complete route plan·transaction commit·business success·성능",
+            "caller-supplied target universe 없는 full-route detection은 증명하지 않는다",
+            "성능·비용 개선은 보장하지 않는다",
+            "현재 범위는 5.5.3/MySQL 8.4.11",
         ):
             self.assertIn(required, application_boundary)
 
@@ -7937,9 +7975,9 @@ class ReportContentSbomTest(unittest.TestCase):
             if row["lead"] == "품질관리·발전 로드맵"
         )
         self.assertEqual(
-            "Issue #5→PR #6에서 Ubuntu CI checksum을 고쳐 Dependency Review·build를 "
-            "통과시켰다. 1인이 Issue·PR·CI로 관리한다. 설치·문서→adapter·reporter 순이며 "
-            "확장은 공개 수요+fixture+real-MySQL CI 뒤 한다. 외부 결과는 링크로만 "
+            "Ubuntu CI checksum 수정(Issue #5→PR #6)으로 Dependency Review·build를 "
+            "통과시켰다. 1인이 Issue·PR·CI를 관리한다. 공개 수요·fixture·real-MySQL "
+            "CI 뒤 설치·문서→adapter·reporter 순으로 확장한다. 외부 결과는 링크로만 "
             "보고한다.",
             community,
         )
@@ -7972,10 +8010,10 @@ class ReportContentSbomTest(unittest.TestCase):
             row["text"] for row in content["other"] if row["lead"] == "차별성"
         )
         self.assertEqual(
-            "5.5.3 SQLExecutionHook이 보고한 물리 JDBC 시도를 operation별 최소 manifest→"
-            "사람 승인→결정적 diff→RCM code→CI로 잇는다. 관측 도구를 대체하지 않으며 "
-            "datasource-proxy도 data source 연결·상관관계·canonicalization·diff·assertion을 더하면 유사 "
-            "검사가 가능하다.",
+            "SQLExecutionHook이 보고한 물리 JDBC 실행 시도를 operation별 최소 "
+            "기록→승인→결정적 diff→RCM code→CI로 잇는다. 관측 도구는 대체하지 않는다. "
+            "datasource-proxy도 data source·상관관계·정규화·diff·assertion을 더하면 "
+            "유사 검사할 수 있다.",
             differentiation,
         )
 
@@ -7985,11 +8023,11 @@ class ReportContentSbomTest(unittest.TestCase):
             if row["lead"] == "오픈소스SW 조합"
         )
         self.assertEqual(
-            "5.5.3 SQLExecutionHook SPI를 MySQL 8.4.11로 검증했다. JAR "
-            "build에는 shading 설정이 없다. path·POM 검사는 renamed/copied bytes 부재나 "
-            "의미적 출처를 증명하지 않는다. SBOM·lock·checksum·NOTICE로 추적한다. "
-            "test-only datasource-proxy는 runtime POM에 없다. preflight는 전체 graph "
-            "증명이 아니다.",
+            "ShardingSphere 5.5.3 SQLExecutionHook SPI를 MySQL 8.4.11로 검증했다. "
+            "RouteContract build는 dependency shading/embedding을 구성하지 않으며 "
+            "test-only datasource-proxy는 runtime POM에 없다. SBOM·lock·checksum·"
+            "NOTICE로 추적한다. path·POM은 이름 변경·복사 바이트 부재나 의미적 출처를 "
+            "증명하지 않고, preflight도 전체 graph 증명이 아니다.",
             evidence,
         )
 
@@ -7997,8 +8035,8 @@ class ReportContentSbomTest(unittest.TestCase):
             row["text"] for row in content["other"] if row["lead"] == "선행 작업 경계"
         )
         self.assertEqual(
-            "참가자 선언: ShardLens의 미구현 Route Guard 설계를 바탕으로 RouteContract "
-            "라이브러리·manifest/diff·MySQL corpus·설치/CI를 새로 구현했고 애플리케이션 "
+            "참가자 선언: ShardLens의 미구현 Route Guard 설계에서 출발해 RouteContract "
+            "라이브러리·기록/diff·MySQL 사례·설치/CI를 새로 구현했고 애플리케이션 "
             "코드는 복사하지 않았다(ORIGIN_AND_PRIOR_WORK.md). 독립 증명은 아니다.",
             prior_work,
         )
@@ -8007,10 +8045,11 @@ class ReportContentSbomTest(unittest.TestCase):
             row["text"] for row in content["other"] if row["lead"] == "현재 한계"
         )
         self.assertEqual(
-            "5.5.3 정상 반환·비-interrupt 동기식 non-batch PreparedStatement만 지원한다. "
+            "지원: 5.5.3 정상 반환·비-interrupt 동기식 non-batch PreparedStatement. 제외: "
             "Proxy·reactive·@Async·SQL Federation·route/table plan·commit·business "
-            "success는 제외한다. test/example graph의 calcite-core 1.40.0 advisory는 "
-            "2026-08-27까지 검토 예외이며 SBOM은 법률 검토가 아니다.",
+            "success. test/example은 Calcite Core·linq4j 1.42.0 고정, JTS I/O Common "
+            "제외, JTS Core 유지. 시점 고정 OSV finding 0건·정책 취약점 예외 0건은 "
+            "무취약 보장이 아니며 SBOM도 법률 검토가 아니다.",
             limitations,
         )
         license_disposition = next(
@@ -8019,9 +8058,13 @@ class ReportContentSbomTest(unittest.TestCase):
             if row["lead"] == "라이선스 검토 상태"
         )
         self.assertEqual(
-            "[[LICENSE_REVIEW_DISPOSITION: owner가 JTS/Mahout 비번들 배포경계와 MySQL "
-            "OCI manual-review-required 유지 여부를 1차 자료·최종 payload 재검증 뒤 "
-            "사실대로 작성]]",
+            "[[LICENSE_REVIEW_DISPOSITION: owner가 2026-08-24에 MySQL OCI index와 "
+            "선택 플랫폼 manifest, embedded LICENSE/INFO_SRC, 공식 attestation 근거를 "
+            "직접 확인했고 expires=2026-12-05로 갱신한 사실을 작성. licenses를 "
+            "생략한 test-container 범위의 package-level manual-review-required 1건을 "
+            "unresolved로 보고하며, digest·platform·embedded evidence·사용 경계 변경 시 "
+            "즉시 재검토한다고 명시. 이는 법률 자문·법적 적합성 승인·image-wide "
+            "license 결론이 아님]]",
             license_disposition,
         )
 
@@ -8194,7 +8237,7 @@ class ReportContentSbomTest(unittest.TestCase):
         self.assertIn("structural", svg)
         self.assertIn("manifest diff", svg)
         self.assertNotIn("semantic diff", svg)
-        self.assertIn("동일한 단일 fixture 행", content)
+        self.assertIn("같은 MySQL 한 행", content)
 
         png = (submission_root / "assets" / "baseline-candidate.png").read_bytes()
         self.assertEqual(
@@ -8313,6 +8356,7 @@ class ReportContentSbomTest(unittest.TestCase):
         third_party = (REPOSITORY_ROOT / "THIRD_PARTY.md").read_text(
             encoding="utf-8"
         )
+        normalized_third_party = " ".join(third_party.split())
         self.assertIn("| HikariCP | 6.2.1 |", third_party)
         self.assertIn("| datasource-proxy | 1.11.0 |", third_party)
         self.assertIn("MySQL Community Server container image", third_party)
@@ -8323,9 +8367,32 @@ class ReportContentSbomTest(unittest.TestCase):
             "01f90d87012e46cd174073bba02d64e9fc693ed3/8.4/Dockerfile.oracle",
             third_party,
         )
-        self.assertIn(
-            "image layers and installed programs are test-only", third_party
-        )
+        for required in (
+            "as of 2026-08-24",
+            "sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb",
+            "sha256:1d6b6a8fcee8ff758ff151d017f5203cd06792a0e698f0a593c9dfcb14609cf0",
+            "sha256:c9be23757267a888182ff13a633118a84ce7ad360abaa0f12a9c357ddf628b61",
+            "cb104b45f22bdecc7517916f792726056912586ffa5f4b1b0322d687bc3f3f1e",
+            "a70c88800475d2a86a83b85b4bba161e14b14cec6bdd2d6f624bfd3392910daf",
+            "The official attestations enumerate 167 packages with "
+            "`licenseConcluded=NOASSERTION`; neither those attestations nor the "
+            "embedded-file hashes establish an image-wide SPDX conclusion.",
+            "01f90d87012e46cd174073bba02d64e9fc693ed3",
+            "RouteContract uses the image only as a Testcontainers test fixture; it is "
+            "not bundled in RouteContract's JARs, source archive, Release assets or "
+            "final submission ZIP.",
+            "The RouteContract owner re-reviewed this exact evidence on 2026-08-24.",
+            "The record remains exactly one package-level, `test-container`-scoped "
+            "`manual-review-required` review with no `licenses` field and expires on "
+            "2026-12-05.",
+            "Re-review immediately if the MySQL OCI digest, selected platform, embedded "
+            "LICENSE/INFO_SRC evidence, or test-container use boundary changes; "
+            "otherwise resolve, renew with new evidence, or remove the MySQL OCI "
+            "package-level license review before the 2026-12-05 expiry.",
+            "This review is not legal advice, legal-suitability approval or an "
+            "image-wide license conclusion.",
+        ):
+            self.assertIn(required, normalized_third_party)
         self.assertIn("| CycloneDX Gradle plugin | 3.4.0 |", third_party)
 
     def test_report_builder_requirements_pin_the_complete_python_closure(self) -> None:
@@ -8837,13 +8904,12 @@ class ReleaseEvidenceTest(unittest.TestCase):
         )
         (security / "osv-scanner.toml").write_bytes(b"")
         license_reviews = valid_license_reviews()
-        vulnerability_exceptions = valid_vulnerability_exceptions()
         policy = {
             "allowedLicenseIds": ["Apache-2.0"],
             "licenseExceptions": [],
-            "licenseReviewExceptions": license_reviews,
+            "licenseReviewExceptions": valid_policy_license_reviews(),
             "schemaVersion": 3,
-            "vulnerabilityExceptions": vulnerability_exceptions,
+            "vulnerabilityExceptions": [],
         }
         (security / "supply-chain-policy.json").write_text(
             json.dumps(policy, indent=2, sort_keys=True) + "\n", encoding="utf-8"
@@ -8925,7 +8991,7 @@ class ReleaseEvidenceTest(unittest.TestCase):
                 "sha256": package_submission.sha256(
                     root / "routecontract-aggregate-cyclonedx.json"
                 ),
-                "unresolvedLicenseReviewCount": 2,
+                "unresolvedLicenseReviewCount": 1,
                 "xmlComponentCount": 4,
                 "xmlSha256": package_submission.sha256(
                     root / "routecontract-aggregate-cyclonedx.xml"
@@ -8949,9 +9015,9 @@ class ReleaseEvidenceTest(unittest.TestCase):
             "schemaVersion": 1,
             "sourceTree": "e" * 40,
             "vulnerabilities": {
-                "acceptedExceptionCount": 1,
-                "findingCount": 1,
-                "findings": findings_for(vulnerability_exceptions),
+                "acceptedExceptionCount": 0,
+                "findingCount": 0,
+                "findings": [],
                 "unreviewedCount": 0,
             },
         }
@@ -8973,6 +9039,51 @@ class ReleaseEvidenceTest(unittest.TestCase):
         artifact = root.parent / "release-evidence.zip"
         self.rebuild_artifact(root, artifact, manifest)
         return artifact
+
+    def assert_license_review_mutation_rejected(
+        self,
+        mutation,
+        expected_error: str,
+        *,
+        mutate_policy: bool = False,
+        policy_only: bool = False,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            raw_root = Path(raw).resolve()
+            root = raw_root / "evidence"
+            root.mkdir()
+            manifest = valid_manifest()
+            artifact = self.build_evidence(root, manifest)
+            evidence_path = root / "supply-chain-evidence.json"
+            evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+            if not policy_only:
+                mutation(evidence["sbom"]["licenseReviews"])
+            if mutate_policy or policy_only:
+                policy_path = raw_root / "security" / "supply-chain-policy.json"
+                policy = json.loads(policy_path.read_text(encoding="utf-8"))
+                mutation(policy["licenseReviewExceptions"])
+                policy_path.write_text(
+                    json.dumps(policy, indent=2, sort_keys=True) + "\n",
+                    encoding="utf-8",
+                )
+                evidence["sbom"]["policySha256"] = package_submission.sha256(
+                    policy_path
+                )
+            evidence_path.write_text(
+                json.dumps(evidence, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            self.write_public_checksums(root)
+            self.rebuild_artifact(root, artifact, manifest)
+            checked = package_submission.validate_manifest(manifest)
+            with patch.object(
+                package_submission, "run", return_value="e" * 40 + "\n"
+            ), patch.object(
+                package_submission, "validate_source_archive_identity", return_value=None
+            ), self.assertRaisesRegex(package_submission.GateError, expected_error):
+                package_submission.validate_release_evidence(
+                    root, artifact, checked, raw_root
+                )
 
     def test_rejects_corrupt_workflow_artifact_as_gate_error(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
@@ -9043,8 +9154,8 @@ class ReleaseEvidenceTest(unittest.TestCase):
             self.assertIn("test-summary.txt", result["public_release_assets"])
             self.assertIn("supply-chain-evidence.json", result["public_release_assets"])
             self.assertEqual(0, result["supply_chain"]["unreviewed_count"])
-            self.assertEqual(2, result["supply_chain"]["unresolved_license_review_count"])
-            self.assertEqual(1, result["supply_chain"]["finding_count"])
+            self.assertEqual(1, result["supply_chain"]["unresolved_license_review_count"])
+            self.assertEqual(0, result["supply_chain"]["finding_count"])
             self.assertNotIn("environment.txt", result["public_release_assets"])
             self.assertNotIn(
                 "routecontract-mysql-example-cyclonedx.json",
@@ -9238,7 +9349,7 @@ class ReleaseEvidenceTest(unittest.TestCase):
                         root, artifact, checked, raw_root
                     )
 
-    def test_accepts_reviewed_exception_and_rejects_non_boolean_reachability(self) -> None:
+    def test_rejects_any_vulnerability_finding(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             raw_root = Path(raw).resolve()
             root = raw_root / "evidence"
@@ -9247,54 +9358,62 @@ class ReleaseEvidenceTest(unittest.TestCase):
             artifact = self.build_evidence(root, manifest)
             evidence_path = root / "supply-chain-evidence.json"
             evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+            evidence["vulnerabilities"] = {
+                "acceptedExceptionCount": 1,
+                "findingCount": 1,
+                "findings": [{"unexpected": "finding"}],
+                "unreviewedCount": 0,
+            }
+            evidence_path.write_text(
+                json.dumps(evidence, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            self.write_public_checksums(root)
+            self.rebuild_artifact(root, artifact, manifest)
             checked = package_submission.validate_manifest(manifest)
             with patch.object(
                 package_submission, "run", return_value="e" * 40 + "\n"
             ), patch.object(
                 package_submission, "validate_source_archive_identity", return_value=None
+            ), self.assertRaisesRegex(
+                package_submission.GateError,
+                "zero vulnerability findings and accepted exceptions",
             ):
-                accepted = package_submission.validate_release_evidence(
-                    root, artifact, checked, raw_root
-                )
-            self.assertEqual(1, accepted["supply_chain"]["finding_count"])
-
-            evidence["vulnerabilities"]["findings"][0]["reachabilityEvidence"] = {
-                "exampleProfile": 1,
-                "publishedProfile": 0,
-                "publishedRuntime": 0,
-            }
-            evidence_path.write_text(
-                json.dumps(evidence, indent=2, sort_keys=True) + "\n",
-                encoding="utf-8",
-            )
-            self.write_public_checksums(root)
-            self.rebuild_artifact(root, artifact, manifest)
-            with patch.object(
-                package_submission, "run", return_value="e" * 40 + "\n"
-            ), patch.object(
-                package_submission, "validate_source_archive_identity", return_value=None
-            ), self.assertRaisesRegex(package_submission.GateError, "flags must be booleans"):
                 package_submission.validate_release_evidence(
                     root, artifact, checked, raw_root
                 )
 
-            evidence["vulnerabilities"]["findings"][0]["reachabilityEvidence"] = {
-                "exampleProfile": True,
-                "publishedProfile": False,
-                "publishedRuntime": False,
-            }
-            evidence["vulnerabilities"]["findings"][0]["exceptionId"] = "RC-TAMPERED"
+    def test_rejects_any_source_policy_vulnerability_exception(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            raw_root = Path(raw).resolve()
+            root = raw_root / "evidence"
+            root.mkdir()
+            manifest = valid_manifest()
+            artifact = self.build_evidence(root, manifest)
+            policy_path = raw_root / "security" / "supply-chain-policy.json"
+            policy = json.loads(policy_path.read_text(encoding="utf-8"))
+            policy["vulnerabilityExceptions"] = [{"unexpected": "exception"}]
+            policy_path.write_text(
+                json.dumps(policy, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            evidence_path = root / "supply-chain-evidence.json"
+            evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+            evidence["sbom"]["policySha256"] = package_submission.sha256(policy_path)
             evidence_path.write_text(
                 json.dumps(evidence, indent=2, sort_keys=True) + "\n",
                 encoding="utf-8",
             )
             self.write_public_checksums(root)
             self.rebuild_artifact(root, artifact, manifest)
+            checked = package_submission.validate_manifest(manifest)
             with patch.object(
                 package_submission, "run", return_value="e" * 40 + "\n"
             ), patch.object(
                 package_submission, "validate_source_archive_identity", return_value=None
-            ), self.assertRaisesRegex(package_submission.GateError, "differs from policy"):
+            ), self.assertRaisesRegex(
+                package_submission.GateError, "zero vulnerability exceptions"
+            ):
                 package_submission.validate_release_evidence(
                     root, artifact, checked, raw_root
                 )
@@ -9378,56 +9497,97 @@ class ReleaseEvidenceTest(unittest.TestCase):
                 )
 
     def test_rejects_incomplete_unresolved_license_review_set(self) -> None:
-        with tempfile.TemporaryDirectory() as raw:
-            raw_root = Path(raw).resolve()
-            root = raw_root / "evidence"
-            root.mkdir()
-            manifest = valid_manifest()
-            artifact = self.build_evidence(root, manifest)
-            evidence_path = root / "supply-chain-evidence.json"
-            evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
-            evidence["sbom"]["licenseReviews"].pop()
-            evidence_path.write_text(
-                json.dumps(evidence, indent=2, sort_keys=True) + "\n",
-                encoding="utf-8",
-            )
-            self.write_public_checksums(root)
-            self.rebuild_artifact(root, artifact, manifest)
-            checked = package_submission.validate_manifest(manifest)
-            with patch.object(
-                package_submission, "run", return_value="e" * 40 + "\n"
-            ), patch.object(
-                package_submission, "validate_source_archive_identity", return_value=None
-            ), self.assertRaisesRegex(package_submission.GateError, "exactly two license reviews"):
-                package_submission.validate_release_evidence(
-                    root, artifact, checked, raw_root
+        self.assert_license_review_mutation_rejected(
+            lambda reviews: reviews.clear(), "exactly one license review"
+        )
+
+    def test_rejects_duplicate_unresolved_license_review(self) -> None:
+        self.assert_license_review_mutation_rejected(
+            lambda reviews: reviews.append(dict(reviews[0])),
+            "exactly one license review",
+        )
+
+    def test_rejects_wrong_mysql_license_review_contract(self) -> None:
+        wrong_values = (
+            ("identity", "componentName", "not-mysql"),
+            (
+                "digest",
+                "purl",
+                valid_license_reviews()[0]["purl"].replace(
+                    MYSQL_CONTAINER_DIGEST, "f" * 64
+                ),
+            ),
+            ("scope", "scope", "published-runtime"),
+            ("status", "status", "approved"),
+        )
+        for label, field, value in wrong_values:
+            with self.subTest(label=label):
+                self.assert_license_review_mutation_rejected(
+                    lambda reviews, field=field, value=value: reviews[0].__setitem__(
+                        field, value
+                    ),
+                    "exactly identify the pinned MySQL OCI image",
+                    mutate_policy=True,
                 )
 
-    def test_rejects_reversed_license_review_order(self) -> None:
-        with tempfile.TemporaryDirectory() as raw:
-            raw_root = Path(raw).resolve()
-            root = raw_root / "evidence"
-            root.mkdir()
-            manifest = valid_manifest()
-            artifact = self.build_evidence(root, manifest)
-            evidence_path = root / "supply-chain-evidence.json"
-            evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
-            evidence["sbom"]["licenseReviews"].reverse()
-            evidence_path.write_text(
-                json.dumps(evidence, indent=2, sort_keys=True) + "\n",
-                encoding="utf-8",
-            )
-            self.write_public_checksums(root)
-            self.rebuild_artifact(root, artifact, manifest)
-            checked = package_submission.validate_manifest(manifest)
-            with patch.object(
-                package_submission, "run", return_value="e" * 40 + "\n"
-            ), patch.object(
-                package_submission, "validate_source_archive_identity", return_value=None
-            ), self.assertRaisesRegex(package_submission.GateError, "exact ordered policy"):
-                package_submission.validate_release_evidence(
-                    root, artifact, checked, raw_root
+    def test_rejects_stale_pre_owner_decision_mysql_license_review(self) -> None:
+        stale_values = (
+            (
+                "action",
+                "resolve, renew with new evidence, or remove the MySQL OCI "
+                "package-level license review before the 2026-08-27 expiry",
+            ),
+            ("reviewedAt", "2026-08-13"),
+            ("expires", "2026-08-27"),
+        )
+        for field, value in stale_values:
+            with self.subTest(field=field):
+                self.assert_license_review_mutation_rejected(
+                    lambda reviews, field=field, value=value: reviews[0].__setitem__(
+                        field, value
+                    ),
+                    "exactly identify the pinned MySQL OCI image",
+                    mutate_policy=True,
                 )
+
+    def test_rejects_mysql_policy_only_provenance_drift_or_schema_change(self) -> None:
+        cases = (
+            (
+                "documentation URL",
+                lambda reviews: reviews[0].__setitem__(
+                    "documentationUrl", "https://example.invalid/mysql"
+                ),
+                "exactly identify the pinned MySQL OCI image",
+            ),
+            (
+                "digest",
+                lambda reviews: reviews[0].__setitem__("sha256", "f" * 64),
+                "exactly identify the pinned MySQL OCI image",
+            ),
+            (
+                "missing digest",
+                lambda reviews: reviews[0].pop("sha256"),
+                "keys do not match schema",
+            ),
+            (
+                "unexpected key",
+                lambda reviews: reviews[0].__setitem__("unexpected", "value"),
+                "keys do not match schema",
+            ),
+        )
+        for label, mutation, expected_error in cases:
+            with self.subTest(label=label):
+                self.assert_license_review_mutation_rejected(
+                    mutation,
+                    expected_error,
+                    policy_only=True,
+                )
+
+    def test_rejects_expired_mysql_license_review(self) -> None:
+        self.assert_license_review_mutation_rejected(
+            lambda reviews: reviews[0].__setitem__("expires", "2026-08-12"),
+            "expired license review",
+        )
 
     def test_rejects_test_summary_for_another_revision(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
@@ -9578,7 +9738,7 @@ class PublicEvidenceTest(unittest.TestCase):
         local_video = {"duration_seconds": 173.0}
         youtube = {
             "title": "RouteContract demo",
-            "duration_seconds": 172.5,
+            "duration_seconds": 173.0,
         }
         package_submission.validate_public_youtube_contract(
             manifest, local_video, youtube
@@ -9592,7 +9752,7 @@ class PublicEvidenceTest(unittest.TestCase):
 
         over_limit = dict(youtube, duration_seconds=175.1)
         with self.assertRaisesRegex(
-            package_submission.GateError, "170 through 175 seconds inclusive"
+            package_submission.GateError, "173 through 175 seconds inclusive"
         ):
             package_submission.validate_public_youtube_contract(
                 manifest, local_video, over_limit
@@ -9610,13 +9770,13 @@ class PublicEvidenceTest(unittest.TestCase):
         manifest = package_submission.validate_manifest(valid_manifest())
         package_submission.validate_public_youtube_contract(
             manifest,
-            {"duration_seconds": 173.5},
-            {"title": "RouteContract demo", "duration_seconds": 172.5},
+            {"duration_seconds": 174.0},
+            {"title": "RouteContract demo", "duration_seconds": 173.0},
         )
 
     def test_public_youtube_duration_window_and_caption_end_are_inclusive(self) -> None:
         manifest = package_submission.validate_manifest(valid_manifest())
-        for duration in (172.5, 175.0):
+        for duration in (173.0, 175.0):
             with self.subTest(duration=duration):
                 package_submission.validate_public_youtube_contract(
                     manifest,
@@ -9624,10 +9784,10 @@ class PublicEvidenceTest(unittest.TestCase):
                     {"title": "RouteContract demo", "duration_seconds": duration},
                 )
 
-        for duration in (170.0, 172.499):
+        for duration in (172.5, 172.999):
             with self.subTest(duration=duration), self.assertRaisesRegex(
                 package_submission.GateError,
-                "selected caption branch's final cue",
+                "173 through 175 seconds inclusive",
             ):
                 package_submission.validate_public_youtube_contract(
                     manifest,
@@ -9635,10 +9795,10 @@ class PublicEvidenceTest(unittest.TestCase):
                     {"title": "RouteContract demo", "duration_seconds": duration},
                 )
 
-        for duration in (169.9, 175.1):
+        for duration in (175.1,):
             with self.subTest(duration=duration), self.assertRaisesRegex(
                 package_submission.GateError,
-                "170 through 175 seconds inclusive",
+                "173 through 175 seconds inclusive",
             ):
                 package_submission.validate_public_youtube_contract(
                     manifest,
@@ -9978,7 +10138,7 @@ class PublicEvidenceTest(unittest.TestCase):
             package_submission.validate_public_youtube_contract(
                 manifest,
                 {"duration_seconds": 173.0},
-                {"title": canary, "duration_seconds": 172.5},
+                {"title": canary, "duration_seconds": 173.0},
             )
         self.assertIsNone(caught.exception.__cause__)
         self.assertNotIn(canary, str(caught.exception))
@@ -10086,7 +10246,7 @@ class PublicEvidenceTest(unittest.TestCase):
         youtube = {
             "id": "abcdefghijk",
             "title": "RouteContract demo",
-            "duration_seconds": 172.5,
+            "duration_seconds": 173.0,
             "availability": "public",
             "live_status": "not_live",
             "age_limit": 0,
@@ -10120,7 +10280,7 @@ class PublicEvidenceTest(unittest.TestCase):
         self.assertEqual(456, result["workflow_artifact"]["size_in_bytes"])
         self.assertEqual("abcdefghijk", result["youtube_video_id"])
         self.assertEqual("RouteContract demo", result["youtube_title"])
-        self.assertEqual(172.5, result["youtube_duration_seconds"])
+        self.assertEqual(173.0, result["youtube_duration_seconds"])
         self.assertEqual("public", result["youtube_availability"])
         self.assertEqual("not_live", result["youtube_live_status"])
         self.assertEqual(0, result["youtube_age_limit"])
@@ -10241,7 +10401,7 @@ class PublicEvidenceTest(unittest.TestCase):
             youtube = {
                 "id": "abcdefghijk",
                 "title": "RouteContract demo",
-                "duration_seconds": 172.5,
+                "duration_seconds": 173.0,
                 "availability": "public",
                 "live_status": "not_live",
                 "age_limit": 0,

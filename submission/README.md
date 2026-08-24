@@ -86,13 +86,14 @@ The organizer's 2026 submission notice is the packaging authority:
   report;
 - the demonstration is represented by a public YouTube URL in the report and
   must be no longer than 180 seconds. This project's caption-first final gate
-  narrows the final duration to 170 through 175 seconds inclusive and also
+  narrows the final duration to 173 through 175 seconds inclusive and also
   requires a local video at least 1920x1080, at least 20 decoded frames per
   second on average, exactly zero audio streams, burned-in Korean captions, and
   a public, non-live, age-unrestricted YouTube upload with a downloadable 1080p
   or higher video format. The selected branch's final tracked cue must fit in
-  the manifest, local, and public durations, so the current 172.500-second cue
-  corpus makes 172.500 seconds the effective minimum;
+  the manifest, local, and public durations. The storyboard requires actual
+  screen frames through 173.000 seconds, so 173.000 seconds is the effective
+  minimum even though the final cue ends at 172.500 seconds;
 - Attachment 1 SBOM stays inside the report;
 - Attachment 2 is intentionally removed under the organizer's development-
   assistance disclosure option because RouteContract has no runtime AI model
@@ -105,7 +106,7 @@ The organizer's 2026 submission notice is the packaging authority:
 `package_submission.py` implements those rules as a fail-closed final gate. It
 rebuilds the DOCX with `build_official_report.py --strict-final`, checks the PDF
 content and page boundary, requires the local and public video durations to be
-within the inclusive 170-through-175-second window, checks the default playable
+within the inclusive 173-through-175-second window, checks the default playable
 motion-stream dimensions, at least 20 decoded frames per second on average,
 exactly zero audio streams, a complete selected-stream decode, post-decode file
 hash stability, a final rehash immediately before audit-metadata creation, and
@@ -161,6 +162,14 @@ local file before setting
 The `yt-dlp` result is downloadable-format inventory evidence: this gate does
 not download the entire public video or perform public/local pixel, audio, or
 caption comparison, so that equivalence remains participant-attested.
+
+Every final terminal take must invoke `scripts/video-demo-session.sh` with
+`--final-recording`. Before starting its child command, that opt-in mode requires
+the exact sealed commit, tree, canonical origin and annotated stable tag through
+the four documented `ROUTECONTRACT_FINAL_*` environment values, then verifies
+the exact repository root, HEAD/tree/tag binding and a clean tracked/untracked
+worktree. The ordinary one-argument modes remain available for rehearsal and do
+not claim that the recorded checkout is the final revision.
 
 The report gate re-exports the generated strict DOCX twice with independent
 LibreOffice profiles and the same `FONTCONFIG_FILE`, requires those canonical
@@ -259,7 +268,7 @@ authority with:
 ```bash
 python3 submission/tools/video_caption_contract.py \
   --branch zero \
-  --expected-source-sha256 19560225c18ca8156a13760e8412e46462383df5e80a92bc2dd7d4615a1f0158 \
+  --expected-source-sha256 8bce0ad5761820aa1e0433a0e8442c35667e2aa9f0f7c3da725ce8ab904720b1 \
   --output /absolute/private/path/routecontract-zero.srt
 ```
 

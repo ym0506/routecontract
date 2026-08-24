@@ -53,7 +53,9 @@ dependencyLocking {
 dependencies {
     testImplementation "${routeContractGroup}:routecontract-shardingsphere-5.5:${routeContractVersion}"
     testImplementation platform('com.fasterxml.jackson:jackson-bom:2.18.9')
-    testImplementation 'org.apache.shardingsphere:shardingsphere-jdbc:5.5.3'
+    testImplementation('org.apache.shardingsphere:shardingsphere-jdbc:5.5.3') {
+        exclude group: 'org.locationtech.jts.io', module: 'jts-io-common'
+    }
 
     testRuntimeOnly 'org.apache.shardingsphere:shardingsphere-infra-url-absolutepath:5.5.3'
     testRuntimeOnly 'org.apache.shardingsphere:shardingsphere-infra-data-source-pool-hikari:5.5.3'
@@ -89,6 +91,14 @@ dependencies {
         }
         testImplementation('org.apache.commons:commons-compress:1.26.0') {
             because 'Testcontainers 1.21.4 requests a version with published denial-of-service advisories'
+        }
+        testImplementation('org.apache.calcite:calcite-core:1.42.0') {
+            version { strictly '1.42.0' }
+            because "Apache ShardingSphere 5.5.3 requests Calcite 1.40.0; align to the advisory-fixed 1.42.0 release verified by RouteContract's MySQL integration and standalone-consumer tests"
+        }
+        testImplementation('org.apache.calcite:calcite-linq4j:1.42.0') {
+            version { strictly '1.42.0' }
+            because "Apache ShardingSphere 5.5.3 requests Calcite 1.40.0; align to the advisory-fixed 1.42.0 release verified by RouteContract's MySQL integration and standalone-consumer tests"
         }
     }
 }

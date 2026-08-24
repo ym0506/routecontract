@@ -42,17 +42,17 @@ credentials and the v0.1 no-signature policy below have been reviewed.
    SBOM; aggregate repository SBOM; `LICENSE`; `NOTICE`; and third-party
    notices. Recheck Connector/J's FOSS exception, Jakarta Transaction's SPDX
    expression, JNA's embedded libffi license, JTS Core's dual-license metadata,
-   JTS I/O Common's embedded Apache Mahout code and unresolved NOTICE
-   redistribution treatment, and the selected MySQL platform image's package
-   notices. Verify
+   the absence of JTS I/O Common, and the selected MySQL platform image's
+   package notices. Verify
    that no fixture credentials, raw SQL parameters or private paths are present.
 7. Record the source revision, JDK/Gradle/Docker versions, exact command, test
    result, CI URL and SHA-256 checksums. A passing build alone is not evidence
    of transaction commit or a complete ShardingSphere route plan.
 8. Refresh the pinned OSV database and rerun the exact-revision policy gate.
-   Review the current test/example-graph advisory and remove, upgrade,
-   or renew every exception before its expiry; test-only reachability does not
-   make a finding harmless.
+   The current policy has zero vulnerability exceptions and the pinned snapshot
+   reports zero findings, so any new finding must fail until it is addressed or
+   an explicit, evidence-backed policy change is reviewed. A successful scan is
+   point-in-time evidence, not a vulnerability-free claim.
 
 ## Tag and collect evidence
 
@@ -259,17 +259,19 @@ implemented and verified.
   contains an Oracle Linux base, MySQL Shell and other packages, so its SBOM
   uses an unresolved-review property plus documentation external reference,
   not an image-wide GPL-only conclusion or a fabricated license name. The
-  owner must resolve, renew with new evidence or remove this review before its
-  2026-08-27 expiry.
-- JTS I/O Common 1.19.0 has a concluded compound SPDX expression, but its
-  Mahout-derived Apache-2.0 source references an ASF `NOTICE` missing from the
-  Central artifacts and tagged JTS tree. The exact component remains a
-  time-bounded manual review because JTS's redistribution notice treatment is
-  unconfirmed even though the originating Mahout 0.8 archive and notice are
-  pinned. The owner must resolve and document the treatment, renew with new
-  evidence or remove the record before its 2026-08-27 expiry.
-- A supply-chain policy pass may contain exactly two unresolved license reviews
-  because MySQL and JTS I/O Common are confined to the example/test graph and
+  owner re-reviewed the evidence on 2026-08-24; the record remains exactly one
+  `test-container`-scoped `manual-review-required` package-level review with no
+  image-wide license conclusion and expires on 2026-12-05. Re-review
+  immediately if the MySQL OCI digest, selected platform, embedded
+  LICENSE/INFO_SRC evidence, or test-container use boundary changes; otherwise
+  resolve, renew with new evidence, or remove the MySQL OCI package-level
+  license review before the 2026-12-05 expiry.
+- The test/example graph keeps ShardingSphere-JDBC 5.5.3, strictly constrains
+  Calcite Core and linq4j to 1.42.0, excludes and forbids JTS I/O Common, and
+  retains JTS Core 1.19.0. Recheck all four conditions from the final lock and
+  SBOM instead of treating a successful earlier resolution as durable.
+- A supply-chain policy pass may contain exactly one unresolved license review:
+  the MySQL OCI component above. It is confined to the example/test graph and
   absent from the published module/runtime closure. Stable release and
   submission materials must report that count and must not call it completed
   legal review.

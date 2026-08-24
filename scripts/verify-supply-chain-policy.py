@@ -69,8 +69,6 @@ MYSQL_CONTAINER_DOCUMENTATION_URL = (
 JTS_LICENSE_EXPRESSIONS = {
     "pkg:maven/org.locationtech.jts/jts-core@1.19.0":
         "EPL-2.0 OR BSD-3-Clause",
-    "pkg:maven/org.locationtech.jts.io/jts-io-common@1.19.0":
-        "(EPL-2.0 OR BSD-3-Clause) AND Apache-2.0",
 }
 JTS_LICENSE_EXCEPTIONS = {
     purl: {
@@ -82,91 +80,35 @@ JTS_LICENSE_EXCEPTIONS = {
     }
     for purl, expression in JTS_LICENSE_EXPRESSIONS.items()
 }
-JTS_IO_PURL = "pkg:maven/org.locationtech.jts.io/jts-io-common@1.19.0"
-JTS_IO_BINARY_SHA256 = (
-    "e0f0c62024d4282f5f905de1abd2cc96f975a51d9e8d98254234fa14b16bbe9b"
+FORBIDDEN_JTS_IO_GROUP = "org.locationtech.jts.io"
+FORBIDDEN_JTS_IO_NAME = "jts-io-common"
+FORBIDDEN_JTS_IO_PURL_PREFIX = (
+    "pkg:maven/org.locationtech.jts.io/jts-io-common@"
+)
+REQUIRED_EXAMPLE_MAVEN_COORDINATES = (
+    ("org.apache.shardingsphere", "shardingsphere-jdbc", "5.5.3"),
+    ("org.apache.calcite", "calcite-core", "1.42.0"),
+    ("org.apache.calcite", "calcite-linq4j", "1.42.0"),
 )
 MYSQL_LICENSE_REVIEW_EXCEPTION = {
     "action": (
+        "re-review immediately if the MySQL OCI digest, selected platform, embedded "
+        "LICENSE/INFO_SRC evidence, or test-container use boundary changes; otherwise "
         "resolve, renew with new evidence, or remove the MySQL OCI package-level "
-        "license review before the 2026-08-27 expiry"
+        "license review before the 2026-12-05 expiry"
     ),
     "componentName": MYSQL_CONTAINER_NAME,
     "componentVersion": MYSQL_CONTAINER_VERSION,
     "documentationUrl": MYSQL_CONTAINER_DOCUMENTATION_URL,
-    "expires": "2026-08-27",
+    "expires": "2026-12-05",
     "owner": "RouteContract maintainers",
     "purl": MYSQL_CONTAINER_PURL,
     "rationaleCode": "MYSQL_OCI_PACKAGE_LICENSE_CONCLUSION_INCOMPLETE",
-    "reviewedAt": "2026-08-13",
+    "reviewedAt": "2026-08-24",
     "scope": "test-container",
     "sha256": MYSQL_CONTAINER_DIGEST,
     "status": LICENSE_REVIEW_STATUS,
 }
-JTS_IO_LICENSE_REVIEW_EXCEPTION = {
-    "action": (
-        "resolve and document the JTS I/O Common redistribution NOTICE treatment "
-        "before the 2026-08-27 expiry"
-    ),
-    "componentName": "jts-io-common",
-    "componentVersion": "1.19.0",
-    "expires": "2026-08-27",
-    "expression": JTS_LICENSE_EXPRESSIONS[JTS_IO_PURL],
-    "owner": "RouteContract maintainers",
-    "provenance": {
-        "binarySha256": JTS_IO_BINARY_SHA256,
-        "classFileSha256": (
-            "7760a6e6eb7534e26617813c7b381196d0fb42e84ff0a3e6474991431384440a"
-        ),
-        "mahoutLicensePath": "mahout-distribution-0.8/LICENSE.txt",
-        "mahoutLicenseSha256": (
-            "daef6fbe58ad49cd519848a5e60a1c9e5720f861c11878fde9f99fb55c62f62f"
-        ),
-        "mahoutNoticePath": "mahout-distribution-0.8/NOTICE.txt",
-        "mahoutNoticeSha256": (
-            "5e81cc7357b3c9a710860c4b66ac09c3322b2ac5ae914f4e07bfc36896e13c47"
-        ),
-        "mahoutSourceArchiveSha256": (
-            "0ff823d5c898880f0a00df52f72f0a9af1d2fc502700780eef20e91b4161504b"
-        ),
-        "mahoutSourceArchiveUrl": (
-            "https://archive.apache.org/dist/mahout/0.8/"
-            "mahout-distribution-0.8-src.tar.gz"
-        ),
-        "mahoutVarintPath": (
-            "mahout-distribution-0.8/core/src/main/java/"
-            "org/apache/mahout/math/Varint.java"
-        ),
-        "mahoutVarintSha256": (
-            "650b57209bcb6f54e394d241d9f680485608a1c3686d767ef0a864cdc4212b32"
-        ),
-        "pomSha256": (
-            "c569979c50228a25be237b3084b55da600b538037743a2936f983b18163042a8"
-        ),
-        "sourceArtifactSha256": (
-            "c367d87dc525a5d9b85e2751e3b0e14ea018165b45aef3d2642c857d49f53804"
-        ),
-        "sourceFileSha256": (
-            "66a92610c5073c3eff40b327cf162829cf90f1fbeb827a5e7aceb7240ccdb0da"
-        ),
-        "tagCommit": "574698c4bc4fe06eb7ed46576a605626d5a5e486",
-        "upstreamLicenseUrl": (
-            "https://github.com/locationtech/jts/blob/"
-            "574698c4bc4fe06eb7ed46576a605626d5a5e486/LICENSES.md"
-        ),
-        "upstreamSourceUrl": (
-            "https://github.com/locationtech/jts/blob/"
-            "574698c4bc4fe06eb7ed46576a605626d5a5e486/modules/io/common/"
-            "src/main/java/org/locationtech/jts/io/twkb/Varint.java"
-        ),
-    },
-    "purl": JTS_IO_PURL,
-    "rationaleCode": "JTS_IO_COMMON_REDISTRIBUTION_NOTICE_TREATMENT_UNCONFIRMED",
-    "reviewedAt": "2026-08-13",
-    "scope": "test-runtime",
-    "status": LICENSE_REVIEW_STATUS,
-}
-MAX_VULNERABILITY_EXCEPTION_DAYS = 30
 SPDX_TOKEN = re.compile(r"[A-Za-z0-9][A-Za-z0-9.+-]*|[()]")
 REVIEWED_SPDX_LICENSE_IDS = {
     "Apache-2.0",
@@ -729,6 +671,10 @@ def _strict_percent_decode(value: str, label: str) -> str:
         raise PolicyError(f"{label} contains invalid UTF-8 percent encoding") from error
 
 
+# This parser enforces RouteContract's pinned CycloneDX-Gradle Maven PURL byte
+# profile. It is intentionally narrower than the general PURL grammar: current
+# release evidence has no subpaths and retains the producer's encoded
+# ``project_path`` colon.
 def _parse_maven_purl(
     purl: str,
 ) -> tuple[str, str, str, str, dict[str, str]]:
@@ -769,7 +715,9 @@ def _parse_maven_purl(
     )
     expected_purl = canonical + (f"?{canonical_query}" if canonical_query else "")
     if purl != expected_purl:
-        raise PolicyError(f"Maven purl is not canonically percent-encoded: {purl}")
+        raise PolicyError(
+            f"Maven purl differs from the pinned producer encoding profile: {purl}"
+        )
     return canonical, group, name, version, qualifiers
 
 
@@ -803,6 +751,22 @@ def _validate_resolved_maven_purl(
     )
     resolved = f"{canonical}?{qualifier_text}"
     return resolved, canonical, group, name, version
+
+
+def _is_forbidden_jts_io_identity(
+    group: object, name: object, purl: object, bom_ref: object
+) -> bool:
+    return (
+        (group == FORBIDDEN_JTS_IO_GROUP and name == FORBIDDEN_JTS_IO_NAME)
+        or (
+            isinstance(purl, str)
+            and purl.startswith(FORBIDDEN_JTS_IO_PURL_PREFIX)
+        )
+        or (
+            isinstance(bom_ref, str)
+            and bom_ref.startswith(FORBIDDEN_JTS_IO_PURL_PREFIX)
+        )
+    )
 
 
 def _validate_policy(policy: dict[str, Any]) -> dict[str, Any]:
@@ -862,6 +826,10 @@ def _validate_policy(policy: dict[str, Any]) -> dict[str, Any]:
         if kind == "expression":
             _validate_spdx_expression(license_value, "license exception expression")
         purl = _nonempty_string(exception["purl"], "license exception purl")
+        if purl.startswith(FORBIDDEN_JTS_IO_PURL_PREFIX):
+            raise PolicyError(
+                "JTS I/O Common license exceptions are forbidden by the pinned policy"
+            )
         scope = _nonempty_string(exception["scope"], "license exception scope")
         if scope not in {"test-container", "test-runtime"}:
             raise PolicyError(
@@ -871,7 +839,7 @@ def _validate_policy(policy: dict[str, Any]) -> dict[str, Any]:
             canonical, _, _, _ = _canonical_maven_purl(purl)
             if purl != canonical:
                 raise PolicyError(
-                    "test-runtime license exception purl must be canonical Maven"
+                    "test-runtime license exception purl must use the pinned Maven profile"
                 )
         elif not purl.startswith("pkg:oci/"):
             raise PolicyError("test-container license exception purl must be OCI")
@@ -886,20 +854,17 @@ def _validate_policy(policy: dict[str, Any]) -> dict[str, Any]:
     }
     if jts_exceptions != JTS_LICENSE_EXCEPTIONS:
         raise PolicyError(
-            "licenseExceptions must bind both JTS 1.19.0 artifacts to their exact "
-            "reviewed SPDX expressions"
+            "licenseExceptions must bind JTS Core 1.19.0 to its exact reviewed "
+            "SPDX expression"
         )
 
     review_exceptions = policy["licenseReviewExceptions"]
     if not isinstance(review_exceptions, list):
         raise PolicyError("licenseReviewExceptions must be an array")
-    expected_reviews = [
-        MYSQL_LICENSE_REVIEW_EXCEPTION,
-        JTS_IO_LICENSE_REVIEW_EXCEPTION,
-    ]
+    expected_reviews = [MYSQL_LICENSE_REVIEW_EXCEPTION]
     if len(review_exceptions) != len(expected_reviews):
         raise PolicyError(
-            "licenseReviewExceptions must contain exactly the pinned MySQL and JTS reviews"
+            "licenseReviewExceptions must contain exactly the pinned MySQL review"
         )
     review_purls: set[str] = set()
     for index, exception in enumerate(review_exceptions):
@@ -915,87 +880,18 @@ def _validate_policy(policy: dict[str, Any]) -> dict[str, Any]:
                 exception, f"licenseReviewExceptions[{index}]"
             )
         if exception != expected_review:
-            label = "pinned MySQL OCI image" if index == 0 else "pinned JTS I/O review"
-            raise PolicyError(f"license review exception must exactly identify the {label}")
+            raise PolicyError(
+                "license review exception must exactly identify the pinned MySQL OCI image"
+            )
         purl = _nonempty_string(exception["purl"], "license review purl")
-        if purl != MYSQL_CONTAINER_PURL:
-            _validate_spdx_expression(
-                exception["expression"], "JTS I/O Common reviewed expression"
-            )
-            provenance = exception["provenance"]
-            if not isinstance(provenance, dict):
-                raise PolicyError("JTS I/O Common provenance must be an object")
-            for name, value in provenance.items():
-                _nonempty_string(value, f"JTS I/O Common provenance {name}")
-            _absolute_http_url(
-                provenance["mahoutSourceArchiveUrl"],
-                "Apache Mahout source archive URL",
-            )
-            _absolute_http_url(
-                provenance["upstreamLicenseUrl"], "JTS upstream license URL"
-            )
-            _absolute_http_url(
-                provenance["upstreamSourceUrl"], "JTS upstream source URL"
-            )
         if purl in review_purls:
             raise PolicyError("duplicate license review exception")
         review_purls.add(purl)
-    if review_purls != {MYSQL_CONTAINER_PURL, JTS_IO_PURL}:
+    if review_purls != {MYSQL_CONTAINER_PURL}:
         raise PolicyError("license review exception identity set differs")
 
-    vulnerability_exceptions = policy["vulnerabilityExceptions"]
-    if not isinstance(vulnerability_exceptions, list):
-        raise PolicyError("vulnerabilityExceptions must be an array")
-    vulnerability_keys: set[tuple[str, str]] = set()
-    exception_ids: set[str] = set()
-    expected_keys = {
-        "advisory",
-        "exceptionId",
-        "expires",
-        "fixedVersion",
-        "owner",
-        "purl",
-        "rationaleCode",
-        "reviewedAt",
-        "scope",
-        "severity",
-    }
-    for index, exception in enumerate(vulnerability_exceptions):
-        if not isinstance(exception, dict):
-            raise PolicyError(f"vulnerabilityExceptions[{index}] must be an object")
-        _exact_keys(exception, expected_keys, f"vulnerabilityExceptions[{index}]")
-        advisory = _nonempty_string(exception["advisory"], "advisory")
-        exception_id = _nonempty_string(exception["exceptionId"], "exceptionId")
-        purl = _nonempty_string(exception["purl"], "vulnerability purl")
-        canonical, _, _, _ = _canonical_maven_purl(purl)
-        if purl != canonical:
-            raise PolicyError("vulnerability exception purl must not contain qualifiers")
-        expires = _iso_date(exception["expires"], "expires")
-        reviewed_at = _iso_date(exception["reviewedAt"], "reviewedAt")
-        today = datetime.now(timezone.utc).date()
-        if reviewed_at > today:
-            raise PolicyError("reviewedAt must not be in the future")
-        if reviewed_at > expires:
-            raise PolicyError("reviewedAt must not be later than expires")
-        if (expires - reviewed_at).days > MAX_VULNERABILITY_EXCEPTION_DAYS:
-            raise PolicyError(
-                "vulnerability exception validity must not exceed 30 days"
-            )
-        _nonempty_string(exception["owner"], "owner")
-        _nonempty_string(exception["rationaleCode"], "rationaleCode")
-        if exception["scope"] != "aggregate-test-only":
-            raise PolicyError("vulnerability exception scope must be aggregate-test-only")
-        severity = _nonempty_string(exception["severity"], "severity")
-        if severity != severity.upper():
-            raise PolicyError("severity must be uppercase")
-        fixed_version = exception["fixedVersion"]
-        if fixed_version is not None:
-            _nonempty_string(fixed_version, "fixedVersion")
-        key = (purl, advisory)
-        if key in vulnerability_keys or exception_id in exception_ids:
-            raise PolicyError("duplicate vulnerability exception or exceptionId")
-        vulnerability_keys.add(key)
-        exception_ids.add(exception_id)
+    if policy["vulnerabilityExceptions"] != []:
+        raise PolicyError("vulnerabilityExceptions must be exactly empty")
     return policy
 
 
@@ -1052,6 +948,13 @@ def _load_sbom(path: Path) -> dict[str, Any]:
             raise PolicyError("Nested JSON components are not supported")
         for field in ("type", "bom-ref", "name", "version", "purl"):
             _nonempty_string(component.get(field), f"SBOM component {index} {field}")
+        if _is_forbidden_jts_io_identity(
+            component.get("group"),
+            component.get("name"),
+            component.get("purl"),
+            component.get("bom-ref"),
+        ):
+            raise PolicyError("JTS I/O Common is forbidden by the pinned policy")
         for field in ("publisher", "group", "scope"):
             if field in component:
                 _nonempty_string(component[field], f"SBOM component {index} {field}")
@@ -1426,19 +1329,26 @@ def _validate_xml_pair(
         modified_text = xml_text(component, "modified")
         if modified_text is not None and modified_text not in {"true", "false"}:
             raise PolicyError(f"{component_label} modified must be true or false")
+        group = xml_text(component, "group")
+        name = xml_text(component, "name", required=True)
+        version = xml_text(component, "version", required=True)
+        if _is_forbidden_jts_io_identity(
+            group, name, purl, component.get("bom-ref")
+        ):
+            raise PolicyError("JTS I/O Common is forbidden by the pinned policy")
         return purl, {
             "description": xml_text(component, "description"),
-            "group": xml_text(component, "group"),
+            "group": group,
             "externalReferences": sorted(references),
             "hashes": sorted(hashes),
             "licenses": sorted(licenses),
-            "name": xml_text(component, "name", required=True),
+            "name": name,
             "modified": None if modified_text is None else modified_text == "true",
             "properties": sorted(properties),
             "publisher": xml_text(component, "publisher"),
             "scope": xml_text(component, "scope"),
             "type": component.get("type"),
-            "version": xml_text(component, "version", required=True),
+            "version": version,
         }
 
     metadata = root.findall(qname("metadata"))
@@ -1937,33 +1847,7 @@ def _validate_licenses(
                 f"license exception component {policy_purl}",
             )
             used_exceptions.add(exception_key)
-            if policy_purl == JTS_IO_PURL:
-                review_exception = review_exceptions.get(policy_purl)
-                expected_review_property = {
-                    "name": LICENSE_REVIEW_PROPERTY_NAME,
-                    "value": LICENSE_REVIEW_STATUS,
-                }
-                sha256_hashes = [
-                    item
-                    for item in component.get("hashes", [])
-                    if item.get("alg") == "SHA-256"
-                ]
-                if (
-                    review_exception != JTS_IO_LICENSE_REVIEW_EXCEPTION
-                    or review_properties != [expected_review_property]
-                    or sha256_hashes
-                    != [{"alg": "SHA-256", "content": JTS_IO_BINARY_SHA256}]
-                ):
-                    raise PolicyError(
-                        "JTS I/O Common must retain its exact unresolved NOTICE review"
-                    )
-                _prove_component_scope(
-                    component,
-                    review_exception["scope"],
-                    f"license review component {policy_purl}",
-                )
-                used_review_exceptions.add(policy_purl)
-            elif review_properties:
+            if review_properties:
                 raise PolicyError(
                     f"licensed component must not carry reserved license review status: {purl}"
                 )
@@ -2058,6 +1942,25 @@ def _osv_maven_inventory(sbom: dict[str, Any]) -> dict[str, dict[str, Any]]:
         inventory[canonical] = component
         resolved_by_gav[canonical] = resolved
     return inventory
+
+
+def _validate_pinned_example_dependency_contract(
+    aggregate_sbom: dict[str, Any], example_sbom: dict[str, Any]
+) -> None:
+    for label, sbom in (
+        ("aggregate SBOM", aggregate_sbom),
+        ("example SBOM", example_sbom),
+    ):
+        inventory = _maven_inventory(sbom)
+        for group, name, version in REQUIRED_EXAMPLE_MAVEN_COORDINATES:
+            prefix = f"pkg:maven/{group}/{name}@"
+            expected = f"{prefix}{version}?type=jar"
+            matches = {purl for purl in inventory if purl.startswith(prefix)}
+            if matches != {expected}:
+                raise PolicyError(
+                    f"{label} must contain exactly {group}:{name}:{version}; "
+                    f"found={sorted(matches)}"
+                )
 
 
 def _maven_inventory_with_root(sbom: dict[str, Any]) -> dict[str, dict[str, Any]]:
@@ -3034,74 +2937,14 @@ def _findings(
 
 def _apply_vulnerability_policy(
     findings: list[dict[str, Any]],
-    inventory: dict[str, dict[str, Any]],
-    published_inventory: set[str],
-    example_inventory: set[str],
-    policy: dict[str, Any],
 ) -> list[dict[str, Any]]:
-    exceptions = {
-        (entry["purl"], entry["advisory"]): entry
-        for entry in policy["vulnerabilityExceptions"]
-    }
-    used: set[tuple[str, str]] = set()
-    accepted: list[dict[str, Any]] = []
-    today = datetime.now(timezone.utc).date()
-    for finding in findings:
-        key = (finding["purl"], finding["advisory"])
-        if finding["purl"] in published_inventory:
-            raise PolicyError(
-                "published-module vulnerability cannot use a test-only exception: "
-                f"{finding['purl']} {finding['advisory']}"
-            )
-        if finding["purl"] not in example_inventory:
-            raise PolicyError(
-                "test-only vulnerability is absent from the example profile: "
-                f"{finding['purl']} {finding['advisory']}"
-            )
-        exception = exceptions.get(key)
-        if exception is None:
-            raise PolicyError(
-                f"unreviewed vulnerability: {finding['purl']} {finding['advisory']}"
-            )
-        expiry = _iso_date(exception["expires"], "expires")
-        if expiry < today:
-            raise PolicyError(f"expired vulnerability exception: {exception['exceptionId']}")
-        component = inventory[finding["purl"]]
-        _prove_component_scope(
-            component,
-            exception["scope"],
-            f"vulnerability exception component {finding['purl']}",
+    if findings:
+        finding = findings[0]
+        raise PolicyError(
+            "vulnerability findings are forbidden by the pinned policy: "
+            f"{finding['purl']} {finding['advisory']}"
         )
-        for field in ("severity", "fixedVersion"):
-            if finding[field] != exception[field]:
-                raise PolicyError(
-                    f"vulnerability exception {field} differs for {exception['exceptionId']}"
-                )
-        used.add(key)
-        accepted.append(
-            {
-                "advisory": finding["advisory"],
-                "action": "time-bounded reviewed exception; re-evaluate by expiry",
-                "exceptionExpires": exception["expires"],
-                "exceptionId": exception["exceptionId"],
-                "fixedVersion": finding["fixedVersion"],
-                "owner": exception["owner"],
-                "purl": finding["purl"],
-                "rationaleCode": exception["rationaleCode"],
-                "reachabilityEvidence": {
-                    "exampleProfile": True,
-                    "publishedProfile": False,
-                    "publishedRuntime": False,
-                },
-                "reviewedAt": exception["reviewedAt"],
-                "scope": exception["scope"],
-                "severity": finding["severity"],
-            }
-        )
-    unused = set(exceptions) - used
-    if unused:
-        raise PolicyError(f"unused vulnerability exceptions: {sorted(unused)}")
-    return accepted
+    return []
 
 
 def _inventory_command(arguments: argparse.Namespace) -> None:
@@ -3116,6 +2959,7 @@ def _inventory_command(arguments: argparse.Namespace) -> None:
     ):
         _validate_supported_component_ecosystems(role_sbom, policy, role_label)
     _validate_sbom_roles(sbom, published_sbom, example_sbom)
+    _validate_pinned_example_dependency_contract(sbom, example_sbom)
     _validate_licenses(sbom, policy)
     _validate_licenses(published_sbom, policy, require_all_exceptions=False)
     _validate_licenses(example_sbom, policy, require_all_exceptions=False)
@@ -3154,6 +2998,7 @@ def _verify_command(arguments: argparse.Namespace) -> None:
     ):
         _validate_supported_component_ecosystems(role_sbom, policy, role_label)
     _validate_sbom_roles(sbom, published_sbom, example_sbom)
+    _validate_pinned_example_dependency_contract(sbom, example_sbom)
     license_component_count = _validate_licenses(sbom, policy)
     published_license_component_count = _validate_licenses(
         published_sbom, policy, require_all_exceptions=False
@@ -3205,9 +3050,7 @@ def _verify_command(arguments: argparse.Namespace) -> None:
         arguments.raw_scan, allow_escaped_whitespace=True
     )
     findings = _findings(_scanner_packages(raw_scan), inventory)
-    accepted = _apply_vulnerability_policy(
-        findings, inventory, published_profile, example_profile, policy
-    )
+    accepted = _apply_vulnerability_policy(findings)
     evidence = {
         "revision": arguments.revision,
         "sourceTree": arguments.source_tree,
@@ -3298,7 +3141,7 @@ def _verify_command(arguments: argparse.Namespace) -> None:
     )
     print(
         "verified supply-chain policy: "
-        f"{len(inventory)} Maven packages, {len(findings)} reviewed findings"
+        f"{len(inventory)} Maven packages, {len(findings)} findings"
     )
 
 

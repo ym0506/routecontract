@@ -15,7 +15,10 @@ form/protocol이 없으므로 final-stable-result 분기는 fail-closed다.
 로컬 final MP4는 `ffprobe` 기준 audio stream이 정확히 0개여야 한다.
 
 `0:00.000–2:53.000`의 모든 프레임은 final revision에서 직접 녹화한 실제 terminal·browser·source
-화면이어야 한다.
+화면이어야 한다. manifest·로컬 MP4·공개 YouTube의 검증 duration은 모두 최소
+`173.000`초, 최대 `175.000`초여야 하며 `172.500`초는 마지막 cue가 끝나더라도 허용하지 않는다.
+실제 파일이 173초를 넘으면 남은 최대 2초도 같은 final source 화면에서 cursor 이동이나 짧은
+scroll을 이어가며 채우고, 정지 frame·검은 화면·별도 end card를 붙이지 않는다.
 
 - terminal에서는 실제 명령을 입력하는 순간, 실행 중 상태, 실제 출력과 종료 상태를 한 흐름으로
   보여 준다. `video-demo-session.sh`의 `mysql`·`fingerprint`·`ci`는 실제 하위 실행의
@@ -42,13 +45,14 @@ form/protocol이 없으므로 final-stable-result 분기는 fail-closed다.
 
 `submission/video-caption-cues.json`이 cue 시각·문구·분기의 유일한 원본이다. 최종 SRT와
 burned-in caption은 이 JSON에서 생성한다. 아래 표는 촬영자가 읽기 위한 generated/reference-only
-mirror이며 JSON과 byte-for-byte 같아야 한다. 표를 직접 고쳐 JSON과 다른 두 번째 원본으로
-만들지 않는다. 2:25–2:34에는 JSON에서 실제 cutoff 상태와 같은 분기 하나만 선택한다.
+mirror이며 JSON의 cue 문구·시각·분기와 의미상 정확히 일치해야 한다. 표를 직접 고쳐 JSON과
+다른 두 번째 원본으로 만들지 않는다. 2:25–2:34에는 JSON에서 실제 cutoff 상태와 같은 분기
+하나만 선택한다.
 
 | 분기 | 시작 | 종료 | 1행 | 2행 |
 |---|---:|---:|---|---|
 | 공통 | 0:00.500 | 0:05.200 | RouteContract는 JDBC 실행 기록을 | 승인본과 비교합니다 |
-| 공통 | 0:05.700 | 0:11.500 | ShardingSphere의 기능 결과는 같아도 | 관측된 실행 시도는 1회→2회 |
+| 공통 | 0:05.700 | 0:11.500 | 실제 MySQL 검증을 실행 중입니다 | 결과가 나오면 기록 차이를 확인합니다 |
 | 공통 | 0:12.500 | 0:19.000 | 방금 실행한 실제 MySQL 결과입니다 | 명령과 종료 상태를 함께 봅니다 |
 | 공통 | 0:19.500 | 0:27.000 | 승인된 기록은 실행 한 번입니다 | 변경된 기록은 두 번입니다 |
 | 공통 | 0:27.500 | 0:35.000 | 기능 결과는 그대로 한 행입니다 | 달라진 것은 내부 실행 모습입니다 |
@@ -80,6 +84,16 @@ mirror이며 JSON과 byte-for-byte 같아야 한다. 표를 직접 고쳐 JSON�
 
 실제 저장소 위치가 보이지 않도록 저장소 루트로 이동한 뒤 **녹화 전에** 설정한다.
 
+먼저 공개·참가자 검토가 끝난 publication packet에서 final commit·tree·canonical origin·annotated
+stable tag를 복사해, 녹화 밖에서 `ROUTECONTRACT_FINAL_COMMIT`,
+`ROUTECONTRACT_FINAL_TREE`, `ROUTECONTRACT_FINAL_ORIGIN`, `ROUTECONTRACT_FINAL_TAG`로
+export한다. commit과 tree는 촬영할 현재 checkout에서 계산하지 않는다. 각 terminal take는
+반드시 `--final-recording`을 붙여 실행하며, wrapper가 exact HEAD/tree/origin/annotated tag와
+tracked·untracked clean 상태를 다시 확인하고
+`video_recording_preflight status=VERIFIED`를 출력한 뒤에만 하위 명령을 시작한다. 이 줄이 없거나
+`VIDEO_DEMO_ERROR phase=recording_preflight`가 나오면 해당 take를 폐기한다. 한 인자만 쓰는 기존
+mode는 리허설용이며 final revision 증거가 아니다.
+
 ```bash
 export PS1='routecontract$ ' RPROMPT=''
 printf '\033]0;RouteContract demo\007'
@@ -106,7 +120,7 @@ exec zsh -df
 ## 0:00–0:12 — 실제 MySQL 명령을 직접 입력하고 한 번만 실행
 
 완료된 결과 화면이나 별도 도입 화면에서 시작하지 않는다. final revision의 실제 terminal에서
-`./scripts/video-demo-session.sh mysql`을 직접 입력하고 Enter를 누르는 순간부터 시작한다. 실제
+`./scripts/video-demo-session.sh --final-recording mysql`을 직접 입력하고 Enter를 누르는 순간부터 시작한다. 실제
 대기 구간만 8배속하고 그 terminal 위에 `실제 실행 · 대기 구간 8×`를 표시한다. 결과가 나오면
 같은 terminal에서 marker와 `verified_child_exit 0`을 그대로 보여 준다. 이 marker는 실제 하위
 실행의 machine-readable test 결과에서 추출한 줄이지, 촬영용 고정 요약이 아니다. 같은 명령을
@@ -168,7 +182,7 @@ non-zero를 반환하는지 local final revision에서 확인하는 intentional-
 
 실제 화면 흐름:
 
-1. **실제 terminal 화면:** 0:46.000–0:51.000에 `./scripts/video-demo-session.sh ci`를 직접
+1. **실제 terminal 화면:** 0:46.000–0:51.000에 `./scripts/video-demo-session.sh --final-recording ci`를 직접
    입력하고 Enter를 누른다. 경로 일부를 입력한 뒤 Tab 자동완성을 한 번 보여 주며 붙여넣지 않는다.
 2. **같은 실제 terminal 화면:** 0:51.000–0:54.000에는 실제 대기만 8배속한다. 이어 실제
    하위 출력에서 허용된 전체 줄로 검증한 marker, RCM 두 줄, 엄격한 duration 형식의
@@ -229,7 +243,7 @@ RouteAssertions.assertThat(snapshot).hasExactlyObservedPhysicalAttempts(1);
 
 실제 화면 흐름:
 
-1. **실제 terminal 화면:** `./scripts/video-demo-session.sh fingerprint`를 직접 입력한다.
+1. **실제 terminal 화면:** `./scripts/video-demo-session.sh --final-recording fingerprint`를 직접 입력한다.
 2. **같은 실제 terminal 화면:** 실제 대기만 8배속하고 machine-readable test 출력에서 그대로
    추출된 `ROUTECONTRACT_FINGERPRINT_DRIFT_DEMO` marker의
    `observedPhysicalAttempts=1->1`, `fingerprintMultiset=CHANGED`,
@@ -294,7 +308,8 @@ capture→candidate→사람 승인→CI 실패 흐름만 보여 준다.
    제출 full SHA를 3초 이상 읽게 둔 뒤 annotated `v0.1.0` tag를 click한다. tag object와 peeled
    commit을 구분하고, peeled commit이 제출 full SHA와 같은 줄에서 3초 이상 머문다.
 2. **실제 browser 화면:** 2:15.000–2:19.500 (4.5초 dwell). 미리 연 merge PR의 Checks tab으로 한 번
-   전환한다. ruleset-required check 이름 네 개와 PASS 상태가 한 화면에 보이게 맞춰 두고,
+   전환한다. ruleset-required `Java 17 / MySQL integration / SBOM`과
+   `Dependency review` 두 check 이름 및 PASS 상태가 한 화면에 보이게 맞춰 두고,
    전환 뒤 남은 시간을 scroll 없이 머문다.
 3. **실제 browser 화면:** 2:19.500–2:25.000 (5.5초 dwell). 미리 연 final main-push Actions run으로
    한 번 전환한다. 같은 final SHA와 `Java 17 / MySQL integration / SBOM` PASS가 한 화면에
@@ -400,13 +415,14 @@ YouTube 접근성 자막도 같은 문구·시각으로 올리되 영상에 이�
   허용된 일반 encoder/language/handler tag 외에 명시적으로 금지한 identity·location·device
   metadata tag가 없다.
 - [ ] 1080p에서 terminal·browser·source 글자가 읽히며 자막이 잘리지 않는다.
-- [ ] 모든 SRT와 burned-in caption이 `submission/video-caption-cues.json`과 byte-for-byte 같은
-  문구·시각·분기이고, reference 표도 JSON mirror와 일치한다. 두 줄, 48px, safe area, 대비,
+- [ ] 모든 SRT와 burned-in caption이 `submission/video-caption-cues.json`에서 선택한 cue의
+  문구·시각·분기와 정확히 일치하고, reference 표도 JSON mirror와 일치한다. 두 줄, 48px,
+  safe area, 대비,
   읽기 밀도 기준을 지키며 실제 선택 줄을 가리지 않는다.
 - [ ] 참가자 음성·합성 음성·배경음악·효과음·빈 audio track이 없고 화면에 없는 실행이나
   결과를 자막으로 암시하지 않는다.
 - [ ] YouTube는 공개·non-live·연령 제한 없음 상태이고 다운로드 가능한 1080p 이상 format이
-  처리됐으며, 재생시간이 2:50~2:55이고 로그인 없이 재생된다.
+  처리됐으며, 재생시간이 2:53~2:55이고 로그인 없이 재생된다.
 - [ ] 자동 gate가 판독하지 않는 실제 화면·burned-in caption 일치와 화면 가독성은 owner가
   checksummed local file과 로그아웃 public 1080p 영상을 처음부터 끝까지 직접 보며 확인했다.
 

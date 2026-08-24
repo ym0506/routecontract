@@ -16,7 +16,7 @@ from submission.tools.tests.test_package_submission import (
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 SOURCE = REPOSITORY_ROOT / "submission" / "video-caption-cues.json"
-SOURCE_SHA256 = "19560225c18ca8156a13760e8412e46462383df5e80a92bc2dd7d4615a1f0158"
+SOURCE_SHA256 = "8bce0ad5761820aa1e0433a0e8442c35667e2aa9f0f7c3da725ce8ab904720b1"
 
 
 class VideoCaptionContractTest(unittest.TestCase):
@@ -25,27 +25,38 @@ class VideoCaptionContractTest(unittest.TestCase):
             SOURCE, SOURCE_SHA256
         )
         self.assertEqual(SOURCE_SHA256, observed_sha256)
+        early_process_cue = contract["cues"][1]
+        self.assertEqual(
+            (5_700, 11_500),
+            (early_process_cue["start_ms"], early_process_cue["end_ms"]),
+        )
+        self.assertEqual(
+            ["실제 MySQL 검증을 실행 중입니다", "결과가 나오면 기록 차이를 확인합니다"],
+            early_process_cue["lines"],
+        )
+        self.assertNotIn("1→2", "".join(early_process_cue["lines"]))
+        self.assertNotIn("관측된", "".join(early_process_cue["lines"]))
         expected = {
             "zero": {
                 "selected_cues_sha256": (
-                    "f0df2fe73e013756010a144f6512e3ed"
-                    "d0ed8bc2cb215e92b1ff434bd6d6abaf"
+                    "6dd7891f2b2f40e7c47a2bf7c0b750d"
+                    "b5020b3fae60b329547547f2feeb971f0"
                 ),
                 "srt_sha256": (
-                    "8b8130e12db376ce349e3e22008e970b"
-                    "c94f0567a938ee943ca44de9724c41f6"
+                    "8d2f1292b85209de2d8e0794308a2d50"
+                    "a52f08e2ad9eff86e8d18764685a614d"
                 ),
                 "included": "독립 검증은 공개 양식으로 받습니다",
                 "excluded": "정해진 양식의 RC 결과 접수는 1건",
             },
             "rc_only": {
                 "selected_cues_sha256": (
-                    "1a92e56786fbe382ae6fc2d4c66180b3"
-                    "cd50cbba3a8e9001cf99ba4098bb3fca"
+                    "3d620803ad05d5e2bd9d2cece65bff30"
+                    "a6e9058bce15d2b877c24ae5a05b8e34"
                 ),
                 "srt_sha256": (
-                    "7bfa80c8ca3f9536c225595f700ae6cc"
-                    "6f44ddf4121a56355e7410e706bb4c3a"
+                    "0fada192b7b316a1e759795652f7061d5"
+                    "cc5f6d76706e1ffdd9198f8763d997e"
                 ),
                 "included": "정해진 양식의 RC 결과 접수는 1건",
                 "excluded": "독립 검증은 공개 양식으로 받습니다",
@@ -133,9 +144,9 @@ class VideoCaptionContractTest(unittest.TestCase):
                 package_submission.validate_manifest(manifest)
 
         manifest = valid_manifest()
-        manifest["video"]["duration_seconds"] = 172.499
+        manifest["video"]["duration_seconds"] = 172.999
         with self.assertRaisesRegex(
-            package_submission.GateError, "selected caption branch's final cue"
+            package_submission.GateError, "173 through 175 seconds inclusive"
         ):
             package_submission.validate_manifest(manifest)
 

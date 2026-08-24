@@ -4,14 +4,14 @@
 
 [![CI](https://github.com/ym0506/routecontract/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ym0506/routecontract/actions/workflows/ci.yml?query=branch%3Amain)
 
-> 기능 테스트는 통과했지만 ShardingSphere가 보고한 JDBC 실행 구조가 승인본과 달라진 변경을 CI에서 차단합니다.<br>
-> 정확한 관측 경계: ShardingSphere-JDBC 5.5.3 `SQLExecutionHook`-reported physical JDBC execution attempts
+[Apache ShardingSphere-JDBC](https://github.com/apache/shardingsphere)는 Java 애플리케이션 안에서 하나의 논리 SQL을 여러 data source로 나눠 실행할 수 있는 JDBC middleware입니다. RouteContract는 기능 결과만 보는 테스트가 놓칠 수 있는 실행 구조 변화를 사람이 검토한 승인본과 비교해 manifest assertion을 실패시키는 Java 테스트 라이브러리입니다. 이 assertion을 required CI check로 설정하면 승인되지 않은 변화가 merge되는 것을 막을 수 있습니다.
 
-RouteContract는 Apache ShardingSphere-JDBC 5.5.3을 사용하거나 도입을 평가하는 Java 개발자·팀을 위한 테스트 라이브러리입니다. Java 기능 테스트가 같은 행을 반환해 통과하더라도 ShardingSphere가 보고한 JDBC 실행 시도는 `1 → 2`처럼 늘거나 구조가 달라질 수 있습니다. RouteContract는 이 변화를 사람이 검토한 승인본과 비교해 merge 전 CI에서 드러내고 차단합니다. `1 → 2` 자체를 성능 결함으로 단정하는 것이 아니라, 분산 실행 정책 변화가 검토 없이 merge되지 않도록 의도 여부를 CI 리뷰 대상으로 만듭니다.
+- **사용자:** Apache ShardingSphere-JDBC 5.5.3을 사용하거나 도입을 평가하는 Java 개발자·팀
+- **검출 공백:** 기능 assertion이 같은 한 행으로 통과해도 hook이 보고한 물리 JDBC 실행 시도와 data source는 각각 `1 → 2`로 달라질 수 있음
+- **CI 판단:** 검증한 `1 → 2` fixture에서는 시도 수·data-source 예산 초과가 `RCM201`·`RCM202` manifest assertion 실패가 됨; 이를 required check로 설정하면 merge를 막을 수 있지만, `1 → 2` 자체를 성능 결함으로 단정하지 않고 의도한 변경인지 사람의 검토를 요구함
+- **검증 경계:** Java 17, 정확히 ShardingSphere-JDBC 5.5.3, 정상 반환·비-interrupt 동기식 non-batch `PreparedStatement`; SQL 의미 동치나 complete route plan·commit·비즈니스 성공은 판정하지 않음
 
-이 문제는 특정 ORM이나 repository API에 한정되지 않습니다. [Apache ShardingSphere-JDBC](https://github.com/apache/shardingsphere)는 direct JDBC와 MyBatis·JPA·Hibernate 같은 연결 방식에서 사용할 수 있고, RouteContract의 capture API도 ORM 전용이 아닙니다. 이는 문제와 capture API가 ORM 비종속적이라는 뜻이며, MyBatis·JPA·Hibernate별 end-to-end 호환성을 검증했다는 뜻은 아닙니다. v0.1에서 실제 검증한 adapter 경계는 정확히 5.5.3의 정상 반환·비-interrupt 동기식 non-batch `PreparedStatement`입니다.
-
-정확히는 하나의 application operation 동안 `SQLExecutionHook`으로 **보고된 물리 JDBC 실행 시도**를 결정적인 manifest로 만들고, operation별 실행 예산과 구조 필드를 회귀 계약으로 검증합니다. **structural manifest diff**는 시도 수·alias·callback outcome·exact rewritten-SQL fingerprint·parameter 구조 비교이며 SQL 의미 동치나 complete route plan을 판정하지 않습니다. 실제 MySQL에서는 기존 기능 assertion이 같은 행으로 통과했지만 관측 실행 시도와 data source가 각각 `1 → 2`로 늘어 `RCM201`·`RCM202`로 거부했습니다.
+![같은 업무 결과에서 승인본과 candidate의 관측 실행 시도 및 data-source alias가 1에서 2로 달라져 RCM201과 RCM202가 발생한 실제 MySQL 검증](submission/assets/baseline-candidate.png)
 
 ## Quick Start
 
@@ -27,9 +27,15 @@ container image를 내려받기 위한 네트워크가 필요할 수 있습니�
 같은 candidate를 CI gate에 넣어 `RCM201`·`RCM202` 거부를 확인합니다. 마지막에
 `[ROUTECONTRACT QUICKSTART VERIFIED]`, `realMysqlDemoExit 0`,
 `intentionalCiGateExit 1`, `quickstartExit 0`이 출력되면 예상한 전체 흐름이 통과한 것입니다.
+
+<details>
+<summary>정확한 종료 코드와 출력 경계</summary>
+
 내부 CI gate의 종료 코드 `1`은 의도한 계약 거부이고, quickstart 자체의 `0`은 그 거부까지
 정확히 검증했다는 뜻입니다. preflight나 검증이 실패하면 quickstart는 `2`로 종료하며, 원문
 SQL·parameter·connection 정보가 섞일 수 있는 하위 프로세스 원문은 화면에 다시 출력하지 않습니다.
+
+</details>
 
 ## 가장 작은 사용 예
 
@@ -46,7 +52,54 @@ RouteAssertions.assertThat(snapshot)
         .observesExactlyDataSourceNames("ds_1");
 ```
 
-`finishSuccess()`라는 ShardingSphere SPI 메서드명은 transaction commit이나 비즈니스 성공을 뜻하지 않습니다. RouteContract의 `CALLBACK_RETURNED`는 ShardingSphere 5.5.3이 물리 `executeSQL` 반환 뒤 해당 hook provider에 `finishSuccess`를 보고했다는 뜻으로만 사용합니다. 둘러싼 JDBC operation·transaction·application action의 완료도 증명하지 않습니다.
+## 승인 manifest와 structural manifest diff
+
+하나의 application operation 동안 `SQLExecutionHook`으로 **보고된 물리 JDBC 실행 시도**를 결정적인 manifest로 만들고, operation별 실행 예산과 구조 필드를 회귀 계약으로 검증합니다. **structural manifest diff**는 시도 수·alias·callback outcome·exact rewritten-SQL fingerprint·parameter 구조 비교이며 SQL 의미 동치나 complete route plan을 판정하지 않습니다.
+
+```java
+DataSourceAliases aliases = DataSourceAliases.of(Map.of(
+        "ds_0", "orders-a",
+        "ds_1", "orders-b"));
+ManifestPolicy policy = ManifestPolicy.strict(1, 1);
+
+ObservedExecutionManifest candidate = ObservedExecutionManifest.from(
+        snapshot, aliases, policy);
+
+Path approvedPath = Path.of("route-contracts/orders.find-by-user-id.json");
+Path candidatePath = Path.of("build/routecontract/orders.find-by-user-id.candidate.json");
+new ManifestStore().writeCandidate(approvedPath, candidatePath, candidate);
+
+ObservedExecutionManifest approved = new ManifestStore().read(approvedPath);
+ManifestVerificationResult result = new ManifestVerifier().verify(approved, snapshot, aliases);
+ManifestAssertions.assertMatched(result); // mismatch이면 stable RCM code와 함께 CI 실패
+```
+
+candidate 기록은 approved 파일을 자동으로 덮어쓰지 않습니다. 변경이 의도된 경우 사람이 diff를 검토한 뒤 명시적으로 승인본을 교체해야 합니다.
+
+실제 MySQL equality 기준과 같은 결과를 반환하는 `BETWEEN` candidate의 canonical JSON 및
+검증기 출력은 [examples/manifests](examples/manifests/README.md)에 있습니다. 통합 테스트가
+매번 이 파일들을 다시 생성해 byte-for-byte 일치와 stable RCM code를 동반한 결정적
+structural manifest diff를 확인합니다.
+
+<details>
+<summary>alias 신뢰 경계와 strict/budgetOnly 정책 상세</summary>
+
+data-source alias mapping 역시 승인 계약의 일부인 신뢰 설정입니다. manifest에는 호출자가 제공한 alias가 저장되므로, alias에는 비민감한 고정 이름만 사용해야 합니다. 실제 data-source 이름을 alias로 그대로 재사용하면 그 이름이 노출되고, 다른 실제 data source를 기존 alias로 조용히 재매핑하면 drift를 숨길 수 있습니다. mapping은 manifest와 함께 version control에서 검토해야 합니다.
+
+- `ManifestPolicy.strict(...)`: fingerprint를 포함한 구조 signature 변화도 차단합니다.
+- `ManifestPolicy.budgetOnly(...)`: 시도 수·data-source 집합·callback outcome 변화는 차단하고, signature-only 변화는 `REVIEW_REQUIRED`로 남깁니다.
+- canonical JSON에는 timestamp, UUID, thread 배치, 원문 SQL, parameter 값, exception message가 들어가지 않습니다. data source는 호출자가 제공한 alias로만 기록되며, 그 alias의 비민감성은 호출자의 책임입니다.
+
+같은 행, 관측 시도 `1`, 같은 data source를 보존하면서 추가 filter와 predicate 순서를 바꾼
+MySQL fixture에서는 fingerprint와 parameter type 순서만 달라졌습니다. 이는 그 fixture의
+관측 결과일 뿐 두 SQL의 일반적인 의미 동치를 주장하지 않습니다.
+
+| 정책 | 이 signature-only 변화의 결과 | 선택 시 tradeoff |
+|---|---|---|
+| `strict` | `DRIFT`, `RCM301`·`RCM302` blocking, assertion 실패 | 작은 rewritten-SQL 구조 변화도 검토·승인하게 하지만, 의도적 변화도 baseline 갱신 전까지 CI를 막음 |
+| `budgetOnly` | `REVIEW_REQUIRED`, `RCM301`·`RCM302` non-blocking, `passesBlockingChecks=true` | 예산·data-source 집합·callback outcome은 계속 막지만 signature-only 변화는 CI를 통과시키므로 수동 검토를 놓치면 구조 회귀를 허용할 수 있음 |
+
+</details>
 
 ## 검증된 핵심 시나리오
 
@@ -99,6 +152,9 @@ Release, 동일 revision의 release-evidence run 또는 외부 사용자 결과�
 공개 자산은 [릴리스 절차](RELEASING.md)에 따라 tag·Release·evidence run의 revision 일치와
 게시 후 검증을 모두 확인한 뒤 사용합니다.
 
+<details>
+<summary>역사적 RC와 공개 CI의 정확한 증거 경계</summary>
+
 `v0.1.0-rc1`은 최초 release-evidence 시도를 보존하는 역사적 annotated tag입니다. 해당 run은
 digest로 받은 MySQL image를 mutable local tag로 다시 찾는 단계에서 실패했고 Release를 만들지
 않았습니다. RC1을 활성화된 설치 후보로 사용하거나 그 tag를 이동하지 않습니다.
@@ -112,6 +168,8 @@ adoption으로 승격하지 않습니다.
 않으며, 안정 `v0.1.0` revision이나 그 Release 자산도 검증하지 않습니다. 격리 소비자 결과도
 외부 채택 증거가 아닙니다. 자세한 환경·원시 artifact·한계는 [공개 CI 증거 기록](docs/public-ci-evidence.md)에
 있습니다. 이는 운영환경 지원·일반적 성능을 뜻하지 않습니다.
+
+</details>
 
 ## 공개 Release 자산을 registry 없이 사용하기
 
@@ -134,7 +192,9 @@ python3 scripts/install-release-assets.py \
 
 설치기가 출력한 로컬 Maven repository를 Gradle에 연결하고, exact ShardingSphere-JDBC
 `5.5.3`, RouteContract `0.1.0` 좌표와 Jackson 2 BOM을 테스트 의존성으로 사용합니다.
-thin POM이 소비자의 ShardingSphere/Jackson 버전을 정렬해 주지는 않습니다.
+검증된 fixture graph의 Calcite/JTS 통제를 재현하려면 JTS I/O Common을 제외하고
+Calcite Core와 linq4j를 모두 `1.42.0`으로 strict 고정해야 합니다. thin POM은 소비자의
+ShardingSphere/Jackson/Calcite 버전이나 이 exclusion을 대신 설정하지 않습니다.
 
 ```groovy
 repositories {
@@ -149,10 +209,24 @@ repositories {
 
 dependencies {
     testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))
-    testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:5.5.3")
+    testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:5.5.3") {
+        exclude group: "org.locationtech.jts.io", module: "jts-io-common"
+    }
     testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0")
+
+    constraints {
+        testImplementation("org.apache.calcite:calcite-core:1.42.0") {
+            version { strictly "1.42.0" }
+        }
+        testImplementation("org.apache.calcite:calcite-linq4j:1.42.0") {
+            version { strictly "1.42.0" }
+        }
+    }
 }
 ```
+
+<details>
+<summary>설치기가 검증하는 정확한 공급망 경계</summary>
 
 설치기는 네트워크를 사용하지 않습니다. 공개 자산의 정확한 파일 목록, `SHA256SUMS`,
 sanitized supply-chain evidence와 공개 SBOM/POM의 hash 결합, non-SNAPSHOT POM 좌표,
@@ -168,6 +242,8 @@ target으로 지정하면 거부합니다. 체크섬은 다운로드 무결성�
 최종 tag의 tracked Git tree와
 내용·경로·실행 권한이 동일하다는
 증명은 최종 제출 packaging gate가 별도로 수행합니다.
+
+</details>
 
 같은 source checkout에서 그 저장소만 RouteContract 전용 repository로 사용해 실제 MySQL
 소비자까지 검증하려면 별도의 빈 target으로 다음을 실행합니다. 이 검증은 release packaging
@@ -205,48 +281,6 @@ MySQL 시나리오를 실행합니다. 이 명령은 예상된 위반을 검증�
 ./scripts/demo-end-to-end-ci-failure.sh
 ```
 
-## 승인 manifest와 structural manifest diff
-
-```java
-DataSourceAliases aliases = DataSourceAliases.of(Map.of(
-        "ds_0", "orders-a",
-        "ds_1", "orders-b"));
-ManifestPolicy policy = ManifestPolicy.strict(1, 1);
-
-ObservedExecutionManifest candidate = ObservedExecutionManifest.from(
-        snapshot, aliases, policy);
-
-Path approvedPath = Path.of("route-contracts/orders.find-by-user-id.json");
-Path candidatePath = Path.of("build/routecontract/orders.find-by-user-id.candidate.json");
-new ManifestStore().writeCandidate(approvedPath, candidatePath, candidate);
-
-ObservedExecutionManifest approved = new ManifestStore().read(approvedPath);
-ManifestVerificationResult result = new ManifestVerifier().verify(approved, snapshot, aliases);
-ManifestAssertions.assertMatched(result); // mismatch이면 stable RCM code와 함께 CI 실패
-```
-
-candidate 기록은 approved 파일을 자동으로 덮어쓰지 않습니다. 변경이 의도된 경우 사람이 diff를 검토한 뒤 명시적으로 승인본을 교체해야 합니다.
-
-실제 MySQL equality 기준과 같은 결과를 반환하는 `BETWEEN` candidate의 canonical JSON 및
-검증기 출력은 [examples/manifests](examples/manifests/README.md)에 있습니다. 통합 테스트가
-매번 이 파일들을 다시 생성해 byte-for-byte 일치와 stable RCM code를 동반한 결정적
-structural manifest diff를 확인합니다.
-
-data-source alias mapping 역시 승인 계약의 일부인 신뢰 설정입니다. manifest에는 호출자가 제공한 alias가 저장되므로, alias에는 비민감한 고정 이름만 사용해야 합니다. 실제 data-source 이름을 alias로 그대로 재사용하면 그 이름이 노출되고, 다른 실제 data source를 기존 alias로 조용히 재매핑하면 drift를 숨길 수 있습니다. mapping은 manifest와 함께 version control에서 검토해야 합니다.
-
-- `ManifestPolicy.strict(...)`: fingerprint를 포함한 구조 signature 변화도 차단합니다.
-- `ManifestPolicy.budgetOnly(...)`: 시도 수·data-source 집합·callback outcome 변화는 차단하고, signature-only 변화는 `REVIEW_REQUIRED`로 남깁니다.
-- canonical JSON에는 timestamp, UUID, thread 배치, 원문 SQL, parameter 값, exception message가 들어가지 않습니다. data source는 호출자가 제공한 alias로만 기록되며, 그 alias의 비민감성은 호출자의 책임입니다.
-
-같은 행, 관측 시도 `1`, 같은 data source를 보존하면서 추가 filter와 predicate 순서를 바꾼
-MySQL fixture에서는 fingerprint와 parameter type 순서만 달라졌습니다. 이는 그 fixture의
-관측 결과일 뿐 두 SQL의 일반적인 의미 동치를 주장하지 않습니다.
-
-| 정책 | 이 signature-only 변화의 결과 | 선택 시 tradeoff |
-|---|---|---|
-| `strict` | `DRIFT`, `RCM301`·`RCM302` blocking, assertion 실패 | 작은 rewritten-SQL 구조 변화도 검토·승인하게 하지만, 의도적 변화도 baseline 갱신 전까지 CI를 막음 |
-| `budgetOnly` | `REVIEW_REQUIRED`, `RCM301`·`RCM302` non-blocking, `passesBlockingChecks=true` | 예산·data-source 집합·callback outcome은 계속 막지만 signature-only 변화는 CI를 통과시키므로 수동 검토를 놓치면 구조 회귀를 허용할 수 있음 |
-
 ## 정확한 증거 경계
 
 관측하는 항목:
@@ -265,7 +299,11 @@ MySQL fixture에서는 fingerprint와 parameter type 순서만 달라졌습니�
 - 자동 `FULL_ROUTE`/`BROADCAST` 판정
 - transaction commit 또는 비즈니스 성공
 
+`finishSuccess()`라는 ShardingSphere SPI 메서드명은 transaction commit이나 비즈니스 성공을 뜻하지 않습니다. RouteContract의 `CALLBACK_RETURNED`는 ShardingSphere 5.5.3이 물리 `executeSQL` 반환 뒤 해당 hook provider에 `finishSuccess`를 보고했다는 뜻으로만 사용합니다. 둘러싼 JDBC operation·transaction·application action의 완료도 증명하지 않습니다.
+
 ## v0.1 지원 범위
+
+이 문제는 특정 ORM이나 repository API에 한정되지 않습니다. Apache ShardingSphere-JDBC는 direct JDBC와 MyBatis·JPA·Hibernate 같은 연결 방식에서 사용할 수 있고, RouteContract의 capture API도 ORM 전용이 아닙니다. 이는 문제와 capture API가 ORM 비종속적이라는 뜻이며, MyBatis·JPA·Hibernate별 end-to-end 호환성을 검증했다는 뜻은 아닙니다.
 
 - Java 17
 - Apache ShardingSphere-JDBC **정확히 5.5.3**
@@ -295,19 +333,35 @@ manifest match를 통과시키지 않습니다.
 
 게시 후 검증을 통과한 안정 `v0.1.0` Release 자산 또는 같은 checkout에서 생성한 Maven
 publication을 ShardingSphere-JDBC 5.5.3 소비자 테스트에 추가할 때는 Jackson 2 호환성
-모듈을 먼저 정렬한 뒤 다음 exact coordinate를 선언합니다. RouteContract 0.1.0은 Maven
-Central 게시를 주장하지 않습니다.
+모듈을 정렬하고, JTS I/O Common을 제외하며, Calcite Core와 linq4j를 1.42.0으로 strict
+고정한 뒤 다음 exact coordinate를 선언합니다. RouteContract 0.1.0은 Maven Central
+게시를 주장하지 않습니다.
 
 ```groovy
-testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))
-testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:5.5.3")
-testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0")
+dependencies {
+    testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))
+    testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:5.5.3") {
+        exclude group: "org.locationtech.jts.io", module: "jts-io-common"
+    }
+    testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0")
+
+    constraints {
+        testImplementation("org.apache.calcite:calcite-core:1.42.0") {
+            version { strictly "1.42.0" }
+        }
+        testImplementation("org.apache.calcite:calcite-linq4j:1.42.0") {
+            version { strictly "1.42.0" }
+        }
+    }
+}
 ```
 
 RouteContract build는 dependency embedding을 구성하지 않으며, 모듈의 `compileOnly`
 ShardingSphere/BOM 선언은 공개 POM에서 소비자 버전 제약으로 전달되지 않습니다. 검증된
 Gradle test/runtime graph에서는 위 BOM에 따라 ShardingSphere 5.5.3 호환성 그래프의
-Jackson 2 core·databind·datatype-jdk8·datatype-jsr310 모듈이 2.18.9로 해석됩니다. 단, Jackson
+Jackson 2 core·databind·datatype-jdk8·datatype-jsr310 모듈이 2.18.9로 해석되고,
+Calcite Core·linq4j는 1.42.0으로 해석됩니다. JTS Core 1.19.0은 유지되지만 JTS I/O
+Common은 graph에 없어야 합니다. 단, Jackson
 3.1.5도 함께 있는 runtime에서는 두 계열이 공유하는
 `jackson-annotations`가 Jackson 3 BOM에 따라 2.21로 해석됩니다. 이 설정은 RouteContract가
 직접 사용하는 별도 `tools.jackson.core:jackson-core:3.1.5` 제품 런타임을 대체하거나
@@ -322,6 +376,12 @@ Javadoc classifier에는 OpenJDK standard-doclet 정적 자산과 `legal/` 고�
 ## 정보 최소화와 보안
 
 원문 SQL, parameter 값, connection properties, exception message는 snapshot/manifest에 저장하지 않습니다. 다만 data-source 이름, operation ID, Java type 이름과 unsalted SQL fingerprint도 민감한 engineering metadata가 될 수 있습니다. SHA-256 fingerprint는 익명화가 아니므로, v0.1은 기밀 literal을 inline하지 않는 결정적 `PreparedStatement` 테스트를 전제로 합니다. 자세한 내용은 [SECURITY.md](SECURITY.md)를 확인하십시오.
+
+## 기여와 확장
+
+버그나 기능 제안은 정확한 ShardingSphere version, 사용자에게 보이는 회귀 또는 누락된 capability, 최소화한 synthetic fixture를 [Issue form](https://github.com/ym0506/routecontract/issues/new/choose)에 기록합니다. 구현 변경은 failing test, 실제 MySQL 검증, 명시적인 지원 한계를 함께 제시해야 합니다.
+
+새 adapter나 reporter는 공개 수요, version-specific fixture, real-MySQL CI를 갖춘 뒤 검토합니다. 현재 v0.1 범위는 정확히 5.5.3으로 유지합니다. 전체 절차는 [기여 가이드](CONTRIBUTING.md)에 있습니다.
 
 ## 문서와 재현 경로
 

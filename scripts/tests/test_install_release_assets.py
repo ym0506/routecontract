@@ -45,6 +45,29 @@ SOURCE_SERVICE_DESCRIPTOR_PATH = (
 EXPECTED_PROVIDER = (
     "io.github.ym0506.routecontract.internal.RouteContractSqlExecutionHook"
 )
+MYSQL_CONTAINER_DIGEST = (
+    "b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb"
+)
+EXPECTED_MYSQL_LICENSE_REVIEW = {
+    "action": (
+        "re-review immediately if the MySQL OCI digest, selected platform, embedded "
+        "LICENSE/INFO_SRC evidence, or test-container use boundary changes; otherwise "
+        "resolve, renew with new evidence, or remove the MySQL OCI package-level license "
+        "review before the 2026-12-05 expiry"
+    ),
+    "componentName": "mysql",
+    "componentVersion": "8.4.11",
+    "expires": "2026-12-05",
+    "owner": "RouteContract maintainers",
+    "purl": (
+        "pkg:oci/mysql@sha256%3A"
+        f"{MYSQL_CONTAINER_DIGEST}?repository_url=registry-1.docker.io&tag=8.4.11"
+    ),
+    "rationaleCode": "MYSQL_OCI_PACKAGE_LICENSE_CONCLUSION_INCOMPLETE",
+    "reviewedAt": "2026-08-24",
+    "scope": "test-container",
+    "status": "manual-review-required",
+}
 SOURCE_REQUIRED_RELATIVE_PATHS = {
     "README.md",
     "LICENSE",
@@ -193,56 +216,7 @@ class ReleaseFixture:
         aggregate_xml = self.root / "routecontract-aggregate-cyclonedx.xml"
         published_json = self.root / f"{ARTIFACT_ID}-cyclonedx.json"
         published_xml = self.root / f"{ARTIFACT_ID}-cyclonedx.xml"
-        license_reviews = [
-            {
-                "action": "resolve or renew the OCI license review before expiry",
-                "componentName": "mysql",
-                "componentVersion": "8.4.11",
-                "expires": "2026-08-27",
-                "owner": "RouteContract maintainers",
-                "purl": "pkg:oci/mysql@sha256%3A" + "b" * 64,
-                "rationaleCode": "MYSQL_OCI_PACKAGE_LICENSE_CONCLUSION_INCOMPLETE",
-                "reviewedAt": "2026-08-13",
-                "scope": "test-container",
-                "status": "manual-review-required",
-            },
-            {
-                "action": "resolve the redistribution NOTICE review before expiry",
-                "componentName": "jts-io-common",
-                "componentVersion": "1.19.0",
-                "expires": "2026-08-27",
-                "owner": "RouteContract maintainers",
-                "purl": "pkg:maven/org.locationtech.jts.io/jts-io-common@1.19.0",
-                "rationaleCode": "JTS_IO_COMMON_REDISTRIBUTION_NOTICE_TREATMENT_UNCONFIRMED",
-                "reviewedAt": "2026-08-13",
-                "scope": "test-runtime",
-                "status": "manual-review-required",
-            },
-        ]
-        vulnerability_exceptions = (
-            ("OSV-003", "GHSA-c2rv-hwqm-wjpg", "pkg:maven/org.apache.calcite/calcite-core@1.40.0", "1.42.0", "MODERATE"),
-        )
-        findings = [
-            {
-                "action": "time-bounded reviewed exception; re-evaluate by expiry",
-                "advisory": advisory,
-                "exceptionExpires": "2026-08-27",
-                "exceptionId": exception_id,
-                "fixedVersion": fixed_version,
-                "owner": "RouteContract maintainers",
-                "purl": purl,
-                "rationaleCode": "SHARDINGSPHERE_5_5_3_TEST_GRAPH",
-                "reachabilityEvidence": {
-                    "exampleProfile": True,
-                    "publishedProfile": False,
-                    "publishedRuntime": False,
-                },
-                "reviewedAt": "2026-08-12",
-                "scope": "aggregate-test-only",
-                "severity": severity,
-            }
-            for exception_id, advisory, purl, fixed_version, severity in vulnerability_exceptions
-        ]
+        license_reviews = [dict(EXPECTED_MYSQL_LICENSE_REVIEW)]
         evidence = {
             "exampleProfile": {
                 "componentLicenseCount": 2,
@@ -274,7 +248,7 @@ class ReleaseFixture:
                 "mavenPackageCount": 4,
                 "policySha256": "8" * 64,
                 "sha256": sha256(aggregate_json),
-                "unresolvedLicenseReviewCount": 2,
+                "unresolvedLicenseReviewCount": 1,
                 "xmlComponentCount": 4,
                 "xmlSha256": sha256(aggregate_xml),
             },
@@ -301,9 +275,9 @@ class ReleaseFixture:
             "schemaVersion": 1,
             "sourceTree": "e" * 40,
             "vulnerabilities": {
-                "acceptedExceptionCount": 1,
-                "findingCount": 1,
-                "findings": findings,
+                "acceptedExceptionCount": 0,
+                "findingCount": 0,
+                "findings": [],
                 "unreviewedCount": 0,
             },
         }
@@ -474,6 +448,31 @@ class InstallReleaseAssetsTest(unittest.TestCase):
             check=False,
         )
 
+    def assert_evidence_mutation_rejected(
+        self, mutation, expected_error: str
+    ) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            assets = root / "release"
+            fixture = ReleaseFixture(assets)
+            fixture.create()
+            evidence_path = assets / "supply-chain-evidence.json"
+            evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+            mutation(evidence)
+            evidence_path.write_text(
+                json.dumps(evidence, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            fixture.write_checksums()
+
+            result = self.run_installer(
+                assets, root / "consumer-maven", home=root / "home"
+            )
+
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn(expected_error, result.stderr)
+            self.assertFalse((root / "consumer-maven").exists())
+
     def test_installs_verified_coordinate_only_into_explicit_repository(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
@@ -583,50 +582,99 @@ class InstallReleaseAssetsTest(unittest.TestCase):
             self.assertFalse((root / "consumer-maven").exists())
 
     def test_rejects_incomplete_unresolved_license_review_set(self) -> None:
-        with tempfile.TemporaryDirectory() as raw:
-            root = Path(raw)
-            assets = root / "release"
-            fixture = ReleaseFixture(assets)
-            fixture.create()
-            evidence_path = assets / "supply-chain-evidence.json"
-            evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
-            evidence["sbom"]["licenseReviews"].pop()
-            evidence_path.write_text(
-                json.dumps(evidence, indent=2, sort_keys=True) + "\n",
-                encoding="utf-8",
-            )
-            fixture.write_checksums()
+        self.assert_evidence_mutation_rejected(
+            lambda evidence: evidence["sbom"]["licenseReviews"].clear(),
+            "exactly one license review",
+        )
 
-            result = self.run_installer(
-                assets, root / "consumer-maven", home=root / "home"
-            )
+    def test_rejects_duplicate_unresolved_license_review(self) -> None:
+        self.assert_evidence_mutation_rejected(
+            lambda evidence: evidence["sbom"]["licenseReviews"].append(
+                dict(evidence["sbom"]["licenseReviews"][0])
+            ),
+            "exactly one license review",
+        )
 
-            self.assertNotEqual(0, result.returncode)
-            self.assertIn("exactly two license reviews", result.stderr)
-            self.assertFalse((root / "consumer-maven").exists())
+    def test_rejects_wrong_mysql_license_review_contract(self) -> None:
+        wrong_values = (
+            ("identity", "componentName", "not-mysql"),
+            (
+                "digest",
+                "purl",
+                EXPECTED_MYSQL_LICENSE_REVIEW["purl"].replace(
+                    MYSQL_CONTAINER_DIGEST, "f" * 64
+                ),
+            ),
+            ("scope", "scope", "published-runtime"),
+            ("status", "status", "approved"),
+        )
+        for label, field, value in wrong_values:
+            with self.subTest(label=label):
+                self.assert_evidence_mutation_rejected(
+                    lambda evidence, field=field, value=value: evidence["sbom"][
+                        "licenseReviews"
+                    ][0].__setitem__(field, value),
+                    "exactly identify the pinned MySQL OCI image",
+                )
 
-    def test_rejects_reversed_license_review_order(self) -> None:
-        with tempfile.TemporaryDirectory() as raw:
-            root = Path(raw)
-            assets = root / "release"
-            fixture = ReleaseFixture(assets)
-            fixture.create()
-            evidence_path = assets / "supply-chain-evidence.json"
-            evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
-            evidence["sbom"]["licenseReviews"].reverse()
-            evidence_path.write_text(
-                json.dumps(evidence, indent=2, sort_keys=True) + "\n",
-                encoding="utf-8",
-            )
-            fixture.write_checksums()
+    def test_rejects_stale_pre_owner_decision_mysql_license_review(self) -> None:
+        stale_values = (
+            (
+                "action",
+                "resolve, renew with new evidence, or remove the MySQL OCI "
+                "package-level license review before the 2026-08-27 expiry",
+            ),
+            ("reviewedAt", "2026-08-13"),
+            ("expires", "2026-08-27"),
+        )
+        for field, value in stale_values:
+            with self.subTest(field=field):
+                self.assert_evidence_mutation_rejected(
+                    lambda evidence, field=field, value=value: evidence["sbom"][
+                        "licenseReviews"
+                    ][0].__setitem__(field, value),
+                    "exactly identify the pinned MySQL OCI image",
+                )
 
-            result = self.run_installer(
-                assets, root / "consumer-maven", home=root / "home"
-            )
+    def test_rejects_expired_mysql_license_review(self) -> None:
+        self.assert_evidence_mutation_rejected(
+            lambda evidence: evidence["sbom"]["licenseReviews"][0].__setitem__(
+                "expires", "2026-08-12"
+            ),
+            "expired license review",
+        )
 
-            self.assertNotEqual(0, result.returncode)
-            self.assertIn("exact required order", result.stderr)
-            self.assertFalse((root / "consumer-maven").exists())
+    def test_rejects_any_vulnerability_exception_or_finding(self) -> None:
+        invalid_vulnerabilities = (
+            (
+                "accepted exception count",
+                {
+                    "acceptedExceptionCount": 1,
+                    "findingCount": 0,
+                    "findings": [],
+                    "unreviewedCount": 0,
+                },
+                "counts do not match findings",
+            ),
+            (
+                "finding",
+                {
+                    "acceptedExceptionCount": 1,
+                    "findingCount": 1,
+                    "findings": [{"unexpected": "finding"}],
+                    "unreviewedCount": 0,
+                },
+                "zero vulnerability findings and accepted exceptions",
+            ),
+        )
+        for label, vulnerabilities, expected_error in invalid_vulnerabilities:
+            with self.subTest(label=label):
+                self.assert_evidence_mutation_rejected(
+                    lambda evidence, vulnerabilities=vulnerabilities: evidence.__setitem__(
+                        "vulnerabilities", vulnerabilities
+                    ),
+                    expected_error,
+                )
 
     def test_rejects_boolean_supply_chain_vulnerability_count(self) -> None:
         with tempfile.TemporaryDirectory() as raw:

@@ -4,14 +4,14 @@
 
 [![CI](https://github.com/ym0506/routecontract/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ym0506/routecontract/actions/workflows/ci.yml?query=branch%3Amain)
 
-> Block unapproved ShardingSphere-JDBC execution-structure changes that business-result tests can miss.<br>
-> Exact observation boundary: ShardingSphere-JDBC 5.5.3 `SQLExecutionHook`-reported physical JDBC execution attempts
+[Apache ShardingSphere-JDBC](https://github.com/apache/shardingsphere) is JDBC middleware that can split one logical SQL operation across multiple data sources inside a Java application. RouteContract is a Java testing library that compares execution-structure changes missed by business-result tests with a human-reviewed baseline and fails a manifest assertion. Configuring that assertion as a required CI check can stop an unapproved change from merging.
 
-RouteContract is a Java testing library for developers and teams using or evaluating Apache ShardingSphere-JDBC 5.5.3. A Java business-result test can return the same row and still pass while the JDBC executions reported by ShardingSphere expand from `1 → 2` or change structure. RouteContract compares that change with a human-reviewed baseline so CI can surface and block it before merge. It does not label `1 → 2` itself as a performance defect; it makes the intent of a distributed-execution policy change a CI review target before that change can merge unnoticed.
+- **Who:** developers and teams using or evaluating Apache ShardingSphere-JDBC 5.5.3
+- **Missed change:** a functional assertion can return the same row and pass while hook-reported physical JDBC execution attempts and data sources each change from `1 → 2`
+- **CI decision:** in the verified `1 → 2` fixture, attempt-count and data-source-budget overruns fail the manifest assertion with `RCM201` and `RCM202`; configuring it as a required check can block the merge, while RouteContract does not label `1 → 2` itself as a performance defect and requires a person to review whether the change is intentional
+- **Verified boundary:** Java 17, exactly ShardingSphere-JDBC 5.5.3, normal-returning and non-interrupted synchronous non-batch `PreparedStatement`; it does not decide SQL semantic equivalence or reconstruct a complete route plan, commit, or business success
 
-This problem is not limited to one ORM or repository API. [Apache ShardingSphere-JDBC](https://github.com/apache/shardingsphere) can be used with direct JDBC and integration surfaces such as MyBatis, JPA, and Hibernate; RouteContract's capture API is not ORM-specific. That describes the problem and API surface, not verified end-to-end compatibility with each of MyBatis, JPA, and Hibernate. The adapter boundary actually verified for v0.1 is deliberately narrower: exact 5.5.3, normal-returning and non-interrupted synchronous non-batch `PreparedStatement` operations on Java 17.
-
-Precisely, RouteContract turns the **physical JDBC execution attempts reported through `SQLExecutionHook`** during one application operation into a deterministic manifest and checks per-operation budgets and structural fields. A **structural manifest diff** compares attempt counts, aliases, callback outcomes, exact rewritten-SQL fingerprints, and parameter shape; it does not decide SQL semantic equivalence or reconstruct the complete route plan. In the verified real-MySQL fixture, the existing business assertion returned the same row, but observed attempts and data sources each expanded from `1 → 2`, so `RCM201` and `RCM202` rejected the candidate.
+![A verified real-MySQL case where the business result stays the same while observed attempts and reviewed data-source aliases change from one to two, producing RCM201 and RCM202](submission/assets/baseline-candidate.png)
 
 ## Quick Start
 
@@ -28,10 +28,17 @@ while the business result stays unchanged, then feeds the same candidate to
 the CI gate and checks the expected `RCM201`/`RCM202` rejection. A final
 `[ROUTECONTRACT QUICKSTART VERIFIED]`, `realMysqlDemoExit 0`,
 `intentionalCiGateExit 1`, and `quickstartExit 0` means the whole flow behaved
-as expected. Exit `1` belongs to the intentionally rejecting inner CI gate;
+as expected.
+
+<details>
+<summary>Exact exit-code and output boundary</summary>
+
+Exit `1` belongs to the intentionally rejecting inner CI gate;
 exit `0` from the quickstart means that rejection was verified. A preflight or
 verification failure exits `2`. The wrapper does not echo raw child-process
 output that could contain SQL, parameters, or connection details.
+
+</details>
 
 ## Smallest usage example
 
@@ -48,7 +55,53 @@ RouteAssertions.assertThat(snapshot)
         .observesExactlyDataSourceNames("ds_1");
 ```
 
-The ShardingSphere SPI method name `finishSuccess()` does not mean that a transaction committed or that a business operation succeeded. RouteContract uses `CALLBACK_RETURNED` only to mean that ShardingSphere 5.5.3 reported `finishSuccess` to this hook provider after the physical `executeSQL` call returned. It does not prove completion of the surrounding JDBC operation, transaction, or application action.
+## Approved manifests and structural manifest diffs
+
+During one application operation, RouteContract turns the **physical JDBC execution attempts reported through `SQLExecutionHook`** into a deterministic manifest and checks per-operation budgets and structural fields. A **structural manifest diff** compares attempt counts, aliases, callback outcomes, exact rewritten-SQL fingerprints, and parameter shape; it does not decide SQL semantic equivalence or reconstruct the complete route plan.
+
+```java
+DataSourceAliases aliases = DataSourceAliases.of(Map.of(
+        "ds_0", "orders-a",
+        "ds_1", "orders-b"));
+ManifestPolicy policy = ManifestPolicy.strict(1, 1);
+
+ObservedExecutionManifest candidate = ObservedExecutionManifest.from(
+        snapshot, aliases, policy);
+
+Path approvedPath = Path.of("route-contracts/orders.find-by-user-id.json");
+Path candidatePath = Path.of("build/routecontract/orders.find-by-user-id.candidate.json");
+new ManifestStore().writeCandidate(approvedPath, candidatePath, candidate);
+
+ObservedExecutionManifest approved = new ManifestStore().read(approvedPath);
+ManifestVerificationResult result = new ManifestVerifier().verify(approved, snapshot, aliases);
+ManifestAssertions.assertMatched(result); // A mismatch fails CI with stable RCM codes.
+```
+
+Writing a candidate never overwrites the approved file automatically. When a change is intentional, a person must review the diff and explicitly replace the approved baseline.
+
+[examples/manifests](examples/manifests/README.md) contains canonical JSON from the real MySQL equality baseline and the same-result `BETWEEN` candidate, together with verifier output. The integration test regenerates these files on every run and checks byte-for-byte equality and deterministic structural manifest diffs with stable RCM codes.
+
+<details>
+<summary>Alias trust boundary and strict/budgetOnly policy details</summary>
+
+The data-source alias mapping is trusted configuration and part of the approval contract. The manifest stores caller-provided aliases, so aliases must be stable and non-sensitive. Reusing a real data-source name as its alias exposes that name. Quietly mapping a different real data source to an existing alias can hide drift. Review the mapping in version control alongside the manifest.
+
+- `ManifestPolicy.strict(...)` blocks structural signature changes, including fingerprint changes.
+- `ManifestPolicy.budgetOnly(...)` blocks changes in attempt count, data-source set, and callback outcomes, while returning signature-only changes as `REVIEW_REQUIRED`.
+- Canonical JSON excludes timestamps, UUIDs, thread assignment, raw SQL, parameter values, and exception messages. It stores data sources only as caller-provided aliases, and callers remain responsible for keeping those aliases non-sensitive.
+
+In a MySQL fixture that preserves the returned rows, one observed attempt, and
+the same data source while changing an additional filter and predicate order,
+only the fingerprint and parameter-type order drift. This is an observation
+about that fixture, not a claim that the two SQL forms are generally
+semantically equivalent.
+
+| Policy | Result for this signature-only change | Tradeoff |
+|---|---|---|
+| `strict` | `DRIFT`; blocking `RCM301`/`RCM302`; assertion fails | Forces review and approval of small rewritten-SQL structural changes, but also blocks intentional changes until the baseline is updated |
+| `budgetOnly` | `REVIEW_REQUIRED`; non-blocking `RCM301`/`RCM302`; `passesBlockingChecks=true` | Still blocks budget, data-source-set, and callback-outcome changes, but a missed manual review can allow a signature-only structural regression through CI |
+
+</details>
 
 ## Verified core scenarios
 
@@ -101,6 +154,9 @@ non-prerelease Release, same-revision release-evidence run, or external-user res
 Use public assets only after verifying tag/Release/evidence-run revision identity and every
 postpublication check in the [release procedure](RELEASING.md).
 
+<details>
+<summary>Exact evidence boundary for historical RC and public-CI records</summary>
+
 `v0.1.0-rc1` is retained as the historical annotated tag for the first release-evidence attempt.
 That run failed while resolving a digest-pulled MySQL image through a mutable local tag and created
 no Release. Do not use RC1 as an activated installation candidate or move its tag.
@@ -115,6 +171,8 @@ does not verify the `v0.1.0-rc2` revision, the stable `v0.1.0` revision, or eith
 and the isolated consumer is not external adoption evidence. See the
 [public CI evidence record](docs/public-ci-evidence.md) for its environment, raw artifacts, and
 limitations. None of these results implies production support or general performance.
+
+</details>
 
 ## Consume public Release assets without a registry
 
@@ -137,8 +195,10 @@ python3 scripts/install-release-assets.py \
 
 Connect the installed local Maven repository to Gradle, then use exact
 ShardingSphere-JDBC `5.5.3` and RouteContract `0.1.0` coordinates plus the
-Jackson 2 BOM as test dependencies. The thin POM does not align the consumer's
-ShardingSphere/Jackson versions.
+Jackson 2 BOM as test dependencies. To reproduce the verified fixture graph's
+Calcite/JTS controls, exclude JTS I/O Common and strictly constrain both
+Calcite Core and linq4j to `1.42.0`. The thin POM does not align the consumer's
+ShardingSphere/Jackson/Calcite versions or apply this exclusion.
 
 ```groovy
 repositories {
@@ -153,10 +213,24 @@ repositories {
 
 dependencies {
     testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))
-    testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:5.5.3")
+    testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:5.5.3") {
+        exclude group: "org.locationtech.jts.io", module: "jts-io-common"
+    }
     testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0")
+
+    constraints {
+        testImplementation("org.apache.calcite:calcite-core:1.42.0") {
+            version { strictly "1.42.0" }
+        }
+        testImplementation("org.apache.calcite:calcite-linq4j:1.42.0") {
+            version { strictly "1.42.0" }
+        }
+    }
 }
 ```
+
+<details>
+<summary>Exact supply-chain boundary enforced by the installer</summary>
 
 The installer performs no network access. Before writing, it validates the
 exact public-asset set, `SHA256SUMS`, the sanitized supply-chain summary's
@@ -176,6 +250,8 @@ checks; they do not determine the semantic provenance of renamed or copied code.
 The final submission packaging
 gate separately proves that the release archive has the same tracked-file
 content, paths, and executable permissions as the final tagged Git tree.
+
+</details>
 
 To exercise a real MySQL consumer from the same source checkout with that file
 repository as the exclusive RouteContract source, use a separate empty target:
@@ -213,47 +289,6 @@ To regenerate and compare the canonical files against real MySQL, then fail the 
 
 Even when the preceding stages succeed, this command intentionally exits with code `1` at the final contract assertion.
 
-## Approved manifests and structural manifest diffs
-
-```java
-DataSourceAliases aliases = DataSourceAliases.of(Map.of(
-        "ds_0", "orders-a",
-        "ds_1", "orders-b"));
-ManifestPolicy policy = ManifestPolicy.strict(1, 1);
-
-ObservedExecutionManifest candidate = ObservedExecutionManifest.from(
-        snapshot, aliases, policy);
-
-Path approvedPath = Path.of("route-contracts/orders.find-by-user-id.json");
-Path candidatePath = Path.of("build/routecontract/orders.find-by-user-id.candidate.json");
-new ManifestStore().writeCandidate(approvedPath, candidatePath, candidate);
-
-ObservedExecutionManifest approved = new ManifestStore().read(approvedPath);
-ManifestVerificationResult result = new ManifestVerifier().verify(approved, snapshot, aliases);
-ManifestAssertions.assertMatched(result); // A mismatch fails CI with stable RCM codes.
-```
-
-Writing a candidate never overwrites the approved file automatically. When a change is intentional, a person must review the diff and explicitly replace the approved baseline.
-
-[examples/manifests](examples/manifests/README.md) contains canonical JSON from the real MySQL equality baseline and the same-result `BETWEEN` candidate, together with verifier output. The integration test regenerates these files on every run and checks byte-for-byte equality and deterministic structural manifest diffs with stable RCM codes.
-
-The data-source alias mapping is trusted configuration and part of the approval contract. The manifest stores caller-provided aliases, so aliases must be stable and non-sensitive. Reusing a real data-source name as its alias exposes that name. Quietly mapping a different real data source to an existing alias can hide drift. Review the mapping in version control alongside the manifest.
-
-- `ManifestPolicy.strict(...)` blocks structural signature changes, including fingerprint changes.
-- `ManifestPolicy.budgetOnly(...)` blocks changes in attempt count, data-source set, and callback outcomes, while returning signature-only changes as `REVIEW_REQUIRED`.
-- Canonical JSON excludes timestamps, UUIDs, thread assignment, raw SQL, parameter values, and exception messages. It stores data sources only as caller-provided aliases, and callers remain responsible for keeping those aliases non-sensitive.
-
-In a MySQL fixture that preserves the returned rows, one observed attempt, and
-the same data source while changing an additional filter and predicate order,
-only the fingerprint and parameter-type order drift. This is an observation
-about that fixture, not a claim that the two SQL forms are generally
-semantically equivalent.
-
-| Policy | Result for this signature-only change | Tradeoff |
-|---|---|---|
-| `strict` | `DRIFT`; blocking `RCM301`/`RCM302`; assertion fails | Forces review and approval of small rewritten-SQL structural changes, but also blocks intentional changes until the baseline is updated |
-| `budgetOnly` | `REVIEW_REQUIRED`; non-blocking `RCM301`/`RCM302`; `passesBlockingChecks=true` | Still blocks budget, data-source-set, and callback-outcome changes, but a missed manual review can allow a signature-only structural regression through CI |
-
 ## Exact evidence boundary
 
 RouteContract observes:
@@ -272,7 +307,11 @@ RouteContract does not observe or prove:
 - automatic `FULL_ROUTE` or `BROADCAST` classification;
 - transaction commit or business success.
 
+The ShardingSphere SPI method name `finishSuccess()` does not mean that a transaction committed or that a business operation succeeded. RouteContract uses `CALLBACK_RETURNED` only to mean that ShardingSphere 5.5.3 reported `finishSuccess` to this hook provider after the physical `executeSQL` call returned. It does not prove completion of the surrounding JDBC operation, transaction, or application action.
+
 ## v0.1 support boundary
+
+This problem is not limited to one ORM or repository API. Apache ShardingSphere-JDBC can be used with direct JDBC and integration surfaces such as MyBatis, JPA, and Hibernate; RouteContract's capture API is not ORM-specific. That describes the problem and API surface, not verified end-to-end compatibility with each of MyBatis, JPA, and Hibernate.
 
 - Java 17
 - Apache ShardingSphere-JDBC **exactly 5.5.3**
@@ -300,13 +339,27 @@ One capture retains at most 10,000 physical execution attempts. At the next atte
 
 When consuming either postpublication-verified stable `v0.1.0` Release assets or a Maven publication
 generated from the same checkout, a ShardingSphere-JDBC 5.5.3 consumer test should align the
-Jackson 2 compatibility modules before declaring the exact coordinate below. RouteContract 0.1.0
-is not claimed to exist on Maven Central.
+Jackson 2 compatibility modules, exclude JTS I/O Common, and strictly constrain Calcite Core and
+linq4j to 1.42.0 before declaring the exact coordinate below. RouteContract 0.1.0 is not claimed to
+exist on Maven Central.
 
 ```groovy
-testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))
-testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:5.5.3")
-testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0")
+dependencies {
+    testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))
+    testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:5.5.3") {
+        exclude group: "org.locationtech.jts.io", module: "jts-io-common"
+    }
+    testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0")
+
+    constraints {
+        testImplementation("org.apache.calcite:calcite-core:1.42.0") {
+            version { strictly "1.42.0" }
+        }
+        testImplementation("org.apache.calcite:calcite-linq4j:1.42.0") {
+            version { strictly "1.42.0" }
+        }
+    }
+}
 ```
 
 The RouteContract build does not configure dependency embedding. Its
@@ -314,7 +367,8 @@ module-level `compileOnly` ShardingSphere/BOM declarations are not published as
 consumer version constraints. In the verified
 Gradle test/runtime graph, the Jackson 2 core, databind, datatype-jdk8, and
 datatype-jsr310 modules in ShardingSphere 5.5.3's compatibility graph resolve to
-2.18.9. In the runtime that also contains Jackson 3.1.5, the shared
+2.18.9, while Calcite Core and linq4j resolve to 1.42.0. JTS Core 1.19.0 remains,
+but JTS I/O Common must be absent from the graph. In the runtime that also contains Jackson 3.1.5, the shared
 `jackson-annotations` artifact resolves to 2.21 through the Jackson 3 BOM. This
 does not replace or downgrade RouteContract's separate product runtime,
 `tools.jackson.core:jackson-core:3.1.5`.
@@ -329,6 +383,12 @@ shipped-file inventory.
 ## Data minimization and security
 
 Snapshots and manifests do not store raw SQL, parameter values, connection properties, or exception messages. However, data-source names, operation IDs, Java type names, and unsalted SQL fingerprints can still be sensitive engineering metadata. A SHA-256 fingerprint is not anonymization. v0.1 therefore assumes deterministic `PreparedStatement` tests that do not inline confidential literals. See [SECURITY.md](SECURITY.md) for details.
+
+## Contributing and extension gates
+
+Report a bug or feature proposal through the [Issue forms](https://github.com/ym0506/routecontract/issues/new/choose) with the exact ShardingSphere version, a user-visible regression or missing capability, and a minimized synthetic fixture. An implementation change should include a failing test, real-MySQL verification, and an explicit support boundary.
+
+A new adapter or reporter is considered only after public demand, a version-specific fixture, and real-MySQL CI exist. The current v0.1 boundary remains exactly 5.5.3. See the [contribution guide](CONTRIBUTING.md) for the full workflow.
 
 ## Documentation and reproduction paths
 

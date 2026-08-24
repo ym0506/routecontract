@@ -20,6 +20,7 @@ from pathlib import Path
 import re
 import sys
 import tempfile
+from urllib.parse import quote, unquote, unquote_to_bytes
 import xml.etree.ElementTree as ET
 
 
@@ -40,8 +41,6 @@ REVIEWED_MAVEN_LICENSE_EXPRESSIONS = {
         "(Apache-2.0 OR LGPL-2.1-or-later) AND MIT",
     ("org.locationtech.jts", "jts-core", "1.19.0"):
         "EPL-2.0 OR BSD-3-Clause",
-    ("org.locationtech.jts.io", "jts-io-common", "1.19.0"):
-        "(EPL-2.0 OR BSD-3-Clause) AND Apache-2.0",
 }
 LICENSE_OVERRIDE_MAVEN_COORDINATES = (
     *REVIEWED_MAVEN_LICENSE_EXPRESSIONS.keys(),
@@ -59,7 +58,16 @@ MYSQL_CONTAINER_PURL = (
 )
 MYSQL_CONTAINER_REVIEW_PROPERTY = "routecontract:license-review"
 MYSQL_CONTAINER_REVIEW_VALUE = "manual-review-required"
-JTS_IO_COORDINATE = ("org.locationtech.jts.io", "jts-io-common", "1.19.0")
+FORBIDDEN_JTS_IO_GROUP = "org.locationtech.jts.io"
+FORBIDDEN_JTS_IO_NAME = "jts-io-common"
+FORBIDDEN_JTS_IO_PURL_PREFIX = (
+    "pkg:maven/org.locationtech.jts.io/jts-io-common@"
+)
+REQUIRED_EXAMPLE_MAVEN_COORDINATES = (
+    ("org.apache.shardingsphere", "shardingsphere-jdbc", "5.5.3"),
+    ("org.apache.calcite", "calcite-core", "1.42.0"),
+    ("org.apache.calcite", "calcite-linq4j", "1.42.0"),
+)
 MYSQL_CONTAINER_DOCUMENTATION_URL = (
     "https://dev.mysql.com/doc/refman/8.4/en/preface.html"
 )
@@ -113,7 +121,17 @@ EXPECTED_TOOL_COMPONENT = {
     "name": "cyclonedx-gradle-plugin",
     "version": "3.4.0",
 }
+# This is the exact Maven PURL byte profile emitted by the pinned CycloneDX
+# Gradle producer, not a general-purpose PURL parser. In particular, it accepts
+# the producer's percent-encoded ``project_path`` colon and rejects subpaths.
 CONTROL_CHARACTER = re.compile(r"[\x00-\x1f\x7f]")
+MAVEN_PURL = re.compile(
+    r"^pkg:maven/(?P<group>[^/@?]+)/(?P<name>[^/@?]+)@(?P<version>[^?]+)"
+    r"(?:\?(?P<query>[^#]+))?$"
+)
+MAVEN_PURL_EQUIVALENT_PREFIX = re.compile(r"^pkg:/*maven/", re.IGNORECASE)
+PURL_QUALIFIER_KEY = re.compile(r"^[a-z][a-z0-9._-]*$")
+INVALID_PERCENT_ENCODING = re.compile(r"%(?![0-9A-Fa-f]{2})")
 RFC3339_UTC = re.compile(
     r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}"
     r"(?:\.[0-9]+)?Z"
@@ -161,6 +179,84 @@ def _validate_timestamp(value: object, label: str) -> str:
     except ValueError as error:
         raise SbomError(f"{label} must be an RFC 3339 UTC timestamp") from error
     return value
+
+
+def _strict_percent_decode(value: str, label: str) -> str:
+    if INVALID_PERCENT_ENCODING.search(value):
+        raise SbomError(f"{label} contains malformed percent encoding")
+    try:
+        return unquote_to_bytes(value).decode("utf-8", errors="strict")
+    except UnicodeError as error:
+        raise SbomError(f"{label} contains invalid UTF-8 percent encoding") from error
+
+
+def _parse_supported_maven_purl(
+    purl: str, label: str
+) -> tuple[str, str, str, dict[str, str]]:
+    match = MAVEN_PURL.fullmatch(purl)
+    if match is None:
+        raise SbomError(f"{label} has an invalid Maven purl")
+    group = _strict_percent_decode(match.group("group"), f"{label} Maven group")
+    name = _strict_percent_decode(match.group("name"), f"{label} Maven name")
+    version = _strict_percent_decode(match.group("version"), f"{label} Maven version")
+    for field, value in (("group", group), ("name", name), ("version", version)):
+        if (
+            not value
+            or CONTROL_CHARACTER.search(value)
+            or any(token in value for token in (":", "=", "/"))
+        ):
+            raise SbomError(f"{label} has an unsafe Maven {field}")
+
+    qualifiers: dict[str, str] = {}
+    query = match.group("query")
+    if query is not None:
+        for field in query.split("&"):
+            if field.count("=") != 1:
+                raise SbomError(f"{label} has an invalid Maven purl qualifier")
+            raw_name, raw_value = field.split("=", 1)
+            if PURL_QUALIFIER_KEY.fullmatch(raw_name) is None:
+                raise SbomError(f"{label} has an invalid Maven purl qualifier key")
+            qualifier_name = raw_name
+            qualifier_value = _strict_percent_decode(
+                raw_value, f"{label} Maven qualifier value"
+            )
+            if (
+                not qualifier_name
+                or not qualifier_value
+                or CONTROL_CHARACTER.search(qualifier_name)
+                or CONTROL_CHARACTER.search(qualifier_value)
+                or qualifier_name in qualifiers
+            ):
+                raise SbomError(f"{label} has an invalid or duplicate Maven qualifier")
+            qualifiers[qualifier_name] = qualifier_value
+
+    canonical = (
+        "pkg:maven/"
+        f"{quote(group, safe='.-_~')}/{quote(name, safe='.-_~')}"
+        f"@{quote(version, safe='.-_~')}"
+    )
+    canonical_query = "&".join(
+        f"{quote(key, safe='.-_~')}={quote(qualifiers[key], safe='.-_~')}"
+        for key in sorted(qualifiers)
+    )
+    expected = canonical + (f"?{canonical_query}" if canonical_query else "")
+    if purl != expected:
+        raise SbomError(
+            f"{label} Maven purl differs from the pinned producer profile"
+        )
+    return group, name, version, qualifiers
+
+
+def _validate_supported_maven_component_identity(
+    group: object, name: object, version: object, purl: str, label: str
+) -> None:
+    if MAVEN_PURL_EQUIVALENT_PREFIX.match(purl) is None:
+        return
+    parsed_group, parsed_name, parsed_version, _ = _parse_supported_maven_purl(
+        purl, label
+    )
+    if (group, name, version) != (parsed_group, parsed_name, parsed_version):
+        raise SbomError(f"{label} Maven purl does not match group/name/version")
 
 
 def _read_canonical_utf8(path: Path, label: str) -> str:
@@ -461,6 +557,60 @@ def _json_exact_maven_components(
     return candidates
 
 
+def _is_forbidden_jts_io_identity(
+    group: object, name: object, purl: object, bom_ref: object
+) -> bool:
+    def decoded(value: object) -> object:
+        if not isinstance(value, str):
+            return value
+        try:
+            return unquote(value, encoding="utf-8", errors="strict")
+        except UnicodeDecodeError:
+            return value
+
+    group = decoded(group)
+    name = decoded(name)
+    purl = decoded(purl)
+    bom_ref = decoded(bom_ref)
+    return (
+        (group == FORBIDDEN_JTS_IO_GROUP and name == FORBIDDEN_JTS_IO_NAME)
+        or (
+            isinstance(purl, str)
+            and purl.startswith(FORBIDDEN_JTS_IO_PURL_PREFIX)
+        )
+        or (
+            isinstance(bom_ref, str)
+            and bom_ref.startswith(FORBIDDEN_JTS_IO_PURL_PREFIX)
+        )
+    )
+
+
+def _validate_json_pinned_example_dependency_contract(
+    document: dict[str, object],
+) -> None:
+    metadata = document.get("metadata")
+    if not isinstance(metadata, dict) or not isinstance(metadata.get("component"), dict):
+        raise SbomError("JSON metadata.component is missing")
+    for component in [metadata["component"], *_json_components(document)]:
+        if _is_forbidden_jts_io_identity(
+            component.get("group"),
+            component.get("name"),
+            component.get("purl"),
+            component.get("bom-ref"),
+        ):
+            raise SbomError("JTS I/O Common is forbidden by the pinned dependency contract")
+
+    if not _json_has_mysql_example(document):
+        return
+    for group, name, version in REQUIRED_EXAMPLE_MAVEN_COORDINATES:
+        components = _json_exact_maven_components(document, group, name, version)
+        if len(components) != 1:
+            raise SbomError(
+                "Example SBOM must contain exactly one pinned Maven component: "
+                f"{group}:{name}:{version}"
+            )
+
+
 def _json_mysql_connectors(document: dict[str, object]) -> list[dict[str, object]]:
     return _json_exact_maven_components(
         document,
@@ -511,24 +661,6 @@ def _set_json_reviewed_maven_licenses(document: dict[str, object]) -> None:
             continue
         component = components[0]
         component["licenses"] = [{"expression": expression}]
-        if (group, name, expected_version) == JTS_IO_COORDINATE:
-            properties = component.setdefault("properties", [])
-            if not isinstance(properties, list):
-                raise SbomError("JTS I/O Common properties must be an array")
-            review_properties = [
-                item
-                for item in properties
-                if isinstance(item, dict)
-                and item.get("name") == MYSQL_CONTAINER_REVIEW_PROPERTY
-            ]
-            expected_review = {
-                "name": MYSQL_CONTAINER_REVIEW_PROPERTY,
-                "value": MYSQL_CONTAINER_REVIEW_VALUE,
-            }
-            if review_properties and review_properties != [expected_review]:
-                raise SbomError("JTS I/O Common has conflicting review metadata")
-            if not review_properties:
-                properties.append(expected_review)
 
 
 def _verify_json_reviewed_maven_licenses(document: dict[str, object]) -> None:
@@ -545,18 +677,6 @@ def _verify_json_reviewed_maven_licenses(document: dict[str, object]) -> None:
         component = components[0]
         if component.get("licenses") != [{"expression": expression}]:
             raise SbomError(f"Reviewed license metadata is missing for {group}:{name}")
-        if (group, name, expected_version) == JTS_IO_COORDINATE:
-            review_properties = [
-                item
-                for item in component.get("properties", [])
-                if isinstance(item, dict)
-                and item.get("name") == MYSQL_CONTAINER_REVIEW_PROPERTY
-            ]
-            if review_properties != [{
-                "name": MYSQL_CONTAINER_REVIEW_PROPERTY,
-                "value": MYSQL_CONTAINER_REVIEW_VALUE,
-            }]:
-                raise SbomError("JTS I/O Common review metadata is missing")
 
 
 def _json_mysql_container() -> dict[str, object]:
@@ -738,6 +858,7 @@ def _load_json(
     if document.get("specVersion") != "1.6":
         raise SbomError(f"Expected CycloneDX JSON 1.6 in {path}")
     _validate_json_document_profile(document)
+    _validate_json_pinned_example_dependency_contract(document)
     components = _json_first_party_components(document)
     if not components:
         raise SbomError(f"No {FIRST_PARTY_GROUP} component found in {path}")
@@ -1134,6 +1255,13 @@ def _json_component_record(
     purl = component.get("purl")
     if not isinstance(purl, str) or not purl or component.get("bom-ref") != purl:
         raise SbomError(f"{label} has an ambiguous purl identity")
+    _validate_supported_maven_component_identity(
+        component.get("group"),
+        component.get("name"),
+        component.get("version"),
+        purl,
+        label,
+    )
     hashes = tuple(
         sorted(
             (str(item["alg"]), str(item["content"]))
@@ -1189,6 +1317,7 @@ def _xml_component_record(
         return _validate_xml_leaf(values[0], f"{label} {name}")
 
     purl = optional_text("purl")
+    group = optional_text("group")
     name = optional_text("name")
     version = optional_text("version")
     component_type = component.get("type")
@@ -1200,6 +1329,9 @@ def _xml_component_record(
         or component.get("bom-ref") != purl
     ):
         raise SbomError(f"{label} has an ambiguous component identity")
+    _validate_supported_maven_component_identity(
+        group, name, version, purl, label
+    )
 
     hashes: list[tuple[str, str]] = []
     hash_parent = component.find(_qname("hashes"))
@@ -1252,7 +1384,7 @@ def _xml_component_record(
             _normalized_description(description) if description is not None else None
         ),
         "externalReferences": tuple(sorted(references)),
-        "group": optional_text("group"),
+        "group": group,
         "hashes": tuple(sorted(hashes)),
         "licenses": _xml_component_license_records(component, label),
         "modified": None if modified is None else modified == "true",
@@ -1479,6 +1611,30 @@ def _xml_exact_maven_components(
     return candidates
 
 
+def _validate_xml_pinned_example_dependency_contract(root: ET.Element) -> None:
+    metadata_component = root.find(f"{_qname('metadata')}/{_qname('component')}")
+    if metadata_component is None:
+        raise SbomError("XML metadata.component is missing")
+    for component in [metadata_component, *_xml_components(root)]:
+        if _is_forbidden_jts_io_identity(
+            component.findtext(_qname("group")),
+            component.findtext(_qname("name")),
+            component.findtext(_qname("purl")),
+            component.get("bom-ref"),
+        ):
+            raise SbomError("JTS I/O Common is forbidden by the pinned dependency contract")
+
+    if not _xml_has_mysql_example(root):
+        return
+    for group, name, version in REQUIRED_EXAMPLE_MAVEN_COORDINATES:
+        components = _xml_exact_maven_components(root, group, name, version)
+        if len(components) != 1:
+            raise SbomError(
+                "Example SBOM must contain exactly one pinned Maven component: "
+                f"{group}:{name}:{version}"
+            )
+
+
 def _xml_mysql_connectors(root: ET.Element) -> list[ET.Element]:
     return _xml_exact_maven_components(
         root,
@@ -1541,30 +1697,6 @@ def _set_xml_reviewed_maven_licenses(root: ET.Element) -> None:
             continue
         component = components[0]
         _set_xml_license_expression(component, expression)
-        if (group, name, expected_version) == JTS_IO_COORDINATE:
-            properties = component.find(_qname("properties"))
-            if properties is None:
-                properties = ET.Element(_qname("properties"))
-                component.append(properties)
-            review_properties = [
-                item
-                for item in properties
-                if item.get("name") == MYSQL_CONTAINER_REVIEW_PROPERTY
-            ]
-            if review_properties and not (
-                len(review_properties) == 1
-                and not list(review_properties[0])
-                and review_properties[0].text == MYSQL_CONTAINER_REVIEW_VALUE
-                and set(review_properties[0].attrib)
-                == {"name"}
-            ):
-                raise SbomError("JTS I/O Common has conflicting review metadata")
-            if not review_properties:
-                ET.SubElement(
-                    properties,
-                    _qname("property"),
-                    {"name": MYSQL_CONTAINER_REVIEW_PROPERTY},
-                ).text = MYSQL_CONTAINER_REVIEW_VALUE
 
 
 def _xml_has_exact_license_expression(
@@ -1600,25 +1732,6 @@ def _verify_xml_reviewed_maven_licenses(root: ET.Element) -> None:
         component = components[0]
         if not _xml_has_exact_license_expression(component, expression):
             raise SbomError(f"Reviewed license metadata is missing for {group}:{name}")
-        if (group, name, expected_version) == JTS_IO_COORDINATE:
-            properties = component.find(_qname("properties"))
-            review_properties = (
-                []
-                if properties is None
-                else [
-                    item
-                    for item in properties
-                    if item.get("name") == MYSQL_CONTAINER_REVIEW_PROPERTY
-                ]
-            )
-            if not (
-                len(review_properties) == 1
-                and set(review_properties[0].attrib) == {"name"}
-                and not list(review_properties[0])
-                and review_properties[0].text == MYSQL_CONTAINER_REVIEW_VALUE
-                and not (review_properties[0].tail or "").strip()
-            ):
-                raise SbomError("JTS I/O Common review metadata is missing")
 
 
 def _xml_mysql_container() -> ET.Element:
@@ -1933,6 +2046,7 @@ def _load_xml(
     if root.tag != _qname("bom"):
         raise SbomError(f"Expected CycloneDX XML 1.6 in {path}")
     _validate_xml_document_profile(root)
+    _validate_xml_pinned_example_dependency_contract(root)
     _xml_component_license_map(root)
     components = _xml_first_party_components(root)
     if not components:
