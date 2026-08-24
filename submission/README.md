@@ -268,7 +268,7 @@ authority with:
 ```bash
 python3 submission/tools/video_caption_contract.py \
   --branch zero \
-  --expected-source-sha256 8bce0ad5761820aa1e0433a0e8442c35667e2aa9f0f7c3da725ce8ab904720b1 \
+  --expected-source-sha256 f5cbdf09e7d866dd4e2eaf767a25ea00a97b69c2effa0985832398c5c5eb6dcb \
   --output /absolute/private/path/routecontract-zero.srt
 ```
 

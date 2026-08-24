@@ -16,7 +16,7 @@ from submission.tools.tests.test_package_submission import (
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 SOURCE = REPOSITORY_ROOT / "submission" / "video-caption-cues.json"
-SOURCE_SHA256 = "8bce0ad5761820aa1e0433a0e8442c35667e2aa9f0f7c3da725ce8ab904720b1"
+SOURCE_SHA256 = "f5cbdf09e7d866dd4e2eaf767a25ea00a97b69c2effa0985832398c5c5eb6dcb"
 
 
 class VideoCaptionContractTest(unittest.TestCase):
@@ -39,14 +39,14 @@ class VideoCaptionContractTest(unittest.TestCase):
         expected = {
             "zero": {
                 "selected_cues_sha256": (
-                    "6dd7891f2b2f40e7c47a2bf7c0b750d"
-                    "b5020b3fae60b329547547f2feeb971f0"
+                    "1648c229a3eafa8539db6850bdc616e3"
+                    "8fbfd519ed171533aacf4b8ae2351754"
                 ),
                 "srt_sha256": (
-                    "8d2f1292b85209de2d8e0794308a2d50"
-                    "a52f08e2ad9eff86e8d18764685a614d"
+                    "9f7c7a88ec91d2f0df21fe8bc38c2f83"
+                    "b06658649e4a322e43e9c9545a7f0b1c"
                 ),
-                "included": "독립 검증은 공개 양식으로 받습니다",
+                "included": "독립 검증은 공개 양식으로 모집했습니다",
                 "excluded": "정해진 양식의 RC 결과 접수는 1건",
             },
             "rc_only": {
@@ -59,7 +59,7 @@ class VideoCaptionContractTest(unittest.TestCase):
                     "cc5f6d76706e1ffdd9198f8763d997e"
                 ),
                 "included": "정해진 양식의 RC 결과 접수는 1건",
-                "excluded": "독립 검증은 공개 양식으로 받습니다",
+                "excluded": "독립 검증은 공개 양식으로 모집했습니다",
             },
         }
         for branch, assertions in expected.items():

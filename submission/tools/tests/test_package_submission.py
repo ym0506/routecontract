@@ -140,8 +140,8 @@ def valid_manifest() -> dict:
                 "schema_version": 1,
                 "source_path": "submission/video-caption-cues.json",
                 "source_sha256": (
-                    "8bce0ad5761820aa1e0433a0e8442c35"
-                    "667e2aa9f0f7c3da725ce8ab904720b1"
+                    "f5cbdf09e7d866dd4e2eaf767a25ea00"
+                    "a97b69c2effa0985832398c5c5eb6dcb"
                 ),
             },
         },
@@ -485,9 +485,9 @@ class SubmissionClaimTextTest(unittest.TestCase):
             "Order actual = repository.find(userId);",
             "assertEquals(expectedOrderId, actual.id());",
             "hasExactlyObservedPhysicalAttempts(1)",
-            "독립 검증은 공개 양식으로 받습니다",
+            "독립 검증은 공개 양식으로 모집했습니다",
             "stable 외부 검증 미확보",
-            "없는 결과는 만들지 않습니다",
+            "없는 결과는 만들지 않았습니다",
             "실제 사람·독립성을 자동 증명하지 않는다",
             "Tab 자동완성",
             "선택한 분기의 결정적 공개 화면 하나",
@@ -642,7 +642,7 @@ class SubmissionClaimTextTest(unittest.TestCase):
             ("공통", "2:02.000", "2:06.500", "의도치 않은 차이는 CI 실패", "승인 기준은 자동으로 바뀌지 않습니다"),
             ("공통", "2:07.500", "2:15.000", "제출 코드와 안정판이 같은 코드인지", "공개 이력에서 직접 확인합니다"),
             ("공통", "2:15.500", "2:24.500", "코드 변경 검사와 main 검사 결과를", "실제 공개 화면에서 확인합니다"),
-            ("zero", "2:25.500", "2:33.500", "독립 검증은 공개 양식으로 받습니다", "없는 결과는 만들지 않습니다"),
+            ("zero", "2:25.500", "2:33.500", "독립 검증은 공개 양식으로 모집했습니다", "없는 결과는 만들지 않았습니다"),
             ("rc_only", "2:25.500", "2:33.500", "정해진 양식의 RC 결과 접수는 1건", "자기 확인 진술이며 안정판 검증은 아닙니다"),
             ("공통", "2:34.500", "2:41.000", "검증 범위는 5.5.3 동기 실행", "성능·거래 완료를 판단하지 않습니다"),
             ("공통", "2:41.500", "2:48.000", "기능 결과가 같아도 hook 보고 실행 시도는", "한 번에서 두 번으로 달라질 수 있습니다"),
@@ -1193,7 +1193,7 @@ class SubmissionClaimTextTest(unittest.TestCase):
             "stable 검증·adoption 아님",
             "실제 result Issue만 보여 준다",
             "**0-result 분기:**",
-            "독립 검증은 공개 양식으로 받습니다",
+            "독립 검증은 공개 양식으로 모집했습니다",
             "stable 외부 검증 미확보",
             "실제 Discussion #28만 보여 준다",
             "activation·모집·프로토콜 링크는 보고서와 영상 설명에 남기고",
@@ -1252,7 +1252,14 @@ class SubmissionClaimTextTest(unittest.TestCase):
             if item["lead"] == "품질관리·발전 로드맵"
         )
 
-        self.assertIn("외부 결과는 링크로만 보고한다", community)
+        external_result_boundary = next(
+            item["text"]
+            for item in report["effects"]
+            if item["lead"] == "재현한 적용 결과"
+        )
+        self.assertIn(
+            "외부 결과는 cutoff 공개 사실만 보고한다", external_result_boundary
+        )
         self.assertNotIn("비작성자 독립 설치 결과", community)
         self.assertNotIn("qualified 결과", community)
         self.assertNotIn("외부 검증 미확보", community)
@@ -7587,13 +7594,13 @@ class ReportContentSbomTest(unittest.TestCase):
         evidence = evidence_row["text"]
         self.assertIn("SQLExecutionHook SPI", evidence)
         self.assertIn(
-            "RouteContract build는 dependency shading/embedding을 구성하지 않으며",
+            "RouteContract build에 dependency shading/embedding은 없고",
             evidence,
         )
-        self.assertIn("이름 변경·복사 바이트 부재나 의미적 출처를 증명하지 않고", evidence)
+        self.assertIn("path·POM은 복사 부재·출처", evidence)
         self.assertIn("SBOM·lock·checksum·NOTICE", evidence)
         self.assertIn("runtime POM에 없다", evidence)
-        self.assertIn("preflight도 전체 graph 증명이 아니다", evidence)
+        self.assertIn("preflight는 전체 graph의 증명이 아니다", evidence)
 
         application_result = next(
             row["text"]
@@ -7975,10 +7982,9 @@ class ReportContentSbomTest(unittest.TestCase):
             if row["lead"] == "품질관리·발전 로드맵"
         )
         self.assertEqual(
-            "Ubuntu CI checksum 수정(Issue #5→PR #6)으로 Dependency Review·build를 "
-            "통과시켰다. 1인이 Issue·PR·CI를 관리한다. 공개 수요·fixture·real-MySQL "
-            "CI 뒤 설치·문서→adapter·reporter 순으로 확장한다. 외부 결과는 링크로만 "
-            "보고한다.",
+            "Ubuntu CI checksum(Issue #5→PR #6)을 고쳐 Dependency Review·build를 "
+            "통과시켰다. 1인이 Issue·PR·CI를 맡고 공개 수요·fixture·real-MySQL CI 뒤 "
+            "설치·문서→adapter→reporter로 확장한다.",
             community,
         )
         self.assertNotIn("v0.1.0", community)
@@ -8024,10 +8030,10 @@ class ReportContentSbomTest(unittest.TestCase):
         )
         self.assertEqual(
             "ShardingSphere 5.5.3 SQLExecutionHook SPI를 MySQL 8.4.11로 검증했다. "
-            "RouteContract build는 dependency shading/embedding을 구성하지 않으며 "
-            "test-only datasource-proxy는 runtime POM에 없다. SBOM·lock·checksum·"
-            "NOTICE로 추적한다. path·POM은 이름 변경·복사 바이트 부재나 의미적 출처를 "
-            "증명하지 않고, preflight도 전체 graph 증명이 아니다.",
+            "RouteContract build에 dependency shading/embedding은 없고 test-only "
+            "datasource-proxy도 runtime POM에 없다. SBOM·lock·checksum·NOTICE로 "
+            "추적하되 path·POM은 복사 부재·출처, preflight는 전체 graph의 증명이 "
+            "아니다.",
             evidence,
         )
 
@@ -8035,9 +8041,9 @@ class ReportContentSbomTest(unittest.TestCase):
             row["text"] for row in content["other"] if row["lead"] == "선행 작업 경계"
         )
         self.assertEqual(
-            "참가자 선언: ShardLens의 미구현 Route Guard 설계에서 출발해 RouteContract "
-            "라이브러리·기록/diff·MySQL 사례·설치/CI를 새로 구현했고 애플리케이션 "
-            "코드는 복사하지 않았다(ORIGIN_AND_PRIOR_WORK.md). 독립 증명은 아니다.",
+            "참가자 선언: ShardLens의 미구현 Route Guard 설계에서 출발했지만 "
+            "애플리케이션 코드 복사 없이 RouteContract를 새로 구현했다"
+            "(ORIGIN_AND_PRIOR_WORK.md). 독립 증명은 아니다.",
             prior_work,
         )
 
