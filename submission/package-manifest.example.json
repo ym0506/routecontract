@@ -31,7 +31,7 @@
     "caption_contract": {
       "schema_version": 1,
       "source_path": "submission/video-caption-cues.json",
-      "source_sha256": "e698947f8b5a8df610d5b4e521758ef781a11e4f694618340aff2f54721f3f83"
+      "source_sha256": "1db519264c9ba10e2994a16ca553448de2f1bc25c00caf393dc0e6f645a01085"
     }
   },
   "release_evidence": {

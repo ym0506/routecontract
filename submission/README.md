@@ -39,15 +39,16 @@ table geometry. The official supplemental guide caps this prioritized SBOM
 summary at ten rows, so the builder accepts 1–10 and the checked-in content
 uses exactly ten. `THIRD_PARTY.md` retains the broader human inventory; the
 generated CycloneDX files retain the Gradle-resolved dependency profiles and
-intentionally exclude classifier-only files. The top ten puts the two GPL-family
-entries first and separates the stable-Release Javadoc classifier's OpenJDK,
-jQuery and jQuery UI assets by license and official source repository. The
-digest-pinned MySQL OCI image remains explicitly unresolved in `THIRD_PARTY.md`
-and the machine SBOM rather than receiving a fabricated image-wide license in
-the official summary. CycloneDX build tooling, secondary test-only HikariCP and
-datasource-proxy remain in the broader inventories; datasource-proxy also
-remains in the comparison prose. Report-only Python tooling is pinned separately
-and is not added to the official top-ten summary. `--assets-dir` is optional
+intentionally exclude classifier-only files. The top ten puts the three
+GPL-family entries first and separates the stable-Release Javadoc classifier's
+OpenJDK, jQuery and jQuery UI assets by license and official source repository.
+Its MySQL Community Server row is scoped to the server component and records no
+OCI image-wide license conclusion. The digest-pinned MySQL OCI image remains
+explicitly unresolved in `THIRD_PARTY.md` and the machine SBOM. Gradle Wrapper,
+CycloneDX build tooling, secondary test-only HikariCP and datasource-proxy remain
+in the broader inventories; datasource-proxy also remains in the comparison
+prose. Report-only Python tooling is pinned separately and is not added to the
+official top-ten summary. `--assets-dir` is optional
 when `assets/` is beside the content JSON.
 
 `[[...]]` values are deliberate submission gates, not claims. Never put private
@@ -268,7 +269,7 @@ authority with:
 ```bash
 python3 submission/tools/video_caption_contract.py \
   --branch zero \
-  --expected-source-sha256 e698947f8b5a8df610d5b4e521758ef781a11e4f694618340aff2f54721f3f83 \
+  --expected-source-sha256 1db519264c9ba10e2994a16ca553448de2f1bc25c00caf393dc0e6f645a01085 \
   --output /absolute/private/path/routecontract-zero.srt
 ```
 

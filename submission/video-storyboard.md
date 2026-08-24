@@ -51,7 +51,7 @@ mirror이며 JSON의 cue 문구·시각·분기와 의미상 정확히 일치해
 
 | 분기 | 시작 | 종료 | 1행 | 2행 |
 |---|---:|---:|---|---|
-| 공통 | 0:00.500 | 0:05.200 | RouteContract는 JDBC 실행 기록을 | 승인본과 비교합니다 |
+| 공통 | 0:00.500 | 0:05.200 | ShardingSphere-JDBC 실행 시도를 | 승인본과 비교합니다 |
 | 공통 | 0:05.700 | 0:11.500 | 실제 MySQL 검증을 실행 중입니다 | 결과가 나오면 기록 차이를 확인합니다 |
 | 공통 | 0:12.500 | 0:19.000 | 방금 실행한 실제 MySQL 결과입니다 | 명령과 종료 상태를 함께 봅니다 |
 | 공통 | 0:19.500 | 0:27.000 | 승인된 기록은 실행 한 번입니다 | 변경된 기록은 두 번입니다 |
@@ -75,7 +75,7 @@ mirror이며 JSON의 cue 문구·시각·분기와 의미상 정확히 일치해
 | rc_only | 2:25.500 | 2:33.500 | 정해진 양식의 RC 결과 접수는 1건 | 자기 확인 진술이며 안정판 검증은 아닙니다 |
 | 공통 | 2:34.500 | 2:41.000 | 검증 범위는 5.5.3 동기 실행 | 성능·거래 완료를 판단하지 않습니다 |
 | 공통 | 2:41.500 | 2:48.000 | 기능 결과가 같아도 hook 보고 실행 시도는 | 한 번에서 두 번으로 달라질 수 있습니다 |
-| 공통 | 2:48.500 | 2:52.500 | 새 기록을 승인본과 비교해 | CI에서 의도치 않은 차이를 멈춥니다 |
+| 공통 | 2:48.500 | 2:52.500 | CI에 연결하면 승인되지 않은 차이를 | assertion 실패로 돌립니다 |
 
 발표 순서는 아래 공개 오픈소스 시연 영상의 결과 우선·baseline/candidate 비교·실행 뒤 증거
 제시 방식을 비교 참고해 2026년 3분 제한에 맞게 재구성했다.
@@ -153,13 +153,16 @@ verified_child_exit     0
    `ROUTECONTRACT_MANIFEST_DEMO` marker의 `businessResult=UNCHANGED`와
    `observedPhysicalAttempts=1->2`, 이어 `verified_child_exit 0`을 차례로 선택한다. 긴 marker는
    terminal의 실제 줄바꿈 그대로 보여 준다.
-2. **0:19.000부터 바로 이어지는 실제 source 화면:**
-   `examples/manifests/find-paid-orders-by-user.approved.json`에서
-   `"observedPhysicalAttemptCount":1`을 찾는다.
-3. **실제 source 화면:** 같은 위치의 `candidate.json`으로 tab을 바꾸고
-   `"observedPhysicalAttemptCount":2`와 두 reviewed alias를 찾는다.
-4. **실제 source 화면:** `find-paid-orders-by-user.expected-diff.txt`를 열어 실제
-   `RCM201`·`RCM202` 두 줄을 선택한다.
+2. **실제 source 화면:** 0:19.000–0:27.000에
+   `examples/manifests/find-paid-orders-by-user.approved.json`의
+   `"observedPhysicalAttemptCount":1`과 같은 위치의 `candidate.json`의
+   `"observedPhysicalAttemptCount":2`를 차례로 찾는다.
+3. **실제 browser 화면:** 0:27.000–0:35.000에 public README의 repository 제목
+   `RouteContract for ShardingSphere-JDBC`, ShardingSphere-JDBC가 한 논리 SQL을 여러 data
+   source로 나눠 실행할 수 있다는 설명, 사용자와 `같은 한 행`·`1 → 2` 검출 공백이 한 viewport에
+   보이게 하고 검출 공백 한 줄만 선택한다.
+4. **실제 source 화면:** 0:35.000–0:46.000에
+   `find-paid-orders-by-user.expected-diff.txt`를 열어 실제 `RCM201`·`RCM202` 두 줄을 선택한다.
 
 한 번만 실행한 terminal에는 하위 실행에서 검증·추출한 다음 두 줄만 결과로 보인다.
 
@@ -219,9 +222,13 @@ approved/candidate JSON과 diff는 0:12–0:46에서 이미 보여 줬으므로 
 1. **실제 browser 화면:** repository의 `v0.1.0` Release page에서 tag와 asset 목록을 짧게
    scroll해 JAR·POM·SBOM·`SHA256SUMS`를 보여 준다.
 2. **실제 browser 화면:** exact-tag `Release evidence` run을 click하고 Release-asset consumer
-   step의 checksum/attestation 확인, 격리된 Maven repository 설치, MySQL PASS 줄을 찾는다.
+   step의 checksum 확인, 격리된 Maven repository 설치, MySQL PASS 줄을 찾는다.
 3. **실제 source 화면:** public repository의 실제 Quick Start 또는 consumer test source를
    열어 공개 좌표와 `RouteContract.capture(...)`가 기존 assertion을 감싸는 줄을 선택한다.
+
+exact-tag `Release evidence` workflow의 consumer step에는 attestation 확인이 없다. 그 log를
+attestation 증거라고 부르지 않는다. immutable Release의 실제 verified UI/API 상태가 별도로
+확인될 때만 Release page에서 보여 주고, 없으면 checksum·격리 설치·MySQL PASS만 정확히 보여 준다.
 
 로컬 `standalone` subcommand는 same-checkout publication을 쓰므로 stable Release 설치 증거로
 보여 주지 않는다. 실제 source에는 다음 사용 모양이 있어야 하며 별도 화면에 재입력하지 않는다.

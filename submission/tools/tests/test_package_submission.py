@@ -140,8 +140,8 @@ def valid_manifest() -> dict:
                 "schema_version": 1,
                 "source_path": "submission/video-caption-cues.json",
                 "source_sha256": (
-                    "e698947f8b5a8df610d5b4e521758ef7"
-                    "81a11e4f694618340aff2f54721f3f83"
+                    "1db519264c9ba10e2994a16ca553448d"
+                    "e2f1bc25c00caf393dc0e6f645a01085"
                 ),
             },
         },
@@ -447,7 +447,7 @@ class SubmissionClaimTextTest(unittest.TestCase):
             "`submission/video-caption-cues.json`이 cue 시각·문구·분기의 유일한 원본",
             "generated/reference-only",
             "JSON의 cue 문구·시각·분기와 의미상 정확히 일치해야 한다",
-            "RouteContract는 JDBC 실행 기록을",
+            "ShardingSphere-JDBC 실행 시도를",
             "실제 MySQL 검증을 실행 중입니다",
             "결과가 나오면 기록 차이를 확인합니다",
             "방금 실행한 실제 MySQL 결과입니다",
@@ -483,6 +483,8 @@ class SubmissionClaimTextTest(unittest.TestCase):
             "verified_child_exit     0",
             "verified_child_exit     1",
             "바로 이어 final revision의 tracked approved/candidate JSON과 expected diff",
+            "RouteContract for ShardingSphere-JDBC",
+            "같은 한 행`·`1 → 2` 검출 공백",
             "제한된 duration-only 전체 줄과 일치할 때만",
             "actual source",
             "actual browser",
@@ -562,6 +564,10 @@ class SubmissionClaimTextTest(unittest.TestCase):
         self.assertIn("**실제 browser 화면:**", install_section)
         self.assertIn("**실제 source 화면:**", install_section)
         self.assertIn("별도 화면에 재입력하지 않는다", install_section)
+        self.assertIn("step의 checksum 확인, 격리된 Maven repository 설치", install_section)
+        self.assertIn("consumer step에는 attestation 확인이 없다", install_section)
+        self.assertIn("실제 verified UI/API 상태가 별도로", install_section)
+        self.assertNotIn("checksum/attestation", install_section)
         self.assertNotIn("complete route plan을 증명", install_section)
         self.assertNotIn("transaction commit을 증명", install_section)
 
@@ -663,7 +669,7 @@ class SubmissionClaimTextTest(unittest.TestCase):
             flags=re.MULTILINE,
         )
         expected_rows = [
-            ("공통", "0:00.500", "0:05.200", "RouteContract는 JDBC 실행 기록을", "승인본과 비교합니다"),
+            ("공통", "0:00.500", "0:05.200", "ShardingSphere-JDBC 실행 시도를", "승인본과 비교합니다"),
             ("공통", "0:05.700", "0:11.500", "실제 MySQL 검증을 실행 중입니다", "결과가 나오면 기록 차이를 확인합니다"),
             ("공통", "0:12.500", "0:19.000", "방금 실행한 실제 MySQL 결과입니다", "명령과 종료 상태를 함께 봅니다"),
             ("공통", "0:19.500", "0:27.000", "승인된 기록은 실행 한 번입니다", "변경된 기록은 두 번입니다"),
@@ -687,7 +693,7 @@ class SubmissionClaimTextTest(unittest.TestCase):
             ("rc_only", "2:25.500", "2:33.500", "정해진 양식의 RC 결과 접수는 1건", "자기 확인 진술이며 안정판 검증은 아닙니다"),
             ("공통", "2:34.500", "2:41.000", "검증 범위는 5.5.3 동기 실행", "성능·거래 완료를 판단하지 않습니다"),
             ("공통", "2:41.500", "2:48.000", "기능 결과가 같아도 hook 보고 실행 시도는", "한 번에서 두 번으로 달라질 수 있습니다"),
-            ("공통", "2:48.500", "2:52.500", "새 기록을 승인본과 비교해", "CI에서 의도치 않은 차이를 멈춥니다"),
+            ("공통", "2:48.500", "2:52.500", "CI에 연결하면 승인되지 않은 차이를", "assertion 실패로 돌립니다"),
         ]
         self.assertEqual(expected_rows, caption_rows)
         self.assertEqual(23, sum(branch == "공통" for branch, *_ in caption_rows))
@@ -8328,6 +8334,13 @@ class ReportContentSbomTest(unittest.TestCase):
                 "purpose": "실제 MySQL 통합 테스트의 JDBC 드라이버로 사용(testRuntimeOnly); 배포 JAR 미포함",
             },
             {
+                "name": "MySQL Community Server",
+                "version": "8.4.11",
+                "license": "GPL-2.0-only",
+                "url": "https://github.com/mysql/mysql-server/tree/mysql-8.4.11",
+                "purpose": "digest 고정 Testcontainers 통합 테스트 DB(test-container only); 배포·제출물 미포함. 서버 기준이며 OCI image-wide 결론 아님",
+            },
+            {
                 "name": "Apache ShardingSphere",
                 "version": "5.5.3",
                 "license": "Apache-2.0",
@@ -8376,25 +8389,18 @@ class ReportContentSbomTest(unittest.TestCase):
                 "url": "https://github.com/jquery/jquery-ui/tree/1.14.1",
                 "purpose": "stable Release Javadoc JAR에 JavaScript·CSS 파일로 포함; main JAR·runtime 미포함",
             },
-            {
-                "name": "Gradle Wrapper",
-                "version": "8.14.4",
-                "license": "Apache-2.0",
-                "url": "https://github.com/gradle/gradle/tree/v8.14.4",
-                "purpose": "repo에 Wrapper JAR로 포함; checksum 고정 build·test·package 도구; product runtime 미포함",
-            },
         ]
         self.assertEqual(expected_rows, content["sbom"])
-        self.assertTrue(all("GPL-" in row["license"] for row in content["sbom"][:2]))
+        self.assertTrue(all("GPL-" in row["license"] for row in content["sbom"][:3]))
         self.assertTrue(
-            all("GPL-" not in row["license"] for row in content["sbom"][2:])
+            all("GPL-" not in row["license"] for row in content["sbom"][3:])
         )
-        self.assertEqual(10, len({row["name"] for row in content["sbom"]}))
+        names = {row["name"] for row in content["sbom"]}
+        self.assertEqual(10, len(names))
         self.assertEqual(10, len({row["url"] for row in content["sbom"]}))
-        self.assertNotIn(
-            "MySQL Community Server OCI image",
-            {row["name"] for row in content["sbom"]},
-        )
+        self.assertIn("MySQL Community Server", names)
+        self.assertNotIn("MySQL Community Server OCI image", names)
+        self.assertNotIn("Gradle Wrapper", names)
         self.assertNotIn("NOASSERTION", {row["license"] for row in content["sbom"]})
         for name in (
             "OpenJDK standard-doclet assets",
@@ -8405,13 +8411,14 @@ class ReportContentSbomTest(unittest.TestCase):
             self.assertIn("Javadoc JAR", row["purpose"])
             self.assertIn("main JAR·runtime 미포함", row["purpose"])
 
-    def test_secondary_test_only_rows_remain_disclosed_outside_top_ten(self) -> None:
+    def test_secondary_rows_and_oci_image_record_remain_disclosed_outside_top_ten(self) -> None:
         content_path = SCRIPT.parents[1] / "report-content.ko.json"
         with content_path.open(encoding="utf-8") as stream:
             content = json.load(stream)
         names = {item["name"] for item in content["sbom"]}
         self.assertNotIn("HikariCP", names)
         self.assertNotIn("datasource-proxy", names)
+        self.assertIn("MySQL Community Server", names)
         self.assertNotIn("MySQL Community Server OCI image", names)
         self.assertNotIn("CycloneDX Gradle Plugin", names)
 

@@ -183,6 +183,13 @@
       "purpose": "실제 MySQL 통합 테스트의 JDBC 드라이버로 사용(testRuntimeOnly); 배포 JAR 미포함"
     },
     {
+      "name": "MySQL Community Server",
+      "version": "8.4.11",
+      "license": "GPL-2.0-only",
+      "url": "https://github.com/mysql/mysql-server/tree/mysql-8.4.11",
+      "purpose": "digest 고정 Testcontainers 통합 테스트 DB(test-container only); 배포·제출물 미포함. 서버 기준이며 OCI image-wide 결론 아님"
+    },
+    {
       "name": "Apache ShardingSphere",
       "version": "5.5.3",
       "license": "Apache-2.0",
@@ -230,13 +237,6 @@
       "license": "MIT",
       "url": "https://github.com/jquery/jquery-ui/tree/1.14.1",
       "purpose": "stable Release Javadoc JAR에 JavaScript·CSS 파일로 포함; main JAR·runtime 미포함"
-    },
-    {
-      "name": "Gradle Wrapper",
-      "version": "8.14.4",
-      "license": "Apache-2.0",
-      "url": "https://github.com/gradle/gradle/tree/v8.14.4",
-      "purpose": "repo에 Wrapper JAR로 포함; checksum 고정 build·test·package 도구; product runtime 미포함"
     }
   ]
 }

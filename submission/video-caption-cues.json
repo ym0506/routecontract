@@ -7,7 +7,7 @@
       "start_ms": 500,
       "end_ms": 5200,
       "lines": [
-        "RouteContract는 JDBC 실행 기록을",
+        "ShardingSphere-JDBC 실행 시도를",
         "승인본과 비교합니다"
       ]
     },
@@ -223,8 +223,8 @@
       "start_ms": 168500,
       "end_ms": 172500,
       "lines": [
-        "새 기록을 승인본과 비교해",
-        "CI에서 의도치 않은 차이를 멈춥니다"
+        "CI에 연결하면 승인되지 않은 차이를",
+        "assertion 실패로 돌립니다"
       ]
     }
   ]

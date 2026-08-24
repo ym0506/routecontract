@@ -16,7 +16,7 @@ from submission.tools.tests.test_package_submission import (
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 SOURCE = REPOSITORY_ROOT / "submission" / "video-caption-cues.json"
-SOURCE_SHA256 = "e698947f8b5a8df610d5b4e521758ef781a11e4f694618340aff2f54721f3f83"
+SOURCE_SHA256 = "1db519264c9ba10e2994a16ca553448de2f1bc25c00caf393dc0e6f645a01085"
 
 
 class VideoCaptionContractTest(unittest.TestCase):
@@ -80,24 +80,24 @@ class VideoCaptionContractTest(unittest.TestCase):
         expected = {
             "zero": {
                 "selected_cues_sha256": (
-                    "3c1af19e852d23efc0e30176cddf7cac"
-                    "e2f44814f2150cc91514a87df2ad1d74"
+                    "fe73c1a13887cda41d2fe978e2d2103d"
+                    "354e765e9302be6d1c8b7edeea2ca66f"
                 ),
                 "srt_sha256": (
-                    "19cedeec8699f0977a4159612455cdf47"
-                    "9936c3736ffdcc5fa21bb957b1babb6"
+                    "dca53410b93137c8720ffd1223991a47d"
+                    "fec2a88c27e16acc1d5b5a9f7d40a68"
                 ),
                 "included": "독립 검증은 공개 양식으로 모집했습니다",
                 "excluded": "정해진 양식의 RC 결과 접수는 1건",
             },
             "rc_only": {
                 "selected_cues_sha256": (
-                    "6fef3efa8bb7b5e8c191bd2653cfc656"
-                    "2d1c2dd997d63a9ece69f0d681b8f292"
+                    "c56ede7c436fd157c80c7d19cc974487"
+                    "b024b1fc737f66461c63454106d193ce"
                 ),
                 "srt_sha256": (
-                    "310a6e6cba9a73c1b948dd756937ae40"
-                    "d73977c671ae3b8a7a53af71303a93fb"
+                    "faaf67e7b184683ecf452461f75b75df"
+                    "754533a2d1ec8d7c4b61d66d251569a2"
                 ),
                 "included": "정해진 양식의 RC 결과 접수는 1건",
                 "excluded": "독립 검증은 공개 양식으로 모집했습니다",
