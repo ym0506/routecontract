@@ -18,7 +18,7 @@ flowchart LR
     F --> G["RouteAssertions: attempt/data-source budgets"]
     F --> H["Reviewed aliases + ManifestPolicy"]
     H --> I["Canonical JSON candidate"]
-    I --> J["Approved baseline + semantic verifier"]
+    I --> J["Approved baseline + structural manifest verifier"]
     J --> K["Stable RCM findings / CI gate"]
 ```
 
