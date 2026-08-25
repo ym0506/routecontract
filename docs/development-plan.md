@@ -34,8 +34,8 @@ At high availability this is roughly 8-10 focused hours per day. If actual capac
 | Gate | Deadline | Pass condition | If it fails |
 |---|---|---|---|
 | G0: observation boundary | Aug 12, 18:00 | Service provider activation is checked; single and fan-out MySQL operations produce complete captures; callback failures/incompleteness fail closed | If no reliable fan-out observation, stop RouteContract and do not submit a query-counter shell |
-| G1: isolation | Aug 13, 23:00 | 20 repeated captures have one semantic result; 20 concurrent control/fan-out pairs have zero mixed captures; worker reuse and raw child-thread behavior are explicit | Narrow the public scope to the proven boundary. If concurrent ShardingSphere worker attribution itself is unreliable, no-go |
-| G2: product loop | Aug 15, 23:00 | `record -> approved JSON -> verify -> actionable semantic diff` works from a documented JUnit or CLI path; missing/malformed baselines fail safely | Cut every optional feature. If deterministic record/verify cannot work, reconsider submission because the central product claim is absent |
+| G1: isolation | Aug 13, 23:00 | 20 repeated captures have one structural signature; 20 concurrent control/fan-out pairs have zero mixed captures; worker reuse and raw child-thread behavior are explicit | Narrow the public scope to the proven boundary. If concurrent ShardingSphere worker attribution itself is unreliable, no-go |
+| G2: product loop | Aug 15, 23:00 | `record -> approved JSON -> verify -> actionable structural manifest/attempt diff with stable RCM codes` works from a documented JUnit or CLI path; missing/malformed baselines fail safely | Cut every optional feature. If deterministic record/verify cannot work, reconsider submission because the central product claim is absent |
 | G3: credible corpus | Aug 18, 18:00 | At least four route-risk mutations and two safe controls run on the same fixture; one Audit comparison and one close generic alternative are documented without inflated claims | Reduce breadth but retain at least two materially different risks plus two controls; never invent a six-case result |
 | G4: open-source usability | Aug 20, 23:00 | Public repository, clean Ubuntu run, claimed JDK matrix green, license/third-party inventory and draft SBOM; quick start succeeds from a clean directory | Feature freeze immediately. Fix installation, CI and licensing before any polish |
 | G5: independent use | Aug 22, 23:00 | At least one non-author attempts the exact quick start and creates or confirms a public feedback record; the latest activated RC assets/checksums are accessible | Report "no external validation" if none occurs. Use a recorded clean VM as reproducibility evidence but never call it an external user |
@@ -52,7 +52,7 @@ At high availability this is roughly 8-10 focused hours per day. If actual capac
 | Aug 14 | Implement versioned canonical model and deterministic JSON writer/reader; prevent operation names from becoming file paths | Issue and draft PR 3 with schema example, compatibility rules and missing/malformed baseline tests | No cosmetic JSON features until byte-for-byte determinism passes |
 | Aug 15 | Implement approved-baseline record/verify and structural added/removed/changed diff; make violations actionable | Merge PR 3 after self-review and CI; capture a 20-second demo flow; run G2 | If record/verify is not end-to-end, cut comparison work and finish it |
 | Aug 16 | Add two safe controls and two route-risk mutations on one deterministic fixture | PR 4 begins with the expected business oracle and route-contract oracle for every case | Each case must state why it is a distinct risk, not just another SQL spelling |
-| Aug 17 | Reach at least four risk mutations and two controls; add built-in Audit comparison | Commit raw semantic results through a reproducible evidence command; table maps every number to a test | If a case is flaky or poorly explained, remove it rather than count it |
+| Aug 17 | Reach at least four risk mutations and two controls; add built-in Audit comparison | Commit raw measured results through a reproducible evidence command; table maps every number to a test | If a case is flaky or poorly explained, remove it rather than count it |
 | Aug 18 | Add one close alternative comparison, preferably datasource-proxy or Sniffy, on the same narrow scenario | Finish E06 and E11; run G3; publish comparison limitations | Never claim the generic tool is incapable when custom wiring could reproduce behavior |
 | Aug 19 | Linux CI, JDK 17 and 21 only if claimed, dependency/cache-independent setup, repeated clean test | PR 5: reproducibility workflow; document image and dependency versions/digests | No new features after today unless a P0 gate requires them |
 | Aug 20 | Clean-clone quick start, packaging, source archive, license/NOTICE/third-party inventory and SBOM generation | E08/E12 draft artifacts; public CI permalinks; run G4 | A green local machine is insufficient; fix CI/install first |
@@ -60,7 +60,7 @@ At high availability this is roughly 8-10 focused hours per day. If actual capac
 | Aug 22 | Fix only blockers found by independent install/review | Record E10 environment, success/failure, blocker, issue and resulting commit; post a concise RouteContract-specific upstream question; run G5 | No response is a valid outcome; do not chase endorsement or make acceptance deadline-critical |
 | Aug 23 | Finalize architecture, quick start, limitations, security/privacy and contribution paths | Close documentation issues through normal PRs; prepare report figures from E01-E14 | Every screenshot/table must have a source revision and generation path |
 | Aug 24 | Fix P0 defects only; rerun full clean suite | Complete five-page report draft and first <=3:00 video cut; run G6 | Remove any claim that cannot be traced to an artifact-ready E-item |
-| Aug 25 | Release candidate verification and evaluator rehearsal on a clean environment | Independent proofreading; captions, fonts, audio, links and QR codes; generate report PDF from final original | If demo timing exceeds 3:00, remove exposition rather than speeding past readable output |
+| Aug 25 | Release candidate verification and evaluator rehearsal on a clean environment | Independent proofreading; burned-in captions, fonts, silent playback, links and QR codes; generate report PDF from final original | If demo timing exceeds 3:00, remove exposition rather than speeding past readable output |
 | Aug 26 | Tag final `v0.1.0`; regenerate SBOM, archives and checksums from that exact revision | Run all E-item checks; freeze original/PDF/video/source URLs at 18:00; run G7 | After freeze, no dependency or source change without regenerating every derived artifact |
 | Aug 27 | Exclusion-risk fixes only | Submit by 15:00 KST; download the submitted files, replay video, clone URL and record confirmation before the 18:00 cutoff | Do not use the final hour for ordinary polishing |
 
@@ -95,7 +95,7 @@ Suggested PR sequence:
 
 1. Adapter, preflight and lifecycle semantics.
 2. Correlation, privacy and concurrency invariants.
-3. Canonical manifest, record/verify and semantic diff.
+3. Canonical manifest, record/verify and structural manifest/attempt diff with stable RCM codes.
 4. MySQL corpus and built-in Audit comparison.
 5. CI, clean-clone evidence and generic-tool comparison.
 6. Licensing, SBOM, packaging and release candidate.
@@ -129,14 +129,22 @@ The report body must stay within the organizer's five-page limit:
 4. Utility, competitive comparison and open-source/community evidence.
 5. Reproducibility, license/SBOM, project-management trail, limitations and roadmap.
 
-The video target is 2:50-2:58, leaving upload/player timing margin:
+The final video must be 2:53-2:55 (173-175 seconds), matching the strict package
+gate and the authoritative storyboard:
 
-- 0:00-0:20: business tests can stay green while observed JDBC work expands.
-- 0:20-0:40: existing facilities and the precise gap.
-- 0:40-1:40: clean `record/verify` demo with the business-green/contract-red mutation.
-- 1:40-2:15: structural diff and two or three measured corpus results.
-- 2:15-2:40: package, CI, release, docs and external feedback.
-- 2:40-2:55: exact supported scope and one-sentence conclusion.
+- 0:00-0:46: real-MySQL business-green/contract-red baseline and candidate.
+- 0:46-1:00: the local intentional-red manifest gate and verified child exit.
+- 1:00-1:22: the public Release, exact-tag consumer evidence and integration source.
+- 1:22-1:40: same-budget fingerprint/type-shape drift.
+- 1:40-1:55: measured corpus determinism and caller-scope isolation.
+- 1:55-2:07: the operation-to-manifest-to-CI source path.
+- 2:07-2:25: final commit, annotated tag, merge-PR checks and main-push checks.
+- 2:25-2:34: the truthful cutoff branch for external evidence.
+- 2:34-2:53: exact supported scope and one-sentence conclusion.
+
+If the encoded file runs beyond 2:53, the remaining at-most-two seconds keep the
+same live final-source screen moving; they are not a freeze frame, black frame or
+separate end card.
 
 Do not spend video time listing every feature. The evaluator should see the failure, understand why ordinary assertions missed it, and know how to reproduce it.
 

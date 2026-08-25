@@ -2,8 +2,8 @@
 
 This checklist produces reviewable release evidence; it does not publish to a
 package repository or create a GitHub Release automatically. Publication must
-remain a deliberate maintainer action until repository ownership, signing and
-credentials have been verified.
+remain a deliberate maintainer action until repository ownership, publication
+credentials and the v0.1 no-signature policy below have been reviewed.
 
 ## Prepare
 
@@ -16,7 +16,9 @@ credentials have been verified.
    and the generated CycloneDX SBOM.
 4. Confirm the checked-in Gradle Wrapper JAR and distribution checksums against
    Gradle's official checksum page.
-5. Run on a clean machine with JDK 17 and Docker available:
+5. Run on a clean machine with exact Temurin 17.0.20.1+1 and Docker available. A general local
+   Java 17 build remains useful for development but does not guarantee the stable Release
+   Javadoc-classifier asset version:
 
    ```bash
    ./gradlew --no-daemon --no-build-cache clean check validateOfficialCycloneDxSbom \
@@ -24,21 +26,33 @@ credentials have been verified.
      :routecontract-shardingsphere-5.5:generatePomFileForMavenJavaPublication
    ```
 
-6. Inspect the main, sources and Javadoc JARs; generated POM; direct library
+   The opt-in built-asset/MySQL acceptance test is release evidence rather than a generic
+   development check. It fails before building unless `ROUTECONTRACT_RELEASE_JAVA_HOME` (or
+   `JAVA_HOME`) identifies exact Temurin 17.0.20.1+1:
+
+   ```bash
+   ROUTECONTRACT_RELEASE_JAVA_HOME=/absolute/path/to/jdk-17.0.20.1+1 \
+   ROUTECONTRACT_RUN_RELEASE_ASSET_MYSQL_TEST=1 \
+     python3 -m unittest -v \
+       scripts.tests.test_install_release_assets.InstallReleaseAssetsTest.test_real_built_jars_install_and_run_isolated_mysql_consumer
+   ```
+
+6. Inspect the main, sources and Javadoc JARs, including the Javadoc classifier's closed
+   `legal/`, `script-dir/`, `resources/`, and root static-asset inventory; generated POM; direct library
    SBOM; aggregate repository SBOM; `LICENSE`; `NOTICE`; and third-party
    notices. Recheck Connector/J's FOSS exception, Jakarta Transaction's SPDX
    expression, JNA's embedded libffi license, JTS Core's dual-license metadata,
-   JTS I/O Common's embedded Apache Mahout code and unresolved NOTICE
-   redistribution treatment, and the selected MySQL platform image's package
-   notices. Verify
+   the absence of JTS I/O Common, and the selected MySQL platform image's
+   package notices. Verify
    that no fixture credentials, raw SQL parameters or private paths are present.
 7. Record the source revision, JDK/Gradle/Docker versions, exact command, test
    result, CI URL and SHA-256 checksums. A passing build alone is not evidence
    of transaction commit or a complete ShardingSphere route plan.
 8. Refresh the pinned OSV database and rerun the exact-revision policy gate.
-   Review the three current test/example-graph advisories and remove, upgrade,
-   or renew every exception before its expiry; test-only reachability does not
-   make a finding harmless.
+   The current policy has zero vulnerability exceptions and the pinned snapshot
+   reports zero findings, so any new finding must fail until it is addressed or
+   an explicit, evidence-backed policy change is reviewed. A successful scan is
+   point-in-time evidence, not a vulnerability-free claim.
 
 ## Tag and collect evidence
 
@@ -55,9 +69,18 @@ workflow. The workflow:
 - accepts only a tag-push event, validates the Wrapper and annotated
   tag/version match, and requires the peeled tag commit to equal both the
   workflow revision and the current public `origin/main` head;
+- resolves x64 Temurin 17.0.20.1+1 with package-signature verification when downloaded, requires
+  unique exact release metadata and `java -fullversion`, and pins the Linux
+  `jdk.javadoc.jmod` SHA-256 used to generate the classifier;
+- after Git-only tag/revision/main binding, asserts that the checkout has no
+  tracked, untracked or ignored residue and runs the documented Quick Start
+  from an asserted-absent task-specific Gradle user home before any
+  project-local Python or Gradle command; the outer script must exit `0` after
+  it has verified real-MySQL child exit `0` and the intentional contract-gate
+  child exit `1`;
 - runs unit and real MySQL integration tests without reusing cached task results;
 - generates `test-summary.txt` from the resulting JUnit XML and fails unless
-  the exact seven expected suites contain 50 passing, non-skipped tests; the
+  the exact seven expected suites contain 52 passing, non-skipped tests; the
   fixed summary records the Git revision and per-suite counts but deliberately
   omits test names, timings, hostnames, paths, ports, SQL and captured output;
 - builds reproducible-order JARs and the generated Maven POM;
@@ -150,7 +173,11 @@ fails, stop and create a new `-rcN` tag after fixing the cause. If an immutable
 stable release fails a postpublication check, stop using it as final evidence,
 fix the cause, create a new stable patch version and update the final manifest
 and documentation to that corrected release. Never replace an asset or retag
-an immutable public Release.
+an immutable public Release. For contest packaging, the tested RC tag must share the final stable
+tag's exact `MAJOR.MINOR.PATCH` base. A corrected `v0.1.1` therefore cannot reuse
+`v0.1.0-rc2` activation, recruitment, result, or cutoff evidence: it requires its own activated
+`v0.1.1-rcN` recruitment window and a new stable tag/run/asset set, or a separately reviewed
+contract change. Without one of those paths, final packaging remains blocked.
 
 For an RC only, publication still does not activate independent recruitment. Copy
 `docs/evidence/independent-rc-activation.example.json` to the exact versioned path documented in
@@ -232,17 +259,19 @@ implemented and verified.
   contains an Oracle Linux base, MySQL Shell and other packages, so its SBOM
   uses an unresolved-review property plus documentation external reference,
   not an image-wide GPL-only conclusion or a fabricated license name. The
-  owner must resolve, renew with new evidence or remove this review before its
-  2026-08-27 expiry.
-- JTS I/O Common 1.19.0 has a concluded compound SPDX expression, but its
-  Mahout-derived Apache-2.0 source references an ASF `NOTICE` missing from the
-  Central artifacts and tagged JTS tree. The exact component remains a
-  time-bounded manual review because JTS's redistribution notice treatment is
-  unconfirmed even though the originating Mahout 0.8 archive and notice are
-  pinned. The owner must resolve and document the treatment, renew with new
-  evidence or remove the record before its 2026-08-27 expiry.
-- A supply-chain policy pass may contain exactly two unresolved license reviews
-  because MySQL and JTS I/O Common are confined to the example/test graph and
+  owner re-reviewed the evidence on 2026-08-24; the record remains exactly one
+  `test-container`-scoped `manual-review-required` package-level review with no
+  image-wide license conclusion and expires on 2026-12-05. Re-review
+  immediately if the MySQL OCI digest, selected platform, embedded
+  LICENSE/INFO_SRC evidence, or test-container use boundary changes; otherwise
+  resolve, renew with new evidence, or remove the MySQL OCI package-level
+  license review before the 2026-12-05 expiry.
+- The test/example graph keeps ShardingSphere-JDBC 5.5.3, strictly constrains
+  Calcite Core and linq4j to 1.42.0, excludes and forbids JTS I/O Common, and
+  retains JTS Core 1.19.0. Recheck all four conditions from the final lock and
+  SBOM instead of treating a successful earlier resolution as durable.
+- A supply-chain policy pass may contain exactly one unresolved license review:
+  the MySQL OCI component above. It is confined to the example/test graph and
   absent from the published module/runtime closure. Stable release and
   submission materials must report that count and must not call it completed
   legal review.

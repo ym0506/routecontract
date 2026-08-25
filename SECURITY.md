@@ -37,20 +37,21 @@ publication POM is cross-checked against the published BOM's dependency graph.
 The pinned MySQL fixture must additionally be an excluded container with the
 explicit `routecontract:usage=test-only` property.
 
-The policy has only these three vulnerability exceptions, each expiring on
-**2026-08-27**:
+The exact fixture graph keeps ShardingSphere-JDBC at 5.5.3, strictly constrains
+both `org.apache.calcite:calcite-core` and
+`org.apache.calcite:calcite-linq4j` to 1.42.0, and excludes
+`org.locationtech.jts.io:jts-io-common`. JTS Core 1.19.0 remains in the
+test/example graph with its reviewed license expression. The supply-chain
+policy has an empty `vulnerabilityExceptions` array and rejects any
+reintroduction of JTS I/O Common.
 
-- `commons-lang:commons-lang:2.4` — `GHSA-j288-q9x7-2f5v`;
-- `net.minidev:json-smart:2.5.0` — `GHSA-pq2g-wx69-c263`;
-- `org.apache.calcite:calcite-core:1.40.0` — `GHSA-c2rv-hwqm-wjpg`.
-
-All three are confined to the repository's test/example dependency graph
-reached through ShardingSphere 5.5.3's SQL Federation modules. SQL Federation
-coverage remains outside v0.1 scope. None of these coordinates is declared in
-RouteContract's published POM, and the exceptions are not a claim that those
-dependencies are safe for production use. Upgrading or removing them requires
-ShardingSphere-compatible test evidence; otherwise the exception must expire
-and fail the release audit.
+The fixture also strictly aligns `aggdesigner-algorithm` 6.1,
+`json-smart` 2.4.10 and `accessors-smart` 2.4.9 to the
+dependency-management versions in the ShardingSphere 5.5.3 parent POM. The
+generation-pinned offline OSV scan reports zero findings for this exact
+resolved graph and database snapshot. That is point-in-time evidence, not a
+general vulnerability-free claim or a statement about every ShardingSphere
+5.5.3 execution path; SQL Federation coverage remains outside v0.1 scope.
 
 The raw OSV JSON remains runner-local and must never be staged, checksummed or
 uploaded. A successful exact-tag Release evidence workflow retains only the
@@ -59,10 +60,10 @@ artifact and public checksum set. The final package gate binds that summary to
 the final commit/tree, tracked scanner/database/policy inputs, published
 dependency lock, publication POM and all six aggregate, published-module and
 example-profile SBOM documents from the exact workflow artifact. It requires
-policy schema v3, exactly two unresolved manual license reviews, three reviewed
-test/example-only findings and zero unreviewed findings. This is point-in-time
-release evidence, not a zero-vulnerability, completed legal review or
-legal-suitability claim.
+policy schema v3, exactly one unresolved manual license review for the pinned
+MySQL OCI component, zero vulnerability findings and zero policy vulnerability
+exceptions. This is point-in-time release evidence, not a zero-vulnerability,
+completed legal review or legal-suitability claim.
 
 The audit assumes a cooperative release process in a trusted,
 access-restricted checkout with no concurrent writer. Its path, checksum and

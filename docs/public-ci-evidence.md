@@ -57,12 +57,20 @@ gh run download 31501026857 \
   --repo ym0506/routecontract \
   --name routecontract-test-evidence-54f1c927182f2008b1a5ff0ecedcdc36fe47f8c5 \
   --dir "$evidence_dir"
-python3 scripts/summarize-test-results.py \
+git show \
+  54f1c927182f2008b1a5ff0ecedcdc36fe47f8c5:scripts/summarize-test-results.py \
+  > "$evidence_dir/summarize-test-results-54f1c927.py"
+python3 "$evidence_dir/summarize-test-results-54f1c927.py" \
   --revision 54f1c927182f2008b1a5ff0ecedcdc36fe47f8c5 \
   --results-dir "$evidence_dir/routecontract-shardingsphere-5.5/build/test-results/test" \
   --results-dir "$evidence_dir/examples/mysql/build/test-results/test" \
   --output "$evidence_dir/test-summary.txt"
 ```
+
+The summarizer is intentionally read from the same historical revision. The current source tree's
+planned stable `0.1.0` contract has two additional manifest-storage regression tests and therefore
+expects 52 rather than 50; using its summarizer on the historical XML would correctly reject the
+suite mismatch. This source-tree statement does not claim that a stable tag or Release exists.
 
 ## Claim boundary
 

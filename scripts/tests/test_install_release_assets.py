@@ -45,6 +45,29 @@ SOURCE_SERVICE_DESCRIPTOR_PATH = (
 EXPECTED_PROVIDER = (
     "io.github.ym0506.routecontract.internal.RouteContractSqlExecutionHook"
 )
+MYSQL_CONTAINER_DIGEST = (
+    "b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb"
+)
+EXPECTED_MYSQL_LICENSE_REVIEW = {
+    "action": (
+        "re-review immediately if the MySQL OCI digest, selected platform, embedded "
+        "LICENSE/INFO_SRC evidence, or test-container use boundary changes; otherwise "
+        "resolve, renew with new evidence, or remove the MySQL OCI package-level license "
+        "review before the 2026-12-05 expiry"
+    ),
+    "componentName": "mysql",
+    "componentVersion": "8.4.11",
+    "expires": "2026-12-05",
+    "owner": "RouteContract maintainers",
+    "purl": (
+        "pkg:oci/mysql@sha256%3A"
+        f"{MYSQL_CONTAINER_DIGEST}?repository_url=registry-1.docker.io&tag=8.4.11"
+    ),
+    "rationaleCode": "MYSQL_OCI_PACKAGE_LICENSE_CONCLUSION_INCOMPLETE",
+    "reviewedAt": "2026-08-24",
+    "scope": "test-container",
+    "status": "manual-review-required",
+}
 SOURCE_REQUIRED_RELATIVE_PATHS = {
     "README.md",
     "LICENSE",
@@ -56,6 +79,80 @@ SOURCE_REQUIRED_RELATIVE_PATHS = {
     SOURCE_PUBLIC_API_PATH,
     SOURCE_HOOK_PATH,
     SOURCE_SERVICE_DESCRIPTOR_PATH,
+}
+JAVADOC_TOOLCHAIN_VERSION = "17.0.20.1+1"
+JAVADOC_LEGAL_ENTRIES = (
+    "legal/LICENSE",
+    "legal/ADDITIONAL_LICENSE_INFO",
+    "legal/ASSEMBLY_EXCEPTION",
+    "legal/jquery.md",
+    "legal/jqueryUI.md",
+)
+JAVADOC_STATIC_ENTRIES = (
+    "script.js",
+    "search.js",
+    "stylesheet.css",
+    "jquery-ui.overrides.css",
+    "resources/glass.png",
+    "resources/x.png",
+    "script-dir/jquery-3.7.1.min.js",
+    "script-dir/jquery-ui.min.js",
+    "script-dir/jquery-ui.min.css",
+)
+GPL2_CLASSPATH_HEADER = """/*
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ * This code is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 only, as
+ * published by the Free Software Foundation.  Oracle designates this
+ * particular file as subject to the "Classpath" exception as provided.
+ */
+"""
+JAVADOC_ENTRY_CONTENT: dict[str, bytes | str] = {
+    "legal/LICENSE": (
+        "The GNU General Public License (GPL)\n\nVersion 2, June 1991\n"
+        '"CLASSPATH" EXCEPTION TO THE GPL\n'
+    ),
+    "legal/ADDITIONAL_LICENSE_INFO": (
+        "ADDITIONAL INFORMATION ABOUT LICENSING\nGNU Classpath Exception.\n"
+        "Failing to distribute notices associated with some files may also create\n"
+    ),
+    "legal/ASSEMBLY_EXCEPTION": (
+        "OPENJDK ASSEMBLY EXCEPTION\n"
+        'only ("GPL2"), with the following clarification and special exception.\n'
+    ),
+    "legal/jquery.md": (
+        "## jQuery v3.7.1\n### jQuery License\n"
+        "Copyright OpenJS Foundation and other contributors, https://openjsf.org/\n"
+        "Permission is hereby granted, free of charge\n"
+        "The above copyright notice and this permission notice shall be included\n"
+        'THE SOFTWARE IS PROVIDED "AS IS"\n'
+    ),
+    "legal/jqueryUI.md": (
+        "## jQuery UI v1.14.1\n### jQuery UI License\n"
+        "Copyright OpenJS Foundation and other contributors, https://openjsf.org/\n"
+        "Permission is hereby granted, free of charge\n"
+        "The above copyright notice and this permission notice shall be included\n"
+        'THE SOFTWARE IS PROVIDED "AS IS"\n'
+        "CC0: http://creativecommons.org/publicdomain/zero/1.0/\n"
+    ),
+    "script.js": GPL2_CLASSPATH_HEADER + "var moduleSearchIndex;\n",
+    "search.js": GPL2_CLASSPATH_HEADER + "var searchPattern = '';\n",
+    "stylesheet.css": "/* Javadoc style sheet */\n",
+    "jquery-ui.overrides.css": GPL2_CLASSPATH_HEADER + ".ui-state-active {}\n",
+    "resources/glass.png": b"\x89PNG\r\n\x1a\nfixture-glass",
+    "resources/x.png": b"\x89PNG\r\n\x1a\nfixture-x",
+    "script-dir/jquery-3.7.1.min.js": (
+        "/*! jQuery v3.7.1 | (c) OpenJS Foundation and other contributors | "
+        "jquery.org/license */\n"
+    ),
+    "script-dir/jquery-ui.min.js": (
+        "/*! jQuery UI - v1.14.1\n"
+        "* Copyright OpenJS Foundation and other contributors; Licensed MIT */\n"
+    ),
+    "script-dir/jquery-ui.min.css": (
+        "/*! jQuery UI - v1.14.1\n"
+        "* Copyright OpenJS Foundation and other contributors; Licensed MIT */\n"
+    ),
 }
 
 
@@ -93,21 +190,22 @@ class ReleaseFixture:
         self.write_main_jar(
             "io.github.ym0506.routecontract.shardingsphere55"
         )
-        for name, member in (
-            (self.sources_jar_name, "io/github/ym0506/routecontract/RouteContract.java"),
-            (self.javadoc_jar_name, "io/github/ym0506/routecontract/RouteContract.html"),
-        ):
-            with ZipFile(self.root / name, "w", ZIP_DEFLATED) as archive:
-                archive.writestr("META-INF/LICENSE", "Apache-2.0 fixture")
-                archive.writestr("META-INF/NOTICE", "RouteContract fixture")
-                archive.writestr(member, "fixture")
+        with ZipFile(self.root / self.sources_jar_name, "w", ZIP_DEFLATED) as archive:
+            archive.writestr("META-INF/LICENSE", "Apache-2.0 fixture")
+            archive.writestr("META-INF/NOTICE", "RouteContract fixture")
+            archive.writestr(
+                "io/github/ym0506/routecontract/RouteContract.java",
+                "package io.github.ym0506.routecontract;\n"
+                "public final class RouteContract {}\n",
+            )
+        self.write_javadoc_jar()
         self.write_source_archive()
         for name, content in (
             (f"{ARTIFACT_ID}-cyclonedx.json", b"{}\n"),
             (f"{ARTIFACT_ID}-cyclonedx.xml", b"<bom/>\n"),
             ("routecontract-aggregate-cyclonedx.json", b"{}\n"),
             ("routecontract-aggregate-cyclonedx.xml", b"<bom/>\n"),
-            ("test-summary.txt", b"tests=50 failures=0 errors=0 skipped=0\n"),
+            ("test-summary.txt", b"tests=52 failures=0 errors=0 skipped=0\n"),
         ):
             (self.root / name).write_bytes(content)
         self.write_supply_chain_evidence()
@@ -118,58 +216,7 @@ class ReleaseFixture:
         aggregate_xml = self.root / "routecontract-aggregate-cyclonedx.xml"
         published_json = self.root / f"{ARTIFACT_ID}-cyclonedx.json"
         published_xml = self.root / f"{ARTIFACT_ID}-cyclonedx.xml"
-        license_reviews = [
-            {
-                "action": "resolve or renew the OCI license review before expiry",
-                "componentName": "mysql",
-                "componentVersion": "8.4.11",
-                "expires": "2026-08-27",
-                "owner": "RouteContract maintainers",
-                "purl": "pkg:oci/mysql@sha256%3A" + "b" * 64,
-                "rationaleCode": "MYSQL_OCI_PACKAGE_LICENSE_CONCLUSION_INCOMPLETE",
-                "reviewedAt": "2026-08-13",
-                "scope": "test-container",
-                "status": "manual-review-required",
-            },
-            {
-                "action": "resolve the redistribution NOTICE review before expiry",
-                "componentName": "jts-io-common",
-                "componentVersion": "1.19.0",
-                "expires": "2026-08-27",
-                "owner": "RouteContract maintainers",
-                "purl": "pkg:maven/org.locationtech.jts.io/jts-io-common@1.19.0",
-                "rationaleCode": "JTS_IO_COMMON_REDISTRIBUTION_NOTICE_TREATMENT_UNCONFIRMED",
-                "reviewedAt": "2026-08-13",
-                "scope": "test-runtime",
-                "status": "manual-review-required",
-            },
-        ]
-        vulnerability_exceptions = (
-            ("OSV-001", "GHSA-j288-q9x7-2f5v", "pkg:maven/commons-lang/commons-lang@2.4", None, "MODERATE"),
-            ("OSV-002", "GHSA-pq2g-wx69-c263", "pkg:maven/net.minidev/json-smart@2.5.0", "2.5.2", "HIGH"),
-            ("OSV-003", "GHSA-c2rv-hwqm-wjpg", "pkg:maven/org.apache.calcite/calcite-core@1.40.0", "1.42.0", "MODERATE"),
-        )
-        findings = [
-            {
-                "action": "time-bounded reviewed exception; re-evaluate by expiry",
-                "advisory": advisory,
-                "exceptionExpires": "2026-08-27",
-                "exceptionId": exception_id,
-                "fixedVersion": fixed_version,
-                "owner": "RouteContract maintainers",
-                "purl": purl,
-                "rationaleCode": "SHARDINGSPHERE_5_5_3_TEST_GRAPH",
-                "reachabilityEvidence": {
-                    "exampleProfile": True,
-                    "publishedProfile": False,
-                    "publishedRuntime": False,
-                },
-                "reviewedAt": "2026-08-12",
-                "scope": "aggregate-test-only",
-                "severity": severity,
-            }
-            for exception_id, advisory, purl, fixed_version, severity in vulnerability_exceptions
-        ]
+        license_reviews = [dict(EXPECTED_MYSQL_LICENSE_REVIEW)]
         evidence = {
             "exampleProfile": {
                 "componentLicenseCount": 2,
@@ -201,7 +248,7 @@ class ReleaseFixture:
                 "mavenPackageCount": 4,
                 "policySha256": "8" * 64,
                 "sha256": sha256(aggregate_json),
-                "unresolvedLicenseReviewCount": 2,
+                "unresolvedLicenseReviewCount": 1,
                 "xmlComponentCount": 4,
                 "xmlSha256": sha256(aggregate_xml),
             },
@@ -228,9 +275,9 @@ class ReleaseFixture:
             "schemaVersion": 1,
             "sourceTree": "e" * 40,
             "vulnerabilities": {
-                "acceptedExceptionCount": 3,
-                "findingCount": 3,
-                "findings": findings,
+                "acceptedExceptionCount": 0,
+                "findingCount": 0,
+                "findings": [],
                 "unreviewedCount": 0,
             },
         }
@@ -269,6 +316,30 @@ class ReleaseFixture:
                 archive.writestr(entry, b"unexpected fixture")
             archive.writestr("META-INF/LICENSE", "Apache-2.0 fixture")
             archive.writestr("META-INF/NOTICE", "RouteContract fixture")
+
+    def write_javadoc_jar(
+        self,
+        *,
+        omitted_entries: tuple[str, ...] = (),
+        content_overrides: dict[str, bytes | str] | None = None,
+        extra_entries: dict[str, bytes | str] | None = None,
+    ) -> None:
+        """Model the standard-doclet payload generated by Temurin 17.0.20.1+1."""
+        omitted = set(omitted_entries)
+        content = dict(JAVADOC_ENTRY_CONTENT)
+        if content_overrides:
+            content.update(content_overrides)
+        with ZipFile(self.root / self.javadoc_jar_name, "w", ZIP_DEFLATED) as archive:
+            archive.writestr("META-INF/LICENSE", "Apache-2.0 fixture")
+            archive.writestr("META-INF/NOTICE", "RouteContract fixture")
+            archive.writestr(
+                "io/github/ym0506/routecontract/RouteContract.html", "fixture"
+            )
+            for entry in (*JAVADOC_LEGAL_ENTRIES, *JAVADOC_STATIC_ENTRIES):
+                if entry not in omitted:
+                    archive.writestr(entry, content[entry])
+            for entry, extra_content in (extra_entries or {}).items():
+                archive.writestr(entry, extra_content)
 
     def write_source_archive(
         self,
@@ -376,6 +447,31 @@ class InstallReleaseAssetsTest(unittest.TestCase):
             stderr=subprocess.PIPE,
             check=False,
         )
+
+    def assert_evidence_mutation_rejected(
+        self, mutation, expected_error: str
+    ) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            assets = root / "release"
+            fixture = ReleaseFixture(assets)
+            fixture.create()
+            evidence_path = assets / "supply-chain-evidence.json"
+            evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+            mutation(evidence)
+            evidence_path.write_text(
+                json.dumps(evidence, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            fixture.write_checksums()
+
+            result = self.run_installer(
+                assets, root / "consumer-maven", home=root / "home"
+            )
+
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn(expected_error, result.stderr)
+            self.assertFalse((root / "consumer-maven").exists())
 
     def test_installs_verified_coordinate_only_into_explicit_repository(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
@@ -486,50 +582,99 @@ class InstallReleaseAssetsTest(unittest.TestCase):
             self.assertFalse((root / "consumer-maven").exists())
 
     def test_rejects_incomplete_unresolved_license_review_set(self) -> None:
-        with tempfile.TemporaryDirectory() as raw:
-            root = Path(raw)
-            assets = root / "release"
-            fixture = ReleaseFixture(assets)
-            fixture.create()
-            evidence_path = assets / "supply-chain-evidence.json"
-            evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
-            evidence["sbom"]["licenseReviews"].pop()
-            evidence_path.write_text(
-                json.dumps(evidence, indent=2, sort_keys=True) + "\n",
-                encoding="utf-8",
-            )
-            fixture.write_checksums()
+        self.assert_evidence_mutation_rejected(
+            lambda evidence: evidence["sbom"]["licenseReviews"].clear(),
+            "exactly one license review",
+        )
 
-            result = self.run_installer(
-                assets, root / "consumer-maven", home=root / "home"
-            )
+    def test_rejects_duplicate_unresolved_license_review(self) -> None:
+        self.assert_evidence_mutation_rejected(
+            lambda evidence: evidence["sbom"]["licenseReviews"].append(
+                dict(evidence["sbom"]["licenseReviews"][0])
+            ),
+            "exactly one license review",
+        )
 
-            self.assertNotEqual(0, result.returncode)
-            self.assertIn("exactly two license reviews", result.stderr)
-            self.assertFalse((root / "consumer-maven").exists())
+    def test_rejects_wrong_mysql_license_review_contract(self) -> None:
+        wrong_values = (
+            ("identity", "componentName", "not-mysql"),
+            (
+                "digest",
+                "purl",
+                EXPECTED_MYSQL_LICENSE_REVIEW["purl"].replace(
+                    MYSQL_CONTAINER_DIGEST, "f" * 64
+                ),
+            ),
+            ("scope", "scope", "published-runtime"),
+            ("status", "status", "approved"),
+        )
+        for label, field, value in wrong_values:
+            with self.subTest(label=label):
+                self.assert_evidence_mutation_rejected(
+                    lambda evidence, field=field, value=value: evidence["sbom"][
+                        "licenseReviews"
+                    ][0].__setitem__(field, value),
+                    "exactly identify the pinned MySQL OCI image",
+                )
 
-    def test_rejects_reversed_license_review_order(self) -> None:
-        with tempfile.TemporaryDirectory() as raw:
-            root = Path(raw)
-            assets = root / "release"
-            fixture = ReleaseFixture(assets)
-            fixture.create()
-            evidence_path = assets / "supply-chain-evidence.json"
-            evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
-            evidence["sbom"]["licenseReviews"].reverse()
-            evidence_path.write_text(
-                json.dumps(evidence, indent=2, sort_keys=True) + "\n",
-                encoding="utf-8",
-            )
-            fixture.write_checksums()
+    def test_rejects_stale_pre_owner_decision_mysql_license_review(self) -> None:
+        stale_values = (
+            (
+                "action",
+                "resolve, renew with new evidence, or remove the MySQL OCI "
+                "package-level license review before the 2026-08-27 expiry",
+            ),
+            ("reviewedAt", "2026-08-13"),
+            ("expires", "2026-08-27"),
+        )
+        for field, value in stale_values:
+            with self.subTest(field=field):
+                self.assert_evidence_mutation_rejected(
+                    lambda evidence, field=field, value=value: evidence["sbom"][
+                        "licenseReviews"
+                    ][0].__setitem__(field, value),
+                    "exactly identify the pinned MySQL OCI image",
+                )
 
-            result = self.run_installer(
-                assets, root / "consumer-maven", home=root / "home"
-            )
+    def test_rejects_expired_mysql_license_review(self) -> None:
+        self.assert_evidence_mutation_rejected(
+            lambda evidence: evidence["sbom"]["licenseReviews"][0].__setitem__(
+                "expires", "2026-08-12"
+            ),
+            "expired license review",
+        )
 
-            self.assertNotEqual(0, result.returncode)
-            self.assertIn("exact required order", result.stderr)
-            self.assertFalse((root / "consumer-maven").exists())
+    def test_rejects_any_vulnerability_exception_or_finding(self) -> None:
+        invalid_vulnerabilities = (
+            (
+                "accepted exception count",
+                {
+                    "acceptedExceptionCount": 1,
+                    "findingCount": 0,
+                    "findings": [],
+                    "unreviewedCount": 0,
+                },
+                "counts do not match findings",
+            ),
+            (
+                "finding",
+                {
+                    "acceptedExceptionCount": 1,
+                    "findingCount": 1,
+                    "findings": [{"unexpected": "finding"}],
+                    "unreviewedCount": 0,
+                },
+                "zero vulnerability findings and accepted exceptions",
+            ),
+        )
+        for label, vulnerabilities, expected_error in invalid_vulnerabilities:
+            with self.subTest(label=label):
+                self.assert_evidence_mutation_rejected(
+                    lambda evidence, vulnerabilities=vulnerabilities: evidence.__setitem__(
+                        "vulnerabilities", vulnerabilities
+                    ),
+                    expected_error,
+                )
 
     def test_rejects_boolean_supply_chain_vulnerability_count(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
@@ -648,6 +793,167 @@ class InstallReleaseAssetsTest(unittest.TestCase):
             self.assertIn("checksum mismatch", result.stderr)
             self.assertFalse(repository.exists())
 
+    def test_rejects_javadoc_classifier_missing_openjdk_license(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            assets = root / "release"
+            fixture = ReleaseFixture(assets)
+            fixture.create()
+            fixture.write_javadoc_jar(omitted_entries=("legal/LICENSE",))
+            fixture.write_checksums()
+
+            result = self.run_installer(
+                assets, root / "consumer-maven", home=root / "home"
+            )
+
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("Javadoc JAR is missing required entries", result.stderr)
+            self.assertIn("legal/LICENSE", result.stderr)
+            self.assertFalse((root / "consumer-maven").exists())
+
+    def test_rejects_javadoc_classifier_missing_embedded_legal_notices(self) -> None:
+        for entry in JAVADOC_LEGAL_ENTRIES[1:]:
+            with self.subTest(entry=entry), tempfile.TemporaryDirectory() as raw:
+                root = Path(raw)
+                assets = root / "release"
+                fixture = ReleaseFixture(assets)
+                fixture.create()
+                fixture.write_javadoc_jar(omitted_entries=(entry,))
+                fixture.write_checksums()
+
+                result = self.run_installer(
+                    assets, root / "consumer-maven", home=root / "home"
+                )
+
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn("Javadoc JAR is missing required entries", result.stderr)
+                self.assertIn(entry, result.stderr)
+                self.assertFalse((root / "consumer-maven").exists())
+
+    def test_rejects_javadoc_classifier_missing_standard_doclet_static_asset(
+        self,
+    ) -> None:
+        for entry in JAVADOC_STATIC_ENTRIES:
+            with self.subTest(entry=entry), tempfile.TemporaryDirectory() as raw:
+                root = Path(raw)
+                assets = root / "release"
+                fixture = ReleaseFixture(assets)
+                fixture.create()
+                fixture.write_javadoc_jar(omitted_entries=(entry,))
+                fixture.write_checksums()
+
+                result = self.run_installer(
+                    assets, root / "consumer-maven", home=root / "home"
+                )
+
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn("Javadoc JAR is missing required entries", result.stderr)
+                self.assertIn(entry, result.stderr)
+                self.assertFalse((root / "consumer-maven").exists())
+
+    def test_rejects_undeclared_javadoc_classifier_entries(self) -> None:
+        cases = (
+            "legal/UNDISCLOSED_COMPONENT_LICENSE.txt",
+            "script-dir/undisclosed-lib.min.js",
+            "resources/extra.png",
+            "extra.js",
+            "third-party/LICENSE.txt",
+            "META-INF/UNDECLARED-NOTICE",
+        )
+        for entry in cases:
+            with self.subTest(entry=entry), tempfile.TemporaryDirectory() as raw:
+                root = Path(raw)
+                assets = root / "release"
+                fixture = ReleaseFixture(assets)
+                fixture.create()
+                fixture.write_javadoc_jar(extra_entries={entry: "undeclared fixture"})
+                fixture.write_checksums()
+
+                result = self.run_installer(
+                    assets, root / "consumer-maven", home=root / "home"
+                )
+
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn("undeclared classifier entry", result.stderr)
+                self.assertIn(entry, result.stderr)
+                self.assertFalse((root / "consumer-maven").exists())
+
+    def test_rejects_javadoc_classifier_tampered_jquery_version(self) -> None:
+        cases = (
+            (
+                "script",
+                "script-dir/jquery-3.7.1.min.js",
+                "/*! jQuery v3.7.10 | (c) OpenJS Foundation and other "
+                "contributors | jquery.org/license */\n",
+            ),
+            (
+                "legal",
+                "legal/jquery.md",
+                JAVADOC_ENTRY_CONTENT["legal/jquery.md"].replace(
+                    "## jQuery v3.7.1", "## jQuery v3.7.10"
+                ),
+            ),
+        )
+        for label, entry, content in cases:
+            with self.subTest(marker=label), tempfile.TemporaryDirectory() as raw:
+                root = Path(raw)
+                assets = root / "release"
+                fixture = ReleaseFixture(assets)
+                fixture.create()
+                fixture.write_javadoc_jar(content_overrides={entry: content})
+                fixture.write_checksums()
+
+                result = self.run_installer(
+                    assets, root / "consumer-maven", home=root / "home"
+                )
+
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn("jQuery 3.7.1 version/license markers", result.stderr)
+                self.assertFalse((root / "consumer-maven").exists())
+
+    def test_rejects_javadoc_classifier_tampered_jquery_ui_version_or_license(
+        self,
+    ) -> None:
+        cases = (
+            (
+                "script-version-prefix",
+                "script-dir/jquery-ui.min.js",
+                "/*! jQuery UI - v1.14.10\n"
+                "* Copyright OpenJS Foundation and other contributors; Licensed MIT */\n",
+            ),
+            (
+                "legal-version-prefix",
+                "legal/jqueryUI.md",
+                JAVADOC_ENTRY_CONTENT["legal/jqueryUI.md"].replace(
+                    "## jQuery UI v1.14.1", "## jQuery UI v1.14.10"
+                ),
+            ),
+            (
+                "license",
+                "script-dir/jquery-ui.min.css",
+                "/*! jQuery UI - v1.14.1\n"
+                "* Copyright OpenJS Foundation and other contributors */\n",
+            ),
+        )
+        for label, entry, content in cases:
+            with self.subTest(marker=label), tempfile.TemporaryDirectory() as raw:
+                root = Path(raw)
+                assets = root / "release"
+                fixture = ReleaseFixture(assets)
+                fixture.create()
+                fixture.write_javadoc_jar(content_overrides={entry: content})
+                fixture.write_checksums()
+
+                result = self.run_installer(
+                    assets, root / "consumer-maven", home=root / "home"
+                )
+
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn(
+                    "jQuery UI 1.14.1 version/license markers", result.stderr
+                )
+                self.assertFalse((root / "consumer-maven").exists())
+
     def test_rejects_unexpected_public_asset(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
@@ -712,6 +1018,99 @@ class InstallReleaseAssetsTest(unittest.TestCase):
                 )
                 self.assertIn(expected_error, result.stderr)
                 self.assertFalse(repository.exists())
+
+    def test_rejects_jts_or_mahout_payloads_in_release_jars(self) -> None:
+        cases = (
+            ("main", "org/locationtech/jts/geom/Geometry.class"),
+            (
+                "main",
+                "META-INF/versions/17/org/apache/mahout/math/Vector.class",
+            ),
+            ("sources", "org/locationtech/jts/geom/Geometry.java"),
+            ("javadoc", "org/apache/mahout/math/Vector.html"),
+        )
+        for jar_kind, entry in cases:
+            with (
+                self.subTest(jar=jar_kind, entry=entry),
+                tempfile.TemporaryDirectory() as raw,
+            ):
+                root = Path(raw)
+                assets = root / "release"
+                fixture = ReleaseFixture(assets)
+                fixture.create()
+                jar_name = {
+                    "main": fixture.main_jar_name,
+                    "sources": fixture.sources_jar_name,
+                    "javadoc": fixture.javadoc_jar_name,
+                }[jar_kind]
+                fixture.append_jar_entry(jar_name, entry)
+                fixture.write_checksums()
+
+                result = self.run_installer(
+                    assets, root / "consumer-maven", home=root / "home"
+                )
+
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn("JTS/Mahout distribution boundary", result.stderr)
+                self.assertIn(entry, result.stderr)
+                self.assertFalse((root / "consumer-maven").exists())
+
+    def test_rejects_forbidden_package_declaration_hidden_under_sources_jar_namespace(
+        self,
+    ) -> None:
+        entry = "io/github/ym0506/routecontract/Geometry.java"
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            assets = root / "release"
+            fixture = ReleaseFixture(assets)
+            fixture.create()
+            fixture.append_jar_entry(
+                fixture.sources_jar_name,
+                entry,
+                "package org.locationtech.jts.geom; public class Geometry {}\n",
+            )
+            fixture.write_checksums()
+
+            result = self.run_installer(
+                assets, root / "consumer-maven", home=root / "home"
+            )
+
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("JTS/Mahout distribution boundary", result.stderr)
+            self.assertIn(entry, result.stderr)
+            self.assertFalse((root / "consumer-maven").exists())
+
+    def test_rejects_arbitrary_foreign_payloads_in_thin_release_jars(self) -> None:
+        cases = (
+            ("main", "com/example/Foo.class"),
+            ("main", "META-INF/versions/17/com/example/Foo.class"),
+            ("sources", "com/example/Foo.java"),
+            ("sources", "lib/foreign.jar"),
+        )
+        for jar_kind, entry in cases:
+            with (
+                self.subTest(jar=jar_kind, entry=entry),
+                tempfile.TemporaryDirectory() as raw,
+            ):
+                root = Path(raw)
+                assets = root / "release"
+                fixture = ReleaseFixture(assets)
+                fixture.create()
+                jar_name = {
+                    "main": fixture.main_jar_name,
+                    "sources": fixture.sources_jar_name,
+                }[jar_kind]
+                fixture.append_jar_entry(jar_name, entry)
+                fixture.write_checksums()
+
+                result = self.run_installer(
+                    assets, root / "consumer-maven", home=root / "home"
+                )
+
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn("thin first-party JAR boundary", result.stderr)
+                self.assertIn(entry, result.stderr)
+                self.assertFalse((root / "consumer-maven").exists())
 
     def test_rejects_nonportable_ambiguous_or_special_jar_entries(self) -> None:
         cases = (
@@ -893,6 +1292,89 @@ class InstallReleaseAssetsTest(unittest.TestCase):
             self.assertNotEqual(0, result.returncode)
             self.assertIn("exactly one versioned root", result.stderr)
             self.assertFalse(repository.exists())
+
+    def test_rejects_jts_or_mahout_payloads_in_source_archive(self) -> None:
+        cases = (
+            ("vendor/org/locationtech/jts/geom/Geometry.java", "extra fixture"),
+            ("vendor/org/apache/mahout/math/Vector.class", "extra fixture"),
+            ("lib/jts-core-1.19.0.jar", "extra fixture"),
+            ("third-party/mahout-math-0.8.jar", "extra fixture"),
+            ("lib/jts-core-1.19.0.zip", "extra fixture"),
+            ("lib/jts-core-1.19.0.7z", "extra fixture"),
+            ("metadata/mahout-math-0.8.pom", "extra fixture"),
+            (
+                "vendor/Geometry.java",
+                "package org.locationtech.jts.geom; public class Geometry {}\n",
+            ),
+            (
+                "vendor/Vector.java",
+                "package org.apache.mahout.math; public class Vector {}\n",
+            ),
+        )
+        for entry, content in cases:
+            with (
+                self.subTest(entry=entry),
+                tempfile.TemporaryDirectory() as raw,
+            ):
+                root = Path(raw)
+                assets = root / "release"
+                fixture = ReleaseFixture(assets)
+                fixture.create()
+                fixture.write_source_archive(
+                    extra_relative_entries=(entry,),
+                    content_overrides={entry: content},
+                )
+                fixture.write_checksums()
+
+                result = self.run_installer(
+                    assets, root / "consumer-maven", home=root / "home"
+                )
+
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn("JTS/Mahout distribution boundary", result.stderr)
+                self.assertIn(entry, result.stderr)
+                self.assertFalse((root / "consumer-maven").exists())
+
+    def test_rejects_compiled_class_under_neutral_source_archive_path(self) -> None:
+        entry = "vendor/Geometry.class"
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            assets = root / "release"
+            fixture = ReleaseFixture(assets)
+            fixture.create()
+            fixture.write_source_archive(extra_relative_entries=(entry,))
+            fixture.write_checksums()
+
+            result = self.run_installer(
+                assets, root / "consumer-maven", home=root / "home"
+            )
+
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("compiled Java class", result.stderr)
+            self.assertIn(entry, result.stderr)
+            self.assertFalse((root / "consumer-maven").exists())
+
+    def test_rejects_non_routecontract_java_source_in_source_archive(self) -> None:
+        entry = "vendor/src/main/java/com/example/Foo.java"
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            assets = root / "release"
+            fixture = ReleaseFixture(assets)
+            fixture.create()
+            fixture.write_source_archive(
+                extra_relative_entries=(entry,),
+                content_overrides={entry: "package com.example; public class Foo {}\n"},
+            )
+            fixture.write_checksums()
+
+            result = self.run_installer(
+                assets, root / "consumer-maven", home=root / "home"
+            )
+
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("first-party Java source boundary", result.stderr)
+            self.assertIn(entry, result.stderr)
+            self.assertFalse((root / "consumer-maven").exists())
 
     def test_rejects_alternate_package_namespace_in_source_archive(self) -> None:
         unexpected_paths = (
@@ -1383,8 +1865,12 @@ class InstallReleaseAssetsTest(unittest.TestCase):
             "grep -F 'image_repo_digests='",
             '"\\"(mysql|docker\\\\.io/library/mysql)'
             '@${expected_mysql_digest}\\""',
+            "./scripts/verify-release-assets-consumer.sh \\",
         ):
             self.assertIn(required_contract, workflow)
+        consumer = RELEASE_CONSUMER.read_text(encoding="utf-8")
+        self.assertIn('installer="$script_directory/install-release-assets.py"', consumer)
+        self.assertIn('install_output="$(python3 "$installer" \\', consumer)
         self.assertIn("| sort -u", stage)
         self.assertIn(
             'test "$(printf \'%s\\n\' "${resolved_mysql_image_ids}" '
@@ -1563,6 +2049,137 @@ class InstallReleaseAssetsTest(unittest.TestCase):
                 self.assertNotEqual(0, result.returncode)
                 self.assertIn("XML declaration must specify", result.stderr)
                 self.assertFalse(repository.exists())
+
+    def test_rejects_direct_jts_or_mahout_pom_dependencies(self) -> None:
+        cases = (
+            ("org.locationtech.jts", "jts-core", "1.19.0"),
+            ("org.locationtech.jts.io", "jts-io-common", "1.19.0"),
+            ("org.apache.mahout", "mahout-math", "0.8"),
+        )
+        for group_id, artifact_id, version in cases:
+            with (
+                self.subTest(group_id=group_id, artifact_id=artifact_id),
+                tempfile.TemporaryDirectory() as raw,
+            ):
+                root = Path(raw)
+                assets = root / "release"
+                fixture = ReleaseFixture(assets)
+                fixture.create()
+                pom = assets / fixture.pom_name
+                text = pom.read_text(encoding="utf-8")
+                dependency = f"""  <dependencies>
+    <dependency>
+      <groupId>{group_id}</groupId>
+      <artifactId>{artifact_id}</artifactId>
+      <version>{version}</version>
+    </dependency>
+  </dependencies>
+"""
+                pom.write_text(
+                    text.replace("</project>\n", dependency + "</project>\n"),
+                    encoding="utf-8",
+                )
+                fixture.write_checksums()
+
+                result = self.run_installer(
+                    assets, root / "consumer-maven", home=root / "home"
+                )
+
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn("JTS/Mahout distribution boundary", result.stderr)
+                self.assertIn(f"{group_id}:{artifact_id}", result.stderr)
+                self.assertFalse((root / "consumer-maven").exists())
+
+    def test_rejects_pom_relocation_before_installing_coordinate(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            assets = root / "release"
+            fixture = ReleaseFixture(assets)
+            fixture.create()
+            pom = assets / fixture.pom_name
+            text = pom.read_text(encoding="utf-8")
+            relocation = """  <distributionManagement>
+    <relocation>
+      <groupId>org.locationtech.jts</groupId>
+      <artifactId>jts-core</artifactId>
+      <version>1.19.0</version>
+    </relocation>
+  </distributionManagement>
+"""
+            pom.write_text(
+                text.replace("</project>\n", relocation + "</project>\n"),
+                encoding="utf-8",
+            )
+            fixture.write_checksums()
+
+            result = self.run_installer(
+                assets, root / "consumer-maven", home=root / "home"
+            )
+
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("must not contain Maven relocation", result.stderr)
+            self.assertFalse((root / "consumer-maven").exists())
+
+    def test_rejects_pom_parent_before_installing_coordinate(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            assets = root / "release"
+            fixture = ReleaseFixture(assets)
+            fixture.create()
+            pom = assets / fixture.pom_name
+            text = pom.read_text(encoding="utf-8")
+            parent = """  <parent>
+    <groupId>com.example</groupId>
+    <artifactId>dependency-bearing-parent</artifactId>
+    <version>1.0.0</version>
+  </parent>
+"""
+            pom.write_text(
+                text.replace(
+                    "  <modelVersion>4.0.0</modelVersion>\n",
+                    "  <modelVersion>4.0.0</modelVersion>\n" + parent,
+                ),
+                encoding="utf-8",
+            )
+            fixture.write_checksums()
+
+            result = self.run_installer(
+                assets, root / "consumer-maven", home=root / "home"
+            )
+
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("must not contain a Maven parent", result.stderr)
+            self.assertFalse((root / "consumer-maven").exists())
+
+    def test_rejects_non_literal_pom_dependency_coordinates(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            assets = root / "release"
+            fixture = ReleaseFixture(assets)
+            fixture.create()
+            pom = assets / fixture.pom_name
+            text = pom.read_text(encoding="utf-8")
+            dependency = """  <dependencies>
+    <dependency>
+      <groupId>${jts.group}</groupId>
+      <artifactId>geometry-core</artifactId>
+      <version>1.19.0</version>
+    </dependency>
+  </dependencies>
+"""
+            pom.write_text(
+                text.replace("</project>\n", dependency + "</project>\n"),
+                encoding="utf-8",
+            )
+            fixture.write_checksums()
+
+            result = self.run_installer(
+                assets, root / "consumer-maven", home=root / "home"
+            )
+
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("literal groupId and artifactId", result.stderr)
+            self.assertFalse((root / "consumer-maven").exists())
 
     def test_rejects_non_scalar_or_unicode_padded_pom_values(self) -> None:
         replacements = (
@@ -1779,9 +2396,61 @@ class InstallReleaseAssetsTest(unittest.TestCase):
 
     @unittest.skipUnless(
         os.environ.get("ROUTECONTRACT_RUN_RELEASE_ASSET_MYSQL_TEST") == "1",
-        "set ROUTECONTRACT_RUN_RELEASE_ASSET_MYSQL_TEST=1 for the real-MySQL test",
+        "set ROUTECONTRACT_RUN_RELEASE_ASSET_MYSQL_TEST=1 and use exact "
+        "Temurin 17.0.20.1+1 for the real-MySQL release-asset test",
     )
     def test_real_built_jars_install_and_run_isolated_mysql_consumer(self) -> None:
+        release_java_home = Path(
+            os.environ.get("ROUTECONTRACT_RELEASE_JAVA_HOME")
+            or os.environ.get("JAVA_HOME", "")
+        )
+        self.assertTrue(
+            str(release_java_home) not in {"", "."},
+            "set ROUTECONTRACT_RELEASE_JAVA_HOME (or JAVA_HOME) to exact "
+            "Temurin 17.0.20.1+1 before enabling the release-asset MySQL test",
+        )
+        release_metadata = release_java_home / "release"
+        release_java = release_java_home / "bin" / "java"
+        self.assertTrue(
+            release_metadata.is_file() and not release_metadata.is_symlink(),
+            "release-asset MySQL test requires an exact Temurin 17.0.20.1+1 "
+            "JAVA_HOME with a regular release metadata file",
+        )
+        metadata_lines = release_metadata.read_text(encoding="utf-8").splitlines()
+        self.assertEqual(
+            1,
+            metadata_lines.count('IMPLEMENTOR_VERSION="Temurin-17.0.20.1+1"'),
+            "release-asset MySQL test requires exact Temurin 17.0.20.1+1",
+        )
+        self.assertEqual(
+            1,
+            metadata_lines.count('JAVA_RUNTIME_VERSION="17.0.20.1+1"'),
+            "release-asset MySQL test requires exact Temurin 17.0.20.1+1",
+        )
+        self.assertTrue(
+            release_java.is_file() and not release_java.is_symlink(),
+            "release-asset MySQL test requires a regular JAVA_HOME/bin/java",
+        )
+        fullversion = subprocess.run(
+            [str(release_java), "-fullversion"],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=False,
+        )
+        self.assertEqual(0, fullversion.returncode, fullversion.stdout)
+        self.assertEqual(
+            'openjdk full version "17.0.20.1+1"',
+            fullversion.stdout.strip(),
+            "release-asset MySQL test requires exact Temurin 17.0.20.1+1",
+        )
+        release_environment = os.environ.copy()
+        release_environment["JAVA_HOME"] = str(release_java_home)
+        release_environment["PATH"] = (
+            f"{release_java_home / 'bin'}{os.pathsep}"
+            f"{release_environment.get('PATH', '')}"
+        )
+
         build = subprocess.run(
             [
                 str(REPOSITORY_ROOT / "gradlew"),
@@ -1795,6 +2464,7 @@ class InstallReleaseAssetsTest(unittest.TestCase):
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             check=False,
+            env=release_environment,
         )
         self.assertEqual(0, build.returncode, build.stdout)
 
@@ -1838,6 +2508,7 @@ class InstallReleaseAssetsTest(unittest.TestCase):
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 check=False,
+                env=release_environment,
             )
             self.assertEqual(0, result.returncode, result.stdout)
             self.assertIn(

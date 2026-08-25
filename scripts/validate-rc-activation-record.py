@@ -17,6 +17,7 @@ import hashlib
 import hmac
 import importlib.util
 import json
+import math
 from pathlib import Path
 from pathlib import PurePosixPath
 import re
@@ -36,6 +37,11 @@ GITHUB_HOST = "github.com"
 QUALIFIED_REPOSITORY = f"{GITHUB_HOST}/{REPOSITORY_SLUG}"
 MAX_RECORD_BYTES = 1024 * 1024
 MAX_CHECKSUM_BYTES = 1024 * 1024
+MAX_JSON_NESTING_DEPTH = 64
+MAX_JSON_NODE_COUNT = 100_000
+MAX_JSON_INTEGER_DIGITS = 1_000
+# Validation ceiling for bytes already captured from the GitHub CLI process.
+MAX_GITHUB_JSON_BYTES = 8 * 1024 * 1024
 VERSION_PART = r"(?:0|[1-9][0-9]{0,8})"
 RC_VERSION_PATTERN = re.compile(
     rf"{VERSION_PART}\.{VERSION_PART}\.{VERSION_PART}-rc[1-9][0-9]{{0,5}}"
@@ -61,10 +67,34 @@ MAX_ARTIFACT_MEMBER_BYTES = 100 * 1024 * 1024
 MAX_ARTIFACT_UNCOMPRESSED_BYTES = 250 * 1024 * 1024
 MAX_ARTIFACT_COMPRESSION_RATIO = 1000
 DOWNLOAD_TIMEOUT_SECONDS = 180
+ACTIVATION_PULL_QUERY = """
+query RouteContractActivationPull($owner: String!, $repo: String!, $number: Int!) {
+  repository(owner: $owner, name: $repo) {
+    id
+    nameWithOwner
+    pullRequest(number: $number) {
+      id
+      databaseId
+      number
+      url
+      state
+      merged
+      mergedAt
+      baseRefName
+      baseRepository { id nameWithOwner }
+      mergeCommit { oid }
+    }
+  }
+}
+""".strip()
 
 
 class ActivationError(RuntimeError):
     """The candidate is not safe to activate for independent recruitment."""
+
+
+class _StrictJsonError(ValueError):
+    """Value-free failure for malformed or over-budget JSON."""
 
 
 @dataclass(frozen=True)
@@ -119,21 +149,111 @@ def _reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     result: dict[str, Any] = {}
     for key, value in pairs:
         if key in result:
-            raise ActivationError(f"activation record contains duplicate JSON key: {key}")
+            raise _StrictJsonError("strict JSON validation failed")
         result[key] = value
     return result
 
 
-def _contains_placeholder(value: Any) -> bool:
-    if isinstance(value, str):
-        return "[[" in value or "]]" in value
-    if isinstance(value, list):
-        return any(_contains_placeholder(item) for item in value)
-    if isinstance(value, dict):
-        return any(
-            "[[" in key or "]]" in key or _contains_placeholder(item)
-            for key, item in value.items()
+def _reject_non_finite_constant(_value: str) -> None:
+    raise _StrictJsonError("strict JSON validation failed")
+
+
+def _parse_finite_float(value: str) -> float:
+    parsed = float(value)
+    if not math.isfinite(parsed):
+        raise _StrictJsonError("strict JSON validation failed")
+    return parsed
+
+
+def _parse_bounded_integer(value: str) -> int:
+    digits = value[1:] if value.startswith("-") else value
+    if len(digits) > MAX_JSON_INTEGER_DIGITS:
+        raise _StrictJsonError("strict JSON validation failed")
+    return int(value)
+
+
+def _enforce_json_tree_budget(value: Any) -> None:
+    """Bound JSON iteratively: scalar root depth 0; root container depth 1.
+
+    The node budget counts the root and every array element or object member value;
+    object keys are not separate nodes.
+    """
+    stack: list[tuple[Any, int]] = [(value, 0)]
+    node_count = 0
+    while stack:
+        node, parent_container_depth = stack.pop()
+        node_count += 1
+        if node_count > MAX_JSON_NODE_COUNT:
+            raise _StrictJsonError("strict JSON validation failed")
+        if isinstance(node, dict):
+            container_depth = parent_container_depth + 1
+            if container_depth > MAX_JSON_NESTING_DEPTH:
+                raise _StrictJsonError("strict JSON validation failed")
+            stack.extend(
+                (child, container_depth) for child in reversed(tuple(node.values()))
+            )
+        elif isinstance(node, list):
+            container_depth = parent_container_depth + 1
+            if container_depth > MAX_JSON_NESTING_DEPTH:
+                raise _StrictJsonError("strict JSON validation failed")
+            stack.extend(
+                (child, container_depth) for child in reversed(node)
+            )
+
+
+def _decode_strict_json(
+    data: str | bytes, *, maximum_bytes: int | None = None
+) -> Any:
+    """Decode strict UTF-8 JSON with the shared value-free limits.
+
+    ``maximum_bytes`` counts UTF-8 bytes, integer digits exclude a leading minus
+    sign, and tree depth/node semantics are documented by
+    :func:`_enforce_json_tree_budget`.
+    """
+    try:
+        if (
+            maximum_bytes is not None
+            and (type(maximum_bytes) is not int or maximum_bytes < 0)
+        ):
+            raise _StrictJsonError("strict JSON validation failed")
+        if isinstance(data, bytes):
+            if maximum_bytes is not None and len(data) > maximum_bytes:
+                raise _StrictJsonError("strict JSON validation failed")
+            text = data.decode("utf-8", errors="strict")
+        elif isinstance(data, str):
+            text = data
+            encoded = text.encode("utf-8", errors="strict")
+            if maximum_bytes is not None and len(encoded) > maximum_bytes:
+                raise _StrictJsonError("strict JSON validation failed")
+        else:
+            raise _StrictJsonError("strict JSON validation failed")
+        value = json.loads(
+            text,
+            object_pairs_hook=_reject_duplicate_keys,
+            parse_constant=_reject_non_finite_constant,
+            parse_float=_parse_finite_float,
+            parse_int=_parse_bounded_integer,
         )
+        _enforce_json_tree_budget(value)
+        return value
+    except (UnicodeError, TypeError, ValueError, RecursionError):
+        raise _StrictJsonError("strict JSON validation failed") from None
+
+
+def _contains_placeholder(value: Any) -> bool:
+    stack = [value]
+    while stack:
+        node = stack.pop()
+        if isinstance(node, str):
+            if "[[" in node or "]]" in node:
+                return True
+        elif isinstance(node, list):
+            stack.extend(node)
+        elif isinstance(node, dict):
+            for key, child in node.items():
+                if "[[" in key or "]]" in key:
+                    return True
+                stack.append(child)
     return False
 
 
@@ -149,12 +269,13 @@ def load_record(path: Path) -> tuple[bytes, dict[str, Any]]:
         raise ActivationError("activation record exceeds the 1 MiB safety limit")
     try:
         raw = path.read_bytes()
-        text = raw.decode("utf-8", errors="strict")
-        value = json.loads(text, object_pairs_hook=_reject_duplicate_keys)
-    except UnicodeError:
-        raise ActivationError("activation record must be valid UTF-8 JSON") from None
-    except (json.JSONDecodeError, RecursionError) as error:
-        raise ActivationError(f"activation record is not valid JSON: {error}") from None
+        if len(raw) > MAX_RECORD_BYTES:
+            raise ActivationError("activation record exceeds the 1 MiB safety limit")
+        value = _decode_strict_json(raw, maximum_bytes=MAX_RECORD_BYTES)
+    except _StrictJsonError:
+        raise ActivationError(
+            "activation record must be valid strict UTF-8 JSON"
+        ) from None
     if not isinstance(value, dict):
         raise ActivationError("activation record root must be a JSON object")
     if _contains_placeholder(value):
@@ -167,9 +288,11 @@ def _exact_object(value: Any, expected: set[str], label: str) -> dict[str, Any]:
         raise ActivationError(f"{label} must be a JSON object")
     actual = set(value)
     if actual != expected:
+        missing = expected - actual
+        unexpected = actual - expected
         raise ActivationError(
             f"{label} keys do not match the schema; "
-            f"missing={sorted(expected - actual)}, unexpected={sorted(actual - expected)}"
+            f"missing_count={len(missing)}, unexpected_count={len(unexpected)}"
         )
     return value
 
@@ -654,17 +777,24 @@ def _run(
     command: list[str], *, cwd: Path, timeout: int = 60, binary: bool = False
 ) -> subprocess.CompletedProcess[Any]:
     try:
+        text_options: dict[str, Any] = (
+            {"text": False}
+            if binary
+            else {"text": True, "encoding": "utf-8", "errors": "strict"}
+        )
         return subprocess.run(
             command,
             cwd=cwd,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=not binary,
             check=False,
             timeout=timeout,
+            **text_options,
         )
-    except (OSError, subprocess.TimeoutExpired) as error:
-        raise ActivationError(f"could not run {command[0]}: {error}") from None
+    except subprocess.TimeoutExpired:
+        raise ActivationError(f"could not run {command[0]}: timeout") from None
+    except (OSError, UnicodeError):
+        raise ActivationError(f"could not run {command[0]}") from None
 
 
 def _git(repository_root: Path, arguments: list[str], *, binary: bool = False) -> Any:
@@ -810,8 +940,10 @@ def _gh_json(gh: str, repository_root: Path, endpoint: str) -> dict[str, Any]:
     if result.returncode != 0:
         raise ActivationError(f"GitHub API verification failed for {endpoint}")
     try:
-        value = json.loads(result.stdout, object_pairs_hook=_reject_duplicate_keys)
-    except (json.JSONDecodeError, RecursionError):
+        value = _decode_strict_json(
+            result.stdout, maximum_bytes=MAX_GITHUB_JSON_BYTES
+        )
+    except _StrictJsonError:
         raise ActivationError(f"GitHub API returned invalid JSON for {endpoint}") from None
     if not isinstance(value, dict):
         raise ActivationError(f"GitHub API returned a non-object for {endpoint}")
@@ -841,12 +973,134 @@ def _gh_json_list(
     if result.returncode != 0:
         raise ActivationError(f"GitHub API verification failed for {endpoint}")
     try:
-        value = json.loads(result.stdout, object_pairs_hook=_reject_duplicate_keys)
-    except (json.JSONDecodeError, RecursionError):
+        value = _decode_strict_json(
+            result.stdout, maximum_bytes=MAX_GITHUB_JSON_BYTES
+        )
+    except _StrictJsonError:
         raise ActivationError(f"GitHub API returned invalid JSON for {endpoint}") from None
     if not isinstance(value, list) or any(not isinstance(item, dict) for item in value):
         raise ActivationError(f"GitHub API returned a non-object array for {endpoint}")
     return value
+
+
+def _gh_graphql_activation_pull(
+    gh: str, repository_root: Path, pull_number: int
+) -> dict[str, Any]:
+    result = _run(
+        [
+            gh,
+            "api",
+            "graphql",
+            "--hostname",
+            GITHUB_HOST,
+            "--method",
+            "POST",
+            "-f",
+            f"query={ACTIVATION_PULL_QUERY}",
+            "-F",
+            f"owner={REPOSITORY_SLUG.split('/', 1)[0]}",
+            "-F",
+            f"repo={REPOSITORY_SLUG.split('/', 1)[1]}",
+            "-F",
+            f"number={pull_number}",
+        ],
+        cwd=repository_root,
+    )
+    if result.returncode != 0:
+        raise ActivationError("authenticated GitHub GraphQL Pull Request query failed")
+    try:
+        payload = _decode_strict_json(
+            result.stdout, maximum_bytes=MAX_GITHUB_JSON_BYTES
+        )
+    except _StrictJsonError:
+        raise ActivationError(
+            "authenticated GitHub GraphQL Pull Request query returned invalid JSON"
+        ) from None
+    if (
+        not isinstance(payload, dict)
+        or set(payload) != {"data"}
+        or not isinstance(payload["data"], dict)
+    ):
+        raise ActivationError(
+            "authenticated GitHub GraphQL Pull Request query returned errors, "
+            "extensions, or a partial envelope"
+        )
+    return payload
+
+
+def _validate_graphql_activation_pull(
+    payload: dict[str, Any],
+    repository_node_id: str,
+    rest_pull: dict[str, Any],
+    record_commit: str,
+) -> None:
+    data = payload.get("data")
+    repository = data.get("repository") if isinstance(data, dict) else None
+    pull = repository.get("pullRequest") if isinstance(repository, dict) else None
+    base_repository = pull.get("baseRepository") if isinstance(pull, dict) else None
+    merge_commit = pull.get("mergeCommit") if isinstance(pull, dict) else None
+    if (
+        not isinstance(data, dict)
+        or set(data) != {"repository"}
+        or not isinstance(repository, dict)
+        or set(repository) != {"id", "nameWithOwner", "pullRequest"}
+        or not isinstance(pull, dict)
+        or set(pull)
+        != {
+            "id",
+            "databaseId",
+            "number",
+            "url",
+            "state",
+            "merged",
+            "mergedAt",
+            "baseRefName",
+            "baseRepository",
+            "mergeCommit",
+        }
+        or not isinstance(base_repository, dict)
+        or set(base_repository) != {"id", "nameWithOwner"}
+        or not isinstance(merge_commit, dict)
+        or set(merge_commit) != {"oid"}
+        or not isinstance(repository.get("id"), str)
+        or not repository["id"]
+        or repository["id"] != repository_node_id
+        or not isinstance(repository.get("nameWithOwner"), str)
+        or repository.get("nameWithOwner") != REPOSITORY_SLUG
+        or not isinstance(base_repository.get("id"), str)
+        or not base_repository["id"]
+        or base_repository["id"] != repository_node_id
+        or not isinstance(base_repository.get("nameWithOwner"), str)
+        or base_repository.get("nameWithOwner") != REPOSITORY_SLUG
+        or not isinstance(pull.get("id"), str)
+        or not pull["id"]
+        or pull["id"] != rest_pull.get("node_id")
+        or type(pull.get("databaseId")) is not int
+        or pull["databaseId"] <= 0
+        or type(rest_pull.get("id")) is not int
+        or rest_pull["id"] <= 0
+        or pull["databaseId"] != rest_pull["id"]
+        or type(pull.get("number")) is not int
+        or pull["number"] <= 0
+        or type(rest_pull.get("number")) is not int
+        or rest_pull["number"] <= 0
+        or pull["number"] != rest_pull["number"]
+        or not isinstance(pull.get("url"), str)
+        or pull.get("url") != rest_pull.get("html_url")
+        or not isinstance(pull.get("state"), str)
+        or pull.get("state") != "MERGED"
+        or pull.get("merged") is not True
+        or not isinstance(pull.get("mergedAt"), str)
+        or pull.get("mergedAt") != rest_pull.get("merged_at")
+        or not isinstance(pull.get("baseRefName"), str)
+        or pull.get("baseRefName") != "main"
+        or not isinstance(merge_commit.get("oid"), str)
+        or merge_commit.get("oid") != record_commit
+    ):
+        raise ActivationError(
+            "authenticated GitHub GraphQL Pull Request does not bind the exact "
+            "public main merge"
+        )
 
 
 def validate_public_metadata(
@@ -860,13 +1114,19 @@ def validate_public_metadata(
 ) -> PublicMetadata:
     """Verify public repository, record, run, artifact, and immutable Release."""
     repo = _gh_json(gh, repository_root, f"repos/{REPOSITORY_SLUG}")
+    repository_id = repo.get("id")
+    repository_node_id = repo.get("node_id")
     if (
-        repo.get("full_name") != REPOSITORY_SLUG
+        type(repository_id) is not int
+        or repository_id <= 0
+        or repo.get("full_name") != REPOSITORY_SLUG
         or repo.get("html_url") != REPOSITORY
         or repo.get("default_branch") != "main"
         or repo.get("private") is not False
         or repo.get("archived") is not False
         or repo.get("disabled") is not False
+        or not isinstance(repository_node_id, str)
+        or not repository_node_id
     ):
         raise ActivationError("GitHub repository metadata is not the expected public repository")
 
@@ -933,69 +1193,98 @@ def validate_public_metadata(
     )
     if len(associated_pulls) >= 100:
         raise ActivationError("activation-record pull-request association is unbounded")
-    matching_pulls: list[dict[str, Any]] = []
-    for pull in associated_pulls:
-        base = pull.get("base")
-        base_repository = base.get("repo") if isinstance(base, dict) else None
+    validated_pulls: list[tuple[dict[str, Any], dict[str, Any], datetime]] = []
+    observed_pull_numbers: set[int] = set()
+    for associated_pull in associated_pulls:
+        pull_number = associated_pull.get("number")
+        pull_id = associated_pull.get("id")
+        pull_node_id = associated_pull.get("node_id")
+        expected_pull_url = f"{REPOSITORY}/pull/{pull_number}"
+        listed_merge_commit = associated_pull.get("merge_commit_sha")
+        associated_base = associated_pull.get("base")
+        associated_base_repository = (
+            associated_base.get("repo") if isinstance(associated_base, dict) else None
+        )
         if (
-            pull.get("merge_commit_sha") == record_commit
-            and pull.get("state") == "closed"
-            and isinstance(pull.get("merged_at"), str)
-            and re.fullmatch(
-                r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z",
-                pull["merged_at"],
+            type(pull_number) is not int
+            or pull_number <= 0
+            or pull_number in observed_pull_numbers
+            or type(pull_id) is not int
+            or pull_id <= 0
+            or not isinstance(pull_node_id, str)
+            or not pull_node_id
+            or associated_pull.get("html_url") != expected_pull_url
+            or associated_pull.get("state") != "closed"
+            or not isinstance(associated_pull.get("merged_at"), str)
+            or "merge_commit_sha" not in associated_pull
+            or not isinstance(associated_base, dict)
+            or associated_base.get("ref") != "main"
+            or not isinstance(associated_base_repository, dict)
+            or associated_base_repository.get("full_name") != REPOSITORY_SLUG
+            or (
+                listed_merge_commit is not None
+                and listed_merge_commit != record_commit
             )
-            and isinstance(base_repository, dict)
-            and base.get("ref") == "main"
-            and base_repository.get("full_name") == REPOSITORY_SLUG
         ):
-            matching_pulls.append(pull)
-    if len(matching_pulls) != 1:
+            raise ActivationError("activation-record pull-request association is malformed")
+        observed_pull_numbers.add(pull_number)
+
+        direct_pull = _gh_json(
+            gh, repository_root, f"repos/{REPOSITORY_SLUG}/pulls/{pull_number}"
+        )
+        direct_base = direct_pull.get("base")
+        direct_base_repository = (
+            direct_base.get("repo") if isinstance(direct_base, dict) else None
+        )
+        direct_merge_commit = direct_pull.get("merge_commit_sha")
+        activation_merged_at = _github_utc(
+            direct_pull.get("merged_at"), "activation-record pull request merged_at"
+        )
+
+        if (
+            type(direct_pull.get("number")) is not int
+            or direct_pull["number"] <= 0
+            or direct_pull["number"] != pull_number
+            or type(direct_pull.get("id")) is not int
+            or direct_pull["id"] <= 0
+            or direct_pull["id"] != pull_id
+            or not isinstance(direct_pull.get("node_id"), str)
+            or not direct_pull["node_id"]
+            or direct_pull["node_id"] != pull_node_id
+            or not isinstance(direct_pull.get("html_url"), str)
+            or direct_pull.get("html_url") != expected_pull_url
+            or not isinstance(direct_pull.get("state"), str)
+            or direct_pull.get("state") != "closed"
+            or direct_pull.get("merged") is not True
+            or not isinstance(direct_pull.get("merged_at"), str)
+            or "merge_commit_sha" not in direct_pull
+            or (direct_merge_commit is not None and direct_merge_commit != record_commit)
+            or not isinstance(direct_base, dict)
+            or direct_base.get("ref") != "main"
+            or not isinstance(direct_base_repository, dict)
+            or direct_base_repository.get("full_name") != REPOSITORY_SLUG
+            or associated_pull.get("state") != direct_pull.get("state")
+            or associated_pull.get("merged_at") != direct_pull.get("merged_at")
+            or associated_base.get("ref") != direct_base.get("ref")
+            or associated_base_repository.get("full_name")
+            != direct_base_repository.get("full_name")
+        ):
+            raise ActivationError(
+                "activation-record pull request does not bind the public main squash merge"
+            )
+        _validate_graphql_activation_pull(
+            _gh_graphql_activation_pull(gh, repository_root, pull_number),
+            repository_node_id,
+            direct_pull,
+            record_commit,
+        )
+        validated_pulls.append((associated_pull, direct_pull, activation_merged_at))
+
+    if len(validated_pulls) != 1:
         raise ActivationError(
             "activation-record commit must be the unique squash result of a main pull request"
         )
-    associated_pull = matching_pulls[0]
-    activation_merged_at = _github_utc(
-        associated_pull.get("merged_at"), "activation-record pull request merged_at"
-    )
-    pull_number = associated_pull.get("number")
-    pull_id = associated_pull.get("id")
-    pull_node_id = associated_pull.get("node_id")
-    expected_pull_url = f"{REPOSITORY}/pull/{pull_number}"
-    if (
-        type(pull_number) is not int
-        or pull_number <= 0
-        or type(pull_id) is not int
-        or pull_id <= 0
-        or not isinstance(pull_node_id, str)
-        or not pull_node_id
-        or associated_pull.get("html_url") != expected_pull_url
-    ):
-        raise ActivationError("activation-record pull-request association is malformed")
-    direct_pull = _gh_json(
-        gh, repository_root, f"repos/{REPOSITORY_SLUG}/pulls/{pull_number}"
-    )
-    direct_base = direct_pull.get("base")
-    direct_base_repository = (
-        direct_base.get("repo") if isinstance(direct_base, dict) else None
-    )
-    if (
-        direct_pull.get("number") != pull_number
-        or direct_pull.get("id") != pull_id
-        or direct_pull.get("node_id") != pull_node_id
-        or direct_pull.get("html_url") != expected_pull_url
-        or direct_pull.get("state") != "closed"
-        or direct_pull.get("merged") is not True
-        or direct_pull.get("merge_commit_sha") != record_commit
-        or direct_pull.get("merged_at") != associated_pull.get("merged_at")
-        or not isinstance(direct_base, dict)
-        or direct_base.get("ref") != "main"
-        or not isinstance(direct_base_repository, dict)
-        or direct_base_repository.get("full_name") != REPOSITORY_SLUG
-    ):
-        raise ActivationError(
-            "activation-record pull request does not bind the public main squash merge"
-        )
+    associated_pull, direct_pull, activation_merged_at = validated_pulls[0]
     if not record_author_at <= record_committer_at <= activation_merged_at:
         raise ActivationError(
             "activation-record commit timestamps are later than the public main merge"

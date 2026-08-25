@@ -3,13 +3,16 @@
 RouteContract is licensed under Apache-2.0. The dependencies below keep their
 own licenses. This file is a human-readable inventory of the dependencies
 declared directly by this repository, selected reviewed transitive metadata,
-and the pinned report-builder runtime closure, as of 2026-08-14; it is not a
+and the pinned report-builder runtime closure, as of 2026-08-24; it is not a
 substitute for the machine-readable SBOM or the license text shipped by each
 dependency.
 
-RouteContract does not shade or copy these dependencies into its library JAR.
-The MySQL example's dependencies and container image are test-only and are not
-part of the published library artifact.
+The v0.1 build does not configure shading or dependency embedding. The Release
+gate checks a first-party path/metadata inventory and the published POM's direct
+dependencies; those checks do not prove the absence or semantic provenance of
+renamed, relocated, transformed, or copied bytes. The MySQL example's declared
+dependencies and container image are test-only and are not part of the
+published library's declared runtime profile.
 
 ## Published library
 
@@ -29,11 +32,39 @@ must supply, or already have, an equivalent Jackson 2 alignment to reproduce
 the verified 2.18.9 graph; RouteContract's POM does not provide it. It does not
 replace the separate `tools.jackson` 3.1.5 runtime dependency.
 
+## Javadoc classifier shipped assets
+
+The published Javadoc classifier is generated with **Eclipse Temurin/OpenJDK
+standard-doclet 17.0.20.1+1**. In addition to RouteContract API pages, that
+classifier ships the standard doclet's JavaScript, CSS and two PNG resources.
+The OpenJDK-authored files are distributed under
+`GPL-2.0-only WITH Classpath-exception-2.0`; the classifier also contains
+jQuery 3.7.1 and jQuery UI 1.14.1 under MIT. This does not relicense
+RouteContract or the Apache-2.0 main JAR. The five upstream texts are kept
+inside the classifier under the `legal/` directory as `legal/LICENSE`, `legal/ADDITIONAL_LICENSE_INFO`,
+`legal/ASSEMBLY_EXCEPTION`, `legal/jquery.md` and `legal/jqueryUI.md`.
+
+This is a classifier-only shipped-file boundary. These assets are not present
+in the main library JAR or its runtime dependency graph, and the project does
+not add them as runtime dependencies merely to make a dependency-profile SBOM
+look like a file inventory. The exact release workflow instead pins the JDK,
+records `java -fullversion`, and makes the offline Release installer require
+the legal files, static resources, versions and license markers. The
+authoritative upstream references are the [Eclipse Temurin
+17.0.20.1+1 release](https://github.com/adoptium/temurin17-binaries/releases/tag/jdk-17.0.20.1%2B1),
+the [OpenJDK 17.0.20.1 jdk.javadoc
+source](https://github.com/openjdk/jdk17u/tree/jdk-17.0.20.1%2B1/src/jdk.javadoc),
+[jQuery 3.7.1](https://github.com/jquery/jquery/tree/3.7.1), and [jQuery UI
+1.14.1](https://github.com/jquery/jquery-ui/tree/1.14.1). No whole-file hash is
+predeclared here: the final classifier and `SHA256SUMS` bind the bytes actually
+produced by the pinned release workflow.
+
 ## Tests and MySQL example
 
 | Component | Version | Gradle scope | License |
 |---|---:|---|---|
 | Apache ShardingSphere JDBC and explicitly declared runtime modules | 5.5.3 | `testImplementation` / `testRuntimeOnly` | Apache-2.0 |
+| Apache Calcite Core and linq4j | 1.42.0 | strict `testImplementation` constraints | Apache-2.0 |
 | JUnit Jupiter and JUnit Platform Launcher (managed by JUnit BOM) | 5.14.3 / 1.14.3 | `testImplementation` / `testRuntimeOnly` | EPL-2.0 |
 | Testcontainers JUnit Jupiter and MySQL modules | 1.21.4 | `testImplementation` | MIT |
 | Apache Commons Compress | 1.26.0 | `testImplementation` constraint | Apache-2.0 |
@@ -46,15 +77,42 @@ replace the separate `tools.jackson` 3.1.5 runtime dependency.
 Connector/J's upstream 26.7.0 license includes GPLv2 plus the Universal FOSS
 Exception 1.0 and third-party notices; the expression above records the Maven
 project’s stated license choice. The digest-pinned OCI image is not described
-as wholly GPL: the digest-selected platform image is built from an Oracle Linux
-base and installs MySQL server, MySQL Shell and other packages. The SBOM
-therefore omits `licenses` for this one OCI component, records an exact custom
-unresolved-review property, and links the [MySQL 8.4 legal-notices
+as wholly GPL: the selected platform images are built from an Oracle Linux base
+and install MySQL Server 8.4.11, MySQL Shell 8.4.10 and other packages.
+
+The 2026-08-24 evidence review binds the OCI index digest above to Linux/amd64
+manifest
+`sha256:1d6b6a8fcee8ff758ff151d017f5203cd06792a0e698f0a593c9dfcb14609cf0`
+and Linux/arm64/v8 manifest
+`sha256:c9be23757267a888182ff13a633118a84ce7ad360abaa0f12a9c357ddf628b61`.
+Both selected platform payloads recorded the same embedded `LICENSE` SHA-256,
+`cb104b45f22bdecc7517916f792726056912586ffa5f4b1b0322d687bc3f3f1e`,
+and `INFO_SRC` SHA-256,
+`a70c88800475d2a86a83b85b4bba161e14b14cec6bdd2d6f624bfd3392910daf`.
+The official attestations enumerate 167 packages with
+`licenseConcluded=NOASSERTION`; neither those attestations nor the embedded-file
+hashes establish an image-wide SPDX conclusion.
+
+The SBOM therefore omits `licenses` for this one OCI component, records an
+exact custom unresolved-review property, and links the [MySQL 8.4 legal-notices
 index](https://dev.mysql.com/doc/refman/8.4/en/preface.html) as a documentation
-external reference rather than an unsupported image-wide SPDX conclusion.
-That exact review is owned by the RouteContract maintainers and expires
-2026-08-27; it must be resolved, renewed with new evidence or removed before
-then.
+external reference rather than an unsupported image-wide SPDX conclusion. The
+reviewed official image recipe source is the [`docker-library/mysql` 8.4 Oracle
+Dockerfile at commit
+`01f90d87012e46cd174073bba02d64e9fc693ed3`](https://github.com/docker-library/mysql/blob/01f90d87012e46cd174073bba02d64e9fc693ed3/8.4/Dockerfile.oracle).
+RouteContract uses the image only as a Testcontainers test fixture; it is not
+bundled in RouteContract's JARs, source archive, Release assets or final
+submission ZIP.
+
+The RouteContract owner re-reviewed this exact evidence on 2026-08-24. The
+record remains exactly one package-level, `test-container`-scoped
+`manual-review-required` review with no `licenses` field and expires on
+2026-12-05. Re-review immediately if the MySQL OCI digest, selected platform,
+embedded LICENSE/INFO_SRC evidence, or test-container use boundary changes;
+otherwise resolve, renew with new evidence, or remove the MySQL OCI
+package-level license review before the 2026-12-05 expiry.
+This review is not legal advice, legal-suitability approval or an image-wide
+license conclusion.
 
 The example also resolves transitive dependencies of the components above.
 Generate the aggregate CycloneDX SBOM to obtain the exact resolved graph for a
@@ -75,41 +133,54 @@ and are not bundled in the thin JAR.
 | Jakarta Transaction API | 1.3.3 | `EPL-2.0 OR (GPL-2.0-only WITH Classpath-exception-2.0)` | [tagged NOTICE](https://github.com/eclipse-ee4j/jta-api/blob/1.3.3/NOTICE.md) |
 | JNA | 5.13.0 | `(Apache-2.0 OR LGPL-2.1-or-later) AND MIT` | [tagged JNA license](https://github.com/java-native-access/jna/blob/5.13.0/LICENSE) and [embedded libffi license](https://github.com/java-native-access/jna/blob/5.13.0/native/libffi/LICENSE) |
 | JTS Core | 1.19.0 | `EPL-2.0 OR BSD-3-Clause` | [tagged JTS license choices](https://github.com/locationtech/jts/blob/1.19.0/LICENSES.md) |
-| JTS I/O Common | 1.19.0 | `(EPL-2.0 OR BSD-3-Clause) AND Apache-2.0` | [tagged JTS license choices](https://github.com/locationtech/jts/blob/1.19.0/LICENSES.md) and [Apache-licensed Mahout-derived `Varint.java`](https://github.com/locationtech/jts/blob/1.19.0/modules/io/common/src/main/java/org/locationtech/jts/io/twkb/Varint.java) |
 
-The exact JTS I/O Common 1.19.0 sources artifact contains nine Java source
-files. Eight carry the JTS project dual-license header; `Varint.java`, whose
-class is present in the resolved binary JAR, carries an Apache-2.0 header and
-identifies Apache Mahout 0.8 as its origin. The reviewed binary and sources JAR
-SHA-256 values are respectively
-`e0f0c62024d4282f5f905de1abd2cc96f975a51d9e8d98254234fa14b16bbe9b`
-and `c367d87dc525a5d9b85e2751e3b0e14ea018165b45aef3d2642c857d49f53804`.
-Those artifacts contain no `LICENSE` or `NOTICE`; the inherited POM lists only
-the JTS dual licenses; tagged `LICENSES.md` omits Mahout; and the Apache header
-refers to an ASF `NOTICE` absent from the JTS tag. The review pins the official
-[Mahout 0.8 source archive](https://archive.apache.org/dist/mahout/0.8/mahout-distribution-0.8-src.tar.gz)
-at SHA-256
-`0ff823d5c898880f0a00df52f72f0a9af1d2fc502700780eef20e91b4161504b`;
-its top-level `NOTICE.txt` has SHA-256
-`5e81cc7357b3c9a710860c4b66ac09c3322b2ac5ae914f4e07bfc36896e13c47`.
-That proves the originating ASF notice exists, but it does not resolve how the
-copied source's notice should be carried by the JTS artifact, whose release
-metadata omits it. The expression is therefore concluded while the JTS
-redistribution notice remains an exact manual-review item expiring 2026-08-27.
+JTS I/O Common is not a component of the verified graph. Every
+ShardingSphere-JDBC declaration excludes
+`org.locationtech.jts.io:jts-io-common`, and the supply-chain gate forbids its
+exact Maven coordinate identity in the pinned producer profile. JTS Core
+1.19.0 remains a reviewed test/example transitive
+component; excluding JTS I/O Common does not remove JTS Core.
 
-The aggregate audit currently observes three reviewed advisories, all in that
-same test/example-only ShardingSphere SQL Federation graph:
+RouteContract's v0.1 distribution boundary is narrower than the aggregate
+test/example graph:
+the main JAR accepts only `.class` entry paths under the exact RouteContract
+package namespace plus an exact metadata allowlist. The sources JAR applies the
+same path policy to `.java` entries and requires every declared package to match
+its path; the Javadoc JAR has its own exact inventory. The source ZIP rejects
+JTS/Mahout-named files and package paths, every compiled `.class`, and every
+Java file outside conventional source roots, outside the first-party declared
+namespace, or with a path/declaration mismatch. The published POM declares no
+direct JTS or Mahout dependency and cannot contain a Maven parent or relocation.
+These are name, path, declared-package and dependency gates; they do not determine the
+semantic origin of renamed or copied source/class bytes. The final Release gate
+must recheck those invariants,
+prove the source archive matches the final tagged tracked tree, and retain the
+owner's source/provenance review. The distribution-boundary review reopens if
+those payload invariants change or a JTS/Mahout published dependency enters
+the release; it is not legal advice or a conclusion about an upstream
+artifact's compliance.
 
-| Coordinate | Advisory | Reviewed upstream status | Policy expiry |
-|---|---|---|---:|
-| `commons-lang:commons-lang:2.4` | [GHSA-j288-q9x7-2f5v](https://github.com/advisories/GHSA-j288-q9x7-2f5v) | No patched release under the legacy `commons-lang` coordinates; the advisory names Commons Lang 3.18.0 as the patched successor line | 2026-08-27 |
-| `net.minidev:json-smart:2.5.0` | [GHSA-pq2g-wx69-c263](https://github.com/advisories/GHSA-pq2g-wx69-c263) | Patched in 2.5.2 | 2026-08-27 |
-| `org.apache.calcite:calcite-core:1.40.0` | [GHSA-c2rv-hwqm-wjpg](https://github.com/advisories/GHSA-c2rv-hwqm-wjpg) | Patched in 1.42.0 | 2026-08-27 |
+The MySQL and standalone fixtures strictly constrain both
+`org.apache.calcite:calcite-core` and
+`org.apache.calcite:calcite-linq4j` to 1.42.0. They also strictly align the
+following transitive versions to the dependency-management values published
+in the Apache ShardingSphere 5.5.3 parent POM:
 
-`test/example-only` describes RouteContract's resolved reachability; it is not
-a statement that the findings are harmless or inapplicable. The exceptions
-must be removed, replaced by an upgrade/exclusion, or renewed from fresh review
-evidence before they expire.
+- `net.hydromatic:aggdesigner-algorithm:6.1`;
+- `net.minidev:json-smart:2.4.10`;
+- `net.minidev:accessors-smart:2.4.9`.
+
+Upgrading the Calcite pair from ShardingSphere's requested 1.40.0 to the
+constrained 1.42.0 changes `aggdesigner-algorithm` from 6.0 to 6.1. The
+alignment controls also replace JSONPath's requested `json-smart:2.5.0` /
+`accessors-smart:2.5.0` in the exact resolved fixture graph.
+`aggdesigner-algorithm:6.1` replaces the legacy
+`commons-lang:commons-lang:2.4` edge with Commons Lang 3 and Commons Logging
+1.3.5. For the exact resolved graph and generation-pinned database snapshot,
+the offline OSV scan reports zero findings and the policy contains zero
+vulnerability exceptions. That snapshot is not a general vulnerability-free
+claim; a later database, dependency graph or scanner can produce different
+results and must pass the gate without an unreviewed finding.
 
 ## Build tooling
 
@@ -158,12 +229,13 @@ manual checks from the tagged clean tree:
    hashes, review properties/external references, JSON/XML equivalence and
    dependency reachability.
 3. Re-fetch exact-version upstream POM, JAR, `LICENSE` and `NOTICE` files for
-   Connector/J, Jakarta Transaction API, JNA (including libffi) and JTS.
+   Connector/J, Jakarta Transaction API, JNA (including libffi) and JTS Core;
+   verify that JTS I/O Common is still absent.
 4. Re-resolve the OCI index for the pinned MySQL digest and inspect the selected
    platform image/package legal notices; do not infer one image-wide license
    from the MySQL server license alone.
 5. Refresh the pinned OSV database, re-run the exact-revision gate, and review
-   every advisory and every exception's expiry/fixed-version data.
+   every finding. The current policy has no vulnerability exceptions.
 
 Dependency metadata can be incomplete. This inventory and any required copied
 notices must be updated when the resolved graph, distributed payload or

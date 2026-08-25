@@ -13,12 +13,27 @@ exclusive repository rule for the RouteContract group. The test verifies that:
 This standalone build has its own dependency lockfile and SHA-256 verification metadata because it
 does not inherit the root build's dependency controls.
 
-It also declares the ShardingSphere 5.5.3 Jackson 2 compatibility alignment explicitly:
+It also declares the verified ShardingSphere 5.5.3 dependency controls
+explicitly: Jackson 2 alignment, JTS I/O Common exclusion, and strict Calcite
+Core/linq4j 1.42.0 constraints.
 
 ```groovy
-testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))
-testImplementation("${routeContractGroup}:routecontract-shardingsphere-5.5:${routeContractVersion}")
-testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:5.5.3")
+dependencies {
+    testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))
+    testImplementation("${routeContractGroup}:routecontract-shardingsphere-5.5:${routeContractVersion}")
+    testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:5.5.3") {
+        exclude group: "org.locationtech.jts.io", module: "jts-io-common"
+    }
+
+    constraints {
+        testImplementation("org.apache.calcite:calcite-core:1.42.0") {
+            version { strictly "1.42.0" }
+        }
+        testImplementation("org.apache.calcite:calcite-linq4j:1.42.0") {
+            version { strictly "1.42.0" }
+        }
+    }
+}
 ```
 
 The published RouteContract artifact is a thin JAR. Its module-level
@@ -26,7 +41,9 @@ The published RouteContract artifact is a thin JAR. Its module-level
 version constraints, so the standalone consumer owns the alignment. The BOM
 resolves ShardingSphere's Jackson 2 core, databind, datatype-jdk8, and
 datatype-jsr310 compatibility modules to 2.18.9 in this verified Gradle test
-graph. In this verified runtime, the annotations artifact shared with Jackson 3
+graph. The strict constraints resolve Calcite Core and linq4j to 1.42.0; JTS
+Core 1.19.0 remains, while JTS I/O Common must be absent. In this verified
+runtime, the annotations artifact shared with Jackson 3
 resolves to 2.21. The BOM does not replace or downgrade RouteContract's separate
 `tools.jackson.core:jackson-core:3.1.5` product runtime.
 
@@ -47,13 +64,12 @@ That command is same-checkout packaging evidence. It proves that the generated
 Maven publication can be consumed without a Gradle project dependency; it is
 not an external-user installation or adoption claim.
 
-After the fixed RC2 activation record verifies the exact public prerelease, a fresh checkout can
-consume its exact assets without Maven Central hosting. A version string alone is not publication
-evidence. Download every public
-asset from that Release—including the main/sources/Javadoc JARs, POM, source
-archive, direct and aggregate SBOMs, `supply-chain-evidence.json`,
-`test-summary.txt`, and `SHA256SUMS`—into
-one flat directory. Then use an explicit empty Maven repository:
+After an annotated `v0.1.0` tag, a public immutable non-prerelease Release, a successful
+same-revision release-evidence run, and the exact asset set all exist, a fresh checkout can consume
+those assets without Maven Central hosting. A version string alone is not publication evidence.
+Download every public asset from that Release—including the main/sources/Javadoc JARs, POM, source
+archive, direct and aggregate SBOMs, `supply-chain-evidence.json`, `test-summary.txt`, and
+`SHA256SUMS`—into one flat directory. Then use an explicit empty Maven repository:
 
 ```bash
 python3 ../../scripts/install-release-assets.py \
@@ -68,8 +84,8 @@ the JARs plus versioned POM into the Maven layout. `SHA256SUMS` must list
 exactly the other public payloads (not itself) and no workflow-only logs. The installer rejects
 `~/.m2/repository` and every path below it, and it refuses to overwrite an existing coordinate. A
 checksum does not authenticate the publisher, so the input directory must
-come from the public GitHub Release for the exact tag. A release candidate is
-prerelease evidence, not the stable artifact required by the final contest gate.
+come from the public GitHub Release for the exact tag. The activated RC2 remains historical
+prerelease evidence; it is not final `v0.1.0` validation or adoption.
 
 To run this consumer directly, point it at a Maven repository containing the
 same RouteContract group and version as the root build:
@@ -77,7 +93,7 @@ same RouteContract group and version as the root build:
 ```bash
 ROUTECONTRACT_REPOSITORY=/absolute/path/to/maven-repository \
 ROUTECONTRACT_GROUP=io.github.ym0506.routecontract \
-ROUTECONTRACT_VERSION=0.1.0-rc2 \
+ROUTECONTRACT_VERSION=0.1.0 \
   ../../gradlew --no-daemon --refresh-dependencies -p . clean test
 ```
 

@@ -348,6 +348,7 @@ class ObservedExecutionRegressionCorpusMySqlTest {
         System.out.println("ROUTECONTRACT_FINGERPRINT_DRIFT_DEMO businessResult=UNCHANGED "
                 + "observedPhysicalAttempts=1->1 observedDataSourceAliases="
                 + "[orders-odd]->[orders-odd] fingerprintMultiset=CHANGED "
+                + "parameterTypeShape=[Long]->[Long,Long] "
                 + "verificationStatus=DRIFT blockingCodes=[RCM301,RCM302] privacy=MINIMIZED");
     }
 

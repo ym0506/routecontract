@@ -27,7 +27,7 @@ public record ManifestAttempt(
         AttemptOutcome outcome,
         int multiplicity) {
 
-    /** Stable structural ordering used by both JSON output and semantic diff output. */
+    /** Stable ordering used by both JSON output and structural manifest/attempt diff output. */
     public static final Comparator<ManifestAttempt> CANONICAL_ORDER = Comparator
             .comparing(ManifestAttempt::observedDataSourceAlias)
             .thenComparing(ManifestAttempt::sqlFingerprint)

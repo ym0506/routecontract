@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -74,6 +75,7 @@ public final class ManifestStore {
         Files.createDirectories(approvedParent);
         Files.createDirectories(parent);
         rejectApprovedAlias(approved, candidate);
+        rejectAbsentApprovedAlias(approved, candidate);
         byte[] bytes = codec.encode(manifest);
         Path temporary = Files.createTempFile(parent, ".routecontract-candidate-", ".tmp");
         boolean moved = false;
@@ -115,6 +117,38 @@ public final class ManifestStore {
                 && Files.exists(candidate, LinkOption.NOFOLLOW_LINKS)
                 && Files.isSameFile(approved, candidate)) {
             throw new IllegalArgumentException("candidateFile identifies the approvedFile");
+        }
+    }
+
+    /**
+     * Probes the exact future candidate leaf so file-system-specific name equivalence (for example,
+     * case folding or Unicode normalization) cannot make one newly written file visible through
+     * the absent approved path. Existing leaves are handled by {@link #rejectApprovedAlias(Path,
+     * Path)}.
+     */
+    private static void rejectAbsentApprovedAlias(final Path approved, final Path candidate)
+            throws IOException {
+        if (Files.exists(candidate, LinkOption.NOFOLLOW_LINKS)) {
+            return;
+        }
+        boolean probeCreated = false;
+        try {
+            try {
+                Files.createFile(candidate);
+                probeCreated = true;
+            } catch (FileAlreadyExistsException concurrentCreation) {
+                rejectApprovedAlias(approved, candidate);
+                return;
+            }
+            if (Files.exists(approved, LinkOption.NOFOLLOW_LINKS)
+                    && Files.isSameFile(approved, candidate)) {
+                throw new IllegalArgumentException(
+                        "candidateFile would identify the absent approvedFile");
+            }
+        } finally {
+            if (probeCreated) {
+                Files.deleteIfExists(candidate);
+            }
         }
     }
 

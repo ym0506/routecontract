@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import json
 import os
 import re
 import shutil
@@ -16,23 +15,22 @@ from pathlib import Path
 from typing import Any, Iterable
 from zipfile import ZIP_DEFLATED, ZipFile
 
-from PIL import Image as PillowImage
-from docx import Document
-from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT
-from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.oxml import OxmlElement
-from docx.oxml.ns import qn
-from docx.opc.constants import RELATIONSHIP_TYPE as RELATIONSHIP_TYPE
-from docx.shared import Inches, Pt, RGBColor
-from docx.text.run import Run
-from lxml import etree
-
 try:
     from .report_ooxml import mark_data_rows_cannot_split
-    from .report_content_contract import materialize_external_evidence
+    from .report_content_contract import (
+        StrictJsonError,
+        count_reader_facing_evidence_ids,
+        decode_strict_json,
+        materialize_external_evidence,
+    )
 except ImportError:  # Direct script execution puts this directory on sys.path.
     from report_ooxml import mark_data_rows_cannot_split
-    from report_content_contract import materialize_external_evidence
+    from report_content_contract import (
+        StrictJsonError,
+        count_reader_facing_evidence_ids,
+        decode_strict_json,
+        materialize_external_evidence,
+    )
 
 
 EXPECTED_TEMPLATE_SHA256 = (
@@ -42,10 +40,12 @@ FONT_NAME = "Malgun Gothic"
 BODY_FONT_PT = 10
 REPORT_IMAGE_WIDTH_INCHES = 4.15
 # The organizer's supplemental guide caps the prioritized summary at ten rows.
-# Compact nine-point cells keep that landscape table readable while the body
-# remains the required 10 pt.
-SBOM_FONT_PT = 9
+# Attachment 1 table entries are report body text, so they use the organizer's
+# required Malgun Gothic 10 pt rather than a compact exception.
+SBOM_FONT_PT = BODY_FONT_PT
+SBOM_LINE_SPACING_PT = 11.2
 SBOM_MAX_ROWS = 10
+CONTENT_MAX_BYTES = 1024 * 1024
 PLACEHOLDER_RE = re.compile(r"\[\[[^\]]+\]\]")
 CORE_PROPERTY_NAMESPACES = {
     "cp": "http://schemas.openxmlformats.org/package/2006/metadata/core-properties",
@@ -53,6 +53,13 @@ CORE_PROPERTY_NAMESPACES = {
     "dcterms": "http://purl.org/dc/terms/",
 }
 PUBLIC_DOCUMENT_IDENTITY = "RouteContract project"
+WORDPROCESSINGML_NAMESPACE = (
+    "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+)
+REVISION_IDENTIFIER_ELEMENT_TAGS = frozenset(
+    f"{{{WORDPROCESSINGML_NAMESPACE}}}{local_name}"
+    for local_name in ("rsids", "rsidRoot", "rsid")
+)
 UPSTREAM_ISSUE_38456_URL = "https://github.com/apache/shardingsphere/issues/38456"
 EXTERNAL_LINK_ALIASES = {
     "[결과 Issue]": "result_issue_url",
@@ -60,6 +67,33 @@ EXTERNAL_LINK_ALIASES = {
     "[모집 기록]": "recruitment_record_url",
     "[검증 프로토콜]": "protocol_issue_url",
 }
+
+
+def load_document_dependencies() -> None:
+    """Load report-rendering dependencies only after input gates have passed."""
+    global PillowImage
+    global Document
+    global WD_CELL_VERTICAL_ALIGNMENT
+    global WD_ALIGN_PARAGRAPH
+    global OxmlElement
+    global qn
+    global RELATIONSHIP_TYPE
+    global Inches
+    global Pt
+    global RGBColor
+    global Run
+    global etree
+
+    from PIL import Image as PillowImage
+    from docx import Document
+    from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+    from docx.opc.constants import RELATIONSHIP_TYPE as RELATIONSHIP_TYPE
+    from docx.shared import Inches, Pt, RGBColor
+    from docx.text.run import Run
+    from lxml import etree
 
 
 def parse_args() -> argparse.Namespace:
@@ -89,8 +123,22 @@ def sha256(path: Path) -> str:
 
 
 def load_content(path: Path, *, strict: bool) -> dict[str, Any]:
-    with path.open(encoding="utf-8") as stream:
-        data = json.load(stream)
+    try:
+        if path.stat().st_size > CONTENT_MAX_BYTES:
+            raise ValueError("report content exceeds the 1048576-byte safety limit")
+        raw = path.read_bytes()
+        if len(raw) > CONTENT_MAX_BYTES:
+            raise ValueError("report content exceeds the 1048576-byte safety limit")
+    except ValueError:
+        raise
+    except OSError:
+        raise ValueError("report content input is unavailable") from None
+    try:
+        data = decode_strict_json(raw, maximum_bytes=CONTENT_MAX_BYTES)
+    except StrictJsonError:
+        raise ValueError("report content must be valid UTF-8 strict JSON") from None
+    if not isinstance(data, dict):
+        raise ValueError("report content must be an object")
     required = {
         "metadata",
         "assets",
@@ -104,12 +152,12 @@ def load_content(path: Path, *, strict: bool) -> dict[str, Any]:
         "external_evidence",
         "sbom",
     }
-    missing = sorted(required.difference(data))
-    unexpected = sorted(set(data).difference(required))
+    missing = required.difference(data)
+    unexpected = set(data).difference(required)
     if missing or unexpected:
         raise ValueError(
             "content keys do not match schema; "
-            f"missing={missing}, unexpected={unexpected}"
+            f"missing_count={len(missing)}, unexpected_count={len(unexpected)}"
         )
     rows = data["sbom"]
     if not isinstance(rows, list) or not 1 <= len(rows) <= SBOM_MAX_ROWS:
@@ -151,12 +199,23 @@ def discovered_https_targets(data: dict[str, Any]) -> set[str]:
 
 
 def validate_submission_gates(data: dict[str, Any], strict: bool) -> None:
-    placeholders = sorted(
-        {match.group(0) for text in iter_strings(data) for match in PLACEHOLDER_RE.finditer(text)}
-    )
-    if strict and placeholders:
-        formatted = "\n".join(f"- {item}" for item in placeholders)
-        raise ValueError(f"unresolved final-submission gates:\n{formatted}")
+    placeholder_count = sum(_unresolved_gate_count(text) for text in iter_strings(data))
+    if strict and placeholder_count:
+        raise ValueError(
+            f"unresolved final-submission gates (count={placeholder_count})"
+        )
+    evidence_id_count = count_reader_facing_evidence_ids(data)
+    if strict and evidence_id_count:
+        raise ValueError(
+            "reader-facing report content contains audit evidence IDs "
+            f"(count={evidence_id_count})"
+        )
+
+
+def _unresolved_gate_count(text: str) -> int:
+    complete = list(PLACEHOLDER_RE.finditer(text))
+    fragments = PLACEHOLDER_RE.sub("", text)
+    return len(complete) + fragments.count("[[") + fragments.count("]]")
 
 
 def resolve_assets(data: dict[str, Any], assets_dir: Path) -> dict[str, Path]:
@@ -319,9 +378,11 @@ def set_plain_cell(
     *,
     size_pt: float = BODY_FONT_PT,
     bold: bool = False,
-    alignment=WD_ALIGN_PARAGRAPH.LEFT,
+    alignment=None,
     hyperlink_target: str | None = None,
 ) -> None:
+    if alignment is None:
+        alignment = WD_ALIGN_PARAGRAPH.LEFT
     clear_cell(cell)
     paragraph = cell.paragraphs[0]
     set_paragraph_rhythm(paragraph, alignment=alignment, after_pt=0)
@@ -398,6 +459,7 @@ def set_block_cell(
     for index, block in enumerate(blocks):
         paragraph = next_paragraph()
         set_paragraph_rhythm(paragraph, after_pt=2.0 if index < len(blocks) - 1 else 0)
+        paragraph.paragraph_format.keep_together = True
         lead = block.get("lead", "").strip()
         text = block.get("text", "").strip()
         if lead:
@@ -426,6 +488,112 @@ def mark_repeat_header(row) -> None:
     tr_pr = row._tr.get_or_add_trPr()
     if tr_pr.find(qn("w:tblHeader")) is None:
         tr_pr.append(OxmlElement("w:tblHeader"))
+
+
+def mark_effects_row_cannot_split(table, row_index: int = 11) -> None:
+    """Keep the compact expectations/application row on one report page."""
+    mark_data_rows_cannot_split([table.rows[row_index]])
+
+
+def mark_environment_row_cannot_split(table, row_index: int = 7) -> None:
+    """Keep the compact environment row from straddling report pages."""
+    mark_data_rows_cannot_split([table.rows[row_index]])
+
+
+def strip_cloned_row_identity(row_element) -> None:
+    """Drop revision/session identifiers that must not be duplicated by a clone."""
+    for element in row_element.iter():
+        for attribute in list(element.attrib):
+            local_name = attribute.rsplit("}", 1)[-1]
+            if local_name.startswith("rsid") or local_name in {"paraId", "textId"}:
+                del element.attrib[attribute]
+
+
+def clone_row_element(row):
+    cloned = deepcopy(row._tr)
+    strip_cloned_row_identity(cloned)
+    return cloned
+
+
+def insert_row_after(table, row):
+    """Insert a structural copy immediately after ``row`` and return it."""
+    matches = [index for index, candidate in enumerate(table.rows) if candidate._tr is row._tr]
+    if len(matches) != 1:
+        raise ValueError("report row must occur exactly once before continuation insertion")
+    row._tr.addnext(clone_row_element(row))
+    return table.rows[matches[0] + 1]
+
+
+def fill_feature_report_rows(
+    table,
+    blocks: list[dict[str, str]],
+    *,
+    image_path: Path,
+    image_caption: str,
+    hyperlink_targets: Iterable[str] = (),
+) -> None:
+    """Place the demo and installation in one unsplittable continuation row."""
+    split_indexes = [
+        index for index, block in enumerate(blocks) if block.get("lead") == "시연"
+    ]
+    if split_indexes != [5]:
+        raise ValueError("report feature blocks must place 시연 at index 5")
+
+    original_row_index = 9
+    continuation_row = insert_row_after(table, table.rows[original_row_index])
+    set_block_cell(
+        table.cell(original_row_index, 1),
+        blocks[: split_indexes[0]],
+        image_path=image_path,
+        image_caption=image_caption,
+        image_after_block=2,
+        hyperlink_targets=hyperlink_targets,
+    )
+    set_plain_cell(continuation_row.cells[0], "")
+    set_block_cell(
+        continuation_row.cells[1],
+        blocks[split_indexes[0] :],
+        hyperlink_targets=hyperlink_targets,
+    )
+    mark_data_rows_cannot_split([continuation_row])
+
+
+def fill_other_report_rows(
+    table,
+    blocks: list[dict[str, str]],
+    *,
+    original_row_index: int = 11,
+    hyperlink_targets: Iterable[str] = (),
+    hyperlink_aliases: dict[str, str] | None = None,
+) -> None:
+    """Put the limitations and later evidence blocks in one unsplittable row."""
+    split_indexes = [
+        index
+        for index, block in enumerate(blocks)
+        if block.get("lead") == "현재 한계"
+    ]
+    if split_indexes != [3]:
+        raise ValueError("report 기타 blocks must place 현재 한계 at index 3")
+    if original_row_index != len(table.rows) - 1:
+        raise ValueError("report 기타 source row must be the final row before continuation")
+
+    copy_row(table, table.rows[original_row_index])
+    continuation_row_index = original_row_index + 1
+
+    set_block_cell(
+        table.cell(original_row_index, 1),
+        blocks[: split_indexes[0]],
+        hyperlink_targets=hyperlink_targets,
+        hyperlink_aliases=hyperlink_aliases,
+    )
+    set_plain_cell(table.cell(continuation_row_index, 0), "")
+    set_block_cell(
+        table.cell(continuation_row_index, 1),
+        blocks[split_indexes[0] :],
+        hyperlink_targets=hyperlink_targets,
+        hyperlink_aliases=hyperlink_aliases,
+    )
+    mark_data_rows_cannot_split([table.rows[continuation_row_index]])
 
 
 def fill_header_and_metadata(document: Document, data: dict[str, Any]) -> None:
@@ -481,28 +649,30 @@ def fill_main_report(
         image_caption=data["assets"]["architecture"]["caption"],
         hyperlink_targets=hyperlink_targets,
     )
-    set_block_cell(
-        main.cell(9, 1),
+    fill_feature_report_rows(
+        main,
         data["features"],
         image_path=assets["baseline_candidate"],
         image_caption=data["assets"]["baseline_candidate"]["caption"],
-        image_after_block=2,
         hyperlink_targets=hyperlink_targets,
     )
     set_block_cell(
-        main.cell(10, 1), data["effects"], hyperlink_targets=hyperlink_targets
+        main.cell(11, 1), data["effects"], hyperlink_targets=hyperlink_targets
     )
-    set_block_cell(
-        main.cell(11, 1),
+    fill_other_report_rows(
+        main,
         data["other"],
+        original_row_index=12,
         hyperlink_targets=hyperlink_targets,
         hyperlink_aliases=hyperlink_aliases,
     )
     remove_fixed_row_heights(main)
+    mark_environment_row_cannot_split(main)
+    mark_effects_row_cannot_split(main)
 
 
 def copy_row(table, row) -> None:
-    table._tbl.append(deepcopy(row._tr))
+    table._tbl.append(clone_row_element(row))
 
 
 def fill_sbom(document: Document, rows: list[dict[str, str]]) -> None:
@@ -538,7 +708,7 @@ def fill_sbom(document: Document, rows: list[dict[str, str]]) -> None:
         for cell in sbom.rows[index].cells:
             set_cell_margins(cell, top=20, start=40, bottom=20, end=40)
             for paragraph in cell.paragraphs:
-                paragraph.paragraph_format.line_spacing = Pt(10.2)
+                paragraph.paragraph_format.line_spacing = Pt(SBOM_LINE_SPACING_PT)
     mark_data_rows_cannot_split(sbom.rows[1:])
     remove_fixed_row_heights(sbom)
 
@@ -572,6 +742,58 @@ def assert_geometry(document: Document) -> None:
         raise ValueError(f"official section geometry changed: {actual!r}")
 
 
+def row_cannot_split(row) -> bool:
+    tr_pr = row._tr.trPr
+    return tr_pr is not None and tr_pr.find(
+        f"{{{WORDPROCESSINGML_NAMESPACE}}}cantSplit"
+    ) is not None
+
+
+def assert_main_report_table_structure(table) -> None:
+    if len(table.rows) != 14:
+        raise ValueError(
+            f"expected exactly 14 main report rows, found {len(table.rows)}"
+        )
+    expected_labels = {
+        9: "프로젝트주요기능",
+        10: "",
+        11: "기대효과및활용분야",
+        12: "기타",
+        13: "",
+    }
+    actual_labels = {
+        index: re.sub(r"\s+", "", table.cell(index, 0).text)
+        for index in expected_labels
+    }
+    if actual_labels != expected_labels:
+        raise ValueError("main report continuation row labels changed")
+    continuation_text = table.cell(10, 1).text.strip()
+    if (
+        not continuation_text.startswith("시연:")
+        or "설치·릴리스:" not in continuation_text
+    ):
+        raise ValueError("main report demo/installation continuation changed")
+    missing_cannot_split = [
+        index for index in (7, 10, 11, 13) if not row_cannot_split(table.rows[index])
+    ]
+    if missing_cannot_split:
+        raise ValueError(
+            "main report rows lost cannot-split protection "
+            f"(count={len(missing_cannot_split)})"
+        )
+    fixed_height_count = sum(
+        1
+        for row in table.rows
+        for child in row._tr.iter()
+        if child.tag == f"{{{WORDPROCESSINGML_NAMESPACE}}}trHeight"
+    )
+    if fixed_height_count:
+        raise ValueError(
+            "main report contains fixed row heights "
+            f"(count={fixed_height_count})"
+        )
+
+
 def assert_output_scope(document: Document) -> None:
     all_text = "\n".join(
         [paragraph.text for paragraph in document.paragraphs]
@@ -585,6 +807,12 @@ def assert_output_scope(document: Document) -> None:
         raise ValueError(f"expected exactly 5 retained official tables, found {len(document.tables)}")
     if len(document.inline_shapes) != 2:
         raise ValueError(f"expected exactly 2 report images, found {len(document.inline_shapes)}")
+    main = find_table(
+        document,
+        lambda table: "프로젝트 개요" in table_text(table)
+        and "개발배경 및 목적" in table_text(table),
+    )
+    assert_main_report_table_structure(main)
     assert_geometry(document)
 
 
@@ -627,6 +855,69 @@ def assert_sanitized_core_properties(output: Path) -> None:
         raise ValueError("output DOCX core properties were not privacy-sanitized")
 
 
+def is_story_part(name: str) -> bool:
+    return (
+        name == "word/document.xml"
+        or re.fullmatch(r"word/header\d+\.xml", name) is not None
+        or re.fullmatch(r"word/footer\d+\.xml", name) is not None
+        or name in {"word/footnotes.xml", "word/endnotes.xml"}
+    )
+
+
+def is_revision_identifier_part(name: str) -> bool:
+    """Return whether a Word part may carry revision-session identifiers."""
+    return is_story_part(name) or name in {"word/settings.xml", "word/styles.xml"}
+
+
+def sanitize_story_part(source: bytes) -> bytes:
+    """Remove Word revision-session attributes and elements from a privacy part."""
+    root = etree.fromstring(source)
+    for element in root.iter():
+        for attribute in list(element.attrib):
+            if attribute.startswith(f"{{{WORDPROCESSINGML_NAMESPACE}}}rsid"):
+                del element.attrib[attribute]
+    for element in list(root.iter()):
+        if element.tag not in REVISION_IDENTIFIER_ELEMENT_TAGS:
+            continue
+        parent = element.getparent()
+        if parent is None:
+            raise ValueError(
+                "revision identifier cannot be the root of a Word privacy part"
+            )
+        parent.remove(element)
+    return etree.tostring(
+        root,
+        encoding="UTF-8",
+        xml_declaration=True,
+        standalone=True,
+    )
+
+
+def assert_sanitized_story_properties(output: Path) -> None:
+    with ZipFile(output) as package:
+        leaked_count = 0
+        for name in package.namelist():
+            if not is_revision_identifier_part(name):
+                continue
+            root = etree.fromstring(package.read(name))
+            leaked_count += sum(
+                1
+                for element in root.iter()
+                for attribute in element.attrib
+                if attribute.startswith(f"{{{WORDPROCESSINGML_NAMESPACE}}}rsid")
+            )
+            leaked_count += sum(
+                1
+                for element in root.iter()
+                if element.tag in REVISION_IDENTIFIER_ELEMENT_TAGS
+            )
+    if leaked_count:
+        raise ValueError(
+            "output DOCX contains Word revision session identifiers "
+            f"(count={leaked_count})"
+        )
+
+
 def restore_preserve_only_package_parts(template: Path, output: Path) -> None:
     """Preserve organizer parts except document/image relationships and media."""
     with tempfile.NamedTemporaryFile(
@@ -645,7 +936,8 @@ def restore_preserve_only_package_parts(template: Path, output: Path) -> None:
             if removed or unexpected_added:
                 raise ValueError(
                     "python-docx changed the official package part set: "
-                    f"unexpected_added={sorted(unexpected_added)}, removed={sorted(removed)}"
+                    f"unexpected_added_count={len(unexpected_added)}, "
+                    f"removed_count={len(removed)}"
                 )
             editable = {
                 "[Content_Types].xml",
@@ -662,10 +954,14 @@ def restore_preserve_only_package_parts(template: Path, output: Path) -> None:
                     content = generated.read(item.filename)
                     if item.filename == "docProps/core.xml":
                         content = sanitize_core_properties(content)
-                    rebuilt.writestr(item, content)
+                    output_item = item
                 else:
                     reference_item = reference.getinfo(item.filename)
-                    rebuilt.writestr(reference_item, reference.read(item.filename))
+                    content = reference.read(item.filename)
+                    output_item = reference_item
+                if is_revision_identifier_part(item.filename):
+                    content = sanitize_story_part(content)
+                rebuilt.writestr(output_item, content)
         os.replace(temporary, output)
     finally:
         if temporary.exists():
@@ -681,6 +977,9 @@ def main() -> None:
     )
     output = args.output.resolve()
 
+    data = load_content(content_path, strict=args.strict_final)
+    validate_submission_gates(data, args.strict_final)
+
     actual_hash = sha256(template)
     if actual_hash != EXPECTED_TEMPLATE_SHA256:
         raise ValueError(
@@ -688,8 +987,7 @@ def main() -> None:
             f"expected {EXPECTED_TEMPLATE_SHA256}, got {actual_hash}"
         )
 
-    data = load_content(content_path, strict=args.strict_final)
-    validate_submission_gates(data, args.strict_final)
+    load_document_dependencies()
     assets = resolve_assets(data, assets_dir)
     output.parent.mkdir(parents=True, exist_ok=True)
     if output == template:
@@ -707,6 +1005,7 @@ def main() -> None:
     document.save(output)
     restore_preserve_only_package_parts(template, output)
     assert_sanitized_core_properties(output)
+    assert_sanitized_story_properties(output)
 
     verified = Document(output)
     assert_output_scope(verified)

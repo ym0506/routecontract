@@ -23,8 +23,12 @@ REVISION = "a" * 40
 CYCLONEDX_XML_NAMESPACE = "http://cyclonedx.org/schema/bom/1.6"
 JTS_EXPRESSIONS = {
     "jts-core": "EPL-2.0 OR BSD-3-Clause",
-    "jts-io-common": "(EPL-2.0 OR BSD-3-Clause) AND Apache-2.0",
 }
+REQUIRED_EXAMPLE_COORDINATES = (
+    ("org.apache.shardingsphere", "shardingsphere-jdbc", "5.5.3"),
+    ("org.apache.calcite", "calcite-core", "1.42.0"),
+    ("org.apache.calcite", "calcite-linq4j", "1.42.0"),
+)
 
 
 def write_json(path: Path, value: object) -> None:
@@ -188,10 +192,10 @@ class SupplyChainPolicyTest(unittest.TestCase):
             {"name": "cdx:maven:package:test", "value": "false"}
         ]
         vulnerable = apache_component(
-            "pkg:maven/net.minidev/json-smart@2.5.0?type=jar",
+            "pkg:maven/net.minidev/json-smart@2.4.10?type=jar",
             "net.minidev",
             "json-smart",
-            "2.5.0",
+            "2.4.10",
         )
         vulnerable["properties"] = [
             {"name": "cdx:maven:package:test", "value": "true"}
@@ -208,36 +212,19 @@ class SupplyChainPolicyTest(unittest.TestCase):
                 {"name": "cdx:maven:package:test", "value": "true"}
             ],
         }
-        jts_io = {
-            "type": "library",
-            "bom-ref": (
-                "pkg:maven/org.locationtech.jts.io/jts-io-common@1.19.0?type=jar"
-            ),
-            "group": "org.locationtech.jts.io",
-            "name": "jts-io-common",
-            "version": "1.19.0",
-            "purl": (
-                "pkg:maven/org.locationtech.jts.io/jts-io-common@1.19.0?type=jar"
-            ),
-            "licenses": [
-                {"expression": "(EPL-2.0 OR BSD-3-Clause) AND Apache-2.0"}
-            ],
-            "hashes": [
-                {
-                    "alg": "SHA-256",
-                    "content": (
-                        "e0f0c62024d4282f5f905de1abd2cc96f975a51d9e8d98254234fa14b16bbe9b"
-                    ),
-                }
-            ],
-            "properties": [
-                {"name": "cdx:maven:package:test", "value": "true"},
-                {
-                    "name": "routecontract:license-review",
-                    "value": "manual-review-required",
-                },
-            ],
-        }
+        required_example_components = [
+            apache_component(
+                f"pkg:maven/{group}/{name}@{version}?type=jar",
+                group,
+                name,
+                version,
+            )
+            for group, name, version in REQUIRED_EXAMPLE_COORDINATES
+        ]
+        for component in required_example_components:
+            component["properties"] = [
+                {"name": "cdx:maven:package:test", "value": "true"}
+            ]
         connector = {
             "type": "library",
             "bom-ref": "pkg:maven/com.mysql/mysql-connector-j@26.7.0?type=jar",
@@ -345,7 +332,7 @@ class SupplyChainPolicyTest(unittest.TestCase):
                 connector,
                 vulnerable,
                 jts,
-                jts_io,
+                *required_example_components,
                 safe,
             ],
             "dependencies": [],
@@ -457,7 +444,7 @@ class SupplyChainPolicyTest(unittest.TestCase):
                 copy.deepcopy(connector),
                 copy.deepcopy(vulnerable),
                 copy.deepcopy(jts),
-                copy.deepcopy(jts_io),
+                *copy.deepcopy(required_example_components),
             ],
             "dependencies": [],
         }
@@ -496,30 +483,26 @@ class SupplyChainPolicyTest(unittest.TestCase):
                     "scope": "test-runtime",
                     "url": None,
                 },
-                {
-                    "kind": "expression",
-                    "license": "(EPL-2.0 OR BSD-3-Clause) AND Apache-2.0",
-                    "purl": "pkg:maven/org.locationtech.jts.io/jts-io-common@1.19.0",
-                    "scope": "test-runtime",
-                    "url": None,
-                },
             ],
             "licenseReviewExceptions": [
                 {
                     "action": (
-                        "resolve, renew with new evidence, or remove the MySQL OCI "
-                        "package-level license review before the 2026-08-27 expiry"
+                        "re-review immediately if the MySQL OCI digest, selected "
+                        "platform, embedded LICENSE/INFO_SRC evidence, or test-container "
+                        "use boundary changes; otherwise resolve, renew with new "
+                        "evidence, or remove the MySQL OCI package-level license review "
+                        "before the 2026-12-05 expiry"
                     ),
                     "componentName": "mysql",
                     "componentVersion": "8.4.11",
                     "documentationUrl": (
                         "https://dev.mysql.com/doc/refman/8.4/en/preface.html"
                     ),
-                    "expires": "2026-08-27",
+                    "expires": "2026-12-05",
                     "owner": "RouteContract maintainers",
                     "purl": container_purl,
                     "rationaleCode": "MYSQL_OCI_PACKAGE_LICENSE_CONCLUSION_INCOMPLETE",
-                    "reviewedAt": "2026-08-13",
+                    "reviewedAt": "2026-08-24",
                     "scope": "test-container",
                     "sha256": (
                         "b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37"
@@ -527,94 +510,8 @@ class SupplyChainPolicyTest(unittest.TestCase):
                     ),
                     "status": "manual-review-required",
                 },
-                {
-                    "action": (
-                        "resolve and document the JTS I/O Common redistribution NOTICE "
-                        "treatment before the 2026-08-27 expiry"
-                    ),
-                    "componentName": "jts-io-common",
-                    "componentVersion": "1.19.0",
-                    "expires": "2026-08-27",
-                    "expression": (
-                        "(EPL-2.0 OR BSD-3-Clause) AND Apache-2.0"
-                    ),
-                    "owner": "RouteContract maintainers",
-                    "provenance": {
-                        "binarySha256": (
-                            "e0f0c62024d4282f5f905de1abd2cc96f975a51d9e8d98254234fa14b16bbe9b"
-                        ),
-                        "classFileSha256": (
-                            "7760a6e6eb7534e26617813c7b381196d0fb42e84ff0a3e6474991431384440a"
-                        ),
-                        "mahoutLicensePath": "mahout-distribution-0.8/LICENSE.txt",
-                        "mahoutLicenseSha256": (
-                            "daef6fbe58ad49cd519848a5e60a1c9e5720f861c11878fde9f99fb55c62f62f"
-                        ),
-                        "mahoutNoticePath": "mahout-distribution-0.8/NOTICE.txt",
-                        "mahoutNoticeSha256": (
-                            "5e81cc7357b3c9a710860c4b66ac09c3322b2ac5ae914f4e07bfc36896e13c47"
-                        ),
-                        "mahoutSourceArchiveSha256": (
-                            "0ff823d5c898880f0a00df52f72f0a9af1d2fc502700780eef20e91b4161504b"
-                        ),
-                        "mahoutSourceArchiveUrl": (
-                            "https://archive.apache.org/dist/mahout/0.8/"
-                            "mahout-distribution-0.8-src.tar.gz"
-                        ),
-                        "mahoutVarintPath": (
-                            "mahout-distribution-0.8/core/src/main/java/"
-                            "org/apache/mahout/math/Varint.java"
-                        ),
-                        "mahoutVarintSha256": (
-                            "650b57209bcb6f54e394d241d9f680485608a1c3686d767ef0a864cdc4212b32"
-                        ),
-                        "pomSha256": (
-                            "c569979c50228a25be237b3084b55da600b538037743a2936f983b18163042a8"
-                        ),
-                        "sourceArtifactSha256": (
-                            "c367d87dc525a5d9b85e2751e3b0e14ea018165b45aef3d2642c857d49f53804"
-                        ),
-                        "sourceFileSha256": (
-                            "66a92610c5073c3eff40b327cf162829cf90f1fbeb827a5e7aceb7240ccdb0da"
-                        ),
-                        "tagCommit": "574698c4bc4fe06eb7ed46576a605626d5a5e486",
-                        "upstreamLicenseUrl": (
-                            "https://github.com/locationtech/jts/blob/"
-                            "574698c4bc4fe06eb7ed46576a605626d5a5e486/LICENSES.md"
-                        ),
-                        "upstreamSourceUrl": (
-                            "https://github.com/locationtech/jts/blob/"
-                            "574698c4bc4fe06eb7ed46576a605626d5a5e486/modules/io/"
-                            "common/src/main/java/org/locationtech/jts/io/twkb/Varint.java"
-                        ),
-                    },
-                    "purl": (
-                        "pkg:maven/org.locationtech.jts.io/jts-io-common@1.19.0"
-                    ),
-                    "rationaleCode": (
-                        "JTS_IO_COMMON_REDISTRIBUTION_NOTICE_TREATMENT_UNCONFIRMED"
-                    ),
-                    "reviewedAt": "2026-08-13",
-                    "scope": "test-runtime",
-                    "status": "manual-review-required",
-                },
             ],
-            "vulnerabilityExceptions": [
-                {
-                    "advisory": "GHSA-pq2g-wx69-c263",
-                    "exceptionId": "OSV-TEST-001",
-                    "expires": (
-                        datetime.now(timezone.utc).date() + timedelta(days=15)
-                    ).isoformat(),
-                    "fixedVersion": "2.5.2",
-                    "owner": "test maintainers",
-                    "purl": "pkg:maven/net.minidev/json-smart@2.5.0",
-                    "rationaleCode": "TEST_GRAPH",
-                    "reviewedAt": datetime.now(timezone.utc).date().isoformat(),
-                    "scope": "aggregate-test-only",
-                    "severity": "HIGH",
-                }
-            ],
+            "vulnerabilityExceptions": [],
         }
         for index, document in enumerate(
             (self.sbom_document, self.published_sbom_document, self.example_sbom_document),
@@ -629,36 +526,9 @@ class SupplyChainPolicyTest(unittest.TestCase):
                         {
                             "package": {
                                 "name": "net.minidev:json-smart",
-                                "version": "2.5.0",
+                                "version": "2.4.10",
                                 "ecosystem": "Maven",
                             },
-                            "groups": [
-                                {"ids": ["GHSA-pq2g-wx69-c263"], "max_severity": "7.5"}
-                            ],
-                            "vulnerabilities": [
-                                {
-                                    "id": "GHSA-pq2g-wx69-c263",
-                                    "database_specific": {"severity": "HIGH"},
-                                    "affected": [
-                                        {
-                                            "package": {
-                                                "ecosystem": "Maven",
-                                                "name": "net.minidev:json-smart",
-                                                "purl": "pkg:maven/net.minidev/json-smart",
-                                            },
-                                            "ranges": [
-                                                {
-                                                    "type": "ECOSYSTEM",
-                                                    "events": [
-                                                        {"introduced": "2.5.0"},
-                                                        {"fixed": "2.5.2"},
-                                                    ],
-                                                }
-                                            ],
-                                        }
-                                    ],
-                                }
-                            ],
                         },
                         {
                             "package": {
@@ -683,8 +553,22 @@ class SupplyChainPolicyTest(unittest.TestCase):
                         },
                         {
                             "package": {
-                                "name": "org.locationtech.jts.io:jts-io-common",
-                                "version": "1.19.0",
+                                "name": "org.apache.shardingsphere:shardingsphere-jdbc",
+                                "version": "5.5.3",
+                                "ecosystem": "Maven",
+                            }
+                        },
+                        {
+                            "package": {
+                                "name": "org.apache.calcite:calcite-core",
+                                "version": "1.42.0",
+                                "ecosystem": "Maven",
+                            }
+                        },
+                        {
+                            "package": {
+                                "name": "org.apache.calcite:calcite-linq4j",
+                                "version": "1.42.0",
                                 "ecosystem": "Maven",
                             }
                         },
@@ -761,6 +645,36 @@ class SupplyChainPolicyTest(unittest.TestCase):
             "empty=annotationProcessor,testAnnotationProcessor\n",
             encoding="utf-8",
         )
+
+    def inject_test_finding(self) -> None:
+        package = self.raw_scan_document["results"][0]["packages"][0]
+        package["groups"] = [
+            {"ids": ["GHSA-pq2g-wx69-c263"], "max_severity": "7.5"}
+        ]
+        package["vulnerabilities"] = [
+            {
+                "id": "GHSA-pq2g-wx69-c263",
+                "database_specific": {"severity": "HIGH"},
+                "affected": [
+                    {
+                        "package": {
+                            "ecosystem": "Maven",
+                            "name": "net.minidev:json-smart",
+                            "purl": "pkg:maven/net.minidev/json-smart",
+                        },
+                        "ranges": [
+                            {
+                                "type": "ECOSYSTEM",
+                                "events": [
+                                    {"introduced": "2.4.10"},
+                                    {"fixed": "2.5.2"},
+                                ],
+                            }
+                        ],
+                    }
+                ],
+            }
+        ]
 
     def run_checker(self, *arguments: str) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
@@ -845,8 +759,10 @@ com.example:safe:1.0=aggregateSbom
 com.mysql:mysql-connector-j:26.7.0=aggregateSbom
 io.github.ym0506.routecontract:mysql-example:0.1.0=aggregateSbom
 io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0=aggregateSbom
-net.minidev:json-smart:2.5.0=aggregateSbom
-org.locationtech.jts.io:jts-io-common:1.19.0=aggregateSbom
+net.minidev:json-smart:2.4.10=aggregateSbom
+org.apache.calcite:calcite-core:1.42.0=aggregateSbom
+org.apache.calcite:calcite-linq4j:1.42.0=aggregateSbom
+org.apache.shardingsphere:shardingsphere-jdbc:5.5.3=aggregateSbom
 org.locationtech.jts:jts-core:1.19.0=aggregateSbom
 empty=
 """,
@@ -859,9 +775,9 @@ empty=
         self.assertEqual(1, evidence["schemaVersion"])
         self.assertEqual(REVISION, evidence["revision"])
         self.assertEqual("b" * 40, evidence["sourceTree"])
-        self.assertEqual(7, evidence["sbom"]["mavenPackageCount"])
-        self.assertEqual(9, evidence["sbom"]["xmlComponentCount"])
-        self.assertEqual(2, evidence["sbom"]["unresolvedLicenseReviewCount"])
+        self.assertEqual(9, evidence["sbom"]["mavenPackageCount"])
+        self.assertEqual(11, evidence["sbom"]["xmlComponentCount"])
+        self.assertEqual(1, evidence["sbom"]["unresolvedLicenseReviewCount"])
         license_review_keys = {
             "action",
             "componentName",
@@ -875,11 +791,11 @@ empty=
             "status",
         }
         self.assertEqual(
-            [license_review_keys, license_review_keys],
+            [license_review_keys],
             [set(review) for review in evidence["sbom"]["licenseReviews"]],
         )
         self.assertEqual(
-            ["mysql", "jts-io-common"],
+            ["mysql"],
             [
                 review["componentName"]
                 for review in evidence["sbom"]["licenseReviews"]
@@ -915,7 +831,9 @@ empty=
             evidence["sbom"]["policySha256"],
         )
         self.assertRegex(evidence["sbom"]["xmlSha256"], r"^[0-9a-f]{64}$")
-        self.assertEqual(1, evidence["vulnerabilities"]["findingCount"])
+        self.assertEqual(0, evidence["vulnerabilities"]["findingCount"])
+        self.assertEqual(0, evidence["vulnerabilities"]["acceptedExceptionCount"])
+        self.assertEqual([], evidence["vulnerabilities"]["findings"])
         self.assertEqual(0, evidence["vulnerabilities"]["unreviewedCount"])
         self.assertEqual(1, evidence["publishedModule"]["mavenPackageCount"])
         self.assertEqual(1, evidence["publishedModule"]["pomDependencyCount"])
@@ -938,22 +856,6 @@ empty=
         self.assertIn(
             "generation=", evidence["scanner"]["database"]["url"]
         )
-        finding = evidence["vulnerabilities"]["findings"][0]
-        self.assertEqual("test maintainers", finding["owner"])
-        self.assertEqual("TEST_GRAPH", finding["rationaleCode"])
-        self.assertEqual(
-            self.policy_document["vulnerabilityExceptions"][0]["reviewedAt"],
-            finding["reviewedAt"],
-        )
-        self.assertEqual(
-            {
-                "exampleProfile": True,
-                "publishedProfile": False,
-                "publishedRuntime": False,
-            },
-            finding["reachabilityEvidence"],
-        )
-        self.assertIn("expiry", finding["action"])
         self.assertEqual(
             "e3b0c44298fc1c149afbf4c8996fb924"
             "27ae41e4649b934ca495991b7852b855",
@@ -962,7 +864,8 @@ empty=
         self.assertNotIn("path", self.evidence.read_text(encoding="utf-8"))
         self.assertNotIn("details", self.evidence.read_text(encoding="utf-8"))
 
-    def test_accepts_raw_osv_advisory_prose_with_escaped_whitespace(self) -> None:
+    def test_rejects_finding_with_escaped_whitespace_in_advisory_prose(self) -> None:
+        self.inject_test_finding()
         vulnerability = self.raw_scan_document["results"][0]["packages"][0][
             "vulnerabilities"
         ][0]
@@ -973,10 +876,14 @@ empty=
 
         verified = self.verify()
 
-        self.assertEqual(0, verified.returncode, verified.stderr)
-        self.assertNotIn("First paragraph", self.evidence.read_text(encoding="utf-8"))
+        self.assertNotEqual(0, verified.returncode)
+        self.assertIn(
+            "vulnerability findings are forbidden by the pinned policy",
+            verified.stderr,
+        )
 
     def test_rejects_nul_in_raw_osv_advisory_prose(self) -> None:
+        self.inject_test_finding()
         vulnerability = self.raw_scan_document["results"][0]["packages"][0][
             "vulnerabilities"
         ][0]
@@ -1108,14 +1015,17 @@ empty=
         self.assertIn("document license is not exact Apache-2.0", result.stderr)
 
     def test_rejects_unreviewed_vulnerability(self) -> None:
-        self.policy_document["vulnerabilityExceptions"] = []
+        self.inject_test_finding()
         self.write_fixture()
         self.assertEqual(0, self.prepare_inventory().returncode)
 
         result = self.verify()
 
         self.assertNotEqual(0, result.returncode)
-        self.assertIn("unreviewed vulnerability", result.stderr)
+        self.assertIn(
+            "vulnerability findings are forbidden by the pinned policy",
+            result.stderr,
+        )
         self.assertFalse(self.evidence.exists())
 
     def test_rejects_scanner_package_set_drift(self) -> None:
@@ -1568,120 +1478,165 @@ empty=
 
     def test_rejects_missing_or_drifted_jts_policy_expression(self) -> None:
         originals = copy.deepcopy(self.policy_document["licenseExceptions"])
-        for target_index in (1, 2):
-            for mode in ("missing", "drifted"):
-                with self.subTest(target_index=target_index, mode=mode):
-                    mutated = copy.deepcopy(originals)
-                    if mode == "missing":
-                        mutated.pop(target_index)
-                    else:
-                        mutated[target_index]["license"] = "EPL-2.0 AND BSD-3-Clause"
-                    self.policy_document["licenseExceptions"] = mutated
-                    self.write_fixture()
-
-                    result = self.prepare_inventory()
-
-                    self.assertNotEqual(0, result.returncode)
-                    self.assertIn("must bind both JTS 1.19.0", result.stderr)
-        self.policy_document["licenseExceptions"] = originals
-
-    def test_rejects_jts_io_missing_review_marker(self) -> None:
-        for document in (self.sbom_document, self.example_sbom_document):
-            component = next(
-                item
-                for item in document["components"]
-                if item["name"] == "jts-io-common"
-            )
-            component["properties"] = [
-                item
-                for item in component["properties"]
-                if item["name"] != "routecontract:license-review"
-            ]
-        self.write_fixture()
-
-        result = self.prepare_inventory()
-
-        self.assertNotEqual(0, result.returncode)
-        self.assertIn("must retain its exact unresolved NOTICE review", result.stderr)
-
-    def test_rejects_jts_io_review_contract_or_artifact_hash_drift(self) -> None:
-        original_policy = copy.deepcopy(self.policy_document)
-        original_aggregate = copy.deepcopy(self.sbom_document)
-        original_example = copy.deepcopy(self.example_sbom_document)
-        cases = (
-            "action",
-            "expiry",
-            "owner",
-            "provenance",
-            "rationale",
-            "reviewed-at",
-            "component-hash",
-            "extra-component-sha256",
-        )
-        for mode in cases:
+        for mode in ("missing", "drifted"):
             with self.subTest(mode=mode):
-                if mode == "action":
-                    self.policy_document["licenseReviewExceptions"][1]["action"] = (
-                        "defer the review"
-                    )
-                elif mode == "expiry":
-                    self.policy_document["licenseReviewExceptions"][1]["expires"] = (
-                        "2026-08-28"
-                    )
-                elif mode == "owner":
-                    self.policy_document["licenseReviewExceptions"][1]["owner"] = (
-                        "nobody"
-                    )
-                elif mode == "provenance":
-                    self.policy_document["licenseReviewExceptions"][1]["provenance"][
-                        "mahoutNoticeSha256"
-                    ] = "0" * 64
-                elif mode == "rationale":
-                    self.policy_document["licenseReviewExceptions"][1][
-                        "rationaleCode"
-                    ] = "UNBOUNDED"
-                elif mode == "reviewed-at":
-                    self.policy_document["licenseReviewExceptions"][1][
-                        "reviewedAt"
-                    ] = "2026-08-12"
+                mutated = copy.deepcopy(originals)
+                if mode == "missing":
+                    mutated.pop(1)
                 else:
-                    for document in (
-                        self.sbom_document,
-                        self.example_sbom_document,
-                    ):
-                        component = next(
-                            item
-                            for item in document["components"]
-                            if item["name"] == "jts-io-common"
-                        )
-                        if mode == "component-hash":
-                            component["hashes"][0]["content"] = "0" * 64
-                        else:
-                            component["hashes"].append(
-                                {"alg": "SHA-256", "content": "0" * 64}
-                            )
+                    mutated[1]["license"] = "EPL-2.0 AND BSD-3-Clause"
+                self.policy_document["licenseExceptions"] = mutated
                 self.write_fixture()
 
                 result = self.prepare_inventory()
 
                 self.assertNotEqual(0, result.returncode)
-                expected = (
-                    "pinned JTS I/O review"
-                    if mode
-                    in {
-                        "action",
-                        "expiry",
-                        "owner",
-                        "provenance",
-                        "rationale",
-                        "reviewed-at",
-                    }
-                    else "must retain its exact unresolved NOTICE review"
-                )
-                self.assertIn(expected, result.stderr)
-                self.policy_document = copy.deepcopy(original_policy)
-                self.sbom_document = copy.deepcopy(original_aggregate)
-                self.example_sbom_document = copy.deepcopy(original_example)
+                self.assertIn("must bind JTS Core 1.19.0", result.stderr)
+        self.policy_document["licenseExceptions"] = originals
+
+    def test_rejects_reintroduced_jts_io_license_exception(self) -> None:
+        self.policy_document["licenseExceptions"].append(
+            {
+                "kind": "expression",
+                "license": "(EPL-2.0 OR BSD-3-Clause) AND Apache-2.0",
+                "purl": "pkg:maven/org.locationtech.jts.io/jts-io-common@1.20.0",
+                "scope": "test-runtime",
+                "url": None,
+            }
+        )
+        self.write_fixture()
+
+        result = self.prepare_inventory()
+
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn(
+            "JTS I/O Common license exceptions are forbidden",
+            result.stderr,
+        )
+
+    def test_rejects_any_extra_license_review(self) -> None:
+        self.policy_document["licenseReviewExceptions"].append(
+            copy.deepcopy(self.policy_document["licenseReviewExceptions"][0])
+        )
+        self.write_fixture()
+
+        result = self.prepare_inventory()
+
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn(
+            "licenseReviewExceptions must contain exactly the pinned MySQL review",
+            result.stderr,
+        )
+
+    def test_rejects_jts_io_in_every_role_format_and_version(self) -> None:
+        original_aggregate = copy.deepcopy(self.sbom_document)
+        original_published = copy.deepcopy(self.published_sbom_document)
+        original_example = copy.deepcopy(self.example_sbom_document)
+        for role, attribute, json_path, xml_path in (
+            ("aggregate", "sbom_document", self.sbom, self.sbom_xml),
+            (
+                "published",
+                "published_sbom_document",
+                self.published_sbom,
+                self.published_sbom_xml,
+            ),
+            ("example", "example_sbom_document", self.example_sbom, self.example_sbom_xml),
+        ):
+            for input_format in ("json", "xml"):
+                for version in ("1.18.2", "1.19.0", "1.20.0"):
+                    with self.subTest(
+                        role=role, input_format=input_format, version=version
+                    ):
+                        self.sbom_document = copy.deepcopy(original_aggregate)
+                        self.published_sbom_document = copy.deepcopy(original_published)
+                        self.example_sbom_document = copy.deepcopy(original_example)
+                        self.write_fixture()
+                        document = copy.deepcopy(getattr(self, attribute))
+                        purl = (
+                            "pkg:maven/org.locationtech.jts.io/"
+                            f"jts-io-common@{version}?type=jar"
+                        )
+                        component = apache_component(
+                            purl,
+                            "org.locationtech.jts.io",
+                            "jts-io-common",
+                            version,
+                        )
+                        component["properties"] = [
+                            {"name": "cdx:maven:package:test", "value": "true"}
+                        ]
+                        document["components"].append(component)
+                        document["dependencies"][0]["dependsOn"].append(purl)
+                        document["dependencies"].append(
+                            {"ref": purl, "dependsOn": []}
+                        )
+                        if input_format == "json":
+                            write_json(json_path, document)
+                        else:
+                            write_xml_pair(xml_path, document)
+
+                        result = self.prepare_inventory()
+
+                        self.assertNotEqual(0, result.returncode)
+                        self.assertIn(
+                            "JTS I/O Common is forbidden by the pinned policy",
+                            result.stderr,
+                        )
+        self.sbom_document = original_aggregate
+        self.published_sbom_document = original_published
+        self.example_sbom_document = original_example
+
+    def test_rejects_missing_or_wrong_pinned_coordinate_in_both_roles(self) -> None:
+        original_aggregate = copy.deepcopy(self.sbom_document)
+        original_example = copy.deepcopy(self.example_sbom_document)
+        for role, attribute in (
+            ("aggregate", "sbom_document"),
+            ("example", "example_sbom_document"),
+        ):
+            for group, name, version in REQUIRED_EXAMPLE_COORDINATES:
+                for mode in ("missing", "wrong-version"):
+                    with self.subTest(
+                        role=role,
+                        coordinate=f"{group}:{name}:{version}",
+                        mode=mode,
+                    ):
+                        self.sbom_document = copy.deepcopy(original_aggregate)
+                        self.example_sbom_document = copy.deepcopy(original_example)
+                        document = getattr(self, attribute)
+                        component = next(
+                            item
+                            for item in document["components"]
+                            if item.get("group") == group and item.get("name") == name
+                        )
+                        old_purl = component["purl"]
+                        if mode == "missing":
+                            document["components"].remove(component)
+                            document["dependencies"] = [
+                                record
+                                for record in document["dependencies"]
+                                if record["ref"] != old_purl
+                            ]
+                            for record in document["dependencies"]:
+                                record["dependsOn"] = [
+                                    target
+                                    for target in record["dependsOn"]
+                                    if target != old_purl
+                                ]
+                        else:
+                            new_purl = f"pkg:maven/{group}/{name}@0.0.0?type=jar"
+                            replace_component_purl(document, old_purl, new_purl)
+                            component["version"] = "0.0.0"
+                        self.write_fixture()
+
+                        result = self.prepare_inventory()
+
+                        self.assertNotEqual(0, result.returncode)
+                        self.assertIn(
+                            f"must contain exactly {group}:{name}:{version}",
+                            result.stderr,
+                        )
+        self.sbom_document = original_aggregate
+        self.example_sbom_document = original_example
 
     def test_rejects_unknown_spdx_license_id(self) -> None:
         self.sbom_document["components"][-1]["licenses"] = [
@@ -1754,15 +1709,16 @@ empty=
         self.assertNotEqual(0, result.returncode)
         self.assertIn("not proven test-container", result.stderr)
 
-    def test_rejects_vulnerability_exception_on_non_library(self) -> None:
-        self.sbom_document["components"][4]["type"] = "application"
-        self.example_sbom_document["components"][3]["type"] = "application"
+    def test_rejects_any_vulnerability_exception(self) -> None:
+        self.policy_document["vulnerabilityExceptions"] = [
+            {"advisory": "GHSA-pq2g-wx69-c263"}
+        ]
         self.write_fixture()
 
         result = self.prepare_inventory()
 
         self.assertNotEqual(0, result.returncode)
-        self.assertIn("not proven test-runtime", result.stderr)
+        self.assertIn("vulnerabilityExceptions must be exactly empty", result.stderr)
 
     def test_rejects_test_only_exception_for_published_module_coordinate(self) -> None:
         published_vulnerable = copy.deepcopy(self.sbom_document["components"][4])
@@ -1776,13 +1732,17 @@ empty=
         self.published_sbom_document["dependencies"].append(
             {"ref": published_vulnerable["purl"], "dependsOn": []}
         )
+        self.inject_test_finding()
         self.write_fixture()
         self.assertEqual(0, self.prepare_inventory().returncode)
 
         result = self.verify()
 
         self.assertNotEqual(0, result.returncode)
-        self.assertIn("published-module vulnerability", result.stderr)
+        self.assertIn(
+            "vulnerability findings are forbidden by the pinned policy",
+            result.stderr,
+        )
         self.assertFalse(self.evidence.exists())
 
     def test_rejects_pom_dependency_missing_from_published_sbom(self) -> None:
@@ -2188,7 +2148,7 @@ empty=
         result = self.prepare_inventory()
 
         self.assertNotEqual(0, result.returncode)
-        self.assertIn("not canonically percent-encoded", result.stderr)
+        self.assertIn("differs from the pinned producer encoding profile", result.stderr)
 
     def test_rejects_wrong_first_party_apache_url_in_all_pairs(self) -> None:
         for document in (
@@ -2286,12 +2246,34 @@ empty=
                 self.assertIn("exactly identify the pinned MySQL OCI image", result.stderr)
                 self.policy_document["licenseReviewExceptions"][0][field] = original
 
-    def test_rejects_expired_license_review_windows_for_both_records(self) -> None:
+    def test_rejects_stale_pre_owner_decision_mysql_review_contract(self) -> None:
+        stale_values = (
+            (
+                "action",
+                "resolve, renew with new evidence, or remove the MySQL OCI "
+                "package-level license review before the 2026-08-27 expiry",
+            ),
+            ("reviewedAt", "2026-08-13"),
+            ("expires", "2026-08-27"),
+        )
+        for field, value in stale_values:
+            with self.subTest(field=field):
+                original = self.policy_document["licenseReviewExceptions"][0][field]
+                self.policy_document["licenseReviewExceptions"][0][field] = value
+                self.write_fixture()
+
+                result = self.prepare_inventory()
+
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn("exactly identify the pinned MySQL OCI image", result.stderr)
+                self.policy_document["licenseReviewExceptions"][0][field] = original
+
+    def test_rejects_expired_mysql_license_review_window(self) -> None:
         today = datetime.now(timezone.utc).date()
         reviewed = (today - timedelta(days=2)).isoformat()
         expired = (today - timedelta(days=1)).isoformat()
         original_policy = copy.deepcopy(self.policy_document)
-        for index in (0, 1):
+        for index in (0,):
             with self.subTest(review=index):
                 self.policy_document["licenseReviewExceptions"][index][
                     "reviewedAt"
@@ -2316,7 +2298,7 @@ empty=
             ("expires", "2026-8-27", "must use YYYY-MM-DD"),
             ("expires", "20260827", "must use canonical YYYY-MM-DD"),
         )
-        for index in (0, 1):
+        for index in (0,):
             for field, value, diagnostic in cases:
                 with self.subTest(review=index, field=field, value=value):
                     self.policy_document = copy.deepcopy(original_policy)
@@ -2329,12 +2311,12 @@ empty=
                     self.assertIn(diagnostic, result.stderr)
         self.policy_document = original_policy
 
-    def test_rejects_license_review_date_after_expiry_for_both_records(self) -> None:
+    def test_rejects_mysql_license_review_date_after_expiry(self) -> None:
         today = datetime.now(timezone.utc).date()
         reviewed = (today - timedelta(days=1)).isoformat()
         expires = (today - timedelta(days=2)).isoformat()
         original_policy = copy.deepcopy(self.policy_document)
-        for index in (0, 1):
+        for index in (0,):
             with self.subTest(review=index):
                 self.policy_document = copy.deepcopy(original_policy)
                 self.policy_document["licenseReviewExceptions"][index][
@@ -2529,27 +2511,6 @@ empty=
                     result.stderr,
                 )
 
-    def test_rejects_future_review_date(self) -> None:
-        self.policy_document["vulnerabilityExceptions"][0]["reviewedAt"] = "2099-12-30"
-        self.write_fixture()
-
-        result = self.prepare_inventory()
-
-        self.assertNotEqual(0, result.returncode)
-        self.assertIn("reviewedAt must not be in the future", result.stderr)
-
-    def test_rejects_excessive_exception_validity(self) -> None:
-        exception = self.policy_document["vulnerabilityExceptions"][0]
-        reviewed = datetime.now(timezone.utc).date()
-        exception["reviewedAt"] = reviewed.isoformat()
-        exception["expires"] = (reviewed + timedelta(days=31)).isoformat()
-        self.write_fixture()
-
-        result = self.prepare_inventory()
-
-        self.assertNotEqual(0, result.returncode)
-        self.assertIn("validity must not exceed 30 days", result.stderr)
-
     def test_rejects_nonempty_explicit_scanner_config(self) -> None:
         self.assertEqual(0, self.prepare_inventory().returncode)
         self.scanner_config.write_text(
@@ -2608,18 +2569,6 @@ empty=
         self.assertNotEqual(0, result.returncode)
         self.assertIn("symbolic link", result.stderr)
         self.assertFalse((outside / "gradle.lockfile").exists())
-
-    def test_rejects_expired_vulnerability_exception(self) -> None:
-        self.policy_document["vulnerabilityExceptions"][0]["expires"] = "2000-01-01"
-        self.policy_document["vulnerabilityExceptions"][0]["reviewedAt"] = "1999-12-17"
-        self.write_fixture()
-        self.assertEqual(0, self.prepare_inventory().returncode)
-
-        result = self.verify()
-
-        self.assertNotEqual(0, result.returncode)
-        self.assertIn("expired vulnerability exception", result.stderr)
-
 
 if __name__ == "__main__":
     unittest.main()

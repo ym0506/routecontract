@@ -99,7 +99,7 @@ class SummarizeTestResultsTest(unittest.TestCase):
             self.assertIn("format=routecontract-test-summary-v1\n", first)
             self.assertIn(f"revision={self.revision}\n", first)
             self.assertIn("suite_count=7\n", first)
-            self.assertIn("test_count=50\n", first)
+            self.assertIn("test_count=52\n", first)
             self.assertIn("failure_count=0\nerror_count=0\nskipped_count=0\n", first)
             self.assertNotIn(secret, first)
             self.assertNotIn("private-hostname", first)

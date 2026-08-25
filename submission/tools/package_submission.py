@@ -45,14 +45,52 @@ LEGACY_SUBMISSION_FILENAMES = {
     "02_RouteContract_Result_Report.pdf",
 }
 PACKAGE_METADATA_NAME = "PACKAGE-METADATA.json"
+PACKAGE_METADATA_SCHEMA_VERSION = 4
 CHECKSUMS_NAME = "SHA256SUMS"
 SUPPLY_CHAIN_EVIDENCE_NAME = "supply-chain-evidence.json"
-MAX_VIDEO_SECONDS = 180.0
+MYSQL_CONTAINER_DIGEST = (
+    "b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb"
+)
+MYSQL_DOCUMENTATION_URL = "https://dev.mysql.com/doc/refman/8.4/en/preface.html"
+EXPECTED_MYSQL_LICENSE_REVIEW = {
+    "action": (
+        "re-review immediately if the MySQL OCI digest, selected platform, embedded "
+        "LICENSE/INFO_SRC evidence, or test-container use boundary changes; otherwise "
+        "resolve, renew with new evidence, or remove the MySQL OCI package-level "
+        "license review before the 2026-12-05 expiry"
+    ),
+    "componentName": "mysql",
+    "componentVersion": "8.4.11",
+    "expires": "2026-12-05",
+    "owner": "RouteContract maintainers",
+    "purl": (
+        "pkg:oci/mysql@sha256%3A"
+        f"{MYSQL_CONTAINER_DIGEST}?repository_url=registry-1.docker.io&tag=8.4.11"
+    ),
+    "rationaleCode": "MYSQL_OCI_PACKAGE_LICENSE_CONCLUSION_INCOMPLETE",
+    "reviewedAt": "2026-08-24",
+    "scope": "test-container",
+    "status": "manual-review-required",
+}
+EXPECTED_MYSQL_POLICY_LICENSE_REVIEW = {
+    **EXPECTED_MYSQL_LICENSE_REVIEW,
+    "documentationUrl": MYSQL_DOCUMENTATION_URL,
+    "sha256": MYSQL_CONTAINER_DIGEST,
+}
+MIN_VIDEO_SECONDS = 173.0
+MAX_VIDEO_SECONDS = 175.0
 MIN_VIDEO_WIDTH = 1920
 MIN_VIDEO_HEIGHT = 1080
 MIN_PUBLIC_VIDEO_HEIGHT = 1080
+MIN_DECODED_VIDEO_FPS = 20.0
+DECODE_DURATION_TOLERANCE_SECONDS = 0.25
 MAX_PORTABLE_FILENAME_BYTES = 255
 MAX_PUBLIC_ASSET_BYTES = 250 * 1024 * 1024
+# These are validation ceilings for already captured subprocess output and
+# bounded network reads; ``run`` itself does not stream-limit stdout.
+MAX_JSON_TOOL_OUTPUT_BYTES = 8 * 1024 * 1024
+MAX_PUBLIC_JSON_RESPONSE_BYTES = 8_000_000
+MAX_PUBLIC_ACTIVATION_RECORD_BYTES = 1024 * 1024
 MAX_ISSUE_ENUMERATION_PAGES = 100
 A4_SHORT_EDGE_POINTS = 595.3
 A4_LONG_EDGE_POINTS = 841.9
@@ -79,6 +117,14 @@ PUBLIC_EXTERNAL_EVIDENCE_OWNER_ATTESTATION = (
     "or evidence Issue was maintainer-edited, deleted, hidden, transferred, or "
     "knowingly omitted."
 )
+NO_RUNTIME_AI_DISCLOSURE = "runtime에는 AI 모델·데이터셋·외부 AI API가 없다."
+WORDPROCESSINGML_NAMESPACE = (
+    "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+)
+DOCX_REVISION_IDENTIFIER_ELEMENT_TAGS = frozenset(
+    f"{{{WORDPROCESSINGML_NAMESPACE}}}{local_name}"
+    for local_name in ("rsids", "rsidRoot", "rsid")
+)
 
 EXPECTED_RELEASE_TEST_SUITES = {
     "io.github.ym0506.routecontract.RouteContractTest": 18,
@@ -87,7 +133,7 @@ EXPECTED_RELEASE_TEST_SUITES = {
     "io.github.ym0506.routecontract.example.ObservedExecutionRegressionCorpusMySqlTest": 7,
     "io.github.ym0506.routecontract.example.OperationCorrelationMySqlTest": 5,
     "io.github.ym0506.routecontract.internal.ShardingSphere553PreflightTest": 3,
-    "io.github.ym0506.routecontract.manifest.ObservedExecutionManifestTest": 15,
+    "io.github.ym0506.routecontract.manifest.ObservedExecutionManifestTest": 17,
 }
 
 PLACEHOLDER_RE = re.compile(r"\[\[[^\]]+\]\]")
@@ -172,6 +218,40 @@ def load_report_content_contract() -> Any:
 
 
 REPORT_CONTENT_CONTRACT = load_report_content_contract()
+
+
+def load_video_caption_contract() -> Any:
+    """Load the pure-stdlib caption-source validator and SRT renderer."""
+    path = Path(__file__).resolve().parent / "video_caption_contract.py"
+    spec = importlib.util.spec_from_file_location(
+        "routecontract_video_caption_contract", path
+    )
+    if spec is None or spec.loader is None:
+        raise GateError("could not load the video-caption contract")
+    module = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(module)
+    except (OSError, ImportError, SyntaxError):
+        raise GateError("could not load the video-caption contract") from None
+    return module
+
+
+VIDEO_CAPTION_CONTRACT = load_video_caption_contract()
+VIDEO_CAPTION_SOURCE_PATH = VIDEO_CAPTION_CONTRACT.TRACKED_SOURCE_PATH
+
+
+def _decode_strict_json(
+    data: str | bytes,
+    failure_message: str,
+    *,
+    maximum_bytes: int | None = None,
+) -> Any:
+    try:
+        return REPORT_CONTENT_CONTRACT.decode_strict_json(
+            data, maximum_bytes=maximum_bytes
+        )
+    except ValueError:
+        raise GateError(failure_message) from None
 
 
 def load_rc_activation_record_validator() -> Any:
@@ -296,29 +376,51 @@ def run(
     *,
     cwd: Path | None = None,
     env: dict[str, str] | None = None,
+    timeout_seconds: int | None = None,
+    failure_label: str | None = None,
 ) -> str:
-    process = subprocess.run(
-        command,
-        cwd=cwd,
-        env=env,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        check=False,
-    )
+    try:
+        process = subprocess.run(
+            command,
+            cwd=cwd,
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False,
+            timeout=timeout_seconds,
+        )
+    except (OSError, subprocess.TimeoutExpired, UnicodeError) as error:
+        if failure_label is not None:
+            raise GateError(f"{failure_label} could not be completed") from None
+        raise
     if process.returncode != 0:
+        if failure_label is not None:
+            raise GateError(f"{failure_label} failed")
         rendered = " ".join(command)
         detail = (process.stderr or process.stdout).strip()
         raise GateError(f"command failed ({process.returncode}): {rendered}\n{detail}")
     return process.stdout
 
 
-def load_json(path: Path, label: str) -> dict[str, Any]:
+def load_json(
+    path: Path, label: str, *, maximum_bytes: int = 1024 * 1024
+) -> dict[str, Any]:
     try:
-        with path.open(encoding="utf-8") as stream:
-            value = json.load(stream)
-    except (OSError, json.JSONDecodeError) as error:
-        raise GateError(f"invalid {label}: {error}") from error
+        if path.stat().st_size > maximum_bytes:
+            raise GateError(f"{label} exceeds the {maximum_bytes}-byte safety limit")
+        raw = path.read_bytes()
+        if len(raw) > maximum_bytes:
+            raise GateError(f"{label} exceeds the {maximum_bytes}-byte safety limit")
+    except GateError:
+        raise
+    except OSError:
+        raise GateError(f"invalid {label}: input is unavailable") from None
+    value = _decode_strict_json(
+        raw,
+        f"invalid {label}: strict UTF-8 JSON is required",
+        maximum_bytes=maximum_bytes,
+    )
     if not isinstance(value, dict):
         raise GateError(f"{label} must be a JSON object")
     return value
@@ -336,15 +438,17 @@ def iter_strings(value: Any) -> Iterable[str]:
 
 
 def reject_placeholders(value: Any, label: str) -> None:
-    found = sorted(
-        {
-            match.group(0)
-            for text in iter_strings(value)
-            for match in PLACEHOLDER_RE.finditer(text)
-        }
-    )
-    if found:
-        raise GateError(f"{label} has unresolved [[...]] gates: {', '.join(found)}")
+    placeholder_count = sum(_unresolved_gate_count(text) for text in iter_strings(value))
+    if placeholder_count:
+        raise GateError(
+            f"{label} has unresolved [[...]] gates (count={placeholder_count})"
+        )
+
+
+def _unresolved_gate_count(text: str) -> int:
+    complete = list(PLACEHOLDER_RE.finditer(text))
+    fragments = PLACEHOLDER_RE.sub("", text)
+    return len(complete) + fragments.count("[[") + fragments.count("]]")
 
 
 def validate_and_materialize_report_content(
@@ -362,6 +466,14 @@ def validate_and_materialize_report_content(
     except (TypeError, ValueError) as error:
         raise GateError(f"invalid report external-evidence contract: {error}") from error
     reject_placeholders(materialized, "report content")
+    evidence_id_count = REPORT_CONTENT_CONTRACT.count_reader_facing_evidence_ids(
+        materialized
+    )
+    if evidence_id_count:
+        raise GateError(
+            "report content contains reader-facing audit evidence IDs "
+            f"(count={evidence_id_count})"
+        )
     return materialized
 
 
@@ -370,10 +482,11 @@ def require_exact_keys(value: Any, expected: set[str], label: str) -> dict[str, 
         raise GateError(f"{label} must be an object")
     actual = set(value)
     if actual != expected:
-        missing = sorted(expected - actual)
-        unexpected = sorted(actual - expected)
+        missing = expected - actual
+        unexpected = actual - expected
         raise GateError(
-            f"{label} keys do not match schema; missing={missing}, unexpected={unexpected}"
+            f"{label} keys do not match schema; missing_count={len(missing)}, "
+            f"unexpected_count={len(unexpected)}"
         )
     return value
 
@@ -482,6 +595,51 @@ def validate_submission_identity_matches_content(
             )
 
 
+def validate_video_external_evidence_branch_matches_content(
+    content: dict[str, Any], manifest: dict[str, Any]
+) -> None:
+    branch = object_or_empty(content.get("external_evidence")).get("branch")
+    if manifest["video"]["external_evidence_branch"] != branch:
+        raise GateError(
+            "video.external_evidence_branch must exactly match the generated "
+            "report external-evidence branch"
+        )
+
+
+def video_caption_branch_evidence(
+    expected_source_sha256: str, branch: str
+) -> dict[str, Any]:
+    """Bind the fixed tracked cue source to one deterministic selected SRT."""
+    try:
+        return VIDEO_CAPTION_CONTRACT.build_branch_evidence(
+            VIDEO_CAPTION_SOURCE_PATH, expected_source_sha256, branch
+        )
+    except (OSError, ValueError):
+        raise GateError(
+            "video.caption_contract does not match the strict tracked caption source"
+        ) from None
+
+
+def manifest_video_caption_evidence(manifest: dict[str, Any]) -> dict[str, Any]:
+    """Revalidate and materialize caption evidence from a validated manifest."""
+    video = manifest["video"]
+    return video_caption_branch_evidence(
+        video["caption_contract"]["source_sha256"],
+        video["external_evidence_branch"],
+    )
+
+
+def require_caption_cues_fit_duration(
+    caption_evidence: dict[str, Any], duration_seconds: float, label: str
+) -> None:
+    """Require the selected branch's final cue to fit in an observed duration."""
+    last_cue_end_ms = caption_evidence["selected_last_cue_end_ms"]
+    if duration_seconds * 1_000 < last_cue_end_ms:
+        raise GateError(
+            f"{label} ends before the selected caption branch's final cue"
+        )
+
+
 def validate_manifest(data: dict[str, Any]) -> dict[str, Any]:
     require_exact_keys(
         data,
@@ -499,8 +657,12 @@ def validate_manifest(data: dict[str, Any]) -> dict[str, Any]:
         "manifest",
     )
     reject_placeholders(data, "manifest")
-    if data["schema_version"] != 1:
-        raise GateError("manifest.schema_version must be 1")
+    if (
+        isinstance(data["schema_version"], bool)
+        or not isinstance(data["schema_version"], int)
+        or data["schema_version"] != 5
+    ):
+        raise GateError("manifest.schema_version must be 5")
     if data["official_notice_url"] != NOTICE_URL:
         raise GateError(f"official_notice_url must be {NOTICE_URL}")
 
@@ -558,7 +720,14 @@ def validate_manifest(data: dict[str, Any]) -> dict[str, Any]:
 
     video = require_exact_keys(
         data["video"],
-        {"youtube_url", "title", "duration_seconds", "local_file_sha256"},
+        {
+            "youtube_url",
+            "title",
+            "duration_seconds",
+            "local_file_sha256",
+            "external_evidence_branch",
+            "caption_contract",
+        },
         "video",
     )
     if not isinstance(video["youtube_url"], str) or YOUTUBE_RE.fullmatch(
@@ -570,11 +739,42 @@ def validate_manifest(data: dict[str, Any]) -> dict[str, Any]:
     if isinstance(video["duration_seconds"], bool) or not isinstance(
         video["duration_seconds"], (int, float)
     ):
-        raise GateError("video.duration_seconds must be a number from ffprobe/mdls")
+        raise GateError("video.duration_seconds must be a number from ffprobe")
     duration = float(video["duration_seconds"])
-    if not 0 < duration <= MAX_VIDEO_SECONDS:
-        raise GateError("video.duration_seconds must be greater than 0 and at most 180")
+    if not MIN_VIDEO_SECONDS <= duration <= MAX_VIDEO_SECONDS:
+        raise GateError(
+            "video.duration_seconds must be from 173 through 175 seconds inclusive"
+        )
     require_digest(video["local_file_sha256"], "video.local_file_sha256")
+    branch = video["external_evidence_branch"]
+    if not isinstance(branch, str) or branch not in {"rc_only", "zero"}:
+        raise GateError("video.external_evidence_branch must be rc_only or zero")
+    caption_contract = require_exact_keys(
+        video["caption_contract"],
+        {"schema_version", "source_path", "source_sha256"},
+        "video.caption_contract",
+    )
+    if (
+        type(caption_contract["schema_version"]) is not int
+        or caption_contract["schema_version"] != VIDEO_CAPTION_CONTRACT.SCHEMA_VERSION
+    ):
+        raise GateError(
+            "video.caption_contract.schema_version must be "
+            f"{VIDEO_CAPTION_CONTRACT.SCHEMA_VERSION}"
+        )
+    if caption_contract["source_path"] != VIDEO_CAPTION_CONTRACT.SOURCE_RELATIVE_PATH:
+        raise GateError(
+            "video.caption_contract.source_path must be "
+            f"{VIDEO_CAPTION_CONTRACT.SOURCE_RELATIVE_PATH}"
+        )
+    require_digest(
+        caption_contract["source_sha256"],
+        "video.caption_contract.source_sha256",
+    )
+    caption_evidence = video_caption_branch_evidence(
+        caption_contract["source_sha256"], branch
+    )
+    require_caption_cues_fit_duration(caption_evidence, duration, "manifest video")
 
     evidence = require_exact_keys(
         data["release_evidence"],
@@ -639,13 +839,18 @@ def validate_manifest(data: dict[str, Any]) -> dict[str, Any]:
             "single_entry_per_participant_confirmed",
             "duplicate_benefit_status_reviewed",
             "ai_assistance_scope_confirmed",
-            "all_submitted_code_reviewed_and_explainable",
+            "core_behavior_boundaries_artifacts_and_dependency_roles_reviewed_and_explainable",
             "report_free_text_contains_no_external_evidence_claims",
+            "report_free_text_privacy_reviewed",
             "public_external_evidence_history_and_maintainer_edits_reviewed",
             "source_and_dependency_licenses_reviewed",
             "final_pdf_visual_qa_completed",
-            "final_video_watchthrough_completed",
-            "public_repository_maintenance_obligation_accepted",
+            "final_local_video_actual_screen_caption_watchthrough_completed",
+            "final_public_video_frame_audio_caption_equivalence_review_completed",
+            "five_year_public_repository_visibility_obligation_if_selected_accepted",
+            "owner_voice_ai_assistance_disclosed_and_participant_reviewed",
+            "maintenance_order_and_period_confirmed",
+            "origin_and_prior_work_statement_confirmed",
         },
         "participant_attestations",
     )
@@ -927,7 +1132,7 @@ def validate_release_test_summary(path: Path, revision: str) -> dict[str, Any]:
     if observed != expected_release_test_summary(revision):
         raise GateError(
             "release test summary must exactly identify the final revision and the "
-            "expected 7-suite/50-test all-passing, non-skipped result"
+            "expected 7-suite/52-test all-passing, non-skipped result"
         )
     return {
         "format": TEST_SUMMARY_FORMAT,
@@ -942,25 +1147,21 @@ def validate_release_test_summary(path: Path, revision: str) -> dict[str, Any]:
 
 
 def load_strict_json(path: Path, label: str, *, maximum_bytes: int = 1024 * 1024) -> dict[str, Any]:
-    if path.stat().st_size > maximum_bytes:
-        raise GateError(f"{label} exceeds the {maximum_bytes}-byte safety limit")
     try:
-        text = path.read_text(encoding="utf-8", errors="strict")
-    except (OSError, UnicodeError) as error:
-        raise GateError(f"{label} must be valid UTF-8 JSON: {error}") from error
-
-    def reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
-        result: dict[str, Any] = {}
-        for key, value in pairs:
-            if key in result:
-                raise GateError(f"{label} contains a duplicate JSON key: {key}")
-            result[key] = value
-        return result
-
-    try:
-        value = json.loads(text, object_pairs_hook=reject_duplicate_keys)
-    except (json.JSONDecodeError, RecursionError) as error:
-        raise GateError(f"{label} is not valid JSON: {error}") from error
+        if path.stat().st_size > maximum_bytes:
+            raise GateError(f"{label} exceeds the {maximum_bytes}-byte safety limit")
+        raw = path.read_bytes()
+        if len(raw) > maximum_bytes:
+            raise GateError(f"{label} exceeds the {maximum_bytes}-byte safety limit")
+    except GateError:
+        raise
+    except OSError:
+        raise GateError(f"{label} input is unavailable") from None
+    value = _decode_strict_json(
+        raw,
+        f"{label} must be valid UTF-8 strict JSON",
+        maximum_bytes=maximum_bytes,
+    )
     if not isinstance(value, dict):
         raise GateError(f"{label} must be a JSON object")
     return value
@@ -1035,9 +1236,9 @@ def validate_supply_chain_evidence(
         aggregate["unresolvedLicenseReviewCount"],
         "supply-chain evidence sbom.unresolvedLicenseReviewCount",
     )
-    if unresolved_review_count != 2:
+    if unresolved_review_count != 1:
         raise GateError(
-            "supply-chain evidence must retain exactly two unresolved license reviews"
+            "supply-chain evidence must retain exactly one unresolved license review"
         )
     expected_aggregate_hashes = {
         "sha256": sha256(actual_files["routecontract-aggregate-cyclonedx.json"]),
@@ -1218,8 +1419,14 @@ def validate_supply_chain_evidence(
         or vulnerabilities["acceptedExceptionCount"] != len(findings)
     ):
         raise GateError("supply-chain evidence finding counts are inconsistent")
-    if len(findings) != 3:
-        raise GateError("supply-chain evidence must contain exactly three reviewed findings")
+    if (
+        vulnerabilities["acceptedExceptionCount"] != 0
+        or vulnerabilities["findingCount"] != 0
+        or findings
+    ):
+        raise GateError(
+            "supply-chain evidence must contain zero vulnerability findings and accepted exceptions"
+        )
 
     policy = load_strict_json(
         repository_root / "security/supply-chain-policy.json", "supply-chain policy"
@@ -1242,8 +1449,8 @@ def validate_supply_chain_evidence(
     policy_reviews = policy["licenseReviewExceptions"]
     if not isinstance(reviews, list) or not isinstance(policy_reviews, list):
         raise GateError("supply-chain license reviews must be arrays")
-    if len(reviews) != 2 or len(policy_reviews) != 2:
-        raise GateError("supply-chain evidence and policy must contain exactly two license reviews")
+    if len(reviews) != 1 or len(policy_reviews) != 1:
+        raise GateError("supply-chain evidence and policy must contain exactly one license review")
     review_keys = {
         "action",
         "componentName",
@@ -1256,29 +1463,26 @@ def validate_supply_chain_evidence(
         "scope",
         "status",
     }
-    expected_review_order = (
-        "MYSQL_OCI_PACKAGE_LICENSE_CONCLUSION_INCOMPLETE",
-        "JTS_IO_COMMON_REDISTRIBUTION_NOTICE_TREATMENT_UNCONFIRMED",
-    )
+    policy_review_keys = review_keys | {"documentationUrl", "sha256"}
     projected_policy_reviews: list[dict[str, Any]] = []
     policy_review_codes: set[str] = set()
     for index, raw_policy_review in enumerate(policy_reviews):
-        if not isinstance(raw_policy_review, dict):
-            raise GateError(f"supply-chain policy license review {index} must be an object")
-        missing = review_keys - set(raw_policy_review)
-        if missing:
-            raise GateError(
-                f"supply-chain policy license review {index} is missing {sorted(missing)}"
-            )
-        rationale = raw_policy_review["rationaleCode"]
+        policy_review = require_exact_keys(
+            raw_policy_review,
+            policy_review_keys,
+            f"supply-chain policy license review {index}",
+        )
+        rationale = policy_review["rationaleCode"]
         if not isinstance(rationale, str) or not rationale or rationale in policy_review_codes:
             raise GateError("supply-chain policy license review rationaleCode is invalid or duplicate")
         policy_review_codes.add(rationale)
         projected_policy_reviews.append(
-            {field: raw_policy_review[field] for field in review_keys}
+            {field: policy_review[field] for field in review_keys}
         )
-    if tuple(review["rationaleCode"] for review in projected_policy_reviews) != expected_review_order:
-        raise GateError("supply-chain policy license reviews have an unexpected order")
+    if policy_reviews != [EXPECTED_MYSQL_POLICY_LICENSE_REVIEW]:
+        raise GateError(
+            "supply-chain policy license review must exactly identify the pinned MySQL OCI image"
+        )
 
     validated_reviews: list[dict[str, Any]] = []
     for index, raw_review in enumerate(reviews):
@@ -1302,101 +1506,8 @@ def validate_supply_chain_evidence(
     exceptions = policy["vulnerabilityExceptions"]
     if not isinstance(exceptions, list):
         raise GateError("supply-chain vulnerabilityExceptions must be an array")
-    if len(exceptions) != 3:
-        raise GateError("supply-chain policy must contain exactly three vulnerability exceptions")
-    exception_map: dict[tuple[str, str], dict[str, Any]] = {}
-    exception_keys = {
-        "advisory",
-        "exceptionId",
-        "expires",
-        "fixedVersion",
-        "owner",
-        "purl",
-        "rationaleCode",
-        "reviewedAt",
-        "scope",
-        "severity",
-    }
-    for index, raw_exception in enumerate(exceptions):
-        item = require_exact_keys(
-            raw_exception,
-            exception_keys,
-            f"supply-chain vulnerability exception {index}",
-        )
-        if not isinstance(item["purl"], str) or not item["purl"]:
-            raise GateError("supply-chain vulnerability exception purl must be non-empty")
-        if not isinstance(item["advisory"], str) or not item["advisory"]:
-            raise GateError("supply-chain vulnerability exception advisory must be non-empty")
-        key = (item["purl"], item["advisory"])
-        if key in exception_map:
-            raise GateError("supply-chain policy contains a duplicate vulnerability exception")
-        exception_map[key] = item
-    observed_keys: set[tuple[str, str]] = set()
-    finding_keys = {
-        "action",
-        "advisory",
-        "exceptionExpires",
-        "exceptionId",
-        "fixedVersion",
-        "owner",
-        "purl",
-        "rationaleCode",
-        "reachabilityEvidence",
-        "reviewedAt",
-        "scope",
-        "severity",
-    }
-    for index, raw_finding in enumerate(findings):
-        finding = require_exact_keys(
-            raw_finding, finding_keys, f"supply-chain evidence finding {index}"
-        )
-        reachability = require_exact_keys(
-            finding["reachabilityEvidence"],
-            {"exampleProfile", "publishedProfile", "publishedRuntime"},
-            f"supply-chain evidence finding {index} reachability",
-        )
-        if any(not isinstance(value, bool) for value in reachability.values()):
-            raise GateError("supply-chain evidence finding reachability flags must be booleans")
-        if reachability != {
-            "exampleProfile": True,
-            "publishedProfile": False,
-            "publishedRuntime": False,
-        }:
-            raise GateError("supply-chain evidence finding is not example/test-profile confined")
-        if not isinstance(finding["purl"], str) or not finding["purl"]:
-            raise GateError("supply-chain evidence finding purl must be non-empty")
-        if not isinstance(finding["advisory"], str) or not finding["advisory"]:
-            raise GateError("supply-chain evidence finding advisory must be non-empty")
-        key = (finding["purl"], finding["advisory"])
-        exception = exception_map.get(key)
-        if exception is None or key in observed_keys:
-            raise GateError("supply-chain evidence finding has no unique source-policy exception")
-        observed_keys.add(key)
-        mapped = {
-            "advisory": exception["advisory"],
-            "exceptionExpires": exception["expires"],
-            "exceptionId": exception["exceptionId"],
-            "fixedVersion": exception["fixedVersion"],
-            "owner": exception["owner"],
-            "purl": exception["purl"],
-            "rationaleCode": exception["rationaleCode"],
-            "reviewedAt": exception["reviewedAt"],
-            "scope": exception["scope"],
-            "severity": exception["severity"],
-        }
-        for field, expected in mapped.items():
-            if finding[field] != expected:
-                raise GateError(f"supply-chain evidence finding {field} differs from policy")
-        if finding["action"] != "time-bounded reviewed exception; re-evaluate by expiry":
-            raise GateError("supply-chain evidence finding action is unexpected")
-        try:
-            expires = datetime.strptime(finding["exceptionExpires"], "%Y-%m-%d").date()
-        except (TypeError, ValueError) as error:
-            raise GateError("supply-chain evidence finding expiry is invalid") from error
-        if expires < datetime.now(timezone.utc).date():
-            raise GateError("supply-chain evidence contains an expired exception")
-    if observed_keys != set(exception_map):
-        raise GateError("supply-chain evidence does not account for every policy exception")
+    if exceptions:
+        raise GateError("supply-chain policy must contain zero vulnerability exceptions")
 
     return {
         "sha256": sha256(path),
@@ -1785,7 +1896,7 @@ def validate_video_metadata_tags(value: Any, label: str) -> int:
     if not isinstance(value, dict):
         raise GateError(f"ffprobe {label} metadata tags must be an object")
     normalized: dict[str, str] = {}
-    for key, tag_value in value.items():
+    for index, (key, tag_value) in enumerate(value.items()):
         if not isinstance(key, str) or not isinstance(tag_value, str):
             raise GateError(f"ffprobe {label} metadata tags must contain only strings")
         normalized_key = key.strip().casefold()
@@ -1794,7 +1905,8 @@ def validate_video_metadata_tags(value: Any, label: str) -> int:
             for prefix in SENSITIVE_VIDEO_METADATA_PREFIXES
         ):
             raise GateError(
-                f"local demonstration file contains sensitive metadata tag: {key}"
+                "local demonstration file contains a sensitive metadata tag "
+                f"(index={index})"
             )
         normalized[key] = tag_value
     reject_sensitive_metadata(
@@ -1808,23 +1920,32 @@ def local_video_metadata(path: Path) -> dict[str, Any]:
     ffprobe = shutil.which("ffprobe")
     if not ffprobe:
         raise GateError(
-            "ffprobe is required to verify duration, 1080p dimensions, audio, "
-            "and privacy-safe video metadata"
+            "ffprobe is required to verify duration, 1080p dimensions, the "
+            "caption-first no-audio contract, and privacy-safe video metadata"
         )
     output = run(
         [
             ffprobe,
             "-v",
             "error",
+            "-f",
+            "mov",
+            "-protocol_whitelist",
+            "file",
             "-show_entries",
             "format=duration:format_tags:stream=index,codec_type,width,height:stream_tags:stream_disposition=default,attached_pic,still_image:chapter=id:chapter_tags:program=id:program_tags",
             "-of",
             "json",
             str(path),
-        ]
+        ],
+        failure_label="ffprobe video metadata probe",
     )
     try:
-        data = json.loads(output)
+        data = _decode_strict_json(
+            output,
+            "ffprobe returned incomplete video metadata: invalid strict JSON",
+            maximum_bytes=MAX_JSON_TOOL_OUTPUT_BYTES,
+        )
         if not isinstance(data, dict):
             raise TypeError("top-level value is not an object")
         format_metadata = data["format"]
@@ -1851,20 +1972,22 @@ def local_video_metadata(path: Path) -> dict[str, Any]:
             raise ValueError("duration is not a positive finite number")
         if any(not isinstance(stream, dict) for stream in streams):
             raise TypeError("a stream is not an object")
-    except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
-        raise GateError(f"ffprobe returned incomplete video metadata: {error}") from error
+    except (KeyError, TypeError, ValueError, OverflowError):
+        raise GateError(
+            "ffprobe returned incomplete video metadata: invalid field shape or value"
+        ) from None
 
     metadata_tag_count = validate_video_metadata_tags(
         format_metadata.get("tags"), "format"
     )
-    for stream in streams:
+    for stream_ordinal, stream in enumerate(streams):
         metadata_tag_count += validate_video_metadata_tags(
-            stream.get("tags"), f"stream {stream.get('index', '?')}"
+            stream.get("tags"), f"stream ordinal {stream_ordinal}"
         )
     for scope, entries in (("chapter", chapters), ("program", programs)):
-        for entry in entries:
+        for entry_ordinal, entry in enumerate(entries):
             metadata_tag_count += validate_video_metadata_tags(
-                entry.get("tags"), f"{scope} {entry.get('id', '?')}"
+                entry.get("tags"), f"{scope} ordinal {entry_ordinal}"
             )
 
     video_streams = [
@@ -1875,8 +1998,10 @@ def local_video_metadata(path: Path) -> dict[str, Any]:
     ]
     if not video_streams:
         raise GateError("local demonstration file has no video stream")
-    if not audio_streams:
-        raise GateError("local demonstration file must contain at least one audio stream")
+    if audio_streams:
+        raise GateError(
+            "caption-first local demonstration file must contain no audio streams"
+        )
 
     playable_video_streams: list[dict[str, Any]] = []
     for stream in video_streams:
@@ -1925,7 +2050,7 @@ def local_video_metadata(path: Path) -> dict[str, Any]:
     if width < MIN_VIDEO_WIDTH or height < MIN_VIDEO_HEIGHT:
         raise GateError(
             "local demonstration video must be at least "
-            f"{MIN_VIDEO_WIDTH}x{MIN_VIDEO_HEIGHT}; got {width}x{height}"
+            f"{MIN_VIDEO_WIDTH}x{MIN_VIDEO_HEIGHT}"
         )
     return {
         "duration_seconds": duration,
@@ -1942,6 +2067,72 @@ def local_video_metadata(path: Path) -> dict[str, Any]:
     }
 
 
+def validate_full_motion_video_decode(
+    path: Path, stream_index: int, expected_duration: float
+) -> dict[str, Any]:
+    """Decode the complete selected motion stream instead of trusting headers."""
+    ffmpeg = shutil.which("ffmpeg")
+    if not ffmpeg:
+        raise GateError(
+            "ffmpeg is required to decode the complete selected motion video stream"
+        )
+    output = run(
+        [
+            ffmpeg,
+            "-hide_banner",
+            "-nostdin",
+            "-v",
+            "error",
+            "-xerror",
+            "-err_detect",
+            "explode",
+            "-f",
+            "mov",
+            "-protocol_whitelist",
+            "file",
+            "-progress",
+            "pipe:1",
+            "-nostats",
+            "-i",
+            str(path),
+            "-map",
+            f"0:{stream_index}",
+            "-an",
+            "-sn",
+            "-dn",
+            "-f",
+            "null",
+            "-",
+        ],
+        timeout_seconds=600,
+        failure_label="ffmpeg full motion-video decode",
+    )
+    frames = re.findall(r"(?m)^frame=([0-9]{1,12})$", output)
+    out_times = re.findall(r"(?m)^out_time_us=([0-9]{1,18})$", output)
+    if (
+        not frames
+        or not out_times
+        or int(frames[-1]) <= 0
+        or not output.rstrip().endswith("progress=end")
+    ):
+        raise GateError("ffmpeg did not complete the selected motion-video decode")
+    decoded_frames = int(frames[-1])
+    decoded_duration = int(out_times[-1]) / 1_000_000
+    if abs(decoded_duration - expected_duration) > DECODE_DURATION_TOLERANCE_SECONDS:
+        raise GateError("decoded motion-video duration differs from the container duration")
+    minimum_frames = max(1, math.ceil(decoded_duration * MIN_DECODED_VIDEO_FPS))
+    if decoded_frames < minimum_frames:
+        raise GateError(
+            "decoded motion-video frame count is too low for the declared duration"
+        )
+    return {
+        "decode_probe": "ffmpeg",
+        "decoded_frame_count": decoded_frames,
+        "decoded_duration_seconds": decoded_duration,
+        "minimum_frame_count": minimum_frames,
+    }
+
+
 def validate_local_video(path: Path, manifest: dict[str, Any]) -> dict[str, Any]:
     expected_hash = manifest["video"]["local_file_sha256"]
     actual_hash = sha256(path)
@@ -1949,15 +2140,61 @@ def validate_local_video(path: Path, manifest: dict[str, Any]) -> dict[str, Any]
         raise GateError(f"video SHA-256 mismatch: expected {expected_hash}, got {actual_hash}")
     metadata = local_video_metadata(path)
     duration = float(metadata["duration_seconds"])
-    if not 0 < duration <= MAX_VIDEO_SECONDS:
-        raise GateError(f"local video is {duration:.3f}s; official maximum is 180.000s")
+    if not MIN_VIDEO_SECONDS <= duration <= MAX_VIDEO_SECONDS:
+        raise GateError(
+            "local video duration must be from 173 through 175 seconds inclusive"
+        )
+    require_caption_cues_fit_duration(
+        manifest_video_caption_evidence(manifest), duration, "local video"
+    )
     declared = float(manifest["video"]["duration_seconds"])
     if abs(duration - declared) > 0.1:
-        raise GateError(
-            f"video duration differs from manifest: declared={declared:.3f}, actual={duration:.3f}"
-        )
+        raise GateError("video duration differs from manifest")
+    stream_index = metadata["selected_video_stream_index"]
+    if type(stream_index) is not int or stream_index < 0:
+        raise GateError("local video has no selected motion-video stream index")
+    metadata.update(
+        validate_full_motion_video_decode(path, stream_index, duration)
+    )
+    if sha256(path) != actual_hash:
+        raise GateError("local demonstration file changed during validation")
     metadata["sha256"] = actual_hash
     return metadata
+
+
+def revalidate_local_video_hash_before_metadata(
+    path: Path, expected_sha256: str
+) -> str:
+    """Rehash the video at the last point before audit metadata is materialized."""
+    actual_sha256 = sha256(path)
+    if actual_sha256 != expected_sha256:
+        raise GateError(
+            "local demonstration file changed before package metadata write"
+        )
+    return actual_sha256
+
+
+def package_video_metadata(
+    video_metadata: dict[str, Any], manifest: dict[str, Any]
+) -> dict[str, Any]:
+    """Materialize the exact video audit-metadata shape."""
+    attestations = manifest["participant_attestations"]
+    return {
+        **video_metadata,
+        "youtube_url": manifest["video"]["youtube_url"],
+        "external_evidence_branch": manifest["video"][
+            "external_evidence_branch"
+        ],
+        "caption_contract": manifest_video_caption_evidence(manifest),
+        "local_burned_in_caption_pixels_automatically_verified": False,
+        "local_actual_screen_caption_watchthrough_participant_attested": attestations[
+            "final_local_video_actual_screen_caption_watchthrough_completed"
+        ],
+        "public_frame_audio_caption_equivalence_automatically_verified": False,
+        "public_frame_audio_caption_equivalence_participant_attested": attestations[
+            "final_public_video_frame_audio_caption_equivalence_review_completed"
+        ],
+    }
 
 
 def verified_tls_context() -> ssl.SSLContext:
@@ -2021,36 +2258,49 @@ def request_bytes_with_headers(
     return data, headers
 
 
+def _decode_public_json(data: bytes, url: str) -> Any:
+    return _decode_strict_json(
+        data,
+        f"public endpoint did not return JSON; strict JSON is required: {url}",
+        maximum_bytes=MAX_JSON_TOOL_OUTPUT_BYTES,
+    )
+
+
 def request_json(url: str) -> dict[str, Any]:
-    try:
-        value = json.loads(request_bytes(url, accept="application/vnd.github+json", limit=8_000_000))
-    except (UnicodeDecodeError, json.JSONDecodeError) as error:
-        raise GateError(f"public endpoint did not return JSON: {url}: {error}") from error
+    value = _decode_public_json(
+        request_bytes(
+            url,
+            accept="application/vnd.github+json",
+            limit=MAX_PUBLIC_JSON_RESPONSE_BYTES,
+        ),
+        url,
+    )
     if not isinstance(value, dict):
         raise GateError(f"public endpoint returned a non-object: {url}")
     return value
 
 
 def request_json_list(url: str) -> list[dict[str, Any]]:
-    try:
-        value = json.loads(
-            request_bytes(url, accept="application/vnd.github+json", limit=8_000_000)
-        )
-    except (UnicodeDecodeError, json.JSONDecodeError) as error:
-        raise GateError(f"public endpoint did not return JSON: {url}: {error}") from error
+    value = _decode_public_json(
+        request_bytes(
+            url,
+            accept="application/vnd.github+json",
+            limit=MAX_PUBLIC_JSON_RESPONSE_BYTES,
+        ),
+        url,
+    )
     if not isinstance(value, list) or any(not isinstance(item, dict) for item in value):
         raise GateError(f"public endpoint did not return an object array: {url}")
     return value
 
 
 def request_json_list_page(url: str) -> tuple[list[dict[str, Any]], list[str]]:
-    try:
-        data, headers = request_bytes_with_headers(
-            url, accept="application/vnd.github+json", limit=8_000_000
-        )
-        value = json.loads(data)
-    except (UnicodeDecodeError, json.JSONDecodeError) as error:
-        raise GateError(f"public endpoint did not return JSON: {url}: {error}") from error
+    data, headers = request_bytes_with_headers(
+        url,
+        accept="application/vnd.github+json",
+        limit=MAX_PUBLIC_JSON_RESPONSE_BYTES,
+    )
+    value = _decode_public_json(data, url)
     if not isinstance(value, list) or any(not isinstance(item, dict) for item in value):
         raise GateError(f"public endpoint did not return an object array: {url}")
     return value, headers.get("link", [])
@@ -2105,10 +2355,15 @@ def public_youtube_metadata(url: str) -> dict[str, Any]:
             "--skip-download",
             "--",
             url,
-        ]
+        ],
+        failure_label="yt-dlp public video metadata probe",
     )
     try:
-        metadata = json.loads(output)
+        metadata = _decode_strict_json(
+            output,
+            "yt-dlp returned incomplete public video duration metadata: invalid strict JSON",
+            maximum_bytes=MAX_JSON_TOOL_OUTPUT_BYTES,
+        )
         if not isinstance(metadata, dict):
             raise TypeError("top-level value is not an object")
         if metadata.get("id") != video_id:
@@ -2119,36 +2374,35 @@ def public_youtube_metadata(url: str) -> dict[str, Any]:
         duration = float(duration_value)
         if not math.isfinite(duration) or duration <= 0:
             raise ValueError("duration is not a positive finite number")
-    except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
+    except (KeyError, TypeError, ValueError, OverflowError):
         raise GateError(
-            f"yt-dlp returned incomplete public video duration metadata: {error}"
-        ) from error
+            "yt-dlp returned incomplete public video duration metadata: "
+            "invalid field shape or value"
+        ) from None
 
     availability = metadata.get("availability")
     if availability != "public":
-        raise GateError(
-            "YouTube availability must be public; "
-            f"yt-dlp reported {availability!r}"
-        )
+        raise GateError("YouTube availability must be public")
     live_status = metadata.get("live_status")
     if live_status != "not_live":
-        raise GateError(
-            "YouTube demonstration must be a non-live upload; "
-            f"yt-dlp reported live_status={live_status!r}"
-        )
+        raise GateError("YouTube demonstration must be a non-live upload")
     if "age_limit" not in metadata:
         raise GateError("YouTube age_limit must be 0 or null; yt-dlp omitted it")
     age_limit = metadata["age_limit"]
-    if age_limit is not None and (
-        isinstance(age_limit, bool)
-        or not isinstance(age_limit, (int, float))
-        or not math.isfinite(float(age_limit))
-        or float(age_limit) != 0.0
-    ):
-        raise GateError(
-            "YouTube age_limit must be 0 or null for logged-out playback; "
-            f"yt-dlp reported {age_limit!r}"
-        )
+    if age_limit is not None:
+        try:
+            valid_age_limit = (
+                not isinstance(age_limit, bool)
+                and isinstance(age_limit, (int, float))
+                and math.isfinite(float(age_limit))
+                and float(age_limit) == 0.0
+            )
+        except (TypeError, ValueError, OverflowError):
+            valid_age_limit = False
+        if not valid_age_limit:
+            raise GateError(
+                "YouTube age_limit must be 0 or null for logged-out playback"
+            ) from None
 
     formats = metadata.get("formats")
     if not isinstance(formats, list) or any(
@@ -2161,13 +2415,20 @@ def public_youtube_metadata(url: str) -> dict[str, Any]:
         vcodec = item.get("vcodec")
         format_url = item.get("url")
         has_drm = item.get("has_drm")
-        if height is not None and (
-            isinstance(height, bool)
-            or not isinstance(height, (int, float))
-            or not math.isfinite(float(height))
-            or float(height) <= 0
-        ):
-            raise GateError("yt-dlp format metadata contains an invalid height")
+        height_number: float | None = None
+        if height is not None:
+            try:
+                valid_height = (
+                    not isinstance(height, bool)
+                    and isinstance(height, (int, float))
+                    and math.isfinite(float(height))
+                    and float(height) > 0
+                )
+                height_number = float(height) if valid_height else None
+            except (TypeError, ValueError, OverflowError):
+                valid_height = False
+            if not valid_height:
+                raise GateError("yt-dlp format metadata contains an invalid height") from None
         if vcodec is not None and not isinstance(vcodec, str):
             raise GateError("yt-dlp format metadata contains an invalid vcodec")
         if format_url is not None and not isinstance(format_url, str):
@@ -2180,8 +2441,8 @@ def public_youtube_metadata(url: str) -> dict[str, Any]:
             else None
         )
         if (
-            height is not None
-            and float(height) >= MIN_PUBLIC_VIDEO_HEIGHT
+            height_number is not None
+            and height_number >= MIN_PUBLIC_VIDEO_HEIGHT
             and isinstance(vcodec, str)
             and bool(vcodec.strip())
             and vcodec.strip().casefold() != "none"
@@ -2190,7 +2451,7 @@ def public_youtube_metadata(url: str) -> dict[str, Any]:
             and bool(parsed_url.netloc)
             and has_drm is False
         ):
-            downloadable_video_heights.append(int(height))
+            downloadable_video_heights.append(int(height_number))
     if not downloadable_video_heights:
         raise GateError(
             "YouTube has no downloadable video format at 1080p or higher"
@@ -2212,12 +2473,16 @@ def validate_public_youtube_contract(
     youtube: dict[str, Any],
 ) -> None:
     if youtube["title"] != manifest["video"]["title"]:
+        raise GateError("public YouTube title mismatch")
+    if not MIN_VIDEO_SECONDS <= youtube["duration_seconds"] <= MAX_VIDEO_SECONDS:
         raise GateError(
-            f"public YouTube title mismatch: expected {manifest['video']['title']!r}, "
-            f"got {youtube['title']!r}"
+            "public YouTube video duration must be from 173 through 175 seconds inclusive"
         )
-    if youtube["duration_seconds"] > MAX_VIDEO_SECONDS:
-        raise GateError("public YouTube video exceeds the official 180-second maximum")
+    require_caption_cues_fit_duration(
+        manifest_video_caption_evidence(manifest),
+        float(youtube["duration_seconds"]),
+        "public YouTube video",
+    )
     if abs(
         float(youtube["duration_seconds"])
         - float(local_video["duration_seconds"])
@@ -2545,7 +2810,12 @@ def report_cutoff_utc(content: dict[str, Any]) -> datetime:
 
 
 def _decode_public_contents_file(
-    payload: dict[str, Any], expected_url: str, expected_path: str, label: str
+    payload: dict[str, Any],
+    expected_url: str,
+    expected_path: str,
+    label: str,
+    *,
+    maximum_size: int = MAX_PUBLIC_JSON_RESPONSE_BYTES,
 ) -> tuple[bytes, str]:
     blob_sha = payload.get("sha")
     size = payload.get("size")
@@ -2559,7 +2829,7 @@ def _decode_public_contents_file(
         or COMMIT_RE.fullmatch(blob_sha) is None
         or blob_sha == "0" * 40
         or type(size) is not int
-        or not 0 < size <= 8_000_000
+        or not 0 < size <= maximum_size
     ):
         raise GateError(f"{label} does not resolve to one bounded public ordinary file")
     try:
@@ -2576,24 +2846,26 @@ def _decode_activation_record(
     payload: dict[str, Any], expected_url: str, expected_path: str
 ) -> tuple[dict[str, Any], bytes, str]:
     raw, blob_sha = _decode_public_contents_file(
-        payload, expected_url, expected_path, "public RC activation record"
+        payload,
+        expected_url,
+        expected_path,
+        "public RC activation record",
+        maximum_size=MAX_PUBLIC_ACTIVATION_RECORD_BYTES,
     )
     try:
-        decoded = raw.decode("utf-8")
-        def unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
-            value: dict[str, Any] = {}
-            for key, child in pairs:
-                if key in value:
-                    raise ValueError(f"duplicate JSON key: {key}")
-                value[key] = child
-            return value
-
-        record = json.loads(decoded, object_pairs_hook=unique_object)
-    except (ValueError, UnicodeDecodeError, json.JSONDecodeError) as error:
-        raise GateError("public RC activation record is not canonical base64 UTF-8 JSON") from error
+        record = _decode_public_json(raw, expected_url)
+    except GateError:
+        raise GateError(
+            "public RC activation record is not canonical base64 UTF-8 strict JSON"
+        ) from None
     if not isinstance(record, dict):
         raise GateError("public RC activation record must be a JSON object")
-    reject_placeholders(record, "public RC activation record")
+    try:
+        reject_placeholders(record, "public RC activation record")
+    except RecursionError:
+        raise GateError(
+            "public RC activation record is not canonical base64 UTF-8 strict JSON"
+        ) from None
     return record, raw, blob_sha
 
 
@@ -2667,6 +2939,7 @@ def _validate_tagged_issue_form_bytes(data: bytes, filename: str) -> None:
 
 def _validate_activation_record_publicly(
     evidence: dict[str, Any], manifest: dict[str, Any], api_base: str, cutoff: datetime,
+    repository_node_id: str,
     artifact_binding_cache: dict[str, Any] | None = None,
 ) -> tuple[datetime, dict[str, Any]]:
     repository_url = manifest["project"]["repository_url"]
@@ -2812,61 +3085,106 @@ def _validate_activation_record_publicly(
     if len(associated_pulls) >= 100:
         raise GateError("activation-record pull-request association is unbounded")
     expected_repository = f"{manifest['github_owner']}/{manifest['github_repository']}"
-    matching_pulls = []
-    for pull in associated_pulls:
-        base = object_or_empty(pull.get("base"))
-        base_repository = object_or_empty(base.get("repo"))
+    validated_pulls: list[
+        tuple[dict[str, Any], dict[str, Any], datetime, dict[str, Any]]
+    ] = []
+    observed_pull_numbers: set[int] = set()
+    for associated_pull in associated_pulls:
+        pull_number = associated_pull.get("number")
+        pull_id = associated_pull.get("id")
+        pull_node_id = associated_pull.get("node_id")
+        expected_pull_url = f"{repository_url}/pull/{pull_number}"
+        listed_merge_commit = associated_pull.get("merge_commit_sha")
+        associated_base = object_or_empty(associated_pull.get("base"))
+        associated_base_repository = object_or_empty(associated_base.get("repo"))
         if (
-            pull.get("merge_commit_sha") == record_commit
-            and pull.get("state") == "closed"
-            and isinstance(pull.get("merged_at"), str)
-            and base.get("ref") == "main"
-            and str(base_repository.get("full_name", "")).casefold()
-            == expected_repository.casefold()
+            type(pull_number) is not int
+            or pull_number <= 0
+            or pull_number in observed_pull_numbers
+            or type(pull_id) is not int
+            or pull_id <= 0
+            or not isinstance(pull_node_id, str)
+            or not pull_node_id
+            or associated_pull.get("html_url") != expected_pull_url
+            or associated_pull.get("state") != "closed"
+            or not isinstance(associated_pull.get("merged_at"), str)
+            or "merge_commit_sha" not in associated_pull
+            or associated_base.get("ref") != "main"
+            or associated_base_repository.get("full_name") != expected_repository
+            or (
+                listed_merge_commit is not None
+                and listed_merge_commit != record_commit
+            )
         ):
-            matching_pulls.append(pull)
-    if len(matching_pulls) != 1:
+            raise GateError("activation-record pull-request association is malformed")
+        observed_pull_numbers.add(pull_number)
+
+        direct_pull = request_json(f"{api_base}/pulls/{pull_number}")
+        direct_base = object_or_empty(direct_pull.get("base"))
+        direct_base_repository = object_or_empty(direct_base.get("repo"))
+        direct_merge_commit = direct_pull.get("merge_commit_sha")
+        activation_merged_at = parse_github_utc(
+            direct_pull.get("merged_at"), "activation-record pull request merged_at"
+        )
+
+        if (
+            type(direct_pull.get("number")) is not int
+            or direct_pull["number"] <= 0
+            or direct_pull["number"] != pull_number
+            or type(direct_pull.get("id")) is not int
+            or direct_pull["id"] <= 0
+            or direct_pull["id"] != pull_id
+            or not isinstance(direct_pull.get("node_id"), str)
+            or not direct_pull["node_id"]
+            or direct_pull["node_id"] != pull_node_id
+            or not isinstance(direct_pull.get("html_url"), str)
+            or direct_pull.get("html_url") != expected_pull_url
+            or not isinstance(direct_pull.get("state"), str)
+            or direct_pull.get("state") != "closed"
+            or direct_pull.get("merged") is not True
+            or not isinstance(direct_pull.get("merged_at"), str)
+            or "merge_commit_sha" not in direct_pull
+            or (
+                direct_merge_commit is not None
+                and direct_merge_commit != record_commit
+            )
+            or direct_base.get("ref") != "main"
+            or direct_base_repository.get("full_name") != expected_repository
+            or associated_pull.get("state") != direct_pull.get("state")
+            or associated_pull.get("merged_at") != direct_pull.get("merged_at")
+            or associated_base.get("ref") != direct_base.get("ref")
+            or associated_base_repository.get("full_name")
+            != direct_base_repository.get("full_name")
+            or not record_author_at
+            <= record_committer_at
+            <= activation_merged_at
+            <= cutoff
+        ):
+            raise GateError(
+                "activation-record pull request does not bind the public main merge and cutoff"
+            )
+        graphql_pull = _validate_graphql_activation_pull(
+            request_graphql_activation_pull(
+                manifest["github_owner"], manifest["github_repository"], pull_number
+            ),
+            manifest,
+            repository_node_id,
+            direct_pull,
+            record_commit,
+        )
+        validated_pulls.append(
+            (associated_pull, direct_pull, activation_merged_at, graphql_pull)
+        )
+
+    if len(validated_pulls) != 1:
         raise GateError(
             "activation-record commit has no unique server-timestamped main pull request"
         )
-    associated_pull = matching_pulls[0]
-    pull_number = associated_pull.get("number")
-    pull_id = associated_pull.get("id")
-    pull_node_id = associated_pull.get("node_id")
+    associated_pull, direct_pull, activation_merged_at, graphql_pull = validated_pulls[0]
+    pull_number = associated_pull["number"]
+    pull_id = associated_pull["id"]
+    pull_node_id = associated_pull["node_id"]
     expected_pull_url = f"{repository_url}/pull/{pull_number}"
-    if (
-        type(pull_number) is not int
-        or pull_number <= 0
-        or type(pull_id) is not int
-        or pull_id <= 0
-        or not isinstance(pull_node_id, str)
-        or not pull_node_id
-        or associated_pull.get("html_url") != expected_pull_url
-    ):
-        raise GateError("activation-record pull-request association is malformed")
-    direct_pull = request_json(f"{api_base}/pulls/{pull_number}")
-    direct_base = object_or_empty(direct_pull.get("base"))
-    direct_base_repository = object_or_empty(direct_base.get("repo"))
-    activation_merged_at = parse_github_utc(
-        direct_pull.get("merged_at"), "activation-record pull request merged_at"
-    )
-    if (
-        direct_pull.get("number") != pull_number
-        or direct_pull.get("id") != pull_id
-        or direct_pull.get("node_id") != pull_node_id
-        or direct_pull.get("html_url") != expected_pull_url
-        or direct_pull.get("state") != "closed"
-        or direct_pull.get("merged") is not True
-        or direct_pull.get("merge_commit_sha") != record_commit
-        or direct_pull.get("merged_at") != associated_pull.get("merged_at")
-        or direct_base.get("ref") != "main"
-        or str(direct_base_repository.get("full_name", "")).casefold()
-        != expected_repository.casefold()
-        or not record_author_at <= record_committer_at <= activation_merged_at <= cutoff
-    ):
-        raise GateError(
-            "activation-record pull request does not bind the public main merge and cutoff"
-        )
     record_tree = request_json(f"{api_base}/git/trees/{record_tree_sha}?recursive=1")
     record_tree_entries = record_tree.get("tree")
     if not isinstance(record_tree_entries, list):
@@ -2885,20 +3203,19 @@ def _validate_activation_record_publicly(
         or record_entries[0].get("sha") != record_blob_sha
     ):
         raise GateError("activation record is not an ordinary 100644 blob in its commit tree")
+    public_main = request_json(f"{api_base}/commits/main")
     comparison = request_json(f"{api_base}/compare/{record_commit}...main")
     base_commit = comparison.get("base_commit")
     merge_base = comparison.get("merge_base_commit")
-    head_commit = comparison.get("head_commit")
     ahead_by = comparison.get("ahead_by")
     behind_by = comparison.get("behind_by")
     status = comparison.get("status")
     if (
         not isinstance(base_commit, dict)
         or not isinstance(merge_base, dict)
-        or not isinstance(head_commit, dict)
+        or public_main.get("sha") != manifest["project"]["commit"]
         or base_commit.get("sha") != record_commit
         or merge_base.get("sha") != record_commit
-        or head_commit.get("sha") != manifest["project"]["commit"]
         or type(ahead_by) is not int
         or type(behind_by) is not int
         or behind_by != 0
@@ -3234,6 +3551,7 @@ def _validate_activation_record_publicly(
             "merged_at": activation_merged_at.isoformat(),
             "base_ref": "main",
             "base_repository": expected_repository,
+            "graphql_verified": graphql_pull,
         },
         "activation_tag_commit": tag_commit,
         "activation_tag_tree_sha": tag_tree_sha,
@@ -3246,7 +3564,7 @@ def _validate_activation_record_publicly(
             "status": status,
             "ahead_by": ahead_by,
             "behind_by": behind_by,
-            "head_sha": head_commit["sha"],
+            "head_sha": public_main["sha"],
         },
         "activation_run": {
             "id": run_id,
@@ -3369,6 +3687,28 @@ def _issue_label_names(issue: dict[str, Any]) -> set[str]:
     return names
 
 
+ACTIVATION_PULL_QUERY = """
+query RouteContractActivationPull($owner: String!, $repo: String!, $number: Int!) {
+  repository(owner: $owner, name: $repo) {
+    id
+    nameWithOwner
+    pullRequest(number: $number) {
+      id
+      databaseId
+      number
+      url
+      state
+      merged
+      mergedAt
+      baseRefName
+      baseRepository { id nameWithOwner }
+      mergeCommit { oid }
+    }
+  }
+}
+""".strip()
+
+
 ISSUE_EDIT_HISTORY_QUERY = """
 query RouteContractIssueEditHistory($owner: String!, $repo: String!, $number: Int!) {
   repository(owner: $owner, name: $repo) {
@@ -3403,7 +3743,9 @@ query RouteContractIssueEditHistory($owner: String!, $repo: String!, $number: In
 """.strip()
 
 
-def request_graphql_issue(owner: str, repository: str, number: int) -> dict[str, Any]:
+def _request_authenticated_graphql(
+    query: str, owner: str, repository: str, number: int, label: str
+) -> dict[str, Any]:
     gh = require_safe_github_cli_release_verification()
     environment = os.environ.copy()
     environment.update(
@@ -3423,7 +3765,7 @@ def request_graphql_issue(owner: str, repository: str, number: int) -> dict[str,
             "--method",
             "POST",
             "-f",
-            f"query={ISSUE_EDIT_HISTORY_QUERY}",
+            f"query={query}",
             "-F",
             f"owner={owner}",
             "-F",
@@ -3432,29 +3774,139 @@ def request_graphql_issue(owner: str, repository: str, number: int) -> dict[str,
             f"number={number}",
         ],
         env=environment,
+        timeout_seconds=60,
+        failure_label=f"authenticated GitHub GraphQL {label} query",
     )
     try:
-        def unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
-            value: dict[str, Any] = {}
-            for key, child in pairs:
-                if key in value:
-                    raise ValueError(f"duplicate key: {key}")
-                value[key] = child
-            return value
-
-        payload = json.loads(output, object_pairs_hook=unique_object)
-    except (ValueError, json.JSONDecodeError) as error:
-        raise GateError("authenticated GitHub GraphQL Issue query returned invalid JSON") from error
+        payload = REPORT_CONTENT_CONTRACT.decode_strict_json(
+            output, maximum_bytes=MAX_JSON_TOOL_OUTPUT_BYTES
+        )
+    except ValueError:
+        raise GateError(
+            f"authenticated GitHub GraphQL {label} query returned invalid JSON"
+        ) from None
     if (
         not isinstance(payload, dict)
         or set(payload) != {"data"}
         or not isinstance(payload["data"], dict)
     ):
         raise GateError(
-            "authenticated GitHub GraphQL Issue query returned errors, extensions, "
+            f"authenticated GitHub GraphQL {label} query returned errors, extensions, "
             "or a partial envelope"
         )
     return payload
+
+
+def request_graphql_activation_pull(
+    owner: str, repository: str, number: int
+) -> dict[str, Any]:
+    return _request_authenticated_graphql(
+        ACTIVATION_PULL_QUERY, owner, repository, number, "activation Pull Request"
+    )
+
+
+def request_graphql_issue(owner: str, repository: str, number: int) -> dict[str, Any]:
+    return _request_authenticated_graphql(
+        ISSUE_EDIT_HISTORY_QUERY, owner, repository, number, "Issue"
+    )
+
+
+def _validate_graphql_activation_pull(
+    payload: dict[str, Any],
+    manifest: dict[str, Any],
+    repository_node_id: str,
+    rest_pull: dict[str, Any],
+    record_commit: str,
+) -> dict[str, Any]:
+    data = payload.get("data")
+    graphql_repository = data.get("repository") if isinstance(data, dict) else None
+    pull = (
+        graphql_repository.get("pullRequest")
+        if isinstance(graphql_repository, dict)
+        else None
+    )
+    base_repository = pull.get("baseRepository") if isinstance(pull, dict) else None
+    merge_commit = pull.get("mergeCommit") if isinstance(pull, dict) else None
+    expected_repository = (
+        f"{manifest['github_owner']}/{manifest['github_repository']}"
+    )
+    if (
+        not isinstance(data, dict)
+        or set(data) != {"repository"}
+        or not isinstance(graphql_repository, dict)
+        or set(graphql_repository) != {"id", "nameWithOwner", "pullRequest"}
+        or not isinstance(pull, dict)
+        or set(pull)
+        != {
+            "id",
+            "databaseId",
+            "number",
+            "url",
+            "state",
+            "merged",
+            "mergedAt",
+            "baseRefName",
+            "baseRepository",
+            "mergeCommit",
+        }
+        or not isinstance(base_repository, dict)
+        or set(base_repository) != {"id", "nameWithOwner"}
+        or not isinstance(merge_commit, dict)
+        or set(merge_commit) != {"oid"}
+        or not isinstance(graphql_repository.get("id"), str)
+        or not graphql_repository["id"]
+        or graphql_repository["id"] != repository_node_id
+        or not isinstance(graphql_repository.get("nameWithOwner"), str)
+        or graphql_repository.get("nameWithOwner") != expected_repository
+        or not isinstance(base_repository.get("id"), str)
+        or not base_repository["id"]
+        or base_repository["id"] != repository_node_id
+        or not isinstance(base_repository.get("nameWithOwner"), str)
+        or base_repository.get("nameWithOwner") != expected_repository
+        or not isinstance(pull.get("id"), str)
+        or not pull["id"]
+        or pull["id"] != rest_pull.get("node_id")
+        or type(pull.get("databaseId")) is not int
+        or pull["databaseId"] <= 0
+        or type(rest_pull.get("id")) is not int
+        or rest_pull["id"] <= 0
+        or pull["databaseId"] != rest_pull["id"]
+        or type(pull.get("number")) is not int
+        or pull["number"] <= 0
+        or type(rest_pull.get("number")) is not int
+        or rest_pull["number"] <= 0
+        or pull["number"] != rest_pull["number"]
+        or not isinstance(pull.get("url"), str)
+        or pull.get("url") != rest_pull.get("html_url")
+        or not isinstance(pull.get("state"), str)
+        or pull.get("state") != "MERGED"
+        or pull.get("merged") is not True
+        or not isinstance(pull.get("mergedAt"), str)
+        or pull.get("mergedAt") != rest_pull.get("merged_at")
+        or not isinstance(pull.get("baseRefName"), str)
+        or pull.get("baseRefName") != "main"
+        or not isinstance(merge_commit.get("oid"), str)
+        or merge_commit.get("oid") != record_commit
+    ):
+        raise GateError(
+            "authenticated GitHub GraphQL activation Pull Request does not bind "
+            "the exact public main merge"
+        )
+    return {
+        "repository_id": graphql_repository["id"],
+        "repository_name_with_owner": graphql_repository["nameWithOwner"],
+        "id": pull["id"],
+        "database_id": pull["databaseId"],
+        "number": pull["number"],
+        "url": pull["url"],
+        "state": pull["state"],
+        "merged": pull["merged"],
+        "merged_at": pull["mergedAt"],
+        "base_ref": pull["baseRefName"],
+        "base_repository_id": base_repository["id"],
+        "base_repository_name_with_owner": base_repository["nameWithOwner"],
+        "merge_commit_sha": merge_commit["oid"],
+    }
 
 
 def _validate_unedited_graphql_issue(
@@ -4029,6 +4481,7 @@ def validate_public_external_evidence(
         manifest,
         api_base,
         cutoff,
+        repository_node_id,
         artifact_binding_cache=artifact_binding_cache,
     )
     result.update(activation_metadata)
@@ -4090,6 +4543,30 @@ def canonical_public_snapshot_bytes(snapshot: dict[str, Any]) -> bytes:
     return canonical_external_snapshot_bytes(snapshot)
 
 
+def _require_same_public_snapshot_shape(
+    expected: Any, observed: Any, label: str
+) -> None:
+    """Reject malformed second observations before canonical JSON comparison."""
+    if type(observed) is not type(expected):
+        raise GateError(
+            f"{label} changed between packaging observations: malformed value type"
+        )
+    if isinstance(expected, dict):
+        if set(observed) != set(expected):
+            raise GateError(
+                f"{label} changed between packaging observations: malformed object shape"
+            )
+        for key in expected:
+            _require_same_public_snapshot_shape(expected[key], observed[key], label)
+    elif isinstance(expected, list):
+        if len(observed) != len(expected):
+            raise GateError(
+                f"{label} changed between packaging observations: malformed list shape"
+            )
+        for expected_item, observed_item in zip(expected, observed, strict=True):
+            _require_same_public_snapshot_shape(expected_item, observed_item, label)
+
+
 def revalidate_public_external_evidence(
     initial_snapshot: dict[str, Any], content: dict[str, Any], manifest: dict[str, Any]
 ) -> dict[str, Any]:
@@ -4097,6 +4574,7 @@ def revalidate_public_external_evidence(
     observed = validate_public_external_evidence(
         content, manifest, artifact_binding_cache=initial_snapshot
     )
+    _require_same_public_snapshot_shape(initial_snapshot, observed, "public evidence")
     if canonical_external_snapshot_bytes(observed) != canonical_external_snapshot_bytes(
         initial_snapshot
     ):
@@ -4396,6 +4874,9 @@ def revalidate_public_evidence(
     observed = validate_public_evidence(
         manifest, local_video, evidence, evidence_dir, repository_root
     )
+    _require_same_public_snapshot_shape(
+        initial_snapshot, observed, "release/CI/video state"
+    )
     if canonical_public_snapshot_bytes(observed) != canonical_public_snapshot_bytes(
         initial_snapshot
     ):
@@ -4413,7 +4894,9 @@ def extract_docx_text(path: Path) -> str:
                 raise GateError("generated report unexpectedly contains executable/binary parts")
             root = ET.fromstring(package.read("word/document.xml"))
     except (BadZipFile, OSError, KeyError, ET.ParseError) as error:
-        raise GateError(f"could not inspect generated DOCX: {error}") from error
+        raise GateError(
+            "could not inspect generated DOCX (category=PACKAGE_OR_XML)"
+        ) from error
     paragraphs: list[str] = []
     for paragraph in root.iter():
         if paragraph.tag.rsplit("}", 1)[-1] != "p":
@@ -4441,10 +4924,37 @@ def validate_docx_privacy(path: Path) -> None:
             if "docProps/custom.xml" in names:
                 raise GateError("generated DOCX unexpectedly contains custom properties")
             core = ET.fromstring(package.read("docProps/core.xml"))
+            rsid_count = 0
+            for name in names:
+                is_story_part = (
+                    name == "word/document.xml"
+                    or re.fullmatch(r"word/header\d+\.xml", name) is not None
+                    or re.fullmatch(r"word/footer\d+\.xml", name) is not None
+                    or name in {"word/footnotes.xml", "word/endnotes.xml"}
+                )
+                if not is_story_part and name not in {
+                    "word/settings.xml",
+                    "word/styles.xml",
+                }:
+                    continue
+                root = ET.fromstring(package.read(name))
+                rsid_count += sum(
+                    1
+                    for element in root.iter()
+                    for attribute in element.attrib
+                    if attribute.startswith(f"{{{WORDPROCESSINGML_NAMESPACE}}}rsid")
+                )
+                rsid_count += sum(
+                    1
+                    for element in root.iter()
+                    if element.tag in DOCX_REVISION_IDENTIFIER_ELEMENT_TAGS
+                )
     except (BadZipFile, OSError, KeyError, ET.ParseError) as error:
         if isinstance(error, GateError):
             raise
-        raise GateError(f"could not inspect DOCX privacy metadata: {error}") from error
+        raise GateError(
+            "could not inspect DOCX privacy metadata (category=PACKAGE_OR_XML)"
+        ) from error
     values = {
         element.tag.rsplit("}", 1)[-1]: (element.text or "").strip()
         for element in core
@@ -4453,6 +4963,11 @@ def validate_docx_privacy(path: Path) -> None:
         "lastModifiedBy"
     ) != "RouteContract project":
         raise GateError("DOCX author metadata is not privacy-sanitized")
+    if rsid_count:
+        raise GateError(
+            "DOCX contains Word revision session identifiers "
+            f"(count={rsid_count})"
+        )
     serialized = ET.tostring(core, encoding="unicode")
     reject_sensitive_metadata(serialized, "DOCX core metadata")
 
@@ -4470,9 +4985,14 @@ def reject_sensitive_metadata(text: str, label: str) -> None:
     leaked = [item for item in forbidden_literals if item.casefold() in text.casefold()]
     email_match = re.search(r"[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}", text, re.IGNORECASE)
     if leaked or email_match:
+        categories = []
+        if leaked:
+            categories.append("PRIVATE_LITERAL")
+        if email_match:
+            categories.append("EMAIL_ADDRESS")
         raise GateError(
-            f"{label} contains private path/identity metadata: "
-            f"literals={leaked}, email={email_match.group(0) if email_match else None}"
+            f"{label} contains private path/identity metadata "
+            f"(categories={','.join(categories)}, count={len(leaked) + bool(email_match)})"
         )
 
 
@@ -4497,12 +5017,15 @@ def validate_pdf_privacy(path: Path) -> None:
         "Encrypted": "no",
     }
     mismatched = {
-        key: {"expected": value, "actual": fields.get(key)}
+        key
         for key, value in expected.items()
         if fields.get(key) != value
     }
     if mismatched:
-        raise GateError(f"PDF privacy/safety properties mismatch: {mismatched}")
+        raise GateError(
+            "PDF privacy/safety properties mismatch "
+            f"(field_count={len(mismatched)})"
+        )
     if fields.get("Creator") != "Writer" or not fields.get("Producer", "").startswith(
         "LibreOffice"
     ):
@@ -4515,7 +5038,7 @@ def validate_pdf_privacy(path: Path) -> None:
         try:
             xmp = ET.fromstring(metadata_text.encode("utf-8"))
         except ET.ParseError as error:
-            raise GateError(f"PDF XMP metadata is malformed: {error}") from error
+            raise GateError("PDF XMP metadata is malformed (category=XML_PARSE)") from error
         creator_values = [
             (element.text or "").strip()
             for creator in xmp.iter()
@@ -4524,11 +5047,14 @@ def validate_pdf_privacy(path: Path) -> None:
             if element.tag.rsplit("}", 1)[-1] == "li"
         ]
         if creator_values != ["RouteContract project"]:
-            raise GateError(f"PDF XMP creator is not sanitized: {creator_values}")
+            raise GateError(
+                "PDF XMP creator is not sanitized "
+                f"(field=creator, value_count={len(creator_values)})"
+            )
 
     attachments = run([pdfdetach, "-list", str(path)]).strip()
     if attachments != "0 embedded files":
-        raise GateError(f"PDF must not contain embedded files: {attachments}")
+        raise GateError("PDF must not contain embedded files (category=EMBEDDED_FILE)")
     javascript = run([pdfinfo, "-js", str(path)]).strip()
     if javascript:
         raise GateError("PDF contains document-level JavaScript")
@@ -4841,7 +5367,7 @@ def expected_report_hyperlink_targets(
             or target != target.strip()
             or any(ord(character) < 33 for character in target)
         ):
-            raise GateError(f"report contains an unsafe structured hyperlink target: {target}")
+            raise GateError("report contains an unsafe structured hyperlink target")
     return {target for target in targets if isinstance(target, str)}
 
 
@@ -4899,7 +5425,9 @@ def validate_docx_hyperlinks(
                 package.read("word/_rels/document.xml.rels")
             )
     except (BadZipFile, OSError, KeyError, ET.ParseError) as error:
-        raise GateError(f"could not inspect DOCX hyperlinks: {error}") from error
+        raise GateError(
+            "could not inspect DOCX hyperlinks (category=PACKAGE_OR_XML)"
+        ) from error
     relationship_targets: dict[str, str] = {}
     for relationship in relationships.findall(
         f"{{{relationship_namespace}}}Relationship"
@@ -4928,7 +5456,7 @@ def validate_docx_hyperlinks(
     if actual != expected:
         raise GateError(
             "DOCX hyperlink targets differ from the exact materialized report URLs: "
-            f"missing={sorted(expected - actual)}, extra={sorted(actual - expected)}"
+            f"missing_count={len(expected - actual)}, extra_count={len(actual - expected)}"
         )
     actual_bindings = {
         ("".join(node.itertext()), relationship_targets[relationship_id])
@@ -4938,8 +5466,8 @@ def validate_docx_hyperlinks(
     if actual_bindings != expected_bindings:
         raise GateError(
             "DOCX visible hyperlink labels differ from their exact structured targets: "
-            f"missing={sorted(expected_bindings - actual_bindings)}, "
-            f"extra={sorted(actual_bindings - expected_bindings)}"
+            f"missing_count={len(expected_bindings - actual_bindings)}, "
+            f"extra_count={len(actual_bindings - expected_bindings)}"
         )
 
 
@@ -4958,7 +5486,7 @@ def pdf_hyperlink_fragments(
     try:
         root = ET.fromstring(xml_path.read_bytes())
     except ET.ParseError as error:
-        raise GateError(f"{label} hyperlink XML is malformed: {error}") from error
+        raise GateError(f"{label} hyperlink XML is malformed") from error
     fragments: list[tuple[int, int, int, int, int, str, str]] = []
     pages = root.findall("page")
     if not 1 <= len(pages) <= 7:
@@ -5019,7 +5547,7 @@ def validate_pdf_hyperlinks(
     if actual != expected:
         raise GateError(
             "PDF link annotations differ from the exact materialized report URLs: "
-            f"missing={sorted(expected - actual)}, extra={sorted(actual - expected)}"
+            f"missing_count={len(expected - actual)}, extra_count={len(actual - expected)}"
         )
 
 
@@ -5269,39 +5797,46 @@ def validate_report_visible_content(
         raise GateError(
             "PDF visible-text inventory differs from the canonical strict DOCX"
         )
-    missing_docx = [
-        value
-        for value in visible_report_values(content)
+    report_values = visible_report_values(content)
+    missing_docx_indexes = [
+        index
+        for index, value in enumerate(report_values)
         if normalize_visible_text(value) not in normalized_docx
     ]
-    if missing_docx:
-        raise GateError(f"generated DOCX is missing content values: {missing_docx[:3]}")
+    if missing_docx_indexes:
+        raise GateError(
+            "generated DOCX is missing canonical content values "
+            f"(count={len(missing_docx_indexes)}, indexes={missing_docx_indexes[:10]})"
+        )
     summary = normalize_visible_text(external_evidence_summary(content))
     if normalized_docx.count(summary) != 1 or normalized_pdf.count(summary) != 1:
         raise GateError(
             "generated external-evidence summary must appear exactly once in DOCX and PDF"
         )
-    unordered_pdf_values = []
-    for value in visible_report_values(content):
+    unordered_pdf_value_indexes = []
+    for index, value in enumerate(report_values):
         normalized = normalize_visible_text(value)
         extra = minimum_subsequence_extra_characters(normalized_pdf, normalized)
         if extra is None or extra > MAX_PDF_VALUE_INTERLEAVED_CHARACTERS:
-            unordered_pdf_values.append(value)
-    if unordered_pdf_values:
+            unordered_pdf_value_indexes.append(index)
+    if unordered_pdf_value_indexes:
         raise GateError(
-            "PDF is missing the ordered semantic text of canonical values: "
-            f"{unordered_pdf_values[:3]}"
+            "PDF is missing the ordered semantic text of canonical values "
+            f"(count={len(unordered_pdf_value_indexes)}, "
+            f"indexes={unordered_pdf_value_indexes[:10]})"
         )
-    unordered_pdf_rows = []
-    for row in visible_report_block_rows(content):
+    report_rows = visible_report_block_rows(content)
+    unordered_pdf_row_indexes = []
+    for index, row in enumerate(report_rows):
         normalized = normalize_visible_text(row)
         extra = minimum_subsequence_extra_characters(normalized_pdf, normalized)
         if extra is None or extra > MAX_PDF_BLOCK_ROW_INTERLEAVED_CHARACTERS:
-            unordered_pdf_rows.append(row)
-    if unordered_pdf_rows:
+            unordered_pdf_row_indexes.append(index)
+    if unordered_pdf_row_indexes:
         raise GateError(
-            "PDF does not preserve canonical lead-to-text row order: "
-            f"{unordered_pdf_rows[:2]}"
+            "PDF does not preserve canonical lead-to-text row order "
+            f"(count={len(unordered_pdf_row_indexes)}, "
+            f"indexes={unordered_pdf_row_indexes[:10]})"
         )
     validate_pdf_metadata_and_caption_binding(pdf_text, content)
     validate_pdf_sbom_row_binding(pdf_text, content["sbom"])
@@ -5310,9 +5845,19 @@ def validate_report_visible_content(
 def validate_report_text_contract(docx_text: str, pdf_text: str) -> None:
     for label, text in (("DOCX", docx_text), ("PDF", pdf_text)):
         compact = normalize_visible_text(text)
-        placeholders = sorted(set(PLACEHOLDER_RE.findall(text)))
-        if placeholders:
-            raise GateError(f"{label} contains unresolved gates: {placeholders}")
+        placeholder_count = _unresolved_gate_count(text)
+        if placeholder_count:
+            raise GateError(
+                f"{label} contains unresolved gates (count={placeholder_count})"
+            )
+        evidence_id_count = REPORT_CONTENT_CONTRACT.count_reader_facing_evidence_ids(
+            text
+        )
+        if evidence_id_count:
+            raise GateError(
+                f"{label} contains reader-facing audit evidence IDs "
+                f"(count={evidence_id_count})"
+            )
         if "결과보고서 작성 안내" in text:
             raise GateError(f"{label} still contains the organizer writing-guide page")
         if "AI 모델 활용 및 라이선스 기술 명세서" in text:
@@ -5321,8 +5866,7 @@ def validate_report_text_contract(docx_text: str, pdf_text: str) -> None:
             raise GateError(f"{label} is missing mandatory Attachment 1 SBOM")
         if (
             normalize_visible_text("개발 보조 AI") not in compact
-            or normalize_visible_text("제품에는 AI 모델") not in compact
-            or normalize_visible_text("외부 AI API 호출이 없다") not in compact
+            or normalize_visible_text(NO_RUNTIME_AI_DISCLOSURE) not in compact
         ):
             raise GateError(f"{label} is missing the development-AI/no-runtime-AI disclosure")
 
@@ -5389,6 +5933,23 @@ def report_page_contract(
     }
 
 
+def validate_report_release_identity(docx_text: str, manifest: dict[str, Any]) -> None:
+    """Bind reader-visible release identity to the strict package manifest."""
+    normalized_docx = normalize_visible_text(docx_text)
+    version = manifest["project"]["tag"][1:]
+    coordinate = (
+        f"io.github.{manifest['github_owner'].casefold()}.routecontract:"
+        f"routecontract-shardingsphere-5.5:{version}"
+    )
+    required = {
+        "final Maven install coordinate": coordinate,
+        "final commit SHA": manifest["project"]["commit"],
+    }
+    for label, value in required.items():
+        if normalize_visible_text(value) not in normalized_docx:
+            raise GateError(f"{label} is missing from canonical DOCX")
+
+
 def validate_report(
     docx_path: Path,
     pdf_path: Path,
@@ -5404,6 +5965,7 @@ def validate_report(
             "reviewed stable form and protocol exist"
         )
     validate_submission_identity_matches_content(content, manifest)
+    validate_video_external_evidence_branch_matches_content(content, manifest)
     docx_hash = sha256(docx_path)
     pdf_hash = sha256(pdf_path)
     if docx_hash != manifest["report"]["docx_sha256"]:
@@ -5433,21 +5995,19 @@ def validate_report(
         raise GateError("report repository URL and package manifest do not match")
     if metadata["video_url"] != manifest["video"]["youtube_url"]:
         raise GateError("report YouTube URL and package manifest do not match")
-    for url in (
+    for index, url in enumerate((
         manifest["project"]["repository_url"],
         manifest["project"]["ci_run_url"],
         manifest["project"]["release_url"],
         manifest["video"]["youtube_url"],
-    ):
+    )):
         normalized = normalize_visible_text(url)
         if normalized not in normalized_docx:
-            raise GateError(f"public evidence URL is missing from canonical DOCX: {url}")
-    expected_group = f"io.github.{manifest['github_owner'].casefold()}.routecontract"
-    normalized_group = normalize_visible_text(expected_group)
-    if normalized_group not in normalized_docx:
-        raise GateError(
-            f"final Maven install coordinate group is missing from canonical DOCX: {expected_group}"
-        )
+            raise GateError(
+                "public evidence URL is missing from canonical DOCX "
+                f"(index={index})"
+            )
+    validate_report_release_identity(docx_text, manifest)
 
     page_metadata = report_page_contract(pages, page_sizes, content["sbom"])
     return {
@@ -5549,6 +6109,7 @@ def main() -> None:
         current_utc=validation_utc,
     )
     validate_submission_identity_matches_content(content, manifest)
+    validate_video_external_evidence_branch_matches_content(content, manifest)
     for path, label in (
         (manifest_path, "package manifest"),
         (content_path, "report content"),
@@ -5594,6 +6155,7 @@ def main() -> None:
         current_utc=validation_utc,
     )
     validate_submission_identity_matches_content(content, manifest)
+    validate_video_external_evidence_branch_matches_content(content, manifest)
     official_filenames = manifest["official_submission_filenames"]
 
     builder = repository_root / "submission" / "tools" / "build_official_report.py"
@@ -5649,9 +6211,12 @@ def main() -> None:
         }
         upload_zip = staging / official_filenames["zip"]
         build_upload_zip(upload_dir, upload_zip, expected_names)
+        video_metadata["sha256"] = revalidate_local_video_hash_before_metadata(
+            video_file, video_metadata["sha256"]
+        )
 
         package_metadata = {
-            "schema_version": 1,
+            "schema_version": PACKAGE_METADATA_SCHEMA_VERSION,
             "validated_at_utc": validation_utc.isoformat(),
             "official_notice_url": NOTICE_URL,
             "official_deadline": SUBMISSION_DEADLINE.isoformat(),
@@ -5661,10 +6226,7 @@ def main() -> None:
             "source_video_sbom_are_not_separate_uploads": True,
             "project": manifest["project"],
             "report": report_metadata,
-            "video": {
-                **video_metadata,
-                "youtube_url": manifest["video"]["youtube_url"],
-            },
+            "video": package_video_metadata(video_metadata, manifest),
             "release_evidence": evidence_metadata,
             "public_evidence": public_metadata,
             "duplicate_benefit_confirmation": manifest[

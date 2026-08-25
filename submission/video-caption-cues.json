@@ -1,0 +1,231 @@
+{
+  "schema_version": 1,
+  "timebase": "milliseconds",
+  "cues": [
+    {
+      "branch": "common",
+      "start_ms": 500,
+      "end_ms": 5200,
+      "lines": [
+        "ShardingSphere-JDBC 실행 시도를",
+        "승인본과 비교합니다"
+      ]
+    },
+    {
+      "branch": "common",
+      "start_ms": 5700,
+      "end_ms": 11500,
+      "lines": [
+        "실제 MySQL 검증을 실행 중입니다",
+        "결과가 나오면 기록 차이를 확인합니다"
+      ]
+    },
+    {
+      "branch": "common",
+      "start_ms": 12500,
+      "end_ms": 19000,
+      "lines": [
+        "방금 실행한 실제 MySQL 결과입니다",
+        "명령과 종료 상태를 함께 봅니다"
+      ]
+    },
+    {
+      "branch": "common",
+      "start_ms": 19500,
+      "end_ms": 27000,
+      "lines": [
+        "승인된 기록은 실행 한 번입니다",
+        "변경된 기록은 두 번입니다"
+      ]
+    },
+    {
+      "branch": "common",
+      "start_ms": 27500,
+      "end_ms": 35000,
+      "lines": [
+        "기능 결과는 그대로 한 행입니다",
+        "달라진 것은 내부 실행 모습입니다"
+      ]
+    },
+    {
+      "branch": "common",
+      "start_ms": 35500,
+      "end_ms": 44500,
+      "lines": [
+        "정한 한도를 넘자 두 위반을 냈습니다",
+        "자동 승인하지 않고 검토를 요구합니다"
+      ]
+    },
+    {
+      "branch": "common",
+      "start_ms": 46500,
+      "end_ms": 52500,
+      "lines": [
+        "승인본 차이를 실패로 바꾸는",
+        "CI용 검사를 지금 실행합니다"
+      ]
+    },
+    {
+      "branch": "common",
+      "start_ms": 54000,
+      "end_ms": 59500,
+      "lines": [
+        "실제 exit 1로 빌드가 멈췄습니다",
+        "차이는 사람이 승인해야 합니다"
+      ]
+    },
+    {
+      "branch": "common",
+      "start_ms": 60500,
+      "end_ms": 67000,
+      "lines": [
+        "공개 배포 파일과 검사값을 확인합니다",
+        "빈 저장소에 직접 설치합니다"
+      ]
+    },
+    {
+      "branch": "common",
+      "start_ms": 67500,
+      "end_ms": 74500,
+      "lines": [
+        "설치한 파일로 실제 MySQL을 실행합니다",
+        "통과한 공개 기록을 직접 봅니다"
+      ]
+    },
+    {
+      "branch": "common",
+      "start_ms": 75000,
+      "end_ms": 81500,
+      "lines": [
+        "기존 기능 테스트를 그대로 감쌉니다",
+        "새 기록은 승인본과 비교됩니다"
+      ]
+    },
+    {
+      "branch": "common",
+      "start_ms": 82500,
+      "end_ms": 88500,
+      "lines": [
+        "실행 횟수가 같아도 구조가 달라질까요?",
+        "실제 MySQL로 다시 확인합니다"
+      ]
+    },
+    {
+      "branch": "common",
+      "start_ms": 89000,
+      "end_ms": 95000,
+      "lines": [
+        "입력값은 저장하지 않습니다",
+        "매개변수 수는 한 개에서 두 개입니다"
+      ]
+    },
+    {
+      "branch": "common",
+      "start_ms": 95500,
+      "end_ms": 99500,
+      "lines": [
+        "횟수가 같아도 자동 승인하지 않습니다",
+        "SQL 뜻은 판단하지 않습니다"
+      ]
+    },
+    {
+      "branch": "common",
+      "start_ms": 100500,
+      "end_ms": 107000,
+      "lines": [
+        "실제 MySQL 여덟 사례를 스무 번씩",
+        "각 사례에서 같은 기록이 나왔습니다"
+      ]
+    },
+    {
+      "branch": "common",
+      "start_ms": 107500,
+      "end_ms": 114500,
+      "lines": [
+        "동시에 실행한 20쌍은 섞이지 않았습니다",
+        "실제 호출의 겹침은 측정하지 않았습니다"
+      ]
+    },
+    {
+      "branch": "common",
+      "start_ms": 115500,
+      "end_ms": 121500,
+      "lines": [
+        "기록을 한 작업별로 묶고",
+        "사람이 승인한 기준과 비교합니다"
+      ]
+    },
+    {
+      "branch": "common",
+      "start_ms": 122000,
+      "end_ms": 126500,
+      "lines": [
+        "의도치 않은 차이는 CI 실패",
+        "승인 기준은 자동으로 바뀌지 않습니다"
+      ]
+    },
+    {
+      "branch": "common",
+      "start_ms": 127500,
+      "end_ms": 135000,
+      "lines": [
+        "제출 코드와 안정판이 같은 코드인지",
+        "공개 이력에서 직접 확인합니다"
+      ]
+    },
+    {
+      "branch": "common",
+      "start_ms": 135500,
+      "end_ms": 144500,
+      "lines": [
+        "코드 변경 검사와 main 검사 결과를",
+        "실제 공개 화면에서 확인합니다"
+      ]
+    },
+    {
+      "branch": "zero",
+      "start_ms": 145500,
+      "end_ms": 153500,
+      "lines": [
+        "독립 검증은 공개 양식으로 모집했습니다",
+        "안정판 외부 검증은 확보하지 못했습니다"
+      ]
+    },
+    {
+      "branch": "rc_only",
+      "start_ms": 145500,
+      "end_ms": 153500,
+      "lines": [
+        "정해진 양식의 RC 결과 접수는 1건",
+        "자기 확인 진술이며 안정판 검증은 아닙니다"
+      ]
+    },
+    {
+      "branch": "common",
+      "start_ms": 154500,
+      "end_ms": 161000,
+      "lines": [
+        "검증 범위는 5.5.3 동기 실행",
+        "성능·거래 완료를 판단하지 않습니다"
+      ]
+    },
+    {
+      "branch": "common",
+      "start_ms": 161500,
+      "end_ms": 168000,
+      "lines": [
+        "기능 결과가 같아도 hook 보고 실행 시도는",
+        "한 번에서 두 번으로 달라질 수 있습니다"
+      ]
+    },
+    {
+      "branch": "common",
+      "start_ms": 168500,
+      "end_ms": 172500,
+      "lines": [
+        "CI에 연결하면 승인되지 않은 차이를",
+        "assertion 실패로 돌립니다"
+      ]
+    }
+  ]
+}

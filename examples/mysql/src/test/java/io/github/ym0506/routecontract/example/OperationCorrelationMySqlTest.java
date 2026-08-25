@@ -190,6 +190,14 @@ class OperationCorrelationMySqlTest {
     @Test
     @Order(3)
     void concurrentSingleAndFanOutOperationsRemainIsolatedAcrossTwentyPairs() throws Exception {
+        RouteSnapshot singleReference = RouteContract.capture(
+                "single-reference", () -> assertEquals(1, executeEqual(3L)));
+        RouteSnapshot fanOutReference = RouteContract.capture(
+                "fanout-reference", () -> assertEquals(1, executeFanOut(2L)));
+        String singleSignature = canonicalSignature(singleReference);
+        String fanOutSignature = canonicalSignature(fanOutReference);
+        assertFalse(singleSignature.equals(fanOutSignature));
+
         ExecutorService callers = Executors.newFixedThreadPool(2);
         try {
             for (int iteration = 0; iteration < 20; iteration++) {
@@ -203,6 +211,8 @@ class OperationCorrelationMySqlTest {
                 assertSnapshot(fanOutSnapshot, 2, Set.of("ds_0", "ds_1"));
                 assertEquals(0, singleSnapshot.workerThreadFlagCount());
                 assertEquals(1, fanOutSnapshot.workerThreadFlagCount());
+                assertEquals(singleSignature, canonicalSignature(singleSnapshot));
+                assertEquals(fanOutSignature, canonicalSignature(fanOutSnapshot));
             }
         } finally {
             callers.shutdownNow();
@@ -287,7 +297,7 @@ class OperationCorrelationMySqlTest {
                         committedExampleDirectory.resolve("find-paid-orders-by-user.expected-diff.txt"),
                         StandardCharsets.UTF_8),
                 actualDiff,
-                "the checked-in semantic diff must match the verifier output exactly");
+                "the checked-in structural manifest/attempt diff must match the verifier output exactly");
 
         AssertionError manifestViolation = org.junit.jupiter.api.Assertions.assertThrows(
                 AssertionError.class,
