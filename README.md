@@ -28,6 +28,11 @@ container image를 내려받기 위한 네트워크가 필요할 수 있습니�
 `[ROUTECONTRACT QUICKSTART VERIFIED]`, `realMysqlDemoExit 0`,
 `intentionalCiGateExit 1`, `quickstartExit 0`이 출력되면 예상한 전체 흐름이 통과한 것입니다.
 
+처음 실행했거나 현재 환경에는 맞지 않는다고 판단했다면
+[stable v0.1.0 feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)에
+성공·막힌 지점·지원 범위 밖·필요 없음 중 어느 결과든 짧게 남길 수 있습니다. 공개 Issue에는
+원문 SQL, bind 값, JDBC URL, 실제 topology, full log 같은 민감 정보를 넣지 마세요.
+
 <details>
 <summary>정확한 종료 코드와 출력 경계</summary>
 
@@ -379,7 +384,16 @@ Javadoc classifier에는 OpenJDK standard-doclet 정적 자산과 `legal/` 고�
 
 ## 기여와 확장
 
-버그나 기능 제안은 정확한 ShardingSphere version, 사용자에게 보이는 회귀 또는 누락된 capability, 최소화한 synthetic fixture를 [Issue form](https://github.com/ym0506/routecontract/issues/new/choose)에 기록합니다. 구현 변경은 failing test, 실제 MySQL 검증, 명시적인 지원 한계를 함께 제시해야 합니다.
+`v0.1.0`의 문서·Quick Start·Release 설치·실제 적용 가능성을 처음 검토했다면
+[짧은 stable feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)에
+성공, blocker, 지원 범위 밖 또는 필요 없음 중 어느 결과든 남길 수 있습니다. 이 기록은
+self-reported usability/fit feedback이며 그 자체로 production 사용, adoption, security,
+performance 또는 endorsement를 증명하지 않습니다.
+
+버그나 기능 제안은 정확한 ShardingSphere version, 사용자에게 보이는 회귀 또는 누락된
+capability, 최소화한 synthetic fixture를
+[Issue form](https://github.com/ym0506/routecontract/issues/new/choose)에 기록합니다. 구현 변경은
+failing test, 실제 MySQL 검증, 명시적인 지원 한계를 함께 제시해야 합니다.
 
 새 adapter나 reporter는 공개 수요, version-specific fixture, real-MySQL CI를 갖춘 뒤 검토합니다. 현재 v0.1 범위는 정확히 5.5.3으로 유지합니다. 전체 절차는 [기여 가이드](CONTRIBUTING.md)에 있습니다.
 

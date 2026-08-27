@@ -30,6 +30,11 @@ the CI gate and checks the expected `RCM201`/`RCM202` rejection. A final
 `intentionalCiGateExit 1`, and `quickstartExit 0` means the whole flow behaved
 as expected.
 
+After a first run—or after deciding that the current scope is not a fit—use the
+[stable v0.1.0 feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)
+to share a success, blocker, unsupported setup, or not-a-fit result. Do not put raw SQL, bind values,
+JDBC URLs, real topology, full logs, or other sensitive information in the public Issue.
+
 <details>
 <summary>Exact exit-code and output boundary</summary>
 
@@ -386,7 +391,17 @@ Snapshots and manifests do not store raw SQL, parameter values, connection prope
 
 ## Contributing and extension gates
 
-Report a bug or feature proposal through the [Issue forms](https://github.com/ym0506/routecontract/issues/new/choose) with the exact ShardingSphere version, a user-visible regression or missing capability, and a minimized synthetic fixture. An implementation change should include a failing test, real-MySQL verification, and an explicit support boundary.
+If you are reviewing the `v0.1.0` documentation, Quick Start, Release installation, or fit for the
+first time, use the [short stable feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)
+for a successful, blocked, unsupported, or not-a-fit outcome. This record is self-reported usability
+and fit feedback; it does not by itself establish production use, adoption, security, performance,
+or endorsement.
+
+Report a bug or feature proposal through the
+[Issue forms](https://github.com/ym0506/routecontract/issues/new/choose) with the exact
+ShardingSphere version, a user-visible regression or missing capability, and a minimized synthetic
+fixture. An implementation change should include a failing test, real-MySQL verification, and an
+explicit support boundary.
 
 A new adapter or reporter is considered only after public demand, a version-specific fixture, and real-MySQL CI exist. The current v0.1 boundary remains exactly 5.5.3. See the [contribution guide](CONTRIBUTING.md) for the full workflow.
 

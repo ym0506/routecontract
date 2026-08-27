@@ -42,9 +42,15 @@ substitute.
 
 ## Release feedback
 
-For a current or stable release, use the Route regression, Product bug, or Feature proposal Issue
-Form and include the exact version, environment, minimized reproduction, and documented claim
-boundary. First failures and later assistance must remain visible.
+For an ordinary first review or run of stable `v0.1.0`, use the
+[Stable v0.1.0 feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml).
+Successful, blocked, unsupported, and not-a-fit outcomes are equally useful. This short form records
+self-reported usability and fit feedback; it does not by itself prove an independent run, production
+use, adoption, security, performance, or endorsement.
+
+For a reproducible regression, product bug, or feature proposal, use the corresponding Issue Form
+and include the exact version, environment, minimized reproduction, and documented claim boundary.
+First failures and later assistance must remain visible.
 
 The [independent installation study](docs/independent-install-study.md) and its RC1/RC2 forms are
 retained as version-bound evidence contracts. Use a dedicated RC form only while that candidate's
