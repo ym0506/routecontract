@@ -17,6 +17,7 @@ body:
     attributes:
       label: What did you try?
       options:
+        - Not selected yet — choose the closest path
         - Read the README or scope only
         - Ran the exact v0.1.0 Quick Start
         - Checked or installed the stable Release assets
@@ -30,6 +31,7 @@ body:
     attributes:
       label: Outcome
       options:
+        - Not selected yet — choose the closest outcome
         - Worked as documented
         - Documentation review only
         - Product or documentation blocker
