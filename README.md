@@ -20,6 +20,8 @@ Wrapper입니다. 최초 실행은 Gradle·Maven Central 의존성과 로컬에 
 container image를 내려받기 위한 네트워크가 필요할 수 있습니다.
 
 ```bash
+git clone --depth 1 --branch v0.1.0 https://github.com/ym0506/routecontract.git routecontract-v0.1.0
+cd routecontract-v0.1.0
 ./scripts/quickstart-demo.sh
 ```
 

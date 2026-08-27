@@ -20,6 +20,8 @@ Wrapper. The first run may need network access to download Gradle, Maven Central
 the digest-pinned MySQL container image when it is not already available locally.
 
 ```bash
+git clone --depth 1 --branch v0.1.0 https://github.com/ym0506/routecontract.git routecontract-v0.1.0
+cd routecontract-v0.1.0
 ./scripts/quickstart-demo.sh
 ```
 
