@@ -1383,6 +1383,16 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
                 section.index("(docs/first-integration.md)"),
                 section.index("issues/new?template=stable-feedback.yml"),
             )
+            for anchor in (
+                "#2-install-the-exact-v010-release-assets",
+                "#gradle-groovy-dsl-opt-in-lane",
+                "#maven-3914-opt-in-profile-lane",
+                "#3-add-one-representative-operation",
+                "#4-review-and-approve-the-first-baseline",
+                "#5-run-the-candidate-check-in-ci",
+            ):
+                self.assertIn(anchor, section)
+            self.assertIn("examples/maven-pilot/README.md", section)
 
     def test_first_integration_uses_candidate_then_human_approval(self) -> None:
         guide = (REPOSITORY_ROOT / "docs" / "first-integration.md").read_text(
@@ -1401,18 +1411,101 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             'providers.gradleProperty("routecontractRepository")',
             'providers.environmentVariable("ROUTECONTRACT_REPOSITORY")',
             'sourceSets.create("routeContractPilot")',
+            'tasks.register("routeContractPilotGraph")',
+            'tasks.register("routeContractPilotPrepare")',
             'tasks.register("routeContractPilot", Test)',
             "src/routeContractPilot/java",
             "src/routeContractPilot/resources",
             'systemProperty "routecontract.projectDir", projectDir.absolutePath',
+            'systemProperty "routecontract.candidateRoot", "build/routecontract"',
+            'systemProperty "routecontract.artifactJarName", "routecontract-shardingsphere-5.5-0.1.0.jar"',
+            'systemProperty "routecontract.artifactJarPath", artifactPath.toRealPath().toString()',
+            ".resolvedConfiguration.resolvedArtifacts.toList()",
+            "def routeContractCoordinates = artifacts.findAll",
+            'artifact.moduleVersion.id.group == "io.github.ym0506.routecontract"',
+            "routeContractCoordinates.size() != 1 || routeContractCoordinates.any",
+            "RouteContract runtime coordinate must resolve to exactly one",
+            "def artifactPath = verifyRouteContractPilotGraph()",
+            'expectedRouteContractJarSha256 =',
+            'java.security.MessageDigest.getInstance("SHA-256")',
+            "RouteContract runtime JAR SHA-256 mismatch",
+            'artifact.moduleVersion.id.group == "org.apache.shardingsphere"',
+            'artifact.moduleVersion.id.version != "5.5.3"',
+            'artifact.name == "shardingsphere-jdbc"',
+            "def shardingSphereJdbcCoordinates = artifacts.findAll",
+            "shardingSphereJdbcCoordinates.size() != 1 ||",
+            "ShardingSphere-JDBC runtime coordinate must resolve to exactly one",
+            '["org.apache.calcite", "calcite-core", "1.42.0"]',
+            '["org.apache.calcite", "calcite-linq4j", "1.42.0"]',
+            '["net.minidev", "json-smart", "2.4.10"]',
+            '["net.minidev", "accessors-smart", "2.4.9"]',
+            'version { strictly("1.42.0") }',
+            'version { strictly("2.4.10") }',
+            'version { strictly("2.4.9") }',
+            'enforcedPlatform("com.fasterxml.jackson:jackson-bom:2.18.9")',
+            'artifactGroup == "com.fasterxml.jackson" ||',
+            'artifactGroup.startsWith("com.fasterxml.jackson.")',
+            'artifact.extension != "jar" || artifact.classifier != null',
+            "Required ${expected[0]}:${expected[1]} runtime artifact must be",
+            "Optional ${expected[0]}:${expected[1]} runtime artifact must be",
+            "Every resolved FasterXML Jackson artifact must be an unclassified",
+            'exclude group: "org.locationtech.jts.io", module: "jts-io-common"',
+            'exclude group: "com.google.protobuf", module: "protobuf-java"',
+            '["org.locationtech.jts.io", "jts-io-common"]',
+            '["com.google.protobuf", "protobuf-java"]',
+            "ROUTECONTRACT_GRADLE_GRAPH VERIFIED",
+            "def routeContractBuildRoot = layout.buildDirectory.get().asFile.toPath()",
+            'def expectedRouteContractBuildRoot = projectDir.toPath().resolve("build")',
+            "This verified pilot lane requires the owning module's default build directory",
+            "Pilot evidence path must stay below the build directory",
+            "ancestor.startsWith(routeContractBuildRoot)",
+            "Refusing to traverse a non-directory or symlink",
+            'java.nio.file.Files.deleteIfExists(path)',
+            "Refusing to replace a non-regular pilot evidence path",
+            "dependsOn(routeContractPilotPrepare)",
             "routecontract-0.1.0-source.zip",
             "/scripts/install-release-assets.py",
             "RepositoriesMode.FAIL_ON_PROJECT_REPOS",
             "normal build and IDE sync must still succeed",
-            "uses Maven, or needs Kotlin DSL",
+            "needs Kotlin DSL",
             "never disable them",
             "dependency-report task can still exit `0` while printing",
             "do not treat `BUILD SUCCESSFUL`\nalone as a usable graph",
+            "### Maven 3.9.14 opt-in profile lane",
+            "two-module Maven pilot",
+            "same-checkout fixture and its synthetic match are CI scaffolding, not human approval or\nexternal adoption",
+            "scripts/prepare_maven_v0_1_0_checksums.py",
+            "https://raw.githubusercontent.com/ym0506/routecontract/main/scripts/prepare_maven_v0_1_0_checksums.py",
+            "moving transport URL is never trusted without the fixed helper digest",
+            "exact\ntwelve-file coordinate inventory",
+            "private, single-writer directory",
+            "<profile>",
+            "<name>routecontractPilot</name>",
+            "<id>routecontract-verified-file-repository</id>",
+            "<checksumPolicy>fail</checksumPolicy>",
+            "<scope>test</scope>",
+            "<source>src/routeContractPilot/java</source>",
+            "<routecontract.candidateRoot>target/routecontract</routecontract.candidateRoot>",
+            "<routecontract.artifactJarName>routecontract-shardingsphere-5.5-0.1.0.jar</routecontract.artifactJarName>",
+            "<routecontract.artifactJarPath>${routecontract.artifactJarPath}</routecontract.artifactJarPath>",
+            "-Daether.checksums.algorithms.routecontract-verified-file-repository=SHA-256",
+            "Maven has no Gradle `exclusiveContent` equivalent",
+            "Passing `-Dtest`\ntogether with `-am`",
+            'consumer_cache="/absolute/path/to/new-routecontract-maven-consumer-cache"',
+            "-Dtest=com.example.orders.OrderQueryIntegrationTest#keepsTheApprovedExecutionStructure",
+            "approved_identity()",
+            'approved_before="$(approved_identity "${approved_path}")"',
+            'test "$(approved_identity "${approved_path}")" = "${approved_before}"',
+            'test ! -e "${approved_path}"',
+            'test ! -L "${approved_path}"',
+            "Failsafe, a different test\nrunner, Surefire `additionalClasspath*` injection, or a custom runtime classloader remains a fit",
+            "Apache Maven 3.9.14 (996c630dbc656c76214ce58821dcc58be960875b)",
+            'test ! -e "${routecontract_cache_root}"',
+            'test ! -L "${routecontract_cache_root}"',
+            'expected_jar_sha256="d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc"',
+            'expected_pom_sha256="05570bfa238ef77db255a46efdd5bbb25e994ae0137db86491a46a25e28deac9"',
+            '"routecontract-shardingsphere-5.5-0.1.0.pom>${repository_id}="',
+            '"routecontract-shardingsphere-5.5-0.1.0.jar>${repository_id}="',
             "expected_index_sha256=\"820ed33e",
             "expected_installer_sha256=\"d21a7c71",
             "2026-12-06",
@@ -1428,13 +1521,28 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             ".hasAtMostDistinctObservedDataSourceNames(reviewedMaxDataSources)",
             "if (Files.notExists(approvedPath))",
             "new ManifestVerifier().verify(store.read(approvedPath), candidate)",
+            "type.getProtectionDomain().getCodeSource()",
+            "RouteContract must be loaded from the exact cached Release JAR",
+            "the SPI provider class must be loaded from the exact cached Release JAR",
+            "matchingServiceDescriptorJars()",
+            "JarURLConnection jarConnection = (JarURLConnection) connection;",
+            "Path.of(jarConnection.getJarFileURL().toURI()).toRealPath()",
+            "Stale candidate exists before capture",
             "RouteContract provides no approval API",
             "Record that the baseline was human-reviewed",
             "every fresh CI job must repeat the exact Release download",
             'printf \'ROUTECONTRACT_REPOSITORY=%s\\n\'',
             "candidate file is an undeclared test side effect",
-            "Do not accept an arbitrary\nnonzero build result",
+            "Do not accept an arbitrary nonzero build result",
+            'test "${first_run_status}" -ne 0',
+            'test -s "${candidate_path}"',
+            'root.attrib.get("tests") == "1"',
+            'root.attrib.get("skipped") == "0"',
             "never update the approved file\nautomatically in CI",
+            'current = {"roots": [], "coordinates": [], "root_seen": False}',
+            'raise SystemExit("dependency coordinate appeared before the project root")',
+            "def is_fasterxml_jackson(group):",
+            'group == "com.fasterxml.jackson" or group.startswith("com.fasterxml.jackson.")',
         ):
             self.assertIn(required, guide)
         self.assertEqual(
@@ -1474,10 +1582,407 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
         self.assertNotIn("run: ./gradlew test", guide)
         self.assertNotIn("store.read(approvedPath).policy()", guide)
         self.assertNotIn('url = uri("/absolute/path/to/routecontract-maven")', guide)
-        self.assertNotIn("<profile>", guide)
-        self.assertNotIn("./mvnw", guide)
+        self.assertEqual(1, guide.count("<profile>"))
+        self.assertGreaterEqual(guide.count("mvn -B -ntp"), 3)
+        self.assertLess(
+            guide.index("scripts/prepare_maven_v0_1_0_checksums.py"),
+            guide.index("<profile>"),
+        )
+        graph_goal = guide.index(
+            "  org.apache.maven.plugins:maven-dependency-plugin:3.11.0:tree"
+        )
+        graph_selector = guide.rindex(
+            "-Dtest=com.example.orders.OrderQueryIntegrationTest", 0, graph_goal
+        )
+        graph_log_redirect = guide.index('>"${graph_log}" 2>&1', graph_goal)
+        graph_parser = guide.index(
+            "pattern = re.compile(",
+            graph_log_redirect,
+        )
+        cached_pom = guide.index('test -f "${cached_pom}"', graph_parser)
+        candidate_selector = guide.index(
+            "-Dtest=com.example.orders.OrderQueryIntegrationTest", cached_pom
+        )
+        self.assertLess(graph_selector, graph_goal)
+        self.assertLess(graph_goal, graph_log_redirect)
+        self.assertLess(graph_log_redirect, graph_parser)
+        self.assertLess(graph_parser, cached_pom)
+        self.assertLess(cached_pom, candidate_selector)
+        for graph_guard in (
+            "Could not validate integrity|Checksum validation failed|no checksums available",
+            'versions != {"5.5.3"}',
+            'section_pattern = re.compile(',
+            'root_pattern = re.compile(',
+            '"depth": depth',
+            '"prefix": prefix',
+            "expected exactly one dependency-tree plugin section and one project root",
+            'coordinate["type"] != "jar"',
+            'coordinate["classifier"] is not None',
+            'coordinate["scope"] not in allowed_scopes',
+            'expected_depth is not None and coordinate["depth"] != expected_depth',
+            'allowed_scopes={"test"}',
+            'allowed_scopes={"compile", "runtime", "test"}',
+            '"routecontract-shardingsphere-5.5"',
+            '("org.apache.shardingsphere", "shardingsphere-jdbc", "5.5.3")',
+            "expected exactly one {relationship}unclassified JAR",
+            '("org.apache.calcite", "calcite-core", "1.42.0")',
+            '("org.apache.calcite", "calcite-linq4j", "1.42.0")',
+            '("net.minidev", "json-smart", "2.4.10")',
+            '("net.minidev", "accessors-smart", "2.4.9")',
+            "required=False",
+            'jackson_versions != {"2.18.9"}',
+            "FasterXML Jackson dependencies must be unclassified JARs in an allowed scope",
+            '("org.locationtech.jts.io", "jts-io-common")',
+            '("com.google.protobuf", "protobuf-java")',
+            'if (coordinate["group"], coordinate["artifact"]) in forbidden',
+        ):
+            self.assertIn(graph_guard, guide[graph_goal:cached_pom])
+        self.assertEqual(
+            3,
+            guide.count('"-Droutecontract.artifactJarPath=${cached_jar}"'),
+        )
+        self.assertNotIn("-DskipTests dependency:tree", guide)
+        self.assertGreaterEqual(guide.count("-DskipTests=false"), 3)
+        self.assertGreaterEqual(guide.count("-Dmaven.test.skip=false"), 3)
+        self.assertEqual(4, guide.count("-Dmaven.test.failure.ignore=false"))
+        self.assertIn('root.attrib.get("failures") == "0"', guide)
+        self.assertIn('root.attrib.get("errors") == "0"', guide)
+        self.assertIn('test "${first_run_status}" -eq 1', guide)
+        self.assertIn('root.attrib.get("tests") == "1"', guide)
+        self.assertIn('root.attrib.get("failures") == "1"', guide)
+        self.assertIn('root.attrib.get("failures") == "0"', guide)
 
-        ci_block = re.search(r"```yaml\n(.*?)```", guide, flags=re.DOTALL).group(1)
+    def test_maven_profile_is_complete_and_pilot_scoped(self) -> None:
+        guide = (REPOSITORY_ROOT / "docs" / "first-integration.md").read_text(
+            encoding="utf-8"
+        )
+        profile_match = re.search(
+            r"```xml\n(<profile>.*?</profile>)\n```",
+            guide,
+            flags=re.DOTALL,
+        )
+        self.assertIsNotNone(profile_match)
+        profile = ET.fromstring(profile_match.group(1))
+
+        expected_managed = {
+            ("com.fasterxml.jackson", "jackson-bom"): (
+                "2.18.9",
+                "pom",
+                "import",
+            ),
+            ("org.apache.calcite", "calcite-core"): ("1.42.0", None, None),
+            ("org.apache.calcite", "calcite-linq4j"): ("1.42.0", None, None),
+            ("net.minidev", "json-smart"): ("2.4.10", None, None),
+            ("net.minidev", "accessors-smart"): ("2.4.9", None, None),
+        }
+        expected_dependencies = {
+            (
+                "io.github.ym0506.routecontract",
+                "routecontract-shardingsphere-5.5",
+            ): ("0.1.0", "test"),
+            ("org.apache.shardingsphere", "shardingsphere-jdbc"): (
+                "5.5.3",
+                "compile",
+            ),
+            ("org.apache.calcite", "calcite-core"): ("1.42.0", "compile"),
+        }
+        expected_exclusions = {
+            ("org.apache.shardingsphere", "shardingsphere-jdbc"): {
+                ("org.locationtech.jts.io", "jts-io-common"),
+                ("com.google.protobuf", "protobuf-java"),
+            },
+            ("org.apache.calcite", "calcite-core"): {
+                ("org.locationtech.jts.io", "jts-io-common"),
+                ("com.google.protobuf", "protobuf-java"),
+            },
+        }
+
+        def assert_complete(candidate: ET.Element) -> None:
+            self.assertEqual(
+                "routecontractPilot",
+                candidate.findtext("activation/property/name"),
+            )
+            self.assertEqual("true", candidate.findtext("activation/property/value"))
+            managed = {
+                (dependency.findtext("groupId"), dependency.findtext("artifactId")):
+                    dependency
+                for dependency in candidate.findall(
+                    "dependencyManagement/dependencies/dependency"
+                )
+            }
+            self.assertEqual(set(expected_managed), set(managed))
+            for coordinate, (version, dependency_type, scope) in expected_managed.items():
+                dependency = managed[coordinate]
+                self.assertEqual(version, dependency.findtext("version"))
+                self.assertEqual(dependency_type, dependency.findtext("type"))
+                self.assertEqual(scope, dependency.findtext("scope"))
+
+            dependencies = {
+                (dependency.findtext("groupId"), dependency.findtext("artifactId")):
+                    dependency
+                for dependency in candidate.findall("dependencies/dependency")
+            }
+            self.assertEqual(set(expected_dependencies), set(dependencies))
+            for coordinate, (version, scope) in expected_dependencies.items():
+                dependency = dependencies[coordinate]
+                self.assertEqual(version, dependency.findtext("version"))
+                self.assertEqual(scope, dependency.findtext("scope"))
+                self.assertIsNone(dependency.find("type"))
+                self.assertIsNone(dependency.find("classifier"))
+                exclusions = {
+                    (exclusion.findtext("groupId"), exclusion.findtext("artifactId"))
+                    for exclusion in dependency.findall("exclusions/exclusion")
+                }
+                self.assertEqual(expected_exclusions.get(coordinate, set()), exclusions)
+
+        assert_complete(profile)
+        self.assertNotIn("minimum profile boundary", guide)
+        normalized_guide = " ".join(guide.split())
+        self.assertIn(
+            "leave that base declaration unchanged",
+            normalized_guide,
+        )
+        self.assertIn(
+            "Do not edit the base dependency merely to make the pilot pass",
+            normalized_guide,
+        )
+
+        incomplete = deepcopy(profile)
+        dependency_management = incomplete.find("dependencyManagement")
+        self.assertIsNotNone(dependency_management)
+        incomplete.remove(dependency_management)
+        with self.assertRaises(AssertionError):
+            assert_complete(incomplete)
+
+        for coordinate in expected_managed:
+            incomplete = deepcopy(profile)
+            dependencies = incomplete.find("dependencyManagement/dependencies")
+            self.assertIsNotNone(dependencies)
+            dependency = next(
+                item
+                for item in dependencies.findall("dependency")
+                if (item.findtext("groupId"), item.findtext("artifactId")) == coordinate
+            )
+            dependencies.remove(dependency)
+            with self.subTest(missing_managed_dependency=coordinate), self.assertRaises(
+                AssertionError
+            ):
+                assert_complete(incomplete)
+
+        for coordinate in expected_dependencies:
+            incomplete = deepcopy(profile)
+            dependencies = incomplete.find("dependencies")
+            self.assertIsNotNone(dependencies)
+            dependency = next(
+                item
+                for item in dependencies.findall("dependency")
+                if (item.findtext("groupId"), item.findtext("artifactId")) == coordinate
+            )
+            dependencies.remove(dependency)
+            with self.subTest(missing_dependency=coordinate), self.assertRaises(
+                AssertionError
+            ):
+                assert_complete(incomplete)
+
+        for coordinate, exclusions in expected_exclusions.items():
+            for excluded_coordinate in exclusions:
+                incomplete = deepcopy(profile)
+                dependency = next(
+                    item
+                    for item in incomplete.findall("dependencies/dependency")
+                    if (item.findtext("groupId"), item.findtext("artifactId"))
+                    == coordinate
+                )
+                exclusion_parent = dependency.find("exclusions")
+                self.assertIsNotNone(exclusion_parent)
+                exclusion = next(
+                    item
+                    for item in exclusion_parent.findall("exclusion")
+                    if (item.findtext("groupId"), item.findtext("artifactId"))
+                    == excluded_coordinate
+                )
+                exclusion_parent.remove(exclusion)
+                with self.subTest(
+                    dependency=coordinate,
+                    missing_exclusion=excluded_coordinate,
+                ), self.assertRaises(AssertionError):
+                    assert_complete(incomplete)
+
+    def test_maven_graph_parser_preserves_dependency_structure_and_exact_artifact_ids(
+        self,
+    ) -> None:
+        guide = (REPOSITORY_ROOT / "docs" / "first-integration.md").read_text(
+            encoding="utf-8"
+        )
+        marker = 'python3 -I - "${graph_log}" <<\'PY\'\n'
+        parser_start = guide.index(marker) + len(marker)
+        parser_end = guide.index("\nPY\n", parser_start)
+        parser = guide[parser_start:parser_end]
+        valid_graph = "\n".join(
+            (
+                "[INFO] --- dependency:3.11.0:tree (default-cli) @ orders ---",
+                "[INFO] com.example:orders:jar:1.0.0",
+                "[INFO] +- io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:jar:0.1.0:test",
+                "[INFO] +- org.apache.shardingsphere:shardingsphere-jdbc:jar:5.5.3:compile",
+                "[INFO] |  +- org.apache.shardingsphere:shardingsphere-infra-executor:jar:5.5.3:compile",
+                "[INFO] |  +- org.apache.calcite:calcite-core:jar:1.42.0:compile",
+                "[INFO] |  \\- org.apache.calcite:calcite-linq4j:jar:1.42.0:compile",
+                "[INFO] +- com.fasterxml.jackson.core:jackson-databind:jar:2.18.9:runtime",
+                "[INFO] \\- com.google.protobuf:protobuf-java-util:jar:4.33.5:test",
+                "",
+            )
+        )
+        valid_graph_with_minidev = valid_graph.replace(
+            "[INFO] +- com.fasterxml.jackson.core:jackson-databind",
+            "[INFO] +- net.minidev:json-smart:jar:2.4.10:runtime\n"
+            "[INFO] +- net.minidev:accessors-smart:jar:2.4.9:runtime\n"
+            "[INFO] +- com.fasterxml.jackson.core:jackson-databind",
+        )
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            temporary = Path(temporary_directory)
+            parser_path = temporary / "parse_graph.py"
+            graph_path = temporary / "graph.log"
+            parser_path.write_text(parser, encoding="utf-8")
+            graph_path.write_text(valid_graph, encoding="utf-8")
+            valid = subprocess.run(
+                [sys.executable, "-I", parser_path, graph_path],
+                capture_output=True,
+                check=False,
+                text=True,
+            )
+            self.assertEqual(0, valid.returncode, valid.stderr)
+            graph_path.write_text(valid_graph_with_minidev, encoding="utf-8")
+            valid_optional = subprocess.run(
+                [sys.executable, "-I", parser_path, graph_path],
+                capture_output=True,
+                check=False,
+                text=True,
+            )
+            self.assertEqual(0, valid_optional.returncode, valid_optional.stderr)
+
+            negative_graphs = {
+                "pom type": valid_graph_with_minidev.replace(
+                    "routecontract-shardingsphere-5.5:jar:0.1.0:test",
+                    "routecontract-shardingsphere-5.5:pom:0.1.0:test",
+                ),
+                "classifier": valid_graph_with_minidev.replace(
+                    "routecontract-shardingsphere-5.5:jar:0.1.0:test",
+                    "routecontract-shardingsphere-5.5:jar:tests:0.1.0:test",
+                ),
+                "wrong scope": valid_graph_with_minidev.replace(
+                    "routecontract-shardingsphere-5.5:jar:0.1.0:test",
+                    "routecontract-shardingsphere-5.5:jar:0.1.0:compile",
+                ),
+                "transitive depth": valid_graph_with_minidev.replace(
+                    "[INFO] +- io.github.ym0506.routecontract:",
+                    "[INFO] |  +- io.github.ym0506.routecontract:",
+                ),
+                "missing shardingsphere-jdbc": valid_graph_with_minidev.replace(
+                    "[INFO] +- org.apache.shardingsphere:shardingsphere-jdbc:jar:5.5.3:compile\n",
+                    "",
+                ),
+                "shardingsphere-jdbc wrong scope": valid_graph_with_minidev.replace(
+                    "shardingsphere-jdbc:jar:5.5.3:compile",
+                    "shardingsphere-jdbc:jar:5.5.3:provided",
+                ),
+                "shardingsphere-jdbc transitive depth": valid_graph_with_minidev.replace(
+                    "[INFO] +- org.apache.shardingsphere:shardingsphere-jdbc:",
+                    "[INFO] |  +- org.apache.shardingsphere:shardingsphere-jdbc:",
+                ),
+                "calcite classifier": valid_graph_with_minidev.replace(
+                    "calcite-core:jar:1.42.0:compile",
+                    "calcite-core:jar:tests:1.42.0:compile",
+                ),
+                "calcite wrong scope": valid_graph_with_minidev.replace(
+                    "calcite-linq4j:jar:1.42.0:compile",
+                    "calcite-linq4j:jar:1.42.0:provided",
+                ),
+                "minidev wrong version": valid_graph_with_minidev.replace(
+                    "json-smart:jar:2.4.10:runtime",
+                    "json-smart:jar:2.5.0:runtime",
+                ),
+                "minidev pom type": valid_graph_with_minidev.replace(
+                    "json-smart:jar:2.4.10:runtime",
+                    "json-smart:pom:2.4.10:runtime",
+                ),
+                "minidev classifier": valid_graph_with_minidev.replace(
+                    "json-smart:jar:2.4.10:runtime",
+                    "json-smart:jar:tests:2.4.10:runtime",
+                ),
+                "minidev wrong scope": valid_graph_with_minidev.replace(
+                    "accessors-smart:jar:2.4.9:runtime",
+                    "accessors-smart:jar:2.4.9:system",
+                ),
+                "minidev duplicate": valid_graph_with_minidev.replace(
+                    "[INFO] +- net.minidev:json-smart:jar:2.4.10:runtime",
+                    "[INFO] +- net.minidev:json-smart:jar:2.4.10:runtime\n"
+                    "[INFO] +- net.minidev:json-smart:jar:2.4.10:runtime",
+                ),
+                "jackson pom type": valid_graph_with_minidev.replace(
+                    "jackson-databind:jar:2.18.9:runtime",
+                    "jackson-databind:pom:2.18.9:runtime",
+                ),
+                "jackson classifier": valid_graph_with_minidev.replace(
+                    "jackson-databind:jar:2.18.9:runtime",
+                    "jackson-databind:jar:tests:2.18.9:runtime",
+                ),
+                "jackson provided scope": valid_graph_with_minidev.replace(
+                    "jackson-databind:jar:2.18.9:runtime",
+                    "jackson-databind:jar:2.18.9:provided",
+                ),
+                "Jackson group prefix collision": valid_graph_with_minidev.replace(
+                    "com.fasterxml.jackson.core:jackson-databind",
+                    "com.fasterxml.jacksonevil:fake",
+                ),
+                "dependency before project root": valid_graph_with_minidev.replace(
+                    "[INFO] com.example:orders:jar:1.0.0\n",
+                    "[INFO] +- com.example:early:jar:1.0.0:test\n"
+                    "[INFO] com.example:orders:jar:1.0.0\n",
+                ),
+                "second root": valid_graph_with_minidev.replace(
+                    "[INFO] com.example:orders:jar:1.0.0\n",
+                    "[INFO] com.example:orders:jar:1.0.0\n"
+                    "[INFO] com.example:second:jar:1.0.0\n",
+                ),
+                "second dependency-tree section": (
+                    valid_graph_with_minidev + valid_graph_with_minidev
+                ),
+                "forbidden exact artifact": valid_graph_with_minidev.replace(
+                    "protobuf-java-util:jar:4.33.5",
+                    "protobuf-java:jar:4.33.5",
+                ),
+            }
+            for name, negative_graph in negative_graphs.items():
+                with self.subTest(name=name):
+                    graph_path.write_text(negative_graph, encoding="utf-8")
+                    rejected = subprocess.run(
+                        [sys.executable, "-I", parser_path, graph_path],
+                        capture_output=True,
+                        check=False,
+                        text=True,
+                    )
+                    self.assertNotEqual(0, rejected.returncode)
+
+        yaml_blocks = re.findall(r"```yaml\n(.*?)```", guide, flags=re.DOTALL)
+        ci_block = next(
+            block
+            for block in yaml_blocks
+            if "- name: Install exact RouteContract v0.1.0 Release assets" in block
+        )
+        maven_ci_block = next(
+            block
+            for block in yaml_blocks
+            if "- name: Verify approved RouteContract Maven integration" in block
+        )
+        for required in (
+            "ROUTECONTRACT_EXPECTED_OUTCOME: matched",
+            "ROUTECONTRACT_PROFILE_OFF_REPORT:",
+            "ROUTECONTRACT_APPROVED_PATH:",
+            "verify-external-maven-integration.sh",
+            "67f415235f49fb4d134d01cbada80d7d138276ba1e736220712286726555196b",
+            'bash "${tool_dir}/verify-external-maven-integration.sh"',
+        ):
+            self.assertIn(required, maven_ci_block)
         for required in (
             'release_base="https://github.com/ym0506/routecontract/releases/download/v0.1.0"',
             'expected_index_sha256="820ed33eb8bfe8d47f3ec8782d2aa99f2879227c4ee066ecafc467e61abb8684"',

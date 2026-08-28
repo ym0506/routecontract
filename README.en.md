@@ -61,10 +61,24 @@ output that could contain SQL, parameters, or connection details.
 After the Quick Start passes, read the support boundary and stop conditions in the
 [first real integration guide](docs/first-integration.md), then choose one representative existing
 ShardingSphere-JDBC 5.5.3 integration test whose business assertion will remain. The guide connects
-capture → candidate → human-approved baseline → candidate check in an isolated Gradle pilot.
-Repository-specific build isolation and human review are required, so no completion time is
-promised. `v0.1.0` is not published to Maven Central; the guide installs verified GitHub Release
-assets into a separate local Maven repository.
+capture → candidate → human-approved baseline → candidate check in an isolated Gradle Groovy or
+Maven 3.9.14 pilot. Repository-specific build isolation and human review are
+required, so no completion time is
+promised. `v0.1.0` is not published to Maven Central; the guide installs
+verified GitHub Release assets into a separate local Maven repository.
+
+Do not read the roughly 1,700-line guide linearly. Use this shortest supported path:
+
+1. [Install the pinned Release assets](docs/first-integration.md#2-install-the-exact-v010-release-assets).
+2. Choose exactly one build lane: [Gradle Groovy](docs/first-integration.md#gradle-groovy-dsl-opt-in-lane)
+   or [Maven 3.9.14](docs/first-integration.md#maven-3914-opt-in-profile-lane).
+3. Continue through the shared [representative operation](docs/first-integration.md#3-add-one-representative-operation)
+   → [human baseline review](docs/first-integration.md#4-review-and-approve-the-first-baseline)
+   → [CI candidate check](docs/first-integration.md#5-run-the-candidate-check-in-ci).
+
+Maven users can run the checked-in [two-module reference fixture](examples/maven-pilot/README.md)
+first and compare its boundaries with their own repository. If neither lane matches exactly, stop
+there instead of forcing a generic fragment into the build.
 
 After a first run—or after deciding that the current scope is not a fit—use the
 [stable v0.1.0 feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)
@@ -149,15 +163,17 @@ choice explicit with `ManifestAssertions.assertPassesBlockingChecks(result)`.
 | Concurrently open caller-operation scopes | Across 20 single-attempt/multi-attempt scope pairs, no events were attributed across operations; temporal overlap of physical callbacks was neither forced nor measured |
 | Generic JDBC-tool comparison | With datasource-proxy outside ShardingSphere, callbacks stay `1 → 1`; with wrappers around physical data sources, they become `1 → 2`; RouteContract also observes `1 → 2` |
 | Isolated consumer build | In the same checkout, a standalone consumer using only the generated JAR and POM in a temporary Maven repository passed SPI auto-discovery and a MySQL execution test; this is not evidence of external adoption |
+| Isolated Maven 3.9.14 pilot | In the same checkout, an inactive profile, fresh caches, a SHA-256 negative check, a MySQL candidate, and a mechanical match passed; this is not human approval, an external user, or adoption evidence |
 
 Run the full 52-test verification:
 
 ```bash
 ./gradlew --no-daemon --no-build-cache clean check assemble validateOfficialCycloneDxSbom
 ./scripts/verify-standalone-consumer.sh
+./scripts/verify-maven-pilot.sh
 ```
 
-The first command runs 52 core and MySQL-corpus tests on Java 17, ShardingSphere-JDBC 5.5.3, and a digest-pinned MySQL 8.4.11 Testcontainers image, then generates the JAR, Javadoc, and SBOM. The second command runs one separate consumer test. Docker is required.
+The first command runs 52 core and MySQL-corpus tests on Java 17, ShardingSphere-JDBC 5.5.3, and a digest-pinned MySQL 8.4.11 Testcontainers image, then generates the JAR, Javadoc, and SBOM. The second command runs one separate consumer test. The third requires exact Apache Maven 3.9.14 and verifies the isolated profile-off, checksum, and candidate paths. All require Docker.
 
 ## Precise comparison with existing tools
 
@@ -219,12 +235,13 @@ integration guide](docs/first-integration.md#2-install-the-exact-v010-release-as
 public URLs and a pinned checksum-index SHA-256, without a GitHub login, token, or API call.
 
 Do not add the resulting local Maven repository or RouteContract dependency directly to the
-default build. The [Gradle Groovy DSL opt-in
-lane](docs/first-integration.md#gradle-groovy-dsl-opt-in-lane) activates a separate source set,
-task, and repository only when the pilot property is present, while reusing the representative
-fixture's existing ShardingSphere-JDBC 5.5.3 dependency. The normal build and IDE sync must succeed
-without the pilot or local Release repository. `v0.1.0` documents only this Gradle path; report a
-Maven or Kotlin DSL repository as a fit blocker rather than pasting an untested generic fragment.
+default build. The [Gradle Groovy DSL lane](docs/first-integration.md#gradle-groovy-dsl-opt-in-lane)
+activates a separate source set, task, and repository only when the pilot property is present; the
+same guide also provides a Maven 3.9.14 lane with an inactive-by-default profile, a fresh
+consumer cache, and repository-scoped SHA-256 validation. Both reuse the representative fixture's
+existing ShardingSphere-JDBC 5.5.3 dependency, and the normal build and IDE sync must succeed
+without the pilot or local Release repository. Kotlin DSL and Maven repositories outside the
+guide's verified graph and classloader boundary remain fit blockers.
 
 The embedded MySQL OCI package-level manual review in the immutable `v0.1.0` installer is valid
 through UTC `2026-12-05`. Beginning `2026-12-06` UTC, the installer fails closed; use a newer
@@ -391,6 +408,7 @@ A new adapter or reporter is considered only after public demand, a version-spec
 - [Empirical datasource-proxy comparison](docs/empirical-comparison.md)
 - [Verification evidence matrix](docs/evidence-matrix.md)
 - [Isolated same-checkout Maven-publication consumer](examples/standalone-consumer/README.md)
+- [Isolated Maven 3.9.14 onboarding pilot](examples/maven-pilot/README.md)
 - [SBOM generation and review](docs/sbom.md)
 - [Provenance and prior-work boundary disclosure](ORIGIN_AND_PRIOR_WORK.md)
 - [AI-assistance disclosure](AI_ASSISTANCE.md)

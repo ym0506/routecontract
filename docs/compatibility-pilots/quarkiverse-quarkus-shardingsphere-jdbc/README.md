@@ -1,0 +1,109 @@
+# Quarkiverse ShardingSphere-JDBC local H2 compatibility pilot
+
+This directory seals a **RouteContract-maintainer local feasibility check** against the public
+[`quarkiverse/quarkus-shardingsphere-jdbc`](https://github.com/quarkiverse/quarkus-shardingsphere-jdbc)
+repository. The tested upstream revision is commit
+`90e023ce45d58842011724d5b7e7e04d710eb459`, tree
+`523e367826826da44e5b75249a828645eb032889`.
+
+Evidence boundary: `verified - H2` and `verified - ShardingSphere-JDBC 5.5.3`. This is **not MySQL
+evidence**, an upstream contribution, an independent execution, a user result, adoption, production
+support or endorsement by Quarkiverse or Apache ShardingSphere. No external maintainer participated.
+No human-approved baseline is included or created.
+
+## What the pilot established
+
+- With the opt-in profile disabled, the patched checkout's full four-module `clean test` reactor
+  passed the exact existing `ShardingsphereJdbcTest#writeYourOwnUnitTest`,
+  `ShardingsphereJdbcDevModeTest#writeYourOwnDevModeTest`, and `ShardingTablesTest#test` cases with
+  no failure, error, or skip. RouteContract was absent from that build and no candidate was
+  produced.
+- With `-DroutecontractPilot=true`, RouteContract `0.1.0` is placed in **compile scope only inside
+  the opt-in integration-test profile**. Quarkus 3.39 starts the test application in a separate
+  runtime class loader before the JUnit test class, so test scope did not expose the
+  `SQLExecutionHook` service descriptor during application boot.
+- The pilot invokes the injected CDI resource directly inside `RouteContract.capture`. Moving the
+  operation behind the RestAssured HTTP boundary crosses threads and is outside RouteContract
+  v0.1's supported synchronous capture boundary.
+- The representative INSERT kept all four original preconditions, changed only
+  `ds_1.t_account_1` from zero to one row, and produced a `COMPLETE` snapshot with one
+  `SQLExecutionHook`-reported physical JDBC execution attempt, no callback failure and observed
+  data source `ds_1`.
+- Two clean, profile-on runs produced byte-identical 679-byte candidates with SHA-256
+  `60e94c17e2df96ff7f4769f33a6a7b4f3431b0cd0995d47906e6f63a3d1601e4`. Each run then stopped
+  at the single intended failure: the human-approved baseline was absent.
+
+`COMPLETE` is RouteContract's capture status. It is not a claim that the snapshot is a complete
+route plan or that the enclosing transaction committed. A reported attempt corresponds to the
+ShardingSphere hook report made after its wrapped physical `executeSQL` call returned.
+
+## Sealed files
+
+| File | Purpose | SHA-256 |
+| --- | --- | --- |
+| `routecontract-pilot.patch` | Exact two-path opt-in patch | `d9842f7ad875cab9bd07cba58b12776f5d3a399d191fc00e1d4cefb8e969651e` |
+| `reproduce.sh` | Fail-closed profile-off plus two-run profile-on reproducer | `078cffc46c982845bc1683b0384969f550277a32eb44a50430306fce11c90b0f` |
+| `expected-candidate.sha256` | Expected generated candidate digest | `4961872ab916d7556b9be1fec2722a5479e42731126a1a70d8b98939404efde6` |
+| `receipt.json` | Machine-readable environment, results and claim boundary | See the file itself; it does not self-hash. |
+
+The patch changes exactly these upstream paths:
+
+1. `integration-tests/pom.xml`
+2. `integration-tests/src/routeContractPilot/java/io/quarkiverse/shardingsphere/jdbc/it/RouteContractInsertPilotTest.java`
+
+It deliberately contains no file at
+`integration-tests/src/routeContractPilot/resources/route-contracts/accounts.insert.json`.
+
+## Reproduce in a disposable checkout
+
+Requirements are Git, Python 3, JDK 17, Apache Maven 3.9.14 and network access for the upstream
+Maven dependencies. Obtain these exact RouteContract v0.1.0 Release assets in one directory:
+
+| Asset | SHA-256 |
+| --- | --- |
+| `routecontract-shardingsphere-5.5-0.1.0.jar` | `d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc` |
+| `routecontract-shardingsphere-5.5.pom` | `05570bfa238ef77db255a46efdd5bbb25e994ae0137db86491a46a25e28deac9` |
+| `SHA256SUMS` | `820ed33eb8bfe8d47f3ec8782d2aa99f2879227c4ee066ecafc467e61abb8684` |
+
+Then create a clean detached checkout and run the verifier:
+
+```bash
+git clone --no-tags https://github.com/quarkiverse/quarkus-shardingsphere-jdbc.git \
+  /absolute/path/to/disposable-quarkiverse
+git -C /absolute/path/to/disposable-quarkiverse checkout --detach \
+  90e023ce45d58842011724d5b7e7e04d710eb459
+
+export JAVA_HOME=/absolute/path/to/jdk-17
+/absolute/path/to/this-directory/reproduce.sh \
+  /absolute/path/to/disposable-quarkiverse \
+  /absolute/path/to/routecontract-v0.1.0-release-assets
+```
+
+The script verifies the upstream commit/tree, clean status, release-asset hashes, Maven/JDK
+versions and exact two-path patch before running anything. It uses a private temporary Maven local
+repository, forces SHA-256 for the file-repository transfer, and deletes that private scratch area
+on exit. Set `MAVEN_REPO_SEED` to an absolute existing Maven repository only to reduce downloads;
+the script rejects a seed containing symbolic links, copies it into scratch, rechecks the copy for
+symbolic links, and only then removes the RouteContract coordinate before resolution.
+
+The script applies the patch and intentionally leaves the disposable upstream checkout modified.
+Its successful final output is:
+
+```text
+ROUTECONTRACT_QUARKIVERSE_PROFILE_OFF fullReactor=PASS pilotDependency=ABSENT
+ROUTECONTRACT_QUARKIVERSE_PROFILE_ON run1=EXPECTED_BASELINE_FAILURE run2=EXPECTED_BASELINE_FAILURE
+ROUTECONTRACT_QUARKIVERSE_CANDIDATE sha256=60e94c17e2df96ff7f4769f33a6a7b4f3431b0cd0995d47906e6f63a3d1601e4 bytes=679 deterministicRuns=2
+ROUTECONTRACT_QUARKIVERSE_BOUNDARY environment=H2 humanApprovedBaseline=false externalUser=false adoption=false endorsement=false
+```
+
+The profile-on command selects only `RouteContractInsertPilotTest`. The existing upstream
+integration test inserts the same account id and shares the Quarkus H2 application state when both
+tests are selected together. Every profile-on run uses `clean` so Quarkus re-augments the application
+with the opt-in dependency.
+
+## Human review remains unresolved
+
+The candidate is a proposal, not an approval. A repository owner would still need to review the
+operation boundary, aliases and budgets, then deliberately approve exact baseline bytes in their
+own repository. This local packet does not make that decision, and therefore does not satisfy the
+project's strict definition of an actual external user integration.

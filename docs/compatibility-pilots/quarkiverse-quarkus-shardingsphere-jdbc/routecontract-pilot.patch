@@ -1,0 +1,170 @@
+diff --git a/integration-tests/pom.xml b/integration-tests/pom.xml
+index 42fe450b04044a8f4f053964f6b289477ff560dc..9e88a118f4613181273f9946150148fa8c2d9de7 100644
+--- a/integration-tests/pom.xml
++++ b/integration-tests/pom.xml
+@@ -67,6 +67,73 @@
+       </plugin>
+     </plugins>
+   </build>
++  <profiles>
++    <profile>
++      <id>routecontract-pilot</id>
++      <activation>
++        <property>
++          <name>routecontractPilot</name>
++          <value>true</value>
++        </property>
++      </activation>
++      <repositories>
++        <repository>
++          <id>routecontract-v0.1.0-local</id>
++          <url>file://${routecontract.repository}</url>
++          <releases>
++            <enabled>true</enabled>
++            <updatePolicy>never</updatePolicy>
++          </releases>
++          <snapshots>
++            <enabled>false</enabled>
++          </snapshots>
++        </repository>
++      </repositories>
++      <dependencies>
++        <dependency>
++          <groupId>io.github.ym0506.routecontract</groupId>
++          <artifactId>routecontract-shardingsphere-5.5</artifactId>
++          <version>0.1.0</version>
++          <!--
++            Quarkus starts the test application in a separate runtime class loader before the
++            JUnit test class runs. Compile scope is intentional inside this opt-in integration-test
++            profile so the SQLExecutionHook service descriptor is visible during application boot.
++          -->
++          <scope>compile</scope>
++        </dependency>
++      </dependencies>
++      <build>
++        <plugins>
++          <plugin>
++            <groupId>org.codehaus.mojo</groupId>
++            <artifactId>build-helper-maven-plugin</artifactId>
++            <executions>
++              <execution>
++                <id>add-routecontract-pilot-test-source</id>
++                <phase>generate-test-sources</phase>
++                <goals>
++                  <goal>add-test-source</goal>
++                </goals>
++                <configuration>
++                  <sources>
++                    <source>src/routeContractPilot/java</source>
++                  </sources>
++                </configuration>
++              </execution>
++            </executions>
++          </plugin>
++          <plugin>
++            <artifactId>maven-surefire-plugin</artifactId>
++            <configuration>
++              <systemPropertyVariables>
++                <routecontract.projectDir>${project.basedir}</routecontract.projectDir>
++              </systemPropertyVariables>
++            </configuration>
++          </plugin>
++        </plugins>
++      </build>
++    </profile>
++  </profiles>
+   <!--
+   <profiles>
+     <profile>
+diff --git a/integration-tests/src/routeContractPilot/java/io/quarkiverse/shardingsphere/jdbc/it/RouteContractInsertPilotTest.java b/integration-tests/src/routeContractPilot/java/io/quarkiverse/shardingsphere/jdbc/it/RouteContractInsertPilotTest.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..dbc8992c095595685630a1b4f9bc54e3f79edad9
+--- /dev/null
++++ b/integration-tests/src/routeContractPilot/java/io/quarkiverse/shardingsphere/jdbc/it/RouteContractInsertPilotTest.java
+@@ -0,0 +1,86 @@
++package io.quarkiverse.shardingsphere.jdbc.it;
++
++import static org.junit.jupiter.api.Assertions.assertEquals;
++import static org.junit.jupiter.api.Assertions.fail;
++
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.util.Map;
++
++import jakarta.inject.Inject;
++
++import org.junit.jupiter.api.Test;
++
++import io.github.ym0506.routecontract.RouteAssertions;
++import io.github.ym0506.routecontract.RouteContract;
++import io.github.ym0506.routecontract.RouteSnapshot;
++import io.github.ym0506.routecontract.manifest.DataSourceAliases;
++import io.github.ym0506.routecontract.manifest.ManifestAssertions;
++import io.github.ym0506.routecontract.manifest.ManifestPolicy;
++import io.github.ym0506.routecontract.manifest.ManifestStore;
++import io.github.ym0506.routecontract.manifest.ManifestVerifier;
++import io.github.ym0506.routecontract.manifest.ObservedExecutionManifest;
++import io.quarkus.test.common.QuarkusTestResource;
++import io.quarkus.test.h2.H2DatabaseTestResource;
++import io.quarkus.test.junit.QuarkusTest;
++
++@QuarkusTest
++@QuarkusTestResource(H2DatabaseTestResource.class)
++public class RouteContractInsertPilotTest {
++
++    @Inject
++    ShardingTablesResource resource;
++
++    @Test
++    public void keepsTheApprovedInsertStructure() throws Exception {
++        assertEquals(0, resource.count("ds_0", "t_account_0"));
++        assertEquals(0, resource.count("ds_0", "t_account_1"));
++        assertEquals(0, resource.count("ds_1", "t_account_0"));
++        assertEquals(0, resource.count("ds_1", "t_account_1"));
++
++        Account account = new Account();
++        account.setAccount_id(1);
++        account.setUser_id(1);
++        account.setStatus("true");
++
++        RouteSnapshot snapshot = RouteContract.capture("accounts.insert", () -> resource.createAccount(account));
++
++        // Keep the representative test's complete business result: only ds_1.t_account_1 changes.
++        assertEquals(0, resource.count("ds_0", "t_account_0"));
++        assertEquals(0, resource.count("ds_0", "t_account_1"));
++        assertEquals(0, resource.count("ds_1", "t_account_0"));
++        assertEquals(1, resource.count("ds_1", "t_account_1"));
++        RouteAssertions.assertThat(snapshot)
++                .hasCompleteCapture()
++                .hasNoReportedExecutionFailures()
++                .hasExactlyObservedPhysicalAttempts(1)
++                .observesExactlyDataSourceNames("ds_1");
++
++        int proposedMaxAttempts = 1;
++        int proposedMaxDataSources = 1;
++        ManifestPolicy policy = ManifestPolicy.strict(proposedMaxAttempts, proposedMaxDataSources);
++        DataSourceAliases aliases = DataSourceAliases.of(Map.of(
++                "ds_0", "account-shard-a",
++                "ds_1", "account-shard-b"));
++        ObservedExecutionManifest candidate = ObservedExecutionManifest.from(snapshot, aliases, policy);
++
++        Path projectDir = Path.of(System.getProperty("routecontract.projectDir")).toAbsolutePath().normalize();
++        Path approvedPath = projectDir.resolve(
++                "src/routeContractPilot/resources/route-contracts/accounts.insert.json");
++        Path candidatePath = projectDir.resolve("target/routecontract/accounts.insert.candidate.json");
++        ManifestStore store = new ManifestStore();
++        store.writeCandidate(approvedPath, candidatePath, candidate);
++
++        System.out.printf(
++                "ROUTECONTRACT_QUARKIVERSE_PILOT businessRows=0->1 attempts=%d dataSources=%s status=%s%n",
++                snapshot.observedPhysicalAttemptCount(), snapshot.observedDataSourceNames(), snapshot.status());
++
++        if (Files.notExists(approvedPath)) {
++            fail("No approved baseline. Review target/routecontract/accounts.insert.candidate.json "
++                    + "and copy its exact bytes only after human approval.");
++        }
++
++        ManifestAssertions.assertMatched(
++                new ManifestVerifier().verify(store.read(approvedPath), candidate));
++    }
++}

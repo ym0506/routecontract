@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-08-28T22:04:55Z",
+  "subject": "RouteContract-maintainer local compatibility feasibility pilot",
+  "upstream": {
+    "repository": "https://github.com/quarkiverse/quarkus-shardingsphere-jdbc.git",
+    "commit": "90e023ce45d58842011724d5b7e7e04d710eb459",
+    "tree": "523e367826826da44e5b75249a828645eb032889",
+    "quarkusVersion": "3.39.0",
+    "shardingSphereJdbcVersion": "5.5.3"
+  },
+  "routeContract": {
+    "version": "0.1.0",
+    "coordinates": "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0",
+    "jarSha256": "d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc",
+    "pomSha256": "05570bfa238ef77db255a46efdd5bbb25e994ae0137db86491a46a25e28deac9",
+    "dependencyScope": "compile inside the opt-in routecontract-pilot profile",
+    "dependencyScopeReason": "Quarkus 3.39 starts the test application in a separate runtime class loader before the JUnit test; compile scope makes the SQLExecutionHook service descriptor visible during application boot."
+  },
+  "patch": {
+    "file": "routecontract-pilot.patch",
+    "bytes": 7174,
+    "sha256": "d9842f7ad875cab9bd07cba58b12776f5d3a399d191fc00e1d4cefb8e969651e",
+    "changedPaths": [
+      "integration-tests/pom.xml",
+      "integration-tests/src/routeContractPilot/java/io/quarkiverse/shardingsphere/jdbc/it/RouteContractInsertPilotTest.java"
+    ],
+    "approvedBaselineIncluded": false
+  },
+  "reproducer": {
+    "file": "reproduce.sh",
+    "bytes": 13172,
+    "sha256": "078cffc46c982845bc1683b0384969f550277a32eb44a50430306fce11c90b0f",
+    "expectedCandidateFile": "expected-candidate.sha256",
+    "expectedCandidateFileSha256": "4961872ab916d7556b9be1fec2722a5479e42731126a1a70d8b98939404efde6",
+    "requiresCleanReaugmentation": true,
+    "profileOnTestSelection": "RouteContractInsertPilotTest only"
+  },
+  "environment": {
+    "operatingSystem": "macOS 26.4.1 arm64",
+    "jdk": "OpenJDK 17.0.15",
+    "maven": "3.9.14",
+    "database": "H2 2.4.240",
+    "databaseTopology": "two logical data sources with two account tables each"
+  },
+  "verification": {
+    "profileOff": {
+      "commandShape": "mvn -B -ntp -DskipTests=false -Dmaven.test.skip=false -Dmaven.test.failure.ignore=false clean test",
+      "fullReactor": true,
+      "result": "PASS",
+      "existingDeploymentTests": 2,
+      "existingIntegrationTests": 1,
+      "exactTestcases": [
+        "io.quarkiverse.shardingsphere.jdbc.test.ShardingsphereJdbcTest#writeYourOwnUnitTest",
+        "io.quarkiverse.shardingsphere.jdbc.test.ShardingsphereJdbcDevModeTest#writeYourOwnDevModeTest",
+        "io.quarkiverse.shardingsphere.jdbc.it.ShardingTablesTest#test"
+      ],
+      "surefireFailures": 0,
+      "surefireErrors": 0,
+      "surefireSkipped": 0,
+      "routeContractDependencyActive": false,
+      "routeContractDependencyTreeEntryPresent": false,
+      "pilotTestClassCompiled": false,
+      "candidateCreated": false
+    },
+    "profileOn": {
+      "commandShape": "mvn -B -ntp -DroutecontractPilot=true -Droutecontract.repository=<private-file-repository> -Dtest=RouteContractInsertPilotTest -Dsurefire.failIfNoSpecifiedTests=false -DskipTests=false -Dmaven.test.skip=false -Dmaven.test.failure.ignore=false clean test",
+      "runs": 2,
+      "resultEachRun": "EXPECTED_FAILURE_MISSING_HUMAN_APPROVED_BASELINE",
+      "surefireTestsEachRun": 1,
+      "surefireFailuresEachRun": 1,
+      "surefireErrorsEachRun": 0,
+      "candidateBytesEachRun": 679,
+      "candidateSha256EachRun": "60e94c17e2df96ff7f4769f33a6a7b4f3431b0cd0995d47906e6f63a3d1601e4",
+      "candidateBytesIdenticalAcrossRuns": true,
+      "approvedBaselineCreated": false
+    },
+    "observedOperation": {
+      "operationId": "accounts.insert",
+      "businessRows": "0->1 on ds_1.t_account_1; the other three table counts remained 0",
+      "captureStatus": "COMPLETE",
+      "sqlExecutionHookReportedPhysicalJdbcExecutionAttempts": 1,
+      "callbackFailureCount": 0,
+      "unknownOutcomeCount": 0,
+      "observedDataSourceNames": [
+        "ds_1"
+      ],
+      "candidateDataSourceAlias": "account-shard-b"
+    }
+  },
+  "evidenceLabels": [
+    "verified - H2",
+    "verified - ShardingSphere-JDBC 5.5.3"
+  ],
+  "claimBoundary": {
+    "completeRoutePlanClaimed": false,
+    "mysqlVerified": false,
+    "productionSupportClaimed": false,
+    "externalMaintainerParticipated": false,
+    "externalUserEvidence": false,
+    "adoptionEvidence": false,
+    "endorsementClaimed": false,
+    "notes": "This is a local feasibility check performed by the RouteContract maintainer against an external repository checkout. It is not an upstream contribution, independent run, user result, adoption signal or endorsement."
+  },
+  "knownLimitations": [
+    "H2 evidence does not prove MySQL behavior.",
+    "The opt-in run must use clean so Quarkus re-augments the application with the profile dependency.",
+    "The bounded profile-on command selects only RouteContractInsertPilotTest; the upstream integration test inserts the same account id and shares the same H2 application state when both are selected together.",
+    "No human approved baseline was created, so the final verifier match was intentionally not claimed."
+  ]
+}
