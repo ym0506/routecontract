@@ -40,6 +40,35 @@ external installation, or adoption. After a Release exists, use
 A change is not complete until it passes the appropriate real-MySQL test, not only an in-memory
 substitute.
 
+## Future Maven Central changes
+
+The immutable `v0.1.0` GitHub Release is not a Maven Central publication.
+Changes intended for a future stable `v0.1.1` or later must follow the
+approval, signing, `USER_MANAGED` upload, human validation, explicit Publish
+and public-readback checklist in [RELEASING.md](RELEASING.md). Never put the
+protected release private key, its passphrase or a Central credential in the
+repository or CI. An ephemeral throwaway CI key may test signing configuration
+only; never upload or artifact it or treat it as release evidence.
+
+For a local publication-wiring check only, stage an unsigned candidate in a
+new private directory:
+
+```bash
+(
+set -e
+staging_parent=/absolute/path/to/new-private-central-smoke
+test ! -e "${staging_parent}"
+mkdir -m 700 "${staging_parent}"
+./gradlew --no-daemon --no-build-cache --no-configuration-cache \
+  :routecontract-shardingsphere-5.5:publishMavenJavaPublicationToCentralStagingRepository \
+  -ProutecontractCentralStagingDirectory="${staging_parent}/repository" \
+  -ProutecontractCentralSigning=false
+)
+```
+
+This smoke test uses no release key or Portal credential, performs no network
+publication and is not evidence of a signed candidate or public availability.
+
 ## Release feedback
 
 For an ordinary first review or run of stable `v0.1.0`, use the

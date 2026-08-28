@@ -2781,9 +2781,22 @@ module._decode_activation_record(payload, url, 'record.json')
             dummy.write_bytes(b"x")
             evidence = root / "evidence"
             evidence.mkdir()
+            frozen_package_entrypoint = (
+                "from datetime import datetime as RealDateTime, timezone\n"
+                "from unittest.mock import patch\n"
+                "import runpy\n"
+                "class FrozenDateTime(RealDateTime):\n"
+                "    @classmethod\n"
+                "    def now(cls, tz=None):\n"
+                "        value = RealDateTime(2026, 8, 26, tzinfo=timezone.utc)\n"
+                "        return value if tz is None else value.astimezone(tz)\n"
+                "with patch('datetime.datetime', FrozenDateTime):\n"
+                f"    runpy.run_path({str(SCRIPT)!r}, run_name='__main__')\n"
+            )
             package_arguments = [
                 sys.executable,
-                str(SCRIPT),
+                "-c",
+                frozen_package_entrypoint,
                 "--manifest",
                 str(manifest_path),
                 "--template",

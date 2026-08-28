@@ -96,6 +96,210 @@ jobs:
           ./gradlew --no-daemon --no-build-cache clean check assemble
           validateOfficialCycloneDxSbom
 
+      - name: Smoke-test local Maven Central staging and signing
+        shell: bash
+        run: |
+          set -euo pipefail
+          smoke_root="${RUNNER_TEMP}/routecontract-central-smoke"
+          source_root="${smoke_root}/source"
+          gnupg_home="${smoke_root}/gnupg"
+          ambient_gnupg_home="${smoke_root}/ambient-gnupg"
+          gnupg_options="${smoke_root}/gpg-options"
+          test ! -e "${smoke_root}"
+          mkdir -p "${source_root}" "${gnupg_home}" "${ambient_gnupg_home}"
+          chmod 700 \
+            "${smoke_root}" "${source_root}" "${gnupg_home}" "${ambient_gnupg_home}"
+          printf '%s\n' \
+            'no-auto-key-retrieve' \
+            'digest-algo SHA384' > "${gnupg_options}"
+          printf '%s\n' \
+            'no-auto-key-retrieve' \
+            'digest-algo SHA512' > "${gnupg_home}/gpg.conf"
+          chmod 600 "${gnupg_options}" "${gnupg_home}/gpg.conf"
+          git archive --format=tar HEAD | tar -xf - -C "${source_root}"
+
+          export GNUPGHOME="${ambient_gnupg_home}"
+          gpg --homedir "${gnupg_home}" --options "${gnupg_options}" \
+            --batch --pinentry-mode loopback --passphrase '' \
+            --quick-generate-key \
+            'RouteContract CI signing smoke <ci-signing-smoke@example.invalid>' \
+            rsa2048 sign 0
+          fingerprint="$(
+            gpg --homedir "${gnupg_home}" --options "${gnupg_options}" \
+              --batch --with-colons --fixed-list-mode --fingerprint \
+              --list-secret-keys | awk -F: '$1 == "fpr" { print $10; exit }'
+          )"
+          [[ "${fingerprint}" =~ ^[0-9A-F]{40}$ ]]
+
+          set_version() {
+            local next_version="$1"
+            local build_file="${source_root}/build.gradle"
+            test "$(grep -Ec "^version = '[^']+'$" "${build_file}")" = '1'
+            perl -0pi -e \
+              "s/^version = '[^']+'\$/version = '${next_version}'/m" \
+              "${build_file}"
+            grep -Fxq "version = '${next_version}'" "${build_file}"
+          }
+
+          publish_task=':routecontract-shardingsphere-5.5:publishMavenJavaPublicationToCentralStagingRepository'
+          for blocked_version in 0.1.0 0.1.1-SNAPSHOT; do
+            set_version "${blocked_version}"
+            blocked_repository="${smoke_root}/blocked-${blocked_version}"
+            if (
+              cd "${source_root}"
+              ./gradlew --no-daemon --no-build-cache --no-configuration-cache \
+                "${publish_task}" \
+                -ProutecontractCentralStagingDirectory="${blocked_repository}" \
+                -ProutecontractCentralSigning=true \
+                -Psigning.gnupg.executable=gpg \
+                -Psigning.gnupg.homeDir="${gnupg_home}" \
+                -Psigning.gnupg.optionsFile="${gnupg_options}" \
+                -Psigning.gnupg.keyName="${fingerprint}!"
+            ) > "${smoke_root}/blocked.log" 2>&1; then
+              echo "signed staging unexpectedly accepted ${blocked_version}" >&2
+              exit 1
+            fi
+            grep -Fq \
+              'signed Central staging requires a stable SemVer of at least 0.1.1' \
+              "${smoke_root}/blocked.log"
+            test ! -e "${blocked_repository}"
+          done
+
+          set_version 0.1.1
+          existing_repository="${smoke_root}/existing-repository"
+          symlink_target="${smoke_root}/symlink-target"
+          symlink_repository="${smoke_root}/symlink-repository"
+          mkdir "${existing_repository}" "${symlink_target}"
+          ln -s "${symlink_target}" "${symlink_repository}"
+          for rejected_repository in "${existing_repository}" "${symlink_repository}"; do
+            if (
+              cd "${source_root}"
+              ./gradlew --no-daemon --no-build-cache --no-configuration-cache \
+                "${publish_task}" \
+                -ProutecontractCentralStagingDirectory="${rejected_repository}" \
+                -ProutecontractCentralSigning=false
+            ) > "${smoke_root}/existing.log" 2>&1; then
+              echo "staging unexpectedly accepted an existing path" >&2
+              exit 1
+            fi
+            grep -Fq 'Central staging repository must be a new absent path' \
+              "${smoke_root}/existing.log"
+          done
+          test -z "$(find "${existing_repository}" "${symlink_target}" -mindepth 1 -print -quit)"
+
+          unsigned_repository="${smoke_root}/unsigned-repository"
+          signed_repository="${smoke_root}/signed-repository"
+          (
+            cd "${source_root}"
+            ./gradlew --no-daemon --no-build-cache --no-configuration-cache \
+              "${publish_task}" \
+              -ProutecontractCentralStagingDirectory="${unsigned_repository}" \
+              -ProutecontractCentralSigning=false
+            ./gradlew --no-daemon --no-build-cache --no-configuration-cache \
+              "${publish_task}" \
+              -ProutecontractCentralStagingDirectory="${signed_repository}" \
+              -ProutecontractCentralSigning=true \
+              -Psigning.gnupg.executable=gpg \
+              -Psigning.gnupg.homeDir="${gnupg_home}" \
+              -Psigning.gnupg.optionsFile="${gnupg_options}" \
+              -Psigning.gnupg.keyName="${fingerprint}!"
+          )
+
+          verify_checksum() {
+            local file="$1"
+            local algorithm="$2"
+            local expected actual
+            test -f "${file}.${algorithm}"
+            expected="$(tr -d '\r\n' < "${file}.${algorithm}")"
+            actual="$("${algorithm}sum" "${file}" | awk '{print $1}')"
+            test "${actual}" = "${expected}"
+          }
+
+          coordinate='io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.1'
+          unsigned_version="${unsigned_repository}/${coordinate}"
+          signed_version="${signed_repository}/${coordinate}"
+          artifact='routecontract-shardingsphere-5.5-0.1.1'
+          artifacts=(
+            "${artifact}.jar" "${artifact}-sources.jar" "${artifact}-javadoc.jar"
+            "${artifact}.pom" "${artifact}.module"
+          )
+          python3 - "${unsigned_version}" "${signed_version}" \
+            "${artifacts[@]}" <<'PY'
+          import os
+          import sys
+          from pathlib import Path
+
+          checksums = ("md5", "sha1", "sha256", "sha512")
+          bases = sys.argv[3:]
+
+          def inspect_version(path_value, signed):
+              path = Path(path_value)
+              if path.is_symlink() or not path.is_dir():
+                  raise SystemExit(f"version directory is not a real directory: {path}")
+              actual = set()
+              with os.scandir(path) as entries:
+                  for entry in entries:
+                      if entry.is_symlink() or not entry.is_file(follow_symlinks=False):
+                          raise SystemExit(f"non-regular version payload: {entry.path}")
+                      actual.add(entry.name)
+              required = set()
+              optional = set()
+              for base in bases:
+                  required.add(base)
+                  required.update(f"{base}.{algorithm}" for algorithm in checksums)
+                  if signed:
+                      required.add(f"{base}.asc")
+                      # Signature checksums are optional local Gradle output,
+                      # not a Central semantic requirement.
+                      optional.update(
+                          f"{base}.asc.{algorithm}" for algorithm in checksums
+                      )
+              missing = required - actual
+              unexpected = actual - required - optional
+              if missing or unexpected:
+                  raise SystemExit(
+                      f"version inventory mismatch: missing={sorted(missing)} "
+                      f"unexpected={sorted(unexpected)}"
+                  )
+
+          inspect_version(sys.argv[1], False)
+          inspect_version(sys.argv[2], True)
+          PY
+          for name in "${artifacts[@]}"; do
+            unsigned_file="${unsigned_version}/${name}"
+            signed_file="${signed_version}/${name}"
+            test -f "${unsigned_file}"
+            test -f "${signed_file}"
+            cmp -s "${unsigned_file}" "${signed_file}"
+            test ! -e "${unsigned_file}.asc"
+            test -f "${signed_file}.asc"
+            signature_status="$(
+              gpg --homedir "${gnupg_home}" --options "${gnupg_options}" \
+                --batch --status-fd 1 \
+                --verify "${signed_file}.asc" "${signed_file}" 2>/dev/null
+            )"
+            printf '%s\n' "${signature_status}" |
+              awk -v expected_fingerprint="${fingerprint}" '
+                $1 == "[GNUPG:]" && $2 == "VALIDSIG" {
+                    count += 1
+                    if (NF != 12 || $3 != expected_fingerprint) {
+                        invalid = 1
+                    }
+                    if ($10 != "9" || $12 != expected_fingerprint) {
+                        invalid = 1
+                    }
+                }
+                END { exit !(count == 1 && invalid != 1) }
+              '
+            for algorithm in md5 sha1 sha256 sha512; do
+              verify_checksum "${unsigned_file}" "${algorithm}"
+              verify_checksum "${signed_file}" "${algorithm}"
+              if test -e "${signed_file}.asc.${algorithm}"; then
+                verify_checksum "${signed_file}.asc" "${algorithm}"
+              fi
+            done
+          done
+
       - name: Verify same-checkout Maven publication consumer
         run: ./scripts/verify-standalone-consumer.sh
 
