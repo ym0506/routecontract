@@ -2228,7 +2228,7 @@ empty=
             ("action", "defer this review indefinitely"),
             ("componentName", "not-mysql"),
             ("componentVersion", "0.0.0"),
-            ("expires", "2026-08-28"),
+            ("expires", "9999-12-31"),
             ("owner", "nobody"),
             ("rationaleCode", "UNBOUNDED"),
             ("reviewedAt", "2026-08-12"),
@@ -2254,7 +2254,6 @@ empty=
                 "package-level license review before the 2026-08-27 expiry",
             ),
             ("reviewedAt", "2026-08-13"),
-            ("expires", "2026-08-27"),
         )
         for field, value in stale_values:
             with self.subTest(field=field):

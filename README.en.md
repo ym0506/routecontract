@@ -32,11 +32,6 @@ the CI gate and checks the expected `RCM201`/`RCM202` rejection. A final
 `intentionalCiGateExit 1`, and `quickstartExit 0` means the whole flow behaved
 as expected.
 
-After a first run—or after deciding that the current scope is not a fit—use the
-[stable v0.1.0 feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)
-to share a success, blocker, unsupported setup, or not-a-fit result. Do not put raw SQL, bind values,
-JDBC URLs, real topology, full logs, or other sensitive information in the public Issue.
-
 <details>
 <summary>Exact exit-code and output boundary</summary>
 
@@ -46,6 +41,21 @@ verification failure exits `2`. The wrapper does not echo raw child-process
 output that could contain SQL, parameters, or connection details.
 
 </details>
+
+## Next 10 minutes: review the first-integration path
+
+After the Quick Start passes, use the next 10 minutes to read the
+[first real integration guide](docs/first-integration.md) and identify one representative
+ShardingSphere-JDBC 5.5.3 integration test where the business assertion will stay alongside
+capture → candidate → human-approved baseline → candidate check. This is not a completion-time
+estimate; Release downloads, test changes, human review, and CI time are excluded. `v0.1.0` is not
+published to Maven Central, so the guide installs verified GitHub Release assets into a separate
+local Maven repository.
+
+After a first run—or after deciding that the current scope is not a fit—use the
+[stable v0.1.0 feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)
+to share a success, blocker, unsupported setup, or not-a-fit result. Do not put raw SQL, bind values,
+JDBC URLs, real topology, full logs, or other sensitive information in the public Issue.
 
 ## Smallest usage example
 

@@ -13,16 +13,17 @@ body:
         Share only the useful minimum. Remove credentials, raw SQL and bind values, JDBC URLs, customer data, private topology, hostnames, absolute paths, full logs, screenshots, and personal information. If this may be a vulnerability, stop and use [private vulnerability reporting](https://github.com/ym0506/routecontract/security/advisories/new).
 
   - type: dropdown
-    id: path
+    id: integration_stage
     attributes:
-      label: What did you try?
+      label: Highest consecutive integration stage completed
+      description: Choose the last stage reached in order. Each numbered stage includes the earlier stages.
       options:
-        - Not selected yet — choose the closest path
-        - Read the README or scope only
-        - Ran the exact v0.1.0 Quick Start
-        - Checked or installed the stable Release assets
-        - Tried it in a ShardingSphere-JDBC 5.5.3 integration test
-        - Something else
+        - Stage 0 — reviewed the README and support boundary
+        - Stage 1 — also ran the exact v0.1.0 Quick Start
+        - Stage 2 — also verified and installed the exact v0.1.0 Release assets
+        - Stage 3 — also captured one representative operation in my own repository
+        - Stage 4 — also human-reviewed and committed an approved baseline
+        - Stage 5 — also ran a candidate check against that baseline in my own repository or CI
     validations:
       required: true
 
@@ -31,7 +32,6 @@ body:
     attributes:
       label: Outcome
       options:
-        - Not selected yet — choose the closest outcome
         - Worked as documented
         - Documentation review only
         - Product or documentation blocker
@@ -62,6 +62,13 @@ body:
     attributes:
       label: What would make this useful for your work?
       description: Optional. “Nothing; this is not my problem” is also useful feedback.
+
+  - type: textarea
+    id: public_evidence
+    attributes:
+      label: Public evidence URL(s), if any
+      description: Optional; leave blank when there is no public evidence or the repository is private. Link only to a public repository, test, pull request, or CI run that is safe to share. Without verifiable public evidence, this remains valuable self-reported feedback but is not counted as a verified external integration. A link or self-report does not by itself establish production use, adoption, performance, security, or endorsement.
+      placeholder: https://github.com/example/project/pull/123
 
   - type: checkboxes
     id: privacy
