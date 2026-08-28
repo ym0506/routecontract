@@ -17,14 +17,26 @@
 
 ## Quick Start
 
-필수 조건은 Java 17, 실행 중인 Docker daemon, Bash/POSIX 도구와 실행 가능한 Gradle
-Wrapper입니다. 최초 실행은 Gradle·Maven Central 의존성과 로컬에 없는 digest-pinned MySQL
-container image를 내려받기 위한 네트워크가 필요할 수 있습니다.
+필수 조건은 Git, Java 17, 실행 중인 Docker daemon, Bash/POSIX 도구와 실행 가능한 Gradle
+Wrapper입니다. 최초 실행은 공개 tag, Gradle·Maven Central 의존성과 로컬에 없는
+digest-pinned MySQL container image를 내려받기 위한 네트워크가 필요할 수 있습니다.
 
 ```bash
-git clone --depth 1 --branch v0.1.0 https://github.com/ym0506/routecontract.git routecontract-v0.1.0
-cd routecontract-v0.1.0
+(
+set -euo pipefail
+source_dir="routecontract-v0.1.0"
+test ! -e "${source_dir}"
+test ! -L "${source_dir}"
+git clone --quiet --depth 1 --branch v0.1.0 --single-branch \
+  https://github.com/ym0506/routecontract.git "${source_dir}"
+test "$(git -C "${source_dir}" cat-file -t refs/tags/v0.1.0)" = tag
+test "$(git -C "${source_dir}" rev-parse refs/tags/v0.1.0)" = e3944631ad827e88d4936b75e9b738ef50a22b20
+test "$(git -C "${source_dir}" rev-parse 'refs/tags/v0.1.0^{}')" = db203cfd9202ff10cd22c41cf04034eca5177341
+test "$(git -C "${source_dir}" rev-parse HEAD)" = db203cfd9202ff10cd22c41cf04034eca5177341
+test -z "$(git -C "${source_dir}" status --short)"
+cd "${source_dir}"
 ./scripts/quickstart-demo.sh
+)
 ```
 
 이 명령은 실제 MySQL에서 business result가 그대로인 `1 → 2` 관측 실행 회귀를 검증한 뒤,
@@ -41,13 +53,13 @@ SQL·parameter·connection 정보가 섞일 수 있는 하위 프로세스 원�
 
 </details>
 
-## 다음 10분: 첫 통합 경로 검토하기
+## 다음 단계: 첫 통합 가능성 검토하기
 
-Quick Start가 통과했다면 다음 10분 동안 [첫 실제 통합 가이드](docs/first-integration.md)를
-읽고 기존
-ShardingSphere-JDBC 5.5.3 통합 테스트의 대표 operation 하나에 business assertion을 유지한
-채 capture → candidate → 사람 승인 baseline → candidate check를 넣을 위치를 정할 수 있습니다.
-이는 완료 시간 추정이 아니며 Release 다운로드·테스트 수정·사람 검토·CI 시간은 포함하지 않습니다.
+Quick Start가 통과했다면 [첫 실제 통합 가이드](docs/first-integration.md)의 지원 경계와 중단
+조건을 확인하고, 기존 ShardingSphere-JDBC 5.5.3 통합 테스트에서 business assertion을 유지할
+대표 operation 하나를 고르세요. 가이드는 격리된 Gradle pilot에서 capture → candidate → 사람
+승인 baseline → candidate check를 연결합니다. 저장소별 빌드 격리와 사람 검토가 필요하므로
+완료 시간을 약속하지 않습니다.
 `v0.1.0`은 Maven Central에 게시되어 있지 않으므로 가이드는 검증된 GitHub Release 자산을
 별도 로컬 Maven repository에 설치하는 현재 경로를 사용합니다.
 
@@ -89,7 +101,7 @@ Path candidatePath = Path.of("build/routecontract/orders.find-by-user-id.candida
 new ManifestStore().writeCandidate(approvedPath, candidatePath, candidate);
 
 ObservedExecutionManifest approved = new ManifestStore().read(approvedPath);
-ManifestVerificationResult result = new ManifestVerifier().verify(approved, snapshot, aliases);
+ManifestVerificationResult result = new ManifestVerifier().verify(approved, candidate);
 ManifestAssertions.assertMatched(result); // mismatch이면 stable RCM code와 함께 CI 실패
 ```
 
@@ -117,6 +129,10 @@ MySQL fixture에서는 fingerprint와 parameter type 순서만 달라졌습니�
 |---|---|---|
 | `strict` | `DRIFT`, `RCM301`·`RCM302` blocking, assertion 실패 | 작은 rewritten-SQL 구조 변화도 검토·승인하게 하지만, 의도적 변화도 baseline 갱신 전까지 CI를 막음 |
 | `budgetOnly` | `REVIEW_REQUIRED`, `RCM301`·`RCM302` non-blocking, `passesBlockingChecks=true` | 예산·data-source 집합·callback outcome은 계속 막지만 signature-only 변화는 CI를 통과시키므로 수동 검토를 놓치면 구조 회귀를 허용할 수 있음 |
+
+위 예시의 `ManifestAssertions.assertMatched(result)`는 `REVIEW_REQUIRED`도 거부합니다. signature-only
+변화를 의도적으로 CI에서 허용하는 `budgetOnly` 정책이라면 그 선택을 코드에 드러내기 위해
+`ManifestAssertions.assertPassesBlockingChecks(result)`를 사용해야 합니다.
 
 </details>
 
@@ -195,54 +211,21 @@ adoption으로 승격하지 않습니다.
 이 경로는 annotated `v0.1.0` tag, 공개·불변 non-prerelease Release, 동일 revision의
 성공한 release-evidence run과 정확한 자산 집합이 모두 존재한 뒤 사용할 수 있습니다.
 해당 Release에 첨부된 공개 자산 전체를 새 빈 디렉터리에 내려받은 다음,
-`~/.m2`가 아닌 빈 절대경로를 명시합니다. GitHub CLI를 쓴다면 다운로드부터 설치까지는
-다음 순서입니다.
+`~/.m2`가 아닌 빈 절대경로에 설치합니다. [첫 실제 통합 가이드의 2단계](docs/first-integration.md#2-install-the-exact-v010-release-assets)는
+로그인·토큰·GitHub API 없이 고정 URL과 checksum-index SHA-256을 검증한 뒤 exact 자산을
+설치합니다.
 
-```bash
-mkdir -p /absolute/path/to/downloaded-release-assets
-gh release download v0.1.0 \
-  --repo ym0506/routecontract \
-  --dir /absolute/path/to/downloaded-release-assets
+설치기가 출력한 로컬 Maven repository와 RouteContract 의존성을 기본 빌드에 바로 추가하지
+마세요. [Gradle Groovy DSL opt-in lane](docs/first-integration.md#gradle-groovy-dsl-opt-in-lane)은
+pilot property가 있을 때만 별도 source set·task·repository를 활성화하고, 기존 대표
+ShardingSphere-JDBC 5.5.3 fixture를 재사용합니다. 평상시 build와 IDE sync는 pilot과 로컬
+Release repository 없이 성공해야 합니다. `v0.1.0`은 이 Gradle 경로만 문서화하며, Maven이나
+Kotlin DSL 저장소는 검증되지 않은 일반 예시를 붙여 넣지 말고 fit blocker로 알려 주세요.
 
-python3 scripts/install-release-assets.py \
-  --release-assets-dir /absolute/path/to/downloaded-release-assets \
-  --repository /absolute/path/to/routecontract-maven
-```
-
-설치기가 출력한 로컬 Maven repository를 Gradle에 연결하고, exact ShardingSphere-JDBC
-`5.5.3`, RouteContract `0.1.0` 좌표와 Jackson 2 BOM을 테스트 의존성으로 사용합니다.
-검증된 fixture graph의 Calcite/JTS 통제를 재현하려면 JTS I/O Common을 제외하고
-Calcite Core와 linq4j를 모두 `1.42.0`으로 strict 고정해야 합니다. thin POM은 소비자의
-ShardingSphere/Jackson/Calcite 버전이나 이 exclusion을 대신 설정하지 않습니다.
-
-```groovy
-repositories {
-    exclusiveContent {
-        forRepository {
-            maven { url = uri("/absolute/path/to/routecontract-maven") }
-        }
-        filter { includeGroup("io.github.ym0506.routecontract") }
-    }
-    mavenCentral()
-}
-
-dependencies {
-    testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))
-    testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:5.5.3") {
-        exclude group: "org.locationtech.jts.io", module: "jts-io-common"
-    }
-    testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0")
-
-    constraints {
-        testImplementation("org.apache.calcite:calcite-core:1.42.0") {
-            version { strictly "1.42.0" }
-        }
-        testImplementation("org.apache.calcite:calcite-linq4j:1.42.0") {
-            version { strictly "1.42.0" }
-        }
-    }
-}
-```
+immutable `v0.1.0` 설치기에 포함된 MySQL OCI package-level 수동 검토는 UTC
+`2026-12-05`까지만 유효합니다. `2026-12-06` UTC부터 installer는 fail-closed로 중단하며,
+그때는 검토가 갱신된 더 최신 immutable Release를 사용해야 합니다. 만료 검사를 우회하지
+마세요.
 
 <details>
 <summary>설치기가 검증하는 정확한 공급망 경계</summary>
@@ -350,34 +333,16 @@ manifest match를 통과시키지 않습니다.
 
 ## 의존성·Release 호환성 상세
 
-게시 후 검증을 통과한 안정 `v0.1.0` Release 자산 또는 같은 checkout에서 생성한 Maven
-publication을 ShardingSphere-JDBC 5.5.3 소비자 테스트에 추가할 때는 Jackson 2 호환성
-모듈을 정렬하고, JTS I/O Common을 제외하며, Calcite Core와 linq4j를 1.42.0으로 strict
-고정한 뒤 다음 exact coordinate를 선언합니다. RouteContract 0.1.0은 Maven Central
-게시를 주장하지 않습니다.
-
-```groovy
-dependencies {
-    testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))
-    testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:5.5.3") {
-        exclude group: "org.locationtech.jts.io", module: "jts-io-common"
-    }
-    testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0")
-
-    constraints {
-        testImplementation("org.apache.calcite:calcite-core:1.42.0") {
-            version { strictly "1.42.0" }
-        }
-        testImplementation("org.apache.calcite:calcite-linq4j:1.42.0") {
-            version { strictly "1.42.0" }
-        }
-    }
-}
-```
+게시 후 검증을 통과한 안정 `v0.1.0` Release의 exact coordinate는
+`io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0`이며 Maven Central
+게시를 주장하지 않습니다. 이 좌표를 기본 dependency graph에 바로 붙이지 말고
+[첫 실제 통합 가이드](docs/first-integration.md)의 격리된 pilot에서만 사용하세요. 그 pilot은
+기존 ShardingSphere-JDBC 5.5.3 fixture의 실제 graph를 재사용하고 전체 runtime classpath를
+검토하게 합니다.
 
 RouteContract build는 dependency embedding을 구성하지 않으며, 모듈의 `compileOnly`
 ShardingSphere/BOM 선언은 공개 POM에서 소비자 버전 제약으로 전달되지 않습니다. 검증된
-Gradle test/runtime graph에서는 위 BOM에 따라 ShardingSphere 5.5.3 호환성 그래프의
+Gradle test/runtime graph에서는 sealed fixture에 따라 ShardingSphere 5.5.3 호환성 그래프의
 Jackson 2 core·databind·datatype-jdk8·datatype-jsr310 모듈이 2.18.9로 해석되고,
 Calcite Core·linq4j는 1.42.0으로 해석됩니다. JTS Core 1.19.0은 유지되지만 JTS I/O
 Common은 graph에 없어야 합니다. 단, Jackson

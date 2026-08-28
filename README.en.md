@@ -17,14 +17,26 @@
 
 ## Quick Start
 
-Prerequisites are Java 17, a running Docker daemon, Bash/POSIX tools, and the executable Gradle
-Wrapper. The first run may need network access to download Gradle, Maven Central dependencies, and
-the digest-pinned MySQL container image when it is not already available locally.
+Prerequisites are Git, Java 17, a running Docker daemon, Bash/POSIX tools, and the executable Gradle
+Wrapper. The first run may need network access for the public tag, Gradle and Maven Central
+dependencies, and the digest-pinned MySQL container image when it is not already available locally.
 
 ```bash
-git clone --depth 1 --branch v0.1.0 https://github.com/ym0506/routecontract.git routecontract-v0.1.0
-cd routecontract-v0.1.0
+(
+set -euo pipefail
+source_dir="routecontract-v0.1.0"
+test ! -e "${source_dir}"
+test ! -L "${source_dir}"
+git clone --quiet --depth 1 --branch v0.1.0 --single-branch \
+  https://github.com/ym0506/routecontract.git "${source_dir}"
+test "$(git -C "${source_dir}" cat-file -t refs/tags/v0.1.0)" = tag
+test "$(git -C "${source_dir}" rev-parse refs/tags/v0.1.0)" = e3944631ad827e88d4936b75e9b738ef50a22b20
+test "$(git -C "${source_dir}" rev-parse 'refs/tags/v0.1.0^{}')" = db203cfd9202ff10cd22c41cf04034eca5177341
+test "$(git -C "${source_dir}" rev-parse HEAD)" = db203cfd9202ff10cd22c41cf04034eca5177341
+test -z "$(git -C "${source_dir}" status --short)"
+cd "${source_dir}"
 ./scripts/quickstart-demo.sh
+)
 ```
 
 This command verifies the real-MySQL `1 → 2` observed-execution regression
@@ -44,15 +56,15 @@ output that could contain SQL, parameters, or connection details.
 
 </details>
 
-## Next 10 minutes: review the first-integration path
+## Next step: assess a first integration
 
-After the Quick Start passes, use the next 10 minutes to read the
-[first real integration guide](docs/first-integration.md) and identify one representative
-ShardingSphere-JDBC 5.5.3 integration test where the business assertion will stay alongside
-capture → candidate → human-approved baseline → candidate check. This is not a completion-time
-estimate; Release downloads, test changes, human review, and CI time are excluded. `v0.1.0` is not
-published to Maven Central, so the guide installs verified GitHub Release assets into a separate
-local Maven repository.
+After the Quick Start passes, read the support boundary and stop conditions in the
+[first real integration guide](docs/first-integration.md), then choose one representative existing
+ShardingSphere-JDBC 5.5.3 integration test whose business assertion will remain. The guide connects
+capture → candidate → human-approved baseline → candidate check in an isolated Gradle pilot.
+Repository-specific build isolation and human review are required, so no completion time is
+promised. `v0.1.0` is not published to Maven Central; the guide installs verified GitHub Release
+assets into a separate local Maven repository.
 
 After a first run—or after deciding that the current scope is not a fit—use the
 [stable v0.1.0 feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)
@@ -92,7 +104,7 @@ Path candidatePath = Path.of("build/routecontract/orders.find-by-user-id.candida
 new ManifestStore().writeCandidate(approvedPath, candidatePath, candidate);
 
 ObservedExecutionManifest approved = new ManifestStore().read(approvedPath);
-ManifestVerificationResult result = new ManifestVerifier().verify(approved, snapshot, aliases);
+ManifestVerificationResult result = new ManifestVerifier().verify(approved, candidate);
 ManifestAssertions.assertMatched(result); // A mismatch fails CI with stable RCM codes.
 ```
 
@@ -119,6 +131,10 @@ semantically equivalent.
 |---|---|---|
 | `strict` | `DRIFT`; blocking `RCM301`/`RCM302`; assertion fails | Forces review and approval of small rewritten-SQL structural changes, but also blocks intentional changes until the baseline is updated |
 | `budgetOnly` | `REVIEW_REQUIRED`; non-blocking `RCM301`/`RCM302`; `passesBlockingChecks=true` | Still blocks budget, data-source-set, and callback-outcome changes, but a missed manual review can allow a signature-only structural regression through CI |
+
+The `ManifestAssertions.assertMatched(result)` call above also rejects `REVIEW_REQUIRED`. A
+`budgetOnly` policy that intentionally lets signature-only review items pass CI must make that
+choice explicit with `ManifestAssertions.assertPassesBlockingChecks(result)`.
 
 </details>
 
@@ -197,56 +213,22 @@ limitations. None of these results implies production support or general perform
 
 This path becomes usable only after an annotated `v0.1.0` tag, a public immutable non-prerelease
 Release, a successful same-revision release-evidence run, and the exact asset set all exist.
-Download every public asset attached to that Release into a new empty directory, then provide an
-empty absolute repository path rather than relying on `~/.m2`. With GitHub CLI, the complete path
-from download to installation is:
+Download every public asset attached to that Release into a new empty directory, then install it to
+an empty absolute repository path rather than relying on `~/.m2`. [Step 2 of the first real
+integration guide](docs/first-integration.md#2-install-the-exact-v010-release-assets) uses fixed
+public URLs and a pinned checksum-index SHA-256, without a GitHub login, token, or API call.
 
-```bash
-mkdir -p /absolute/path/to/downloaded-release-assets
-gh release download v0.1.0 \
-  --repo ym0506/routecontract \
-  --dir /absolute/path/to/downloaded-release-assets
+Do not add the resulting local Maven repository or RouteContract dependency directly to the
+default build. The [Gradle Groovy DSL opt-in
+lane](docs/first-integration.md#gradle-groovy-dsl-opt-in-lane) activates a separate source set,
+task, and repository only when the pilot property is present, while reusing the representative
+fixture's existing ShardingSphere-JDBC 5.5.3 dependency. The normal build and IDE sync must succeed
+without the pilot or local Release repository. `v0.1.0` documents only this Gradle path; report a
+Maven or Kotlin DSL repository as a fit blocker rather than pasting an untested generic fragment.
 
-python3 scripts/install-release-assets.py \
-  --release-assets-dir /absolute/path/to/downloaded-release-assets \
-  --repository /absolute/path/to/routecontract-maven
-```
-
-Connect the installed local Maven repository to Gradle, then use exact
-ShardingSphere-JDBC `5.5.3` and RouteContract `0.1.0` coordinates plus the
-Jackson 2 BOM as test dependencies. To reproduce the verified fixture graph's
-Calcite/JTS controls, exclude JTS I/O Common and strictly constrain both
-Calcite Core and linq4j to `1.42.0`. The thin POM does not align the consumer's
-ShardingSphere/Jackson/Calcite versions or apply this exclusion.
-
-```groovy
-repositories {
-    exclusiveContent {
-        forRepository {
-            maven { url = uri("/absolute/path/to/routecontract-maven") }
-        }
-        filter { includeGroup("io.github.ym0506.routecontract") }
-    }
-    mavenCentral()
-}
-
-dependencies {
-    testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))
-    testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:5.5.3") {
-        exclude group: "org.locationtech.jts.io", module: "jts-io-common"
-    }
-    testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0")
-
-    constraints {
-        testImplementation("org.apache.calcite:calcite-core:1.42.0") {
-            version { strictly "1.42.0" }
-        }
-        testImplementation("org.apache.calcite:calcite-linq4j:1.42.0") {
-            version { strictly "1.42.0" }
-        }
-    }
-}
-```
+The embedded MySQL OCI package-level manual review in the immutable `v0.1.0` installer is valid
+through UTC `2026-12-05`. Beginning `2026-12-06` UTC, the installer fails closed; use a newer
+immutable Release with renewed evidence and do not bypass the expiry.
 
 <details>
 <summary>Exact supply-chain boundary enforced by the installer</summary>
@@ -356,30 +338,12 @@ One capture retains at most 10,000 physical execution attempts. At the next atte
 
 ## Dependency and Release compatibility details
 
-When consuming either postpublication-verified stable `v0.1.0` Release assets or a Maven publication
-generated from the same checkout, a ShardingSphere-JDBC 5.5.3 consumer test should align the
-Jackson 2 compatibility modules, exclude JTS I/O Common, and strictly constrain Calcite Core and
-linq4j to 1.42.0 before declaring the exact coordinate below. RouteContract 0.1.0 is not claimed to
-exist on Maven Central.
-
-```groovy
-dependencies {
-    testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))
-    testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:5.5.3") {
-        exclude group: "org.locationtech.jts.io", module: "jts-io-common"
-    }
-    testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0")
-
-    constraints {
-        testImplementation("org.apache.calcite:calcite-core:1.42.0") {
-            version { strictly "1.42.0" }
-        }
-        testImplementation("org.apache.calcite:calcite-linq4j:1.42.0") {
-            version { strictly "1.42.0" }
-        }
-    }
-}
-```
+The exact coordinate in the postpublication-verified stable `v0.1.0` Release is
+`io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0`; it is not claimed to exist
+on Maven Central. Do not add it directly to the default dependency graph. Use it only in the
+isolated pilot from the [first real integration guide](docs/first-integration.md), which reuses the
+existing ShardingSphere-JDBC 5.5.3 fixture and requires inspection of its complete runtime
+classpath.
 
 The RouteContract build does not configure dependency embedding. Its
 module-level `compileOnly` ShardingSphere/BOM declarations are not published as
