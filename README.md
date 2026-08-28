@@ -11,6 +11,8 @@
 - **CI 판단:** 검증한 `1 → 2` fixture에서는 시도 수·data-source 예산 초과가 `RCM201`·`RCM202` manifest assertion 실패가 됨; 이를 required check로 설정하면 merge를 막을 수 있지만, `1 → 2` 자체를 성능 결함으로 단정하지 않고 의도한 변경인지 사람의 검토를 요구함
 - **검증 경계:** Java 17, 정확히 ShardingSphere-JDBC 5.5.3, 정상 반환·비-interrupt 동기식 non-batch `PreparedStatement`; SQL 의미 동치나 complete route plan·commit·비즈니스 성공은 판정하지 않음
 
+[2분 54초 시연 영상 보기](https://www.youtube.com/watch?v=pcgvNNxd1mM)
+
 ![같은 업무 결과에서 승인본과 candidate의 관측 실행 시도 및 data-source alias가 1에서 2로 달라져 RCM201과 RCM202가 발생한 실제 MySQL 검증](submission/assets/baseline-candidate.png)
 
 ## Quick Start

@@ -11,6 +11,8 @@
 - **CI decision:** in the verified `1 → 2` fixture, attempt-count and data-source-budget overruns fail the manifest assertion with `RCM201` and `RCM202`; configuring it as a required check can block the merge, while RouteContract does not label `1 → 2` itself as a performance defect and requires a person to review whether the change is intentional
 - **Verified boundary:** Java 17, exactly ShardingSphere-JDBC 5.5.3, normal-returning and non-interrupted synchronous non-batch `PreparedStatement`; it does not decide SQL semantic equivalence or reconstruct a complete route plan, commit, or business success
 
+[Watch the 2:54 demo](https://www.youtube.com/watch?v=pcgvNNxd1mM)
+
 ![A verified real-MySQL case where the business result stays the same while observed attempts and reviewed data-source aliases change from one to two, producing RCM201 and RCM202](submission/assets/baseline-candidate.png)
 
 ## Quick Start
