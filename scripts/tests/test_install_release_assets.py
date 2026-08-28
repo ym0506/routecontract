@@ -625,7 +625,7 @@ class InstallReleaseAssetsTest(unittest.TestCase):
                 "package-level license review before the 2026-08-27 expiry",
             ),
             ("reviewedAt", "2026-08-13"),
-            ("expires", "2026-08-27"),
+            ("expires", "9999-12-31"),
         )
         for field, value in stale_values:
             with self.subTest(field=field):

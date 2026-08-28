@@ -30,11 +30,6 @@ cd routecontract-v0.1.0
 `[ROUTECONTRACT QUICKSTART VERIFIED]`, `realMysqlDemoExit 0`,
 `intentionalCiGateExit 1`, `quickstartExit 0`이 출력되면 예상한 전체 흐름이 통과한 것입니다.
 
-처음 실행했거나 현재 환경에는 맞지 않는다고 판단했다면
-[stable v0.1.0 feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)에
-성공·막힌 지점·지원 범위 밖·필요 없음 중 어느 결과든 짧게 남길 수 있습니다. 공개 Issue에는
-원문 SQL, bind 값, JDBC URL, 실제 topology, full log 같은 민감 정보를 넣지 마세요.
-
 <details>
 <summary>정확한 종료 코드와 출력 경계</summary>
 
@@ -43,6 +38,21 @@ cd routecontract-v0.1.0
 SQL·parameter·connection 정보가 섞일 수 있는 하위 프로세스 원문은 화면에 다시 출력하지 않습니다.
 
 </details>
+
+## 다음 10분: 첫 통합 경로 검토하기
+
+Quick Start가 통과했다면 다음 10분 동안 [첫 실제 통합 가이드](docs/first-integration.md)를
+읽고 기존
+ShardingSphere-JDBC 5.5.3 통합 테스트의 대표 operation 하나에 business assertion을 유지한
+채 capture → candidate → 사람 승인 baseline → candidate check를 넣을 위치를 정할 수 있습니다.
+이는 완료 시간 추정이 아니며 Release 다운로드·테스트 수정·사람 검토·CI 시간은 포함하지 않습니다.
+`v0.1.0`은 Maven Central에 게시되어 있지 않으므로 가이드는 검증된 GitHub Release 자산을
+별도 로컬 Maven repository에 설치하는 현재 경로를 사용합니다.
+
+처음 실행했거나 현재 환경에는 맞지 않는다고 판단했다면
+[stable v0.1.0 feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)에
+성공·막힌 지점·지원 범위 밖·필요 없음 중 어느 결과든 짧게 남길 수 있습니다. 공개 Issue에는
+원문 SQL, bind 값, JDBC URL, 실제 topology, full log 같은 민감 정보를 넣지 마세요.
 
 ## 가장 작은 사용 예
 

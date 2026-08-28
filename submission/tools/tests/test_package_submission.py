@@ -1364,6 +1364,191 @@ class TaggedIssueFormAllowlistTest(unittest.TestCase):
             )
 
 
+class FirstIntegrationDocumentationContractTest(unittest.TestCase):
+    def test_readmes_link_next_ten_minutes_immediately_after_quick_start(self) -> None:
+        readme_ko = (REPOSITORY_ROOT / "README.md").read_text(encoding="utf-8")
+        readme_en = (REPOSITORY_ROOT / "README.en.md").read_text(encoding="utf-8")
+
+        self.assertEqual(1, readme_ko.count("## 다음 10분: 첫 통합 경로 검토하기"))
+        self.assertEqual(1, readme_en.count("## Next 10 minutes: review the first-integration path"))
+        for readme, next_heading, usage_heading in (
+            (
+                readme_ko,
+                "## 다음 10분: 첫 통합 경로 검토하기",
+                "## 가장 작은 사용 예",
+            ),
+            (
+                readme_en,
+                "## Next 10 minutes: review the first-integration path",
+                "## Smallest usage example",
+            ),
+        ):
+            self.assertLess(readme.index("## Quick Start"), readme.index(next_heading))
+            self.assertLess(readme.index(next_heading), readme.index(usage_heading))
+            section = readme[readme.index(next_heading):readme.index(usage_heading)]
+            self.assertIn("(docs/first-integration.md)", section)
+            self.assertIn("5.5.3", section)
+            self.assertIn("Maven Central", section)
+            self.assertTrue(
+                "완료 시간 추정이 아니며" in section
+                or "not a completion-time" in section
+            )
+            self.assertLess(
+                section.index("(docs/first-integration.md)"),
+                section.index("issues/new?template=stable-feedback.yml"),
+            )
+
+    def test_first_integration_uses_candidate_then_human_approval(self) -> None:
+        guide = (REPOSITORY_ROOT / "docs" / "first-integration.md").read_text(
+            encoding="utf-8"
+        )
+
+        for required in (
+            "Java\n17 with exactly Apache ShardingSphere-JDBC 5.5.3",
+            "synchronous non-batch `PreparedStatement`",
+            "Published end-to-end database verification uses MySQL 8.4.11",
+            "behavior with other databases is\nunverified",
+            "GitHub CLI (`gh`), Python 3.10 or newer",
+            "Authentication is not required\nfor this public Release download",
+            "runner needs `gh`, Python 3.10 or newer",
+            "RouteContract `0.1.0` is **not published to Maven Central**",
+            'providers.gradleProperty("routecontractRepository")',
+            'providers.environmentVariable("ROUTECONTRACT_REPOSITORY")',
+            '.getOrNull()',
+            'systemProperty "routecontract.projectDir", projectDir.absolutePath',
+            "gh release download v0.1.0",
+            "routecontract-0.1.0-source.zip",
+            "/scripts/install-release-assets.py",
+            'cd "/absolute/path/to/your-repository"',
+            "RepositoriesMode.FAIL_ON_PROJECT_REPOS",
+            "dependencyResolutionManagement {",
+            "repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)",
+            "move both the\nproperty/environment resolution",
+            "never disable those controls",
+            "assertEquals(201L, actualId); // Keep the existing business assertion.",
+            "ManifestPolicy policy = ManifestPolicy.strict(",
+            '"ds_0", "orders-shard-a"',
+            '"ds_1", "orders-shard-b"',
+            "RouteContract does not discover the complete target universe",
+            "Never silently\nrebind a different observed name to an existing alias",
+            "use non-sensitive test-fixture\nnames in a public repository",
+            "store.writeCandidate(approvedPath, candidatePath, candidate);",
+            ".hasAtMostObservedPhysicalAttempts(reviewedMaxAttempts)",
+            ".hasAtMostDistinctObservedDataSourceNames(reviewedMaxDataSources)",
+            "if (Files.notExists(approvedPath))",
+            "new ManifestVerifier().verify(store.read(approvedPath), candidate)",
+            "RouteContract provides no approval API",
+            "every fresh CI job must repeat the exact Release download",
+            'GH_TOKEN: ${{ github.token }}',
+            'printf \'ROUTECONTRACT_REPOSITORY=%s\\n\'',
+            "candidate file is an undeclared test side effect",
+            "replace `test` in both commands in\nthis guide with that actual task",
+            "never update the approved file automatically in CI",
+        ):
+            self.assertIn(required, guide)
+        self.assertEqual(
+            2,
+            guide.count('providers.gradleProperty("routecontractRepository")'),
+        )
+        self.assertEqual(
+            2,
+            guide.count('providers.environmentVariable("ROUTECONTRACT_REPOSITORY")'),
+        )
+        self.assertLess(guide.index("assertEquals(201L, actualId)"), guide.index("writeCandidate"))
+        self.assertLess(guide.index("writeCandidate"), guide.index("Files.notExists"))
+        first_run_guard = guide[
+            guide.index("if (Files.notExists(approvedPath))"):
+            guide.index("ManifestAssertions.assertMatched(")
+        ]
+        self.assertIn(".hasAtMostObservedPhysicalAttempts", first_run_guard)
+        self.assertIn(".hasAtMostDistinctObservedDataSourceNames", first_run_guard)
+        self.assertNotIn("Maven Central coordinate", guide)
+        self.assertEqual(
+            2,
+            guide.count("./gradlew --no-build-cache --rerun-tasks test"),
+        )
+        self.assertLess(
+            guide.index('ROUTECONTRACT_REPOSITORY="/absolute/path/to/routecontract-maven"'),
+            guide.index("## 4. Review and approve the first baseline"),
+        )
+        for unquoted_shell_path in (
+            "  /absolute/path/to/routecontract-v0.1.0",
+            "cd /absolute/path/to/routecontract-v0.1.0",
+            "mkdir /absolute/path/to/routecontract-release-assets",
+            "--dir /absolute/path/to/routecontract-release-assets",
+            "python3 /absolute/path/to/routecontract-v0.1.0",
+            "--release-assets-dir /absolute/path/to/routecontract-release-assets",
+            "--repository /absolute/path/to/routecontract-maven",
+            "cd /absolute/path/to/your-repository",
+            "ROUTECONTRACT_REPOSITORY=/absolute/path/to/routecontract-maven",
+        ):
+            self.assertNotIn(unquoted_shell_path, guide)
+        self.assertNotIn("run: ./gradlew test", guide)
+        self.assertNotIn("store.read(approvedPath).policy()", guide)
+        self.assertNotIn('url = uri("/absolute/path/to/routecontract-maven")', guide)
+
+    def test_stable_feedback_records_cumulative_stage_without_adoption_claim(self) -> None:
+        form = (
+            REPOSITORY_ROOT / ".github" / "ISSUE_TEMPLATE" / "stable-feedback.yml"
+        ).read_text(encoding="utf-8")
+
+        def field_block(field_id: str) -> str:
+            identifier = f"    id: {field_id}"
+            identifier_index = form.index(identifier)
+            start = form.rfind("  - type:", 0, identifier_index)
+            end = form.find("\n  - type:", identifier_index)
+            return form[start:] if end == -1 else form[start:end]
+
+        integration_stage = field_block("integration_stage")
+        outcome = field_block("outcome")
+        self.assertTrue(integration_stage.startswith("  - type: dropdown\n"))
+        self.assertNotIn("id: path", form)
+        stage_options = (
+            "Stage 0 — reviewed the README and support boundary",
+            "Stage 1 — also ran the exact v0.1.0 Quick Start",
+            "Stage 2 — also verified and installed the exact v0.1.0 Release assets",
+            "Stage 3 — also captured one representative operation in my own repository",
+            "Stage 4 — also human-reviewed and committed an approved baseline",
+            "Stage 5 — also ran a candidate check against that baseline in my own repository or CI",
+        )
+        self.assertEqual(
+            list(stage_options),
+            re.findall(r"^        - (.+)$", integration_stage, flags=re.MULTILINE),
+        )
+        self.assertRegex(
+            integration_stage,
+            r"\n    validations:\n      required: true\s*$",
+        )
+        self.assertNotIn("default:", integration_stage)
+        self.assertNotIn("multiple:", integration_stage)
+        outcome_options = (
+            "Worked as documented",
+            "Documentation review only",
+            "Product or documentation blocker",
+            "Prerequisite or environment blocker",
+            "Not a fit for my use case",
+            "Stopped before completion",
+            "Other",
+        )
+        self.assertTrue(outcome.startswith("  - type: dropdown\n"))
+        self.assertEqual(
+            list(outcome_options),
+            re.findall(r"^        - (.+)$", outcome, flags=re.MULTILINE),
+        )
+        self.assertRegex(outcome, r"\n    validations:\n      required: true\s*$")
+        self.assertNotIn("default:", outcome)
+        self.assertNotIn("multiple:", outcome)
+        self.assertNotIn("Not selected yet", form)
+        public_evidence_block = field_block("public_evidence")
+        self.assertIn("Optional; leave blank", public_evidence_block)
+        self.assertNotIn("validations:", public_evidence_block)
+        self.assertIn(
+            "is not counted as a verified external integration",
+            public_evidence_block,
+        )
+        self.assertIn("does not by itself establish production use, adoption", form)
+
+
 class ReportExternalEvidenceContractTest(unittest.TestCase):
     def materialize(self, branch: str) -> dict:
         return package_submission.validate_and_materialize_report_content(
@@ -2781,9 +2966,22 @@ module._decode_activation_record(payload, url, 'record.json')
             dummy.write_bytes(b"x")
             evidence = root / "evidence"
             evidence.mkdir()
+            frozen_package_entrypoint = (
+                "from datetime import datetime as RealDateTime, timezone\n"
+                "from unittest.mock import patch\n"
+                "import runpy\n"
+                "class FrozenDateTime(RealDateTime):\n"
+                "    @classmethod\n"
+                "    def now(cls, tz=None):\n"
+                "        value = RealDateTime(2026, 8, 26, tzinfo=timezone.utc)\n"
+                "        return value if tz is None else value.astimezone(tz)\n"
+                "with patch('datetime.datetime', FrozenDateTime):\n"
+                f"    runpy.run_path({str(SCRIPT)!r}, run_name='__main__')\n"
+            )
             package_arguments = [
                 sys.executable,
-                str(SCRIPT),
+                "-c",
+                frozen_package_entrypoint,
                 "--manifest",
                 str(manifest_path),
                 "--template",
