@@ -892,33 +892,20 @@ class SubmissionClaimTextTest(unittest.TestCase):
         self.assertLess(readme_en.index("## Verified core scenarios"), readme_en.index("## Precise comparison with existing tools"))
         self.assertLess(readme_en.index("## Precise comparison with existing tools"), readme_en.index("## Code and public-evidence boundaries"))
         self.assertLess(readme_en.index("## v0.1 support boundary"), readme_en.index("## Dependency and Release compatibility details"))
-        driver_coordinate = (
-            'testImplementation("org.apache.shardingsphere:'
-            'shardingsphere-jdbc:5.5.3")'
-        )
         for readme in (readme_ko, readme_en):
-            self.assertEqual(2, readme.count(driver_coordinate))
+            self.assertNotIn(
+                'testImplementation("org.apache.shardingsphere:'
+                'shardingsphere-jdbc:5.5.3")',
+                readme,
+            )
+            self.assertIn(
+                "io.github.ym0506.routecontract:"
+                "routecontract-shardingsphere-5.5:0.1.0",
+                readme,
+            )
+            self.assertIn("(docs/first-integration.md)", readme)
             for block in re.findall(r"```groovy\n(.*?)```", readme, re.DOTALL):
-                if "routecontract-shardingsphere-5.5:0.1.0" not in block:
-                    continue
-                self.assertIn(
-                    'exclude group: "org.locationtech.jts.io", module: "jts-io-common"',
-                    block,
-                )
-                self.assertEqual(2, block.count('version { strictly "1.42.0" }'))
-                self.assertIn(
-                    'testImplementation("org.apache.calcite:calcite-core:1.42.0")',
-                    block,
-                )
-                self.assertIn(
-                    'testImplementation("org.apache.calcite:calcite-linq4j:1.42.0")',
-                    block,
-                )
-                self.assertLess(block.index("jackson-bom:2.18.9"), block.index(driver_coordinate))
-                self.assertLess(
-                    block.index(driver_coordinate),
-                    block.index("routecontract-shardingsphere-5.5:0.1.0"),
-                )
+                self.assertNotIn("routecontract-shardingsphere-5.5:0.1.0", block)
         self.assertIn(
             "[Verification evidence matrix](docs/evidence-matrix.md)",
             readme_en,
@@ -937,19 +924,18 @@ class SubmissionClaimTextTest(unittest.TestCase):
         ):
             release_section = readme.split(heading, 1)[1].split("\n## ", 1)[0]
             ordered = (
-                "gh release download v0.1.0",
-                "python3 scripts/install-release-assets.py",
-                "exclusiveContent",
-                'maven { url = uri("/absolute/path/to/routecontract-maven") }',
-                'testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))',
-                'testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:5.5.3")',
-                'testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0")',
+                "docs/first-integration.md#2-install-the-exact-v010-release-assets",
+                "docs/first-integration.md#gradle-groovy-dsl-opt-in-lane",
+                "2026-12-05",
+                "2026-12-06",
             )
             self.assertTrue(all(value in release_section for value in ordered))
             self.assertEqual(
                 sorted(release_section.index(value) for value in ordered),
                 [release_section.index(value) for value in ordered],
             )
+            self.assertNotIn("gh release download", release_section)
+            self.assertNotIn("testImplementation(", release_section)
         release_quick_start = "      - name: Verify public Quick Start"
         ci_quick_start = "      - name: Verify the documented real-MySQL Quick Start"
         ci_package_job = (
@@ -1365,21 +1351,21 @@ class TaggedIssueFormAllowlistTest(unittest.TestCase):
 
 
 class FirstIntegrationDocumentationContractTest(unittest.TestCase):
-    def test_readmes_link_next_ten_minutes_immediately_after_quick_start(self) -> None:
+    def test_readmes_link_next_step_immediately_after_quick_start(self) -> None:
         readme_ko = (REPOSITORY_ROOT / "README.md").read_text(encoding="utf-8")
         readme_en = (REPOSITORY_ROOT / "README.en.md").read_text(encoding="utf-8")
 
-        self.assertEqual(1, readme_ko.count("## 다음 10분: 첫 통합 경로 검토하기"))
-        self.assertEqual(1, readme_en.count("## Next 10 minutes: review the first-integration path"))
+        self.assertEqual(1, readme_ko.count("## 다음 단계: 첫 통합 가능성 검토하기"))
+        self.assertEqual(1, readme_en.count("## Next step: assess a first integration"))
         for readme, next_heading, usage_heading in (
             (
                 readme_ko,
-                "## 다음 10분: 첫 통합 경로 검토하기",
+                "## 다음 단계: 첫 통합 가능성 검토하기",
                 "## 가장 작은 사용 예",
             ),
             (
                 readme_en,
-                "## Next 10 minutes: review the first-integration path",
+                "## Next step: assess a first integration",
                 "## Smallest usage example",
             ),
         ):
@@ -1390,8 +1376,8 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             self.assertIn("5.5.3", section)
             self.assertIn("Maven Central", section)
             self.assertTrue(
-                "완료 시간 추정이 아니며" in section
-                or "not a completion-time" in section
+                "완료 시간을 약속하지" in section
+                or "no completion time is\npromised" in section
             )
             self.assertLess(
                 section.index("(docs/first-integration.md)"),
@@ -1408,23 +1394,28 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             "synchronous non-batch `PreparedStatement`",
             "Published end-to-end database verification uses MySQL 8.4.11",
             "behavior with other databases is\nunverified",
-            "GitHub CLI (`gh`), Python 3.10 or newer",
-            "Authentication is not required\nfor this public Release download",
-            "runner needs `gh`, Python 3.10 or newer",
+            "Step 2 additionally requires `curl` and Python 3.10 or newer",
+            "Neither\nstep requires a GitHub login, token, API call, or GitHub CLI",
+            "runner needs Git, `curl`, Python\n3.10 or newer",
             "RouteContract `0.1.0` is **not published to Maven Central**",
             'providers.gradleProperty("routecontractRepository")',
             'providers.environmentVariable("ROUTECONTRACT_REPOSITORY")',
-            '.getOrNull()',
+            'sourceSets.create("routeContractPilot")',
+            'tasks.register("routeContractPilot", Test)',
+            "src/routeContractPilot/java",
+            "src/routeContractPilot/resources",
             'systemProperty "routecontract.projectDir", projectDir.absolutePath',
-            "gh release download v0.1.0",
             "routecontract-0.1.0-source.zip",
             "/scripts/install-release-assets.py",
-            'cd "/absolute/path/to/your-repository"',
             "RepositoriesMode.FAIL_ON_PROJECT_REPOS",
-            "dependencyResolutionManagement {",
-            "repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)",
-            "move both the\nproperty/environment resolution",
-            "never disable those controls",
+            "normal build and IDE sync must still succeed",
+            "uses Maven, or needs Kotlin DSL",
+            "never disable them",
+            "dependency-report task can still exit `0` while printing",
+            "do not treat `BUILD SUCCESSFUL`\nalone as a usable graph",
+            "expected_index_sha256=\"820ed33e",
+            "expected_installer_sha256=\"d21a7c71",
+            "2026-12-06",
             "assertEquals(201L, actualId); // Keep the existing business assertion.",
             "ManifestPolicy policy = ManifestPolicy.strict(",
             '"ds_0", "orders-shard-a"',
@@ -1438,20 +1429,20 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             "if (Files.notExists(approvedPath))",
             "new ManifestVerifier().verify(store.read(approvedPath), candidate)",
             "RouteContract provides no approval API",
+            "Record that the baseline was human-reviewed",
             "every fresh CI job must repeat the exact Release download",
-            'GH_TOKEN: ${{ github.token }}',
             'printf \'ROUTECONTRACT_REPOSITORY=%s\\n\'',
             "candidate file is an undeclared test side effect",
-            "replace `test` in both commands in\nthis guide with that actual task",
-            "never update the approved file automatically in CI",
+            "Do not accept an arbitrary\nnonzero build result",
+            "never update the approved file\nautomatically in CI",
         ):
             self.assertIn(required, guide)
         self.assertEqual(
-            2,
+            1,
             guide.count('providers.gradleProperty("routecontractRepository")'),
         )
         self.assertEqual(
-            2,
+            1,
             guide.count('providers.environmentVariable("ROUTECONTRACT_REPOSITORY")'),
         )
         self.assertLess(guide.index("assertEquals(201L, actualId)"), guide.index("writeCandidate"))
@@ -1463,10 +1454,7 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
         self.assertIn(".hasAtMostObservedPhysicalAttempts", first_run_guard)
         self.assertIn(".hasAtMostDistinctObservedDataSourceNames", first_run_guard)
         self.assertNotIn("Maven Central coordinate", guide)
-        self.assertEqual(
-            2,
-            guide.count("./gradlew --no-build-cache --rerun-tasks test"),
-        )
+        self.assertGreaterEqual(guide.count("--no-build-cache --rerun-tasks"), 2)
         self.assertLess(
             guide.index('ROUTECONTRACT_REPOSITORY="/absolute/path/to/routecontract-maven"'),
             guide.index("## 4. Review and approve the first baseline"),
@@ -1486,6 +1474,78 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
         self.assertNotIn("run: ./gradlew test", guide)
         self.assertNotIn("store.read(approvedPath).policy()", guide)
         self.assertNotIn('url = uri("/absolute/path/to/routecontract-maven")', guide)
+        self.assertNotIn("<profile>", guide)
+        self.assertNotIn("./mvnw", guide)
+
+        ci_block = re.search(r"```yaml\n(.*?)```", guide, flags=re.DOTALL).group(1)
+        for required in (
+            'release_base="https://github.com/ym0506/routecontract/releases/download/v0.1.0"',
+            'expected_index_sha256="820ed33eb8bfe8d47f3ec8782d2aa99f2879227c4ee066ecafc467e61abb8684"',
+            'expected_installer_sha256="d21a7c71eb725e8d5f0675cfb88815b26be130d63711dc025a06347317652d33"',
+            'expected_tag_object="e3944631ad827e88d4936b75e9b738ef50a22b20"',
+            'expected_commit="db203cfd9202ff10cd22c41cf04034eca5177341"',
+            "cat-file -t refs/tags/v0.1.0",
+            "rev-parse 'refs/tags/v0.1.0^{}'",
+            "symbolic-ref -q HEAD",
+            "status --short",
+            "curl --disable --proto '=https' --tlsv1.2 --fail --location",
+            'actual_index_sha256="$(python3 -I -c',
+            'actual_installer_sha256="$(python3 -I -c',
+            'python3 -I "${installer}"',
+        ):
+            self.assertIn(required, ci_block)
+        expected_assets = (
+            "SHA256SUMS",
+            "routecontract-0.1.0-source.zip",
+            "routecontract-shardingsphere-5.5-0.1.0.jar",
+            "routecontract-shardingsphere-5.5-0.1.0-sources.jar",
+            "routecontract-shardingsphere-5.5-0.1.0-javadoc.jar",
+            "routecontract-shardingsphere-5.5.pom",
+            "routecontract-shardingsphere-5.5-cyclonedx.json",
+            "routecontract-shardingsphere-5.5-cyclonedx.xml",
+            "routecontract-aggregate-cyclonedx.json",
+            "routecontract-aggregate-cyclonedx.xml",
+            "supply-chain-evidence.json",
+            "test-summary.txt",
+        )
+        assets_block = re.search(
+            r"^    assets=\(\n(.*?)^    \)$",
+            ci_block,
+            flags=re.DOTALL | re.MULTILINE,
+        ).group(1)
+        self.assertEqual(
+            expected_assets,
+            tuple(line.strip() for line in assets_block.splitlines()),
+        )
+        self.assertNotIn("gh release download", ci_block)
+        self.assertNotIn("GH_TOKEN", ci_block)
+        self.assertLess(
+            ci_block.index("actual_index_sha256="),
+            ci_block.index('python3 -I "${installer}"'),
+        )
+        self.assertLess(
+            ci_block.index("actual_installer_sha256="),
+            ci_block.index('python3 -I "${installer}"'),
+        )
+        run_blocks = re.findall(
+            r"^  run: \|\n(.*?)(?=^\S|\Z)",
+            ci_block,
+            flags=re.DOTALL | re.MULTILINE,
+        )
+        self.assertEqual(2, len(run_blocks))
+        for run_block in run_blocks:
+            shell = "".join(
+                line[4:] if line.startswith("    ") else line
+                for line in run_block.splitlines(keepends=True)
+            )
+            result = subprocess.run(
+                ["bash", "-n"],
+                input=shell,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(0, result.returncode, result.stderr)
 
     def test_stable_feedback_records_cumulative_stage_without_adoption_claim(self) -> None:
         form = (
@@ -1507,9 +1567,9 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             "Stage 0 — reviewed the README and support boundary",
             "Stage 1 — also ran the exact v0.1.0 Quick Start",
             "Stage 2 — also verified and installed the exact v0.1.0 Release assets",
-            "Stage 3 — also captured one representative operation in my own repository",
-            "Stage 4 — also human-reviewed and committed an approved baseline",
-            "Stage 5 — also ran a candidate check against that baseline in my own repository or CI",
+            "Stage 3 — also captured one representative operation in a repository I own, maintain, or am authorized to modify",
+            "Stage 4 — also human-reviewed and committed an approved baseline there",
+            "Stage 5 — also ran a candidate check against that baseline locally or in CI",
         )
         self.assertEqual(
             list(stage_options),
@@ -1539,14 +1599,132 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
         self.assertNotIn("default:", outcome)
         self.assertNotIn("multiple:", outcome)
         self.assertNotIn("Not selected yet", form)
+        self.assertNotIn("id: fit", form)
+        self.assertEqual(
+            {
+                "integration_stage",
+                "outcome",
+                "environment",
+                "result",
+                "public_evidence",
+                "privacy",
+            },
+            set(re.findall(r"^    id: (.+)$", form, flags=re.MULTILINE)),
+        )
         public_evidence_block = field_block("public_evidence")
         self.assertIn("Optional; leave blank", public_evidence_block)
         self.assertNotIn("validations:", public_evidence_block)
         self.assertIn(
-            "is not counted as a verified external integration",
+            "A maintainer verifies these links before counting an external integration",
             public_evidence_block,
         )
+        self.assertIn("link the immutable source commit", public_evidence_block)
+        self.assertIn("a PR may provide additional review context", public_evidence_block)
+        for evidence_label in (
+            "Source commit or PR:",
+            "Dependency/build:",
+            "Representative test:",
+            "Approved baseline:",
+            "Human-review record:",
+            "CI run + tested commit:",
+        ):
+            self.assertEqual(1, public_evidence_block.count(evidence_label))
         self.assertIn("does not by itself establish production use, adoption", form)
+        self.assertIn("checked any linked public evidence", form)
+
+    def test_activation_shell_examples_parse_and_readme_compares_candidate(self) -> None:
+        paths = (
+            REPOSITORY_ROOT / "README.md",
+            REPOSITORY_ROOT / "README.en.md",
+            REPOSITORY_ROOT / "docs" / "first-integration.md",
+        )
+        for path in paths:
+            text = path.read_text(encoding="utf-8")
+            blocks = re.findall(r"```bash\n(.*?)```", text, flags=re.DOTALL)
+            self.assertGreater(len(blocks), 0, path)
+            for index, block in enumerate(blocks):
+                with self.subTest(path=path.name, block=index):
+                    result = subprocess.run(
+                        ["bash", "-n"],
+                        input=block,
+                        text=True,
+                        capture_output=True,
+                        check=False,
+                    )
+                    self.assertEqual(0, result.returncode, result.stderr)
+
+        for readme_name in ("README.md", "README.en.md"):
+            readme = (REPOSITORY_ROOT / readme_name).read_text(encoding="utf-8")
+            self.assertIn(
+                "new ManifestVerifier().verify(approved, candidate)",
+                readme,
+            )
+            self.assertNotIn(
+                "new ManifestVerifier().verify(approved, snapshot, aliases)",
+                readme,
+            )
+            self.assertIn("e3944631ad827e88d4936b75e9b738ef50a22b20", readme)
+            self.assertIn("db203cfd9202ff10cd22c41cf04034eca5177341", readme)
+
+    def test_readme_quick_start_stops_before_project_code_on_revision_mismatch(self) -> None:
+        for readme_name in ("README.md", "README.en.md"):
+            readme = (REPOSITORY_ROOT / readme_name).read_text(encoding="utf-8")
+            quick_start = readme[readme.index("## Quick Start") :]
+            block = re.search(r"```bash\n(.*?)```", quick_start, flags=re.DOTALL).group(1)
+
+            self.assertTrue(block.startswith("(\nset -euo pipefail\n"))
+            self.assertLess(block.index('test ! -e "${source_dir}"'), block.index("git clone"))
+            self.assertLess(block.index('test ! -L "${source_dir}"'), block.index("git clone"))
+            for verification in (
+                "cat-file -t refs/tags/v0.1.0",
+                "rev-parse refs/tags/v0.1.0",
+                "rev-parse 'refs/tags/v0.1.0^{}'",
+                "rev-parse HEAD",
+                "status --short",
+            ):
+                self.assertLess(block.index(verification), block.index("./scripts/quickstart-demo.sh"))
+
+            with self.subTest(readme=readme_name), tempfile.TemporaryDirectory() as raw:
+                root = Path(raw)
+                fake_bin = root / "bin"
+                fake_bin.mkdir()
+                fake_git = fake_bin / "git"
+                fake_git.write_text(
+                    """#!/usr/bin/env bash
+set -eu
+if [ "$1" = clone ]; then
+  destination="${@: -1}"
+  mkdir -p "${destination}/scripts"
+  printf '%s\n' '#!/usr/bin/env bash' 'touch ../quickstart-ran' > "${destination}/scripts/quickstart-demo.sh"
+  chmod +x "${destination}/scripts/quickstart-demo.sh"
+  exit 0
+fi
+if [ "$1" = -C ] && [ "$3" = cat-file ]; then
+  printf 'tag\n'
+  exit 0
+fi
+if [ "$1" = -C ] && [ "$3" = rev-parse ]; then
+  printf '0000000000000000000000000000000000000000\n'
+  exit 0
+fi
+exit 64
+""",
+                    encoding="utf-8",
+                )
+                fake_git.chmod(0o755)
+                environment = os.environ.copy()
+                environment["PATH"] = f"{fake_bin}{os.pathsep}{environment.get('PATH', '')}"
+                result = subprocess.run(
+                    ["bash"],
+                    input=block,
+                    cwd=root,
+                    env=environment,
+                    text=True,
+                    capture_output=True,
+                    check=False,
+                )
+                self.assertNotEqual(0, result.returncode)
+                self.assertFalse((root / "quickstart-ran").exists())
 
 
 class ReportExternalEvidenceContractTest(unittest.TestCase):

@@ -15,23 +15,42 @@ unverified.
 ## 1. Verify the published demo first
 
 Run the exact-tag Quick Start before changing your repository. The checkout destination below must
-be absent before cloning:
+be absent. The checks after `clone` bind the checkout to the published annotated tag object and
+peeled release commit before any project script runs:
 
 ```bash
-git clone --depth 1 --branch v0.1.0 \
+(
+set -euo pipefail
+source_dir="/absolute/path/to/routecontract-v0.1.0"
+expected_tag_object="e3944631ad827e88d4936b75e9b738ef50a22b20"
+expected_commit="db203cfd9202ff10cd22c41cf04034eca5177341"
+
+test ! -e "${source_dir}"
+test ! -L "${source_dir}"
+git clone --quiet --depth 1 --branch v0.1.0 --single-branch \
   https://github.com/ym0506/routecontract.git \
-  "/absolute/path/to/routecontract-v0.1.0"
-cd "/absolute/path/to/routecontract-v0.1.0"
+  "${source_dir}"
+test "$(git -C "${source_dir}" cat-file -t refs/tags/v0.1.0)" = tag
+test "$(git -C "${source_dir}" rev-parse refs/tags/v0.1.0)" = "${expected_tag_object}"
+test "$(git -C "${source_dir}" rev-parse 'refs/tags/v0.1.0^{}')" = "${expected_commit}"
+test "$(git -C "${source_dir}" rev-parse HEAD)" = "${expected_commit}"
+symbolic_ref_status=0
+symbolic_ref="$(git -C "${source_dir}" symbolic-ref -q HEAD)" || symbolic_ref_status=$?
+test "${symbolic_ref_status}" -eq 1
+test -z "${symbolic_ref}"
+checkout_status="$(git -C "${source_dir}" status --short)"
+test -z "${checkout_status}"
+cd "${source_dir}"
 ./scripts/quickstart-demo.sh
+)
 ```
 
 The final output must include `[ROUTECONTRACT QUICKSTART VERIFIED]`, `realMysqlDemoExit 0`,
 `intentionalCiGateExit 1`, and `quickstartExit 0`. The inner exit `1` is the expected contract
-rejection; the outer exit `0` means that rejection was verified. Java 17, Docker, Bash/POSIX tools,
-Git, GitHub CLI (`gh`), Python 3.10 or newer, and network access for uncached dependencies, the
-digest-pinned MySQL image, and public Release assets are required. Authentication is not required
-for this public Release download, though an authenticated `gh` session can provide a higher API
-rate limit.
+rejection; the outer exit `0` means that rejection was verified. Step 1 requires Git, Java 17,
+Docker, Bash/POSIX tools, and network access for the public tag, uncached dependencies, and the
+digest-pinned MySQL image. Step 2 additionally requires `curl` and Python 3.10 or newer. Neither
+step requires a GitHub login, token, API call, or GitHub CLI.
 
 ## 2. Install the exact v0.1.0 Release assets
 
@@ -42,113 +61,164 @@ absolute example paths in this guide. The Release-asset and Maven-repository des
 be absent before step 2, and the Maven repository must not be `~/.m2/repository` or a path below it.
 
 ```bash
-mkdir "/absolute/path/to/routecontract-release-assets"
-gh release download v0.1.0 \
-  --repo ym0506/routecontract \
-  --dir "/absolute/path/to/routecontract-release-assets"
+(
+set -euo pipefail
+asset_dir="/absolute/path/to/routecontract-release-assets"
+repository_dir="/absolute/path/to/routecontract-maven"
+source_dir="/absolute/path/to/routecontract-v0.1.0"
+release_base="https://github.com/ym0506/routecontract/releases/download/v0.1.0"
+expected_index_sha256="820ed33eb8bfe8d47f3ec8782d2aa99f2879227c4ee066ecafc467e61abb8684"
+expected_installer_sha256="d21a7c71eb725e8d5f0675cfb88815b26be130d63711dc025a06347317652d33"
+expected_tag_object="e3944631ad827e88d4936b75e9b738ef50a22b20"
+expected_commit="db203cfd9202ff10cd22c41cf04034eca5177341"
+assets=(
+  SHA256SUMS
+  routecontract-0.1.0-source.zip
+  routecontract-shardingsphere-5.5-0.1.0.jar
+  routecontract-shardingsphere-5.5-0.1.0-sources.jar
+  routecontract-shardingsphere-5.5-0.1.0-javadoc.jar
+  routecontract-shardingsphere-5.5.pom
+  routecontract-shardingsphere-5.5-cyclonedx.json
+  routecontract-shardingsphere-5.5-cyclonedx.xml
+  routecontract-aggregate-cyclonedx.json
+  routecontract-aggregate-cyclonedx.xml
+  supply-chain-evidence.json
+  test-summary.txt
+)
 
-python3 "/absolute/path/to/routecontract-v0.1.0/scripts/install-release-assets.py" \
-  --release-assets-dir "/absolute/path/to/routecontract-release-assets" \
-  --repository "/absolute/path/to/routecontract-maven"
+test ! -e "${asset_dir}"
+test ! -L "${asset_dir}"
+test ! -e "${repository_dir}"
+test ! -L "${repository_dir}"
+mkdir "${asset_dir}"
+for asset in "${assets[@]}"; do
+  curl --disable --proto '=https' --tlsv1.2 --fail --location \
+    --silent --show-error --retry 3 --connect-timeout 15 --max-time 300 \
+    --max-filesize 5242880 \
+    --output "${asset_dir}/${asset}" \
+    "${release_base}/${asset}"
+done
 
-cd "/absolute/path/to/your-repository"
+actual_index_sha256="$(python3 -I -c \
+  'import hashlib, pathlib, sys; print(hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes()).hexdigest())' \
+  "${asset_dir}/SHA256SUMS")"
+test "${actual_index_sha256}" = "${expected_index_sha256}"
+test "$(git -C "${source_dir}" rev-parse refs/tags/v0.1.0)" = "${expected_tag_object}"
+test "$(git -C "${source_dir}" rev-parse 'refs/tags/v0.1.0^{}')" = "${expected_commit}"
+test "$(git -C "${source_dir}" rev-parse HEAD)" = "${expected_commit}"
+checkout_status="$(git -C "${source_dir}" status --short)"
+test -z "${checkout_status}"
+installer="${source_dir}/scripts/install-release-assets.py"
+test -f "${installer}"
+test ! -L "${installer}"
+actual_installer_sha256="$(python3 -I -c \
+  'import hashlib, pathlib, sys; print(hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes()).hexdigest())' \
+  "${installer}")"
+test "${actual_installer_sha256}" = "${expected_installer_sha256}"
+python3 -I "${installer}" \
+  --release-assets-dir "${asset_dir}" \
+  --repository "${repository_dir}"
+)
 ```
 
-The installer verifies the exact asset inventory and checksums before writing and refuses to
-overwrite an existing coordinate. Checksums provide download integrity, not publisher identity;
-download the inputs from the exact public Release above.
+The fixed public URLs require no GitHub account or token. The block pins the checksum index and the
+installer from the exact checkout; the installer then verifies the exact 12-file inventory and
+every payload checksum before writing, and refuses to overwrite an existing coordinate. A failed
+attempt leaves its new directory for inspection; retry only with another absent destination.
+Checksums provide download integrity, not publisher identity.
 
-Add the installed repository and exact test dependencies to the Gradle project containing your
-integration test. Supply the local repository path through the `routecontractRepository` Gradle property or
-`ROUTECONTRACT_REPOSITORY` environment variable; do not commit a machine-specific absolute path.
-The RouteContract artifact is thin: your test owns the ShardingSphere/Jackson/Calcite alignment and
-JTS exclusion.
+The immutable `v0.1.0` installer is intentionally time-bounded by its embedded MySQL OCI
+package-level manual review through UTC `2026-12-05`. Beginning `2026-12-06` UTC it fails closed.
+Use a newer immutable Release with renewed evidence at that point; do not edit the tag or installer
+or bypass the expiry.
 
-```groovy
-def routeContractRepository = providers.gradleProperty("routecontractRepository")
-        .orElse(providers.environmentVariable("ROUTECONTRACT_REPOSITORY"))
-        .getOrNull()
-if (routeContractRepository == null || routeContractRepository.isBlank()) {
-    throw new GradleException(
-            "Set -ProutecontractRepository or ROUTECONTRACT_REPOSITORY")
-}
+### Gradle Groovy DSL opt-in lane
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
-    }
-}
-
-repositories {
-    exclusiveContent {
-        forRepository {
-            maven {
-                name = "routeContractRelease"
-                url = uri(routeContractRepository)
-            }
-        }
-        filter { includeGroup("io.github.ym0506.routecontract") }
-    }
-    mavenCentral()
-}
-
-dependencies {
-    testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))
-    testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:5.5.3") {
-        exclude group: "org.locationtech.jts.io", module: "jts-io-common"
-    }
-    testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0")
-
-    constraints {
-        testImplementation("org.apache.calcite:calcite-core:1.42.0") {
-            version { strictly "1.42.0" }
-        }
-        testImplementation("org.apache.calcite:calcite-linq4j:1.42.0") {
-            version { strictly "1.42.0" }
-        }
-    }
-}
-
-tasks.withType(Test).configureEach {
-    systemProperty "routecontract.projectDir", projectDir.absolutePath
-}
-```
-
-Keep the runtime modules already required by your ShardingSphere-JDBC integration test. The
-dependency block above does not configure a data source or replace your existing test fixture.
-If `settings.gradle` enforces `RepositoriesMode.FAIL_ON_PROJECT_REPOS`, move both the
-property/environment resolution and the `exclusiveContent` rule out of the project build and merge
-this equivalent block into the existing settings file:
+Do not add the local repository or RouteContract dependency to the default build. The following
+block creates a separate source set and task only when `-ProutecontractPilot=true` is present. Put
+the adapted test under `src/routeContractPilot/java` and its approved manifest under
+`src/routeContractPilot/resources`. The normal build and IDE sync must still succeed without the
+pilot property and without the local Release repository.
 
 ```groovy
-def routeContractRepository = providers.gradleProperty("routecontractRepository")
-        .orElse(providers.environmentVariable("ROUTECONTRACT_REPOSITORY"))
-        .getOrNull()
-if (routeContractRepository == null || routeContractRepository.isBlank()) {
-    throw new GradleException(
-            "Set -ProutecontractRepository or ROUTECONTRACT_REPOSITORY")
-}
+def routeContractPilotEnabled = providers.gradleProperty("routecontractPilot")
+        .map { value -> value == "true" }
+        .orElse(false)
 
-dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+if (routeContractPilotEnabled.get()) {
+    def routeContractRepository = providers.gradleProperty("routecontractRepository")
+            .orElse(providers.environmentVariable("ROUTECONTRACT_REPOSITORY"))
+    if (!routeContractRepository.isPresent()
+            || routeContractRepository.get().isBlank()) {
+        throw new GradleException(
+                "Set -ProutecontractRepository or ROUTECONTRACT_REPOSITORY for the pilot")
+    }
+
+    def pilot = sourceSets.create("routeContractPilot") {
+        java.srcDir("src/routeContractPilot/java")
+        resources.srcDir("src/routeContractPilot/resources")
+        compileClasspath += sourceSets.main.output + sourceSets.test.output
+        runtimeClasspath += output + compileClasspath
+    }
+    configurations.named(pilot.implementationConfigurationName) {
+        extendsFrom(configurations.testImplementation)
+    }
+    configurations.named(pilot.runtimeOnlyConfigurationName) {
+        extendsFrom(configurations.testRuntimeOnly)
+    }
+
     repositories {
         exclusiveContent {
             forRepository {
                 maven {
                     name = "routeContractRelease"
-                    url = uri(routeContractRepository)
+                    url = uri(routeContractRepository.get())
                 }
             }
             filter { includeGroup("io.github.ym0506.routecontract") }
         }
-        mavenCentral()
+    }
+    dependencies {
+        add(
+                pilot.implementationConfigurationName,
+                "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0")
+    }
+
+    tasks.named(pilot.compileJavaTaskName, JavaCompile) {
+        javaCompiler = javaToolchains.compilerFor {
+            languageVersion = JavaLanguageVersion.of(17)
+        }
+        options.release = 17
+    }
+    tasks.register("routeContractPilot", Test) {
+        group = "verification"
+        testClassesDirs = pilot.output.classesDirs
+        classpath = pilot.runtimeClasspath
+        javaLauncher = javaToolchains.launcherFor {
+            languageVersion = JavaLanguageVersion.of(17)
+        }
+        useJUnitPlatform()
+        systemProperty "routecontract.projectDir", projectDir.absolutePath
     }
 }
 ```
 
-If the repository uses dependency locks or dependency-verification metadata, update them through
-the project's normal reviewed process for this exact graph; never disable those controls to make
-the dependency resolve.
+This lane reuses the representative fixture's existing test dependencies, including its exact
+ShardingSphere-JDBC 5.5.3 edge; do not add a second ShardingSphere dependency or change the
+project-wide Java toolchain or dependency management. Inspect the complete
+`routeContractPilotRuntimeClasspath` before adding the test. A different ShardingSphere version,
+missing runtime module, or incompatible graph is a blocker, not a successful integration. If the
+repository uses dependency locks or verification metadata, update them through its normal reviewed
+process and never disable them. Gradle's dependency-report task can still exit `0` while printing
+`FAILED` or another unresolved node: stop if either appears, and do not treat `BUILD SUCCESSFUL`
+alone as a usable graph.
+
+If `settings.gradle` enforces `RepositoriesMode.FAIL_ON_PROJECT_REPOS`, place the same conditional
+`exclusiveContent` repository in the existing `dependencyResolutionManagement` block instead; the
+repository path must not be read when the pilot property is absent. If the repository cannot
+isolate this lane, uses Maven, or needs Kotlin DSL, stop and report that fit blocker rather than
+adding an untested generic build fragment. RouteContract's runtime library is not inherently tied
+to Gradle, but `v0.1.0` currently documents only this tested Gradle Groovy DSL path.
 
 ## 3. Add one representative operation
 
@@ -181,7 +251,7 @@ void keepsTheApprovedExecutionStructure() throws Exception {
             .toAbsolutePath()
             .normalize();
     Path approvedPath = projectDir.resolve(
-            "src/test/resources/route-contracts/orders.find-by-user-id.json");
+            "src/routeContractPilot/resources/route-contracts/orders.find-by-user-id.json");
     Path candidatePath = projectDir.resolve(
             "build/routecontract/orders.find-by-user-id.candidate.json");
     ManifestStore store = new ManifestStore();
@@ -233,26 +303,36 @@ fails closed during candidate construction rather than being silently added. The
 still contains the raw observed names even though manifests do not; use non-sensitive test-fixture
 names in a public repository or keep that configuration private.
 
-Run the new test from your consumer repository with a fresh candidate capture:
+First inspect the complete owning-module pilot graph, then run only the new test with a fresh
+candidate capture. Replace `:owning-module` with the actual Gradle project path; use
+`:routeContractPilot` for a root project.
 
 ```bash
 ROUTECONTRACT_REPOSITORY="/absolute/path/to/routecontract-maven" \
-  ./gradlew --no-build-cache --rerun-tasks test
+  ./gradlew -ProutecontractPilot=true \
+  :owning-module:dependencies \
+  --configuration routeContractPilotRuntimeClasspath
+
+ROUTECONTRACT_REPOSITORY="/absolute/path/to/routecontract-maven" \
+  ./gradlew -ProutecontractPilot=true \
+  --no-build-cache --rerun-tasks \
+  :owning-module:routeContractPilot \
+  --tests com.example.orders.OrderQueryIntegrationTest.keepsTheApprovedExecutionStructure
 ```
 
 The candidate file is an undeclared test side effect, so `--no-build-cache --rerun-tasks` is
 required instead of an up-to-date or cached test result. Each executed, business-green,
 contract-eligible test that reaches the manifest phase writes a separate candidate. With no
-approved file, the first run deliberately fails as described next. If the selected integration
-test belongs to a custom Gradle task such as `integrationTest`, replace `test` in both commands in
-this guide with that actual task while retaining `--no-build-cache --rerun-tasks`.
+approved file, the first run deliberately fails as described next. Do not accept an arbitrary
+nonzero build result as that expected first-run failure: confirm the business assertion passed, the
+candidate exists, and the only failing assertion is the explicit missing-baseline message.
 
 ## 4. Review and approve the first baseline
 
-A first supported, business-green, contract-eligible run that reaches the manifest phase writes
-only `build/routecontract/orders.find-by-user-id.candidate.json`. If the explicit policy assertions
-pass and no approved file exists, the test then deliberately fails. Before approving it, review at
-least:
+A first supported, business-green, contract-eligible run that reaches the manifest phase creates no
+approved file; it writes the candidate at
+`build/routecontract/orders.find-by-user-id.candidate.json`. If the explicit policy assertions pass
+and no approved file exists, the test then deliberately fails. Before approving it, review at least:
 
 - the operation ID and `strict` budgets;
 - the observed attempt count and callback outcomes;
@@ -260,11 +340,13 @@ least:
 - the parameter-type shape and rewritten-SQL fingerprint as structural evidence, not SQL meaning.
 
 If and only if the candidate describes the intended operation and the explicit policy assertions
-passed, copy it in a separate human action
-to `src/test/resources/route-contracts/orders.find-by-user-id.json`, review that tracked diff, and
-commit it with the test. RouteContract provides no approval API. `writeCandidate` refuses to write
-to the approved path, and neither the test nor CI should copy, replace, or auto-approve the
-baseline.
+passed, create
+`src/routeContractPilot/resources/route-contracts/orders.find-by-user-id.json` from those exact
+reviewed candidate bytes in a separate human action. Review the baseline, test, alias mapping,
+budgets, and pilot build diff together, then commit them through the repository's normal review
+process. Record that the baseline was human-reviewed; a tool or CI result cannot make that decision.
+RouteContract provides no approval API. `writeCandidate` refuses to write to the approved path, and
+neither the test nor CI should copy, replace, or auto-approve the baseline.
 
 Manifests exclude raw SQL, bind values, connection properties, and exception messages. Operation
 IDs, aliases, Java type names, and unsalted fingerprints can still be sensitive engineering
@@ -281,44 +363,97 @@ candidate reports `RCM300 POLICY_CHANGED`; a candidate exceeding the approved ba
 rejected earlier with `RCM201` or `RCM202`.
 
 Because `v0.1.0` is not on Maven Central, every fresh CI job must repeat the exact Release download
-and installer before Gradle. For GitHub Actions, this step uses new runner-temporary paths and makes
-the verified repository available to the later Gradle step:
+and installer before Gradle. The following GitHub Actions fragment uses runner-temporary paths,
+verifies the checked-out tag object and commit, and makes the installed repository available only
+to the opt-in task:
 
 ```yaml
 - name: Install exact RouteContract v0.1.0 Release assets
   shell: bash
-  env:
-    GH_TOKEN: ${{ github.token }}
   run: |
-    source_dir="${RUNNER_TEMP}/routecontract-v0.1.0-source"
+    set -euo pipefail
+    source_dir="${RUNNER_TEMP}/routecontract-v0.1.0"
     asset_dir="${RUNNER_TEMP}/routecontract-v0.1.0-assets"
     repository_dir="${RUNNER_TEMP}/routecontract-v0.1.0-maven"
+    release_base="https://github.com/ym0506/routecontract/releases/download/v0.1.0"
+    expected_index_sha256="820ed33eb8bfe8d47f3ec8782d2aa99f2879227c4ee066ecafc467e61abb8684"
+    expected_installer_sha256="d21a7c71eb725e8d5f0675cfb88815b26be130d63711dc025a06347317652d33"
+    expected_tag_object="e3944631ad827e88d4936b75e9b738ef50a22b20"
+    expected_commit="db203cfd9202ff10cd22c41cf04034eca5177341"
+    assets=(
+      SHA256SUMS
+      routecontract-0.1.0-source.zip
+      routecontract-shardingsphere-5.5-0.1.0.jar
+      routecontract-shardingsphere-5.5-0.1.0-sources.jar
+      routecontract-shardingsphere-5.5-0.1.0-javadoc.jar
+      routecontract-shardingsphere-5.5.pom
+      routecontract-shardingsphere-5.5-cyclonedx.json
+      routecontract-shardingsphere-5.5-cyclonedx.xml
+      routecontract-aggregate-cyclonedx.json
+      routecontract-aggregate-cyclonedx.xml
+      supply-chain-evidence.json
+      test-summary.txt
+    )
+
     test ! -e "${source_dir}"
+    test ! -L "${source_dir}"
     test ! -e "${asset_dir}"
+    test ! -L "${asset_dir}"
     test ! -e "${repository_dir}"
+    test ! -L "${repository_dir}"
+    git clone --quiet --depth 1 --branch v0.1.0 --single-branch \
+      https://github.com/ym0506/routecontract.git "${source_dir}"
+    test "$(git -C "${source_dir}" cat-file -t refs/tags/v0.1.0)" = tag
+    test "$(git -C "${source_dir}" rev-parse refs/tags/v0.1.0)" = \
+      "${expected_tag_object}"
+    test "$(git -C "${source_dir}" rev-parse 'refs/tags/v0.1.0^{}')" = \
+      "${expected_commit}"
+    test "$(git -C "${source_dir}" rev-parse HEAD)" = "${expected_commit}"
+    symbolic_ref_status=0
+    symbolic_ref="$(git -C "${source_dir}" symbolic-ref -q HEAD)" \
+      || symbolic_ref_status=$?
+    test "${symbolic_ref_status}" -eq 1
+    test -z "${symbolic_ref}"
+    test -z "$(git -C "${source_dir}" status --short)"
+
     mkdir "${asset_dir}"
-    gh release download v0.1.0 \
-      --repo ym0506/routecontract \
-      --dir "${asset_dir}"
-    mkdir "${source_dir}"
-    python3 -m zipfile -e \
-      "${asset_dir}/routecontract-0.1.0-source.zip" \
-      "${source_dir}"
-    python3 "${source_dir}/routecontract-0.1.0/scripts/install-release-assets.py" \
+    for asset in "${assets[@]}"; do
+      curl --disable --proto '=https' --tlsv1.2 --fail --location \
+        --silent --show-error --retry 3 --connect-timeout 15 --max-time 300 \
+        --max-filesize 5242880 \
+        --output "${asset_dir}/${asset}" \
+        "${release_base}/${asset}"
+    done
+    actual_index_sha256="$(python3 -I -c \
+      'import hashlib, pathlib, sys; print(hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes()).hexdigest())' \
+      "${asset_dir}/SHA256SUMS")"
+    test "${actual_index_sha256}" = "${expected_index_sha256}"
+    installer="${source_dir}/scripts/install-release-assets.py"
+    test -f "${installer}"
+    test ! -L "${installer}"
+    actual_installer_sha256="$(python3 -I -c \
+      'import hashlib, pathlib, sys; print(hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes()).hexdigest())' \
+      "${installer}")"
+    test "${actual_installer_sha256}" = "${expected_installer_sha256}"
+    python3 -I "${installer}" \
       --release-assets-dir "${asset_dir}" \
       --repository "${repository_dir}"
     printf 'ROUTECONTRACT_REPOSITORY=%s\n' "${repository_dir}" >> "${GITHUB_ENV}"
 
 - name: Run integration tests and RouteContract candidate check
-  run: ./gradlew --no-build-cache --rerun-tasks test
+  run: |
+    ./gradlew -ProutecontractPilot=true \
+      --no-build-cache --rerun-tasks \
+      :owning-module:routeContractPilot \
+      --tests com.example.orders.OrderQueryIntegrationTest.keepsTheApprovedExecutionStructure
 ```
 
-The workflow or job must retain `contents: read`; `${{ github.token }}` is used only so `gh` can
-download the public Release assets. The runner needs `gh`, Python 3.10 or newer, Java 17, Docker,
-and network access. Use the equivalent fresh download-and-install sequence on another CI service.
-Make this existing Gradle test job a required check if you want the assertion to gate a merge. For an
-intentional change, review the new candidate and explicitly replace the approved file in a normal
-code-review change; never update the approved file automatically in CI.
+The fixed public asset URLs need no GitHub token or API call. The runner needs Git, `curl`, Python
+3.10 or newer, Java 17, Docker, and network access. Use the equivalent fresh
+download-and-install sequence on another CI service. Make this job a required check if you want the
+assertion to gate a merge. For an intentional change, review the new candidate and explicitly
+replace the approved file in a normal code-review change; never update the approved file
+automatically in CI.
 
 ## 6. Report the stage reached
 
