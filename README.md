@@ -11,29 +11,38 @@
 - **CI 판단:** 검증한 `1 → 2` fixture에서는 시도 수·data-source 예산 초과가 `RCM201`·`RCM202` manifest assertion 실패가 됨; 이를 required check로 설정하면 merge를 막을 수 있지만, `1 → 2` 자체를 성능 결함으로 단정하지 않고 의도한 변경인지 사람의 검토를 요구함
 - **검증 경계:** Java 17, 정확히 ShardingSphere-JDBC 5.5.3, 정상 반환·비-interrupt 동기식 non-batch `PreparedStatement`; SQL 의미 동치나 complete route plan·commit·비즈니스 성공은 판정하지 않음
 
+[2분 54초 시연 영상 보기](https://www.youtube.com/watch?v=pcgvNNxd1mM)
+
 ![같은 업무 결과에서 승인본과 candidate의 관측 실행 시도 및 data-source alias가 1에서 2로 달라져 RCM201과 RCM202가 발생한 실제 MySQL 검증](submission/assets/baseline-candidate.png)
 
 ## Quick Start
 
-필수 조건은 Java 17, 실행 중인 Docker daemon, Bash/POSIX 도구와 실행 가능한 Gradle
-Wrapper입니다. 최초 실행은 Gradle·Maven Central 의존성과 로컬에 없는 digest-pinned MySQL
-container image를 내려받기 위한 네트워크가 필요할 수 있습니다.
+필수 조건은 Git, Java 17, 실행 중인 Docker daemon, Bash/POSIX 도구와 실행 가능한 Gradle
+Wrapper입니다. 최초 실행은 공개 tag, Gradle·Maven Central 의존성과 로컬에 없는
+digest-pinned MySQL container image를 내려받기 위한 네트워크가 필요할 수 있습니다.
 
 ```bash
-git clone --depth 1 --branch v0.1.0 https://github.com/ym0506/routecontract.git routecontract-v0.1.0
-cd routecontract-v0.1.0
+(
+set -euo pipefail
+source_dir="routecontract-v0.1.0"
+test ! -e "${source_dir}"
+test ! -L "${source_dir}"
+git clone --quiet --depth 1 --branch v0.1.0 --single-branch \
+  https://github.com/ym0506/routecontract.git "${source_dir}"
+test "$(git -C "${source_dir}" cat-file -t refs/tags/v0.1.0)" = tag
+test "$(git -C "${source_dir}" rev-parse refs/tags/v0.1.0)" = e3944631ad827e88d4936b75e9b738ef50a22b20
+test "$(git -C "${source_dir}" rev-parse 'refs/tags/v0.1.0^{}')" = db203cfd9202ff10cd22c41cf04034eca5177341
+test "$(git -C "${source_dir}" rev-parse HEAD)" = db203cfd9202ff10cd22c41cf04034eca5177341
+test -z "$(git -C "${source_dir}" status --short)"
+cd "${source_dir}"
 ./scripts/quickstart-demo.sh
+)
 ```
 
 이 명령은 실제 MySQL에서 business result가 그대로인 `1 → 2` 관측 실행 회귀를 검증한 뒤,
 같은 candidate를 CI gate에 넣어 `RCM201`·`RCM202` 거부를 확인합니다. 마지막에
 `[ROUTECONTRACT QUICKSTART VERIFIED]`, `realMysqlDemoExit 0`,
 `intentionalCiGateExit 1`, `quickstartExit 0`이 출력되면 예상한 전체 흐름이 통과한 것입니다.
-
-처음 실행했거나 현재 환경에는 맞지 않는다고 판단했다면
-[stable v0.1.0 feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)에
-성공·막힌 지점·지원 범위 밖·필요 없음 중 어느 결과든 짧게 남길 수 있습니다. 공개 Issue에는
-원문 SQL, bind 값, JDBC URL, 실제 topology, full log 같은 민감 정보를 넣지 마세요.
 
 <details>
 <summary>정확한 종료 코드와 출력 경계</summary>
@@ -43,6 +52,34 @@ cd routecontract-v0.1.0
 SQL·parameter·connection 정보가 섞일 수 있는 하위 프로세스 원문은 화면에 다시 출력하지 않습니다.
 
 </details>
+
+## 다음 단계: 첫 통합 가능성 검토하기
+
+Quick Start가 통과했다면 [첫 실제 통합 가이드](docs/first-integration.md)의 지원 경계와 중단
+조건을 확인하고, 기존 ShardingSphere-JDBC 5.5.3 통합 테스트에서 business assertion을 유지할
+대표 operation 하나를 고르세요. 가이드는 격리된 Gradle Groovy 또는 Maven 3.9.14 pilot에서
+capture → candidate → 사람 승인 baseline → candidate check를 연결합니다. 저장소별 빌드 격리와
+사람 검토가 필요하므로 완료 시간을 약속하지 않습니다.
+`v0.1.0`은 Maven Central에 게시되어 있지 않으므로 가이드는 검증된 GitHub Release 자산을
+별도 로컬 Maven repository에 설치하는 현재 경로를 사용합니다.
+
+1,700여 줄 가이드를 처음부터 끝까지 읽지 말고, 다음 순서로 필요한 부분만 사용하세요.
+
+1. [고정된 Release 자산을 설치](docs/first-integration.md#2-install-the-exact-v010-release-assets)합니다.
+2. 빌드에 맞춰 [Gradle Groovy lane](docs/first-integration.md#gradle-groovy-dsl-opt-in-lane) 또는
+   [Maven 3.9.14 lane](docs/first-integration.md#maven-3914-opt-in-profile-lane) 하나만 선택합니다.
+3. 공통 단계인 [대표 operation](docs/first-integration.md#3-add-one-representative-operation) →
+   [사람의 baseline 승인](docs/first-integration.md#4-review-and-approve-the-first-baseline) →
+   [CI candidate check](docs/first-integration.md#5-run-the-candidate-check-in-ci)로 이동합니다.
+
+Maven 사용자는 체크인된 [두 모듈 reference fixture](examples/maven-pilot/README.md)를 먼저
+실행해 자신의 저장소와 다른 지점을 확인할 수 있습니다. 어느 lane에도 정확히 맞지 않으면
+일반 예시를 억지로 붙이지 말고 그 지점에서 중단하세요.
+
+처음 실행했거나 현재 환경에는 맞지 않는다고 판단했다면
+[stable v0.1.0 feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)에
+성공·막힌 지점·지원 범위 밖·필요 없음 중 어느 결과든 짧게 남길 수 있습니다. 공개 Issue에는
+원문 SQL, bind 값, JDBC URL, 실제 topology, full log 같은 민감 정보를 넣지 마세요.
 
 ## 가장 작은 사용 예
 
@@ -77,7 +114,7 @@ Path candidatePath = Path.of("build/routecontract/orders.find-by-user-id.candida
 new ManifestStore().writeCandidate(approvedPath, candidatePath, candidate);
 
 ObservedExecutionManifest approved = new ManifestStore().read(approvedPath);
-ManifestVerificationResult result = new ManifestVerifier().verify(approved, snapshot, aliases);
+ManifestVerificationResult result = new ManifestVerifier().verify(approved, candidate);
 ManifestAssertions.assertMatched(result); // mismatch이면 stable RCM code와 함께 CI 실패
 ```
 
@@ -106,6 +143,10 @@ MySQL fixture에서는 fingerprint와 parameter type 순서만 달라졌습니�
 | `strict` | `DRIFT`, `RCM301`·`RCM302` blocking, assertion 실패 | 작은 rewritten-SQL 구조 변화도 검토·승인하게 하지만, 의도적 변화도 baseline 갱신 전까지 CI를 막음 |
 | `budgetOnly` | `REVIEW_REQUIRED`, `RCM301`·`RCM302` non-blocking, `passesBlockingChecks=true` | 예산·data-source 집합·callback outcome은 계속 막지만 signature-only 변화는 CI를 통과시키므로 수동 검토를 놓치면 구조 회귀를 허용할 수 있음 |
 
+위 예시의 `ManifestAssertions.assertMatched(result)`는 `REVIEW_REQUIRED`도 거부합니다. signature-only
+변화를 의도적으로 CI에서 허용하는 `budgetOnly` 정책이라면 그 선택을 코드에 드러내기 위해
+`ManifestAssertions.assertPassesBlockingChecks(result)`를 사용해야 합니다.
+
 </details>
 
 ## 검증된 핵심 시나리오
@@ -119,15 +160,17 @@ MySQL fixture에서는 fingerprint와 parameter type 순서만 달라졌습니�
 | 동시에 열린 caller-operation scope | single-attempt/multi-attempt scope 20쌍에서 교차 귀속 0건; 물리 callback의 시간상 중첩은 강제하거나 측정하지 않음 |
 | 범용 JDBC 도구 비교 | datasource-proxy 외부 배치는 callback `1 → 1`, 물리 DS별 배치는 `1 → 2`, RouteContract도 `1 → 2` |
 | 격리된 소비자 빌드 | 같은 checkout에서 임시 Maven 저장소에 생성한 JAR와 POM만 사용하는 standalone consumer에서 SPI 자동 발견과 MySQL 실행 통과. 외부 채택 증거는 아님 |
+| 격리된 Maven 3.9.14 pilot | inactive profile, fresh cache, SHA-256 음성 검증, MySQL candidate와 mechanical match를 같은 checkout에서 검증. 사람 승인·외부 사용자·adoption 증거는 아님 |
 
 전체 52-test 검증:
 
 ```bash
 ./gradlew --no-daemon --no-build-cache clean check assemble validateOfficialCycloneDxSbom
 ./scripts/verify-standalone-consumer.sh
+./scripts/verify-maven-pilot.sh
 ```
 
-첫 명령은 Java 17, ShardingSphere-JDBC 5.5.3, digest로 고정한 MySQL 8.4.11 Testcontainers 환경에서 core 및 MySQL corpus 52개 테스트를 실행하고 JAR·Javadoc·SBOM을 생성합니다. 두 번째 명령은 별도 소비자 테스트 1개를 실행합니다. Docker가 필요합니다.
+첫 명령은 Java 17, ShardingSphere-JDBC 5.5.3, digest로 고정한 MySQL 8.4.11 Testcontainers 환경에서 core 및 MySQL corpus 52개 테스트를 실행하고 JAR·Javadoc·SBOM을 생성합니다. 두 번째 명령은 별도 소비자 테스트 1개를 실행합니다. 세 번째 명령은 exact Apache Maven 3.9.14가 필요하며 격리된 profile-off/checksum/candidate 경로를 검증합니다. 모두 Docker가 필요합니다.
 
 ## 기존 도구와의 정확한 차이
 
@@ -183,54 +226,22 @@ adoption으로 승격하지 않습니다.
 이 경로는 annotated `v0.1.0` tag, 공개·불변 non-prerelease Release, 동일 revision의
 성공한 release-evidence run과 정확한 자산 집합이 모두 존재한 뒤 사용할 수 있습니다.
 해당 Release에 첨부된 공개 자산 전체를 새 빈 디렉터리에 내려받은 다음,
-`~/.m2`가 아닌 빈 절대경로를 명시합니다. GitHub CLI를 쓴다면 다운로드부터 설치까지는
-다음 순서입니다.
+`~/.m2`가 아닌 빈 절대경로에 설치합니다. [첫 실제 통합 가이드의 2단계](docs/first-integration.md#2-install-the-exact-v010-release-assets)는
+로그인·토큰·GitHub API 없이 고정 URL과 checksum-index SHA-256을 검증한 뒤 exact 자산을
+설치합니다.
 
-```bash
-mkdir -p /absolute/path/to/downloaded-release-assets
-gh release download v0.1.0 \
-  --repo ym0506/routecontract \
-  --dir /absolute/path/to/downloaded-release-assets
+설치기가 출력한 로컬 Maven repository와 RouteContract 의존성을 기본 빌드에 바로 추가하지
+마세요. [Gradle Groovy DSL 경로](docs/first-integration.md#gradle-groovy-dsl-opt-in-lane)는 pilot property가 있을 때만 별도
+source set·task·repository를 활성화하며, 같은 가이드는 inactive-by-default
+profile·fresh consumer cache·repository-scoped SHA-256을 쓰는 Maven 3.9.14 경로를 함께
+제공합니다. 두 경로 모두 기존 대표 ShardingSphere-JDBC 5.5.3 fixture를 재사용하며, 평상시
+build와 IDE sync는 pilot과 로컬 Release repository 없이 성공해야 합니다. Kotlin DSL과
+가이드의 검증 graph·classloader 경계를 벗어나는 Maven 저장소는 아직 fit blocker입니다.
 
-python3 scripts/install-release-assets.py \
-  --release-assets-dir /absolute/path/to/downloaded-release-assets \
-  --repository /absolute/path/to/routecontract-maven
-```
-
-설치기가 출력한 로컬 Maven repository를 Gradle에 연결하고, exact ShardingSphere-JDBC
-`5.5.3`, RouteContract `0.1.0` 좌표와 Jackson 2 BOM을 테스트 의존성으로 사용합니다.
-검증된 fixture graph의 Calcite/JTS 통제를 재현하려면 JTS I/O Common을 제외하고
-Calcite Core와 linq4j를 모두 `1.42.0`으로 strict 고정해야 합니다. thin POM은 소비자의
-ShardingSphere/Jackson/Calcite 버전이나 이 exclusion을 대신 설정하지 않습니다.
-
-```groovy
-repositories {
-    exclusiveContent {
-        forRepository {
-            maven { url = uri("/absolute/path/to/routecontract-maven") }
-        }
-        filter { includeGroup("io.github.ym0506.routecontract") }
-    }
-    mavenCentral()
-}
-
-dependencies {
-    testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))
-    testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:5.5.3") {
-        exclude group: "org.locationtech.jts.io", module: "jts-io-common"
-    }
-    testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0")
-
-    constraints {
-        testImplementation("org.apache.calcite:calcite-core:1.42.0") {
-            version { strictly "1.42.0" }
-        }
-        testImplementation("org.apache.calcite:calcite-linq4j:1.42.0") {
-            version { strictly "1.42.0" }
-        }
-    }
-}
-```
+immutable `v0.1.0` 설치기에 포함된 MySQL OCI package-level 수동 검토는 UTC
+`2026-12-05`까지만 유효합니다. `2026-12-06` UTC부터 installer는 fail-closed로 중단하며,
+그때는 검토가 갱신된 더 최신 immutable Release를 사용해야 합니다. 만료 검사를 우회하지
+마세요.
 
 <details>
 <summary>설치기가 검증하는 정확한 공급망 경계</summary>
@@ -338,34 +349,16 @@ manifest match를 통과시키지 않습니다.
 
 ## 의존성·Release 호환성 상세
 
-게시 후 검증을 통과한 안정 `v0.1.0` Release 자산 또는 같은 checkout에서 생성한 Maven
-publication을 ShardingSphere-JDBC 5.5.3 소비자 테스트에 추가할 때는 Jackson 2 호환성
-모듈을 정렬하고, JTS I/O Common을 제외하며, Calcite Core와 linq4j를 1.42.0으로 strict
-고정한 뒤 다음 exact coordinate를 선언합니다. RouteContract 0.1.0은 Maven Central
-게시를 주장하지 않습니다.
-
-```groovy
-dependencies {
-    testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))
-    testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:5.5.3") {
-        exclude group: "org.locationtech.jts.io", module: "jts-io-common"
-    }
-    testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0")
-
-    constraints {
-        testImplementation("org.apache.calcite:calcite-core:1.42.0") {
-            version { strictly "1.42.0" }
-        }
-        testImplementation("org.apache.calcite:calcite-linq4j:1.42.0") {
-            version { strictly "1.42.0" }
-        }
-    }
-}
-```
+게시 후 검증을 통과한 안정 `v0.1.0` Release의 exact coordinate는
+`io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0`이며 Maven Central
+게시를 주장하지 않습니다. 이 좌표를 기본 dependency graph에 바로 붙이지 말고
+[첫 실제 통합 가이드](docs/first-integration.md)의 격리된 pilot에서만 사용하세요. 그 pilot은
+기존 ShardingSphere-JDBC 5.5.3 fixture의 실제 graph를 재사용하고 전체 runtime classpath를
+검토하게 합니다.
 
 RouteContract build는 dependency embedding을 구성하지 않으며, 모듈의 `compileOnly`
 ShardingSphere/BOM 선언은 공개 POM에서 소비자 버전 제약으로 전달되지 않습니다. 검증된
-Gradle test/runtime graph에서는 위 BOM에 따라 ShardingSphere 5.5.3 호환성 그래프의
+Gradle test/runtime graph에서는 sealed fixture에 따라 ShardingSphere 5.5.3 호환성 그래프의
 Jackson 2 core·databind·datatype-jdk8·datatype-jsr310 모듈이 2.18.9로 해석되고,
 Calcite Core·linq4j는 1.42.0으로 해석됩니다. JTS Core 1.19.0은 유지되지만 JTS I/O
 Common은 graph에 없어야 합니다. 단, Jackson
@@ -407,6 +400,7 @@ failing test, 실제 MySQL 검증, 명시적인 지원 한계를 함께 제시�
 - [datasource-proxy 실증 비교](docs/empirical-comparison.md)
 - [검증 증거 매트릭스](docs/evidence-matrix.md)
 - [격리된 same-checkout Maven-publication consumer](examples/standalone-consumer/README.md)
+- [격리된 Maven 3.9.14 onboarding pilot](examples/maven-pilot/README.md)
 - [SBOM 생성과 검토](docs/sbom.md)
 - [출처·선행 작업 경계 공개](ORIGIN_AND_PRIOR_WORK.md)
 - [AI 보조 사용 공개](AI_ASSISTANCE.md)
