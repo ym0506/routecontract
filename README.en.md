@@ -13,6 +13,13 @@
 
 [Watch the 2:54 demo](https://www.youtube.com/watch?v=pcgvNNxd1mM)
 
+For a 30-minute scoping and first-pass assisted pilot on one representative operation in a public
+repository, opt in with the [`interested` form in Discussion #34](https://github.com/ym0506/routecontract/discussions/34).
+The RouteContract maintainer will help prepare a small opt-in lane around one existing
+ShardingSphere-JDBC 5.5.3 test. A public PR requires separate confirmation; baseline approval and
+the adoption decision remain with the external maintainer. A pass, star, or endorsement is not
+requested.
+
 ![A verified real-MySQL case where the business result stays the same while observed attempts and reviewed data-source aliases change from one to two, producing RCM201 and RCM202](submission/assets/baseline-candidate.png)
 
 ## Quick Start
