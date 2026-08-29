@@ -7,7 +7,7 @@ routecontract_root="$(cd -- "${script_directory}/.." && pwd)"
 installer="${script_directory}/install-release-assets.py"
 checksum_preparer="${script_directory}/prepare_maven_v0_1_0_checksums.py"
 
-expected_installer_sha256="d21a7c71eb725e8d5f0675cfb88815b26be130d63711dc025a06347317652d33"
+expected_installer_sha256="134b265709ac071dedd395da269426d83f1972f602c3b3f7d2201eecc525e204"
 expected_checksum_preparer_sha256="546f801ae6056ae82dc6cbf8c3852056e7ec7ca9acfc7c077d06fc8d20247b89"
 expected_index_sha256="820ed33eb8bfe8d47f3ec8782d2aa99f2879227c4ee066ecafc467e61abb8684"
 expected_jar_sha256="d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc"
@@ -184,7 +184,7 @@ for required_file in "$installer" "$checksum_preparer"; do
     assert_regular_file "$required_file" "RouteContract helper"
 done
 test "$(sha256_file "$installer")" = "$expected_installer_sha256" \
-    || die "release installer does not match the immutable v0.1.0 hash"
+    || die "release installer does not match the reviewed hash"
 test "$(sha256_file "$checksum_preparer")" = "$expected_checksum_preparer_sha256" \
     || die "checksum preparer does not match the reviewed hash"
 
@@ -300,11 +300,212 @@ repository_directory="${temporary_root}/routecontract-maven"
 consumer_cache="${temporary_root}/consumer-cache"
 graph_log="${temporary_root}/dependency-tree.log"
 profile_log="${temporary_root}/profile-off.log"
+profile_off_effective_pom="${temporary_root}/profile-off-effective-pom.xml"
+profile_off_effective_log="${temporary_root}/profile-off-effective-pom.log"
 test_log="${temporary_root}/candidate-test.log"
 python3 -I "$installer" \
     --release-assets-dir "$release_assets_directory" \
     --repository "$repository_directory"
 python3 -I "$checksum_preparer" --repository "$repository_directory"
+
+python3 -I - "$ROUTECONTRACT_OWNING_POM" <<'PY'
+import pathlib
+import sys
+import xml.etree.ElementTree as ET
+
+path = pathlib.Path(sys.argv[1])
+if path.is_symlink() or not path.is_file():
+    raise SystemExit("owning source POM is not a regular file")
+namespace = {"m": "http://maven.apache.org/POM/4.0.0"}
+qualified = lambda local: f"{{{namespace['m']}}}{local}"
+root = ET.parse(path).getroot()
+
+def text(element, child, required=True):
+    selected = element.find(child, namespace)
+    if selected is None or selected.text is None or not selected.text.strip():
+        if required:
+            raise SystemExit(f"owning source POM is missing {child}")
+        return None
+    return selected.text.strip()
+
+def coordinate(element):
+    return text(element, "m:groupId"), text(element, "m:artifactId")
+
+def exact_one(elements, expected, label):
+    matches = [element for element in elements if coordinate(element) == expected]
+    if len(matches) != 1:
+        raise SystemExit(
+            f"owning source POM must contain exactly one {label} {expected} "
+            "inside routecontract-pilot"
+        )
+    return matches[0]
+
+profiles = root.findall("m:profiles/m:profile", namespace)
+pilot_profiles = [
+    profile
+    for profile in profiles
+    if text(profile, "m:id", required=False) == "routecontract-pilot"
+]
+if len(pilot_profiles) != 1:
+    raise SystemExit(
+        "owning source POM must contain exactly one routecontract-pilot profile"
+    )
+pilot = pilot_profiles[0]
+pilot_nodes = set(pilot.iter())
+
+activation = pilot.find("m:activation", namespace)
+if activation is None or [child.tag for child in activation] != [qualified("property")]:
+    raise SystemExit(
+        "routecontract-pilot activation must contain only the reviewed property gate"
+    )
+if text(activation, "m:property/m:name") != "routecontractPilot" \
+        or text(activation, "m:property/m:value") != "true":
+    raise SystemExit("routecontract-pilot activation property changed")
+
+managed = pilot.findall(
+    "m:dependencyManagement/m:dependencies/m:dependency", namespace
+)
+required_management = (
+    ("com.fasterxml.jackson", "jackson-bom"),
+    ("org.apache.calcite", "calcite-core"),
+    ("org.apache.calcite", "calcite-linq4j"),
+    ("net.minidev", "json-smart"),
+    ("net.minidev", "accessors-smart"),
+)
+managed_by_coordinate = {
+    expected: exact_one(managed, expected, "managed dependency")
+    for expected in required_management
+}
+jackson_bom = managed_by_coordinate[("com.fasterxml.jackson", "jackson-bom")]
+if text(jackson_bom, "m:type") != "pom" \
+        or text(jackson_bom, "m:scope") != "import":
+    raise SystemExit("routecontract-pilot Jackson BOM import boundary changed")
+
+dependencies = pilot.findall("m:dependencies/m:dependency", namespace)
+routecontract = exact_one(
+    dependencies,
+    ("io.github.ym0506.routecontract", "routecontract-shardingsphere-5.5"),
+    "direct dependency",
+)
+if text(routecontract, "m:version") != "0.1.0" \
+        or text(routecontract, "m:scope") != "test":
+    raise SystemExit("routecontract-pilot RouteContract dependency boundary changed")
+
+required_exclusions = {
+    ("org.locationtech.jts.io", "jts-io-common"),
+    ("com.google.protobuf", "protobuf-java"),
+}
+for expected in (
+    ("org.apache.shardingsphere", "shardingsphere-jdbc"),
+    ("org.apache.calcite", "calcite-core"),
+):
+    dependency = exact_one(dependencies, expected, "direct dependency")
+    scope = text(dependency, "m:scope")
+    if scope not in {"compile", "runtime", "test"}:
+        raise SystemExit(f"routecontract-pilot has an unsupported scope for {expected}")
+    exclusions = {
+        coordinate(exclusion)
+        for exclusion in dependency.findall("m:exclusions/m:exclusion", namespace)
+    }
+    if not required_exclusions.issubset(exclusions):
+        raise SystemExit(
+            f"routecontract-pilot is missing reviewed exclusions for {expected}"
+        )
+
+repositories = pilot.findall("m:repositories/m:repository", namespace)
+routecontract_repositories = [
+    repository
+    for repository in repositories
+    if text(repository, "m:id", required=False)
+    == "routecontract-verified-file-repository"
+]
+if len(routecontract_repositories) != 1:
+    raise SystemExit(
+        "routecontract-pilot must contain exactly one reviewed file repository"
+    )
+repository = routecontract_repositories[0]
+expected_repository_values = {
+    "m:url": "${routecontractRepositoryUrl}",
+    "m:releases/m:enabled": "true",
+    "m:releases/m:updatePolicy": "never",
+    "m:releases/m:checksumPolicy": "fail",
+    "m:snapshots/m:enabled": "false",
+}
+for child, expected_value in expected_repository_values.items():
+    if text(repository, child) != expected_value:
+        raise SystemExit(f"routecontract-pilot repository setting changed: {child}")
+
+plugins = pilot.findall("m:build/m:plugins/m:plugin", namespace)
+build_helper = exact_one(
+    plugins,
+    ("org.codehaus.mojo", "build-helper-maven-plugin"),
+    "build plugin",
+)
+executions = [
+    execution
+    for execution in build_helper.findall("m:executions/m:execution", namespace)
+    if text(execution, "m:id", required=False) == "add-routecontract-pilot-source"
+]
+if len(executions) != 1:
+    raise SystemExit("routecontract-pilot source execution is not exact")
+execution = executions[0]
+if text(execution, "m:phase") != "generate-test-sources":
+    raise SystemExit("routecontract-pilot source execution phase changed")
+goals = [
+    (goal.text or "").strip()
+    for goal in execution.findall("m:goals/m:goal", namespace)
+]
+sources = [
+    (source.text or "").strip().replace("\\", "/").rstrip("/")
+    for source in execution.findall(
+        "m:configuration/m:sources/m:source", namespace
+    )
+]
+if goals != ["add-test-source"] or sources != ["src/routeContractPilot/java"]:
+    raise SystemExit("routecontract-pilot source execution changed")
+
+surefire = exact_one(
+    plugins,
+    ("org.apache.maven.plugins", "maven-surefire-plugin"),
+    "build plugin",
+)
+expected_system_properties = {
+    "routecontract.projectDir": "${project.basedir}",
+    "routecontract.candidateRoot": "target/routecontract",
+    "routecontract.artifactJarName":
+        "routecontract-shardingsphere-5.5-0.1.0.jar",
+    "routecontract.artifactJarPath": "${routecontract.artifactJarPath}",
+}
+system_properties = surefire.find(
+    "m:configuration/m:systemPropertyVariables", namespace
+)
+if system_properties is None:
+    raise SystemExit("routecontract-pilot Surefire system properties are missing")
+for name, expected_value in expected_system_properties.items():
+    selected = system_properties.find(qualified(name))
+    actual = None if selected is None or selected.text is None else selected.text.strip()
+    if actual != expected_value:
+        raise SystemExit(
+            f"routecontract-pilot Surefire system property changed: {name}"
+        )
+
+for dependency in root.iter(qualified("dependency")):
+    if dependency not in pilot_nodes \
+            and coordinate(dependency)[0] == "io.github.ym0506.routecontract":
+        raise SystemExit("RouteContract dependency escaped routecontract-pilot")
+for candidate_repository in root.iter(qualified("repository")):
+    if candidate_repository not in pilot_nodes \
+            and text(candidate_repository, "m:id", required=False) \
+            == "routecontract-verified-file-repository":
+        raise SystemExit("RouteContract repository escaped routecontract-pilot")
+for source in root.iter(qualified("source")):
+    normalized = (source.text or "").strip().replace("\\", "/").rstrip("/")
+    if source not in pilot_nodes and (
+        normalized == "src/routeContractPilot/java"
+        or normalized.endswith("/src/routeContractPilot/java")
+    ):
+        raise SystemExit("RouteContract pilot source escaped routecontract-pilot")
+PY
 
 repository_uri="$(python3 -I -c \
     'import pathlib,sys; print(pathlib.Path(sys.argv[1]).resolve(strict=True).as_uri())' \
@@ -324,6 +525,67 @@ mvn -B -ntp -Dstyle.color=never \
     -pl "$ROUTECONTRACT_REACTOR_SELECTOR" -am clean install >"$profile_log" 2>&1 \
     || { report_suppressed_log; die "profile-off reactor build failed"; }
 assert_no_integrity_warning "$profile_log"
+
+mvn -B -ntp -Dstyle.color=never \
+    -f "$ROUTECONTRACT_OWNING_POM" \
+    "-Dmaven.repo.local=${consumer_cache}" \
+    -P=-routecontract-pilot \
+    -DskipTests=true \
+    -Dmaven.test.skip=true \
+    org.apache.maven.plugins:maven-help-plugin:3.5.1:effective-pom \
+    "-Doutput=${profile_off_effective_pom}" >"$profile_off_effective_log" 2>&1 \
+    || { report_suppressed_log; die "profile-off effective POM generation failed"; }
+assert_no_integrity_warning "$profile_off_effective_log"
+python3 -I - "$profile_off_effective_pom" <<'PY'
+import pathlib
+import sys
+import xml.etree.ElementTree as ET
+
+path = pathlib.Path(sys.argv[1])
+if path.is_symlink() or not path.is_file():
+    raise SystemExit("profile-off effective POM is not a regular file")
+namespace = {"m": "http://maven.apache.org/POM/4.0.0"}
+root = ET.parse(path).getroot()
+
+def text(element, child):
+    selected = element.find(child, namespace)
+    if selected is None or selected.text is None:
+        raise SystemExit(f"profile-off effective POM is missing {child}")
+    return selected.text.strip()
+
+def coordinate(dependency):
+    return text(dependency, "m:groupId"), text(dependency, "m:artifactId")
+
+dependencies = root.findall("m:dependencies/m:dependency", namespace)
+for dependency in dependencies:
+    dependency_coordinate = coordinate(dependency)
+    if dependency_coordinate[0] == "io.github.ym0506.routecontract":
+        raise SystemExit(
+            "profile-off effective POM activated a RouteContract dependency "
+            f"{dependency_coordinate}"
+        )
+
+repository_ids = {
+    text(repository, "m:id")
+    for repository in root.findall("m:repositories/m:repository", namespace)
+}
+if "routecontract-verified-file-repository" in repository_ids:
+    raise SystemExit("profile-off effective POM activated the RouteContract repository")
+active_sources = {
+    (source.text or "").strip().replace("\\", "/").rstrip("/")
+    for source in root.findall(
+        "m:build/m:plugins/m:plugin/m:executions/m:execution/"
+        "m:configuration/m:sources/m:source",
+        namespace,
+    )
+}
+if any(
+    source == "src/routeContractPilot/java"
+    or source.endswith("/src/routeContractPilot/java")
+    for source in active_sources
+):
+    raise SystemExit("profile-off effective POM activated the pilot source root")
+PY
 validate_confined_path \
     "$ROUTECONTRACT_PROFILE_OFF_REPORT" "$routecontract_owning_target" \
     "profile-off Surefire report" regular

@@ -778,6 +778,33 @@ class InstallReleaseAssetsTest(unittest.TestCase):
             self.assertEqual(0, result.returncode, result.stderr)
             self.assertIn(f"{GROUP_ID}:{ARTIFACT_ID}:{VERSION}", result.stdout)
 
+    def test_accepts_reviewed_routecontract_pilot_source_set_shape(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            assets = root / "release"
+            fixture = ReleaseFixture(assets)
+            fixture.create()
+            pilot_java = (
+                "examples/consumer/src/routeContractPilot/java/"
+                "io/github/ym0506/routecontract/examples/PilotCheck.java"
+            )
+            fixture.write_source_archive(
+                extra_relative_entries=(pilot_java,),
+                content_overrides={
+                    pilot_java: (
+                        "package io.github.ym0506.routecontract.examples;\n"
+                        "final class PilotCheck {}\n"
+                    )
+                },
+            )
+            fixture.write_checksums()
+            repository = root / "consumer-maven"
+
+            result = self.run_installer(assets, repository, home=root / "home")
+
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertIn(f"{GROUP_ID}:{ARTIFACT_ID}:{VERSION}", result.stdout)
+
     def test_rejects_checksum_mismatch_without_creating_repository(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)

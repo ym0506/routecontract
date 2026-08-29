@@ -1978,8 +1978,10 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             "ROUTECONTRACT_EXPECTED_OUTCOME: matched",
             "ROUTECONTRACT_PROFILE_OFF_REPORT:",
             "ROUTECONTRACT_APPROVED_PATH:",
+            "134b265709ac071dedd395da269426d83f1972f602c3b3f7d2201eecc525e204",
+            "https://raw.githubusercontent.com/ym0506/routecontract/main/scripts/install-release-assets.py",
             "verify-external-maven-integration.sh",
-            "67f415235f49fb4d134d01cbada80d7d138276ba1e736220712286726555196b",
+            "72a694e95c5c7d8ac3bf330dfe0e8e9b32b5a572bb5429895918fae45a8f8cde",
             'bash "${tool_dir}/verify-external-maven-integration.sh"',
         ):
             self.assertIn(required, maven_ci_block)

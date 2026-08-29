@@ -1480,8 +1480,10 @@ test "$(approved_identity "${approved_path}")" = "${approved_before}"
 For Maven CI, do not hand-stitch the long review and matched blocks. The checked-in
 `scripts/verify-external-maven-integration.sh` is the executable form of those controls. It accepts
 only explicit absolute project paths and test identities, creates private absent Release and Maven
-cache directories, verifies the profile-off business test and graph, and then verifies exactly one
-selected Surefire result plus a fresh candidate. `ROUTECONTRACT_EXPECTED_OUTCOME=review` requires an
+cache directories, verifies the source-POM profile nesting and that the profile-off effective model
+remains RouteContract-free before checking the graph, and then verifies exactly one selected
+Surefire result plus a fresh candidate.
+`ROUTECONTRACT_EXPECTED_OUTCOME=review` requires an
 absent baseline both before and after the exact deliberate missing-baseline failure; `matched`
 requires an existing regular approved manifest, a passing exact match, and unchanged file identity,
 metadata, and SHA-256 across the run. All candidate and report paths must begin absent and stay
@@ -1546,20 +1548,20 @@ and exact JDK 17 setup; replace every repository-specific path and identity:
     }
     download_tool \
       install-release-assets.py \
-      d21a7c71eb725e8d5f0675cfb88815b26be130d63711dc025a06347317652d33 \
-      https://raw.githubusercontent.com/ym0506/routecontract/db203cfd9202ff10cd22c41cf04034eca5177341/scripts/install-release-assets.py
+      134b265709ac071dedd395da269426d83f1972f602c3b3f7d2201eecc525e204 \
+      https://raw.githubusercontent.com/ym0506/routecontract/main/scripts/install-release-assets.py
     download_tool \
       prepare_maven_v0_1_0_checksums.py \
       546f801ae6056ae82dc6cbf8c3852056e7ec7ca9acfc7c077d06fc8d20247b89 \
       https://raw.githubusercontent.com/ym0506/routecontract/main/scripts/prepare_maven_v0_1_0_checksums.py
     download_tool \
       verify-external-maven-integration.sh \
-      67f415235f49fb4d134d01cbada80d7d138276ba1e736220712286726555196b \
+      72a694e95c5c7d8ac3bf330dfe0e8e9b32b5a572bb5429895918fae45a8f8cde \
       https://raw.githubusercontent.com/ym0506/routecontract/main/scripts/verify-external-maven-integration.sh
     bash "${tool_dir}/verify-external-maven-integration.sh"
 ```
 
-The two `main` transport URLs above are moving only for availability; execution is gated by exact
+The three `main` transport URLs above are moving only for availability; execution is gated by exact
 content hashes. This Maven workflow becomes usable only after the helper, verifier, fixture, tests,
 and this guide are published together. Until then, do not direct an external participant to the
 unpublished lane or count it as available onboarding.

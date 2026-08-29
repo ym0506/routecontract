@@ -42,7 +42,8 @@ ShardingSphere hook report made after its wrapped physical `executeSQL` call ret
 | File | Purpose | SHA-256 |
 | --- | --- | --- |
 | `routecontract-pilot.patch` | Exact two-path opt-in patch | `d9842f7ad875cab9bd07cba58b12776f5d3a399d191fc00e1d4cefb8e969651e` |
-| `reproduce.sh` | Fail-closed profile-off plus two-run profile-on reproducer | `078cffc46c982845bc1683b0384969f550277a32eb44a50430306fce11c90b0f` |
+| `reproduce.sh` | Fail-closed profile-off plus two-run profile-on reproducer | `bb37e66cde57d0398c2fc4abf5b5431b497f3939b00c22581d4b77951300130a` |
+| `maven-settings.xml` | Exact empty user/global Maven settings used by every Maven call | `132df1e0d6c1fc8da8e0bf7fc7fc4534505fa8cc3e50f3870150a580c17b7c4f` |
 | `expected-candidate.sha256` | Expected generated candidate digest | `4961872ab916d7556b9be1fec2722a5479e42731126a1a70d8b98939404efde6` |
 | `receipt.json` | Machine-readable environment, results and claim boundary | See the file itself; it does not self-hash. |
 
@@ -57,7 +58,9 @@ It deliberately contains no file at
 ## Reproduce in a disposable checkout
 
 Requirements are Git, Python 3, JDK 17, Apache Maven 3.9.14 and network access for the upstream
-Maven dependencies. Obtain these exact RouteContract v0.1.0 Release assets in one directory:
+Maven dependencies. `JAVA_HOME` must be an absolute, already-canonical JDK 17 home rather than a
+symlink or a different JDK hidden behind `PATH`. Obtain these exact RouteContract v0.1.0 Release
+assets in one directory:
 
 | Asset | SHA-256 |
 | --- | --- |
@@ -79,12 +82,19 @@ export JAVA_HOME=/absolute/path/to/jdk-17
   /absolute/path/to/routecontract-v0.1.0-release-assets
 ```
 
-The script verifies the upstream commit/tree, clean status, release-asset hashes, Maven/JDK
-versions and exact two-path patch before running anything. It uses a private temporary Maven local
-repository, forces SHA-256 for the file-repository transfer, and deletes that private scratch area
-on exit. Set `MAVEN_REPO_SEED` to an absolute existing Maven repository only to reduce downloads;
-the script rejects a seed containing symbolic links, copies it into scratch, rechecks the copy for
-symbolic links, and only then removes the RouteContract coordinate before resolution.
+The script verifies the upstream commit/tree, clean status, release-asset hashes, bundled empty
+settings, Maven/JDK versions and exact two-path patch before running anything. It invokes
+`JAVA_HOME/bin/java` directly, requires Maven's reported Java 17 runtime to resolve to that same
+canonical home, disables Maven rc files, clears Maven/Java command-injection environment variables,
+and passes the bundled settings as both user and global settings on every Maven call. It uses a
+private temporary Maven local repository, forces SHA-256 for the file-repository transfer, and
+deletes that private scratch area on exit. After both opt-in runs it reads the dependency back from
+the consumer cache, verifies the exact JAR/POM hashes and lowercase-hex SHA-256 sidecars (with or
+without Maven's optional final LF), and requires both cache
+entries to name only `routecontract-v0.1.0-local` in `_remote.repositories`. Set `MAVEN_REPO_SEED`
+to an absolute existing Maven repository only to reduce downloads; the script rejects a seed
+containing symbolic links, copies it into scratch, rechecks the copy for symbolic links, and only
+then removes the RouteContract coordinate before resolution.
 
 The script applies the patch and intentionally leaves the disposable upstream checkout modified.
 Its successful final output is:

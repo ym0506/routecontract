@@ -7,10 +7,12 @@ readonly EXPECTED_MAVEN_VERSION="3.9.14"
 readonly EXPECTED_JAR_SHA256="d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc"
 readonly EXPECTED_POM_SHA256="05570bfa238ef77db255a46efdd5bbb25e994ae0137db86491a46a25e28deac9"
 readonly EXPECTED_SUMS_SHA256="820ed33eb8bfe8d47f3ec8782d2aa99f2879227c4ee066ecafc467e61abb8684"
+readonly EXPECTED_MAVEN_SETTINGS_SHA256="132df1e0d6c1fc8da8e0bf7fc7fc4534505fa8cc3e50f3870150a580c17b7c4f"
 readonly EXPECTED_CANDIDATE_SHA256="60e94c17e2df96ff7f4769f33a6a7b4f3431b0cd0995d47906e6f63a3d1601e4"
 readonly EXPECTED_CANDIDATE_BYTES="679"
 readonly RELEASE_JAR="routecontract-shardingsphere-5.5-0.1.0.jar"
 readonly RELEASE_POM="routecontract-shardingsphere-5.5.pom"
+readonly CACHED_RELEASE_POM="routecontract-shardingsphere-5.5-0.1.0.pom"
 
 fail() {
   printf 'ERROR: %s\n' "$*" >&2
@@ -52,6 +54,23 @@ require_hash() {
   [[ "$actual" == "$expected" ]] || fail "SHA-256 mismatch for $target: $actual"
 }
 
+require_digest_sidecar() {
+  local target="$1"
+  local expected="$2"
+  local label="$3"
+  [[ -f "$target" && ! -L "$target" ]] || fail "missing regular $label"
+  python3 -I - "$target" "$expected" <<'PY' \
+    || fail "$label changed"
+import pathlib
+import sys
+
+data = pathlib.Path(sys.argv[1]).read_bytes()
+expected = sys.argv[2].encode("ascii")
+if data not in (expected, expected + b"\n"):
+    raise SystemExit("digest sidecar must be exact lowercase hex with at most one final LF")
+PY
+}
+
 require_command() {
   command -v "$1" >/dev/null 2>&1 || fail "required command is unavailable: $1"
 }
@@ -59,12 +78,13 @@ require_command() {
 [[ "$#" -eq 2 ]] || usage
 [[ "$1" == /* && "$2" == /* ]] || fail "both arguments must be absolute paths"
 
-for command_name in awk cmp cp find git grep java mktemp mvn python3 tr wc; do
+for command_name in awk cmp cp env find git grep mktemp mvn python3 sed sort tr wc; do
   require_command "$command_name"
 done
 
 readonly KIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 readonly PATCH_FILE="$KIT_DIR/routecontract-pilot.patch"
+readonly MAVEN_SETTINGS="$KIT_DIR/maven-settings.xml"
 readonly UPSTREAM_DIR="$(cd "$1" && pwd -P)"
 readonly ASSETS_DIR="$(cd "$2" && pwd -P)"
 readonly APPROVED_RELATIVE="integration-tests/src/routeContractPilot/resources/route-contracts/accounts.insert.json"
@@ -78,15 +98,85 @@ readonly PROFILE_OFF_INTEGRATION_REPORT="integration-tests/target/surefire-repor
 require_hash "$ASSETS_DIR/$RELEASE_JAR" "$EXPECTED_JAR_SHA256"
 require_hash "$ASSETS_DIR/$RELEASE_POM" "$EXPECTED_POM_SHA256"
 require_hash "$ASSETS_DIR/SHA256SUMS" "$EXPECTED_SUMS_SHA256"
+require_hash "$MAVEN_SETTINGS" "$EXPECTED_MAVEN_SETTINGS_SHA256"
+
+temporary_parent="${TMPDIR:-/tmp}"
+temporary_parent="${temporary_parent%/}"
+readonly SCRATCH_DIR="$(mktemp -d "$temporary_parent/routecontract-quarkiverse-pilot.XXXXXX")"
+cleanup() {
+  rm -rf -- "$SCRATCH_DIR"
+}
+trap cleanup EXIT INT TERM
 
 [[ -n "${JAVA_HOME:-}" ]] || fail "JAVA_HOME must point to JDK 17"
-readonly JAVA_SPECIFICATION_VERSION="$(java -XshowSettings:properties -version 2>&1 \
+[[ "$JAVA_HOME" == /* ]] || fail "JAVA_HOME must be an absolute path"
+JAVA_HOME_CANONICAL=""
+if ! JAVA_HOME_CANONICAL="$(cd "$JAVA_HOME" 2>/dev/null && pwd -P)"; then
+  fail "JAVA_HOME is not an existing directory"
+fi
+readonly JAVA_HOME_CANONICAL
+[[ "${JAVA_HOME%/}" == "$JAVA_HOME_CANONICAL" ]] \
+  || fail "JAVA_HOME must already be canonical: $JAVA_HOME_CANONICAL"
+readonly JAVA_EXECUTABLE="$JAVA_HOME_CANONICAL/bin/java"
+[[ -f "$JAVA_EXECUTABLE" && -x "$JAVA_EXECUTABLE" && ! -L "$JAVA_EXECUTABLE" ]] \
+  || fail "JAVA_HOME/bin/java must be an executable regular file"
+
+java_isolated() {
+  env \
+    -u BASH_ENV \
+    -u ENV \
+    -u JAVA_TOOL_OPTIONS \
+    -u JDK_JAVA_OPTIONS \
+    -u _JAVA_OPTIONS \
+    "$JAVA_EXECUTABLE" "$@"
+}
+
+readonly JAVA_SPECIFICATION_VERSION="$(java_isolated -XshowSettings:properties -version 2>&1 \
   | awk -F '= ' '/java.specification.version = / {print $2; exit}')"
 [[ "$JAVA_SPECIFICATION_VERSION" == "17" ]] \
   || fail "JDK 17 is required; found specification version $JAVA_SPECIFICATION_VERSION"
-readonly MAVEN_VERSION="$(mvn -version | awk 'NR == 1 {print $3}')"
+
+mvn_isolated() {
+  env \
+    -u MAVEN_ARGS \
+    -u MAVEN_BASEDIR \
+    -u MAVEN_OPTS \
+    -u MAVEN_DEBUG_OPTS \
+    -u MAVEN_CONFIG \
+    -u MAVEN_PROJECTBASEDIR \
+    -u MAVEN_USER_HOME \
+    -u BASH_ENV \
+    -u ENV \
+    -u JAVA_TOOL_OPTIONS \
+    -u JDK_JAVA_OPTIONS \
+    -u _JAVA_OPTIONS \
+    MAVEN_SKIP_RC=true \
+    JAVA_HOME="$JAVA_HOME_CANONICAL" \
+    mvn \
+    --settings "$MAVEN_SETTINGS" \
+    --global-settings "$MAVEN_SETTINGS" \
+    "$@"
+}
+
+readonly MAVEN_VERSION_OUTPUT="$(cd "$SCRATCH_DIR" && mvn_isolated --version)"
+readonly MAVEN_VERSION="$(printf '%s\n' "$MAVEN_VERSION_OUTPUT" | awk 'NR == 1 {print $3}')"
 [[ "$MAVEN_VERSION" == "$EXPECTED_MAVEN_VERSION" ]] \
   || fail "Maven $EXPECTED_MAVEN_VERSION is required; found $MAVEN_VERSION"
+readonly MAVEN_JAVA_VERSION="$(printf '%s\n' "$MAVEN_VERSION_OUTPUT" \
+  | sed -n 's/^Java version: \([^,]*\),.*$/\1/p')"
+[[ "$MAVEN_JAVA_VERSION" == "17" || "$MAVEN_JAVA_VERSION" == 17.* ]] \
+  || fail "Maven must report Java 17; found $MAVEN_JAVA_VERSION"
+readonly MAVEN_RUNTIME_REPORTED="$(printf '%s\n' "$MAVEN_VERSION_OUTPUT" \
+  | sed -n 's/^Java version: .* runtime: //p')"
+[[ "$MAVEN_RUNTIME_REPORTED" == /* ]] \
+  || fail "Maven did not report an absolute Java runtime"
+MAVEN_RUNTIME_CANONICAL=""
+if ! MAVEN_RUNTIME_CANONICAL="$(cd "$MAVEN_RUNTIME_REPORTED" 2>/dev/null && pwd -P)"; then
+  fail "Maven reported a Java runtime that is not an existing directory"
+fi
+readonly MAVEN_RUNTIME_CANONICAL
+[[ "$MAVEN_RUNTIME_CANONICAL" == "$JAVA_HOME_CANONICAL" ]] \
+  || fail "Maven Java runtime does not match canonical JAVA_HOME"
 
 [[ "$(git -C "$UPSTREAM_DIR" rev-parse HEAD)" == "$EXPECTED_UPSTREAM_COMMIT" ]] \
   || fail "upstream commit is not the pinned commit"
@@ -97,17 +187,10 @@ readonly MAVEN_VERSION="$(mvn -version | awk 'NR == 1 {print $3}')"
 [[ ! -e "$UPSTREAM_DIR/$APPROVED_RELATIVE" ]] || fail "an approved baseline already exists"
 git -C "$UPSTREAM_DIR" apply --check "$PATCH_FILE"
 
-temporary_parent="${TMPDIR:-/tmp}"
-temporary_parent="${temporary_parent%/}"
-readonly SCRATCH_DIR="$(mktemp -d "$temporary_parent/routecontract-quarkiverse-pilot.XXXXXX")"
-cleanup() {
-  rm -rf -- "$SCRATCH_DIR"
-}
-trap cleanup EXIT INT TERM
-
 readonly MAVEN_LOCAL_REPO="$SCRATCH_DIR/m2"
 readonly FILE_REPO="$SCRATCH_DIR/routecontract-file-repository"
 readonly ARTIFACT_DIR="$FILE_REPO/io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.0"
+readonly CONSUMER_ARTIFACT_DIR="$MAVEN_LOCAL_REPO/io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.0"
 mkdir -p "$MAVEN_LOCAL_REPO" "$ARTIFACT_DIR"
 
 if [[ -n "${MAVEN_REPO_SEED:-}" ]]; then
@@ -125,10 +208,10 @@ fi
 
 cp "$ASSETS_DIR/$RELEASE_JAR" "$ARTIFACT_DIR/$RELEASE_JAR"
 cp "$ASSETS_DIR/$RELEASE_POM" \
-  "$ARTIFACT_DIR/routecontract-shardingsphere-5.5-0.1.0.pom"
+  "$ARTIFACT_DIR/$CACHED_RELEASE_POM"
 printf '%s\n' "$EXPECTED_JAR_SHA256" >"$ARTIFACT_DIR/$RELEASE_JAR.sha256"
 printf '%s\n' "$EXPECTED_POM_SHA256" \
-  >"$ARTIFACT_DIR/routecontract-shardingsphere-5.5-0.1.0.pom.sha256"
+  >"$ARTIFACT_DIR/$CACHED_RELEASE_POM.sha256"
 
 git -C "$UPSTREAM_DIR" apply "$PATCH_FILE"
 readonly EXPECTED_STATUS=$' M integration-tests/pom.xml\n?? integration-tests/src/routeContractPilot/'
@@ -142,7 +225,7 @@ readonly CHECKSUM_OPTION="-Daether.checksums.algorithms.routecontract-v0.1.0-loc
 
 (
   cd "$UPSTREAM_DIR"
-  mvn -B -ntp "$MAVEN_REPOSITORY_OPTION" "$CHECKSUM_OPTION" \
+  mvn_isolated -B -ntp "$MAVEN_REPOSITORY_OPTION" "$CHECKSUM_OPTION" \
     -DskipTests=false \
     -Dmaven.test.skip=false \
     -Dmaven.test.failure.ignore=false \
@@ -206,7 +289,7 @@ PY
   || fail "profile-off build unexpectedly created an approved baseline"
 (
   cd "$UPSTREAM_DIR"
-  mvn -B -ntp "$MAVEN_REPOSITORY_OPTION" "$CHECKSUM_OPTION" \
+  mvn_isolated -B -ntp "$MAVEN_REPOSITORY_OPTION" "$CHECKSUM_OPTION" \
     -pl integration-tests -am dependency:tree \
     '-Dincludes=io.github.ym0506.routecontract:*'
 ) >"$SCRATCH_DIR/profile-off-dependency-tree.log" 2>&1
@@ -224,7 +307,7 @@ validate_expected_failure() {
   set +e
   (
     cd "$UPSTREAM_DIR"
-    mvn -B -ntp "$MAVEN_REPOSITORY_OPTION" "$CHECKSUM_OPTION" \
+    mvn_isolated -B -ntp "$MAVEN_REPOSITORY_OPTION" "$CHECKSUM_OPTION" \
       -DroutecontractPilot=true \
       "-Droutecontract.repository=$FILE_REPO" \
       -Dtest=RouteContractInsertPilotTest \
@@ -281,6 +364,41 @@ PY
 
 validate_expected_failure 1
 validate_expected_failure 2
+
+verify_consumer_cache() {
+  local cached_jar="$CONSUMER_ARTIFACT_DIR/$RELEASE_JAR"
+  local cached_pom="$CONSUMER_ARTIFACT_DIR/$CACHED_RELEASE_POM"
+  local cached_jar_sidecar="$cached_jar.sha256"
+  local cached_pom_sidecar="$cached_pom.sha256"
+  local repository_binding="$CONSUMER_ARTIFACT_DIR/_remote.repositories"
+  local expected_bindings
+  local actual_bindings
+
+  require_hash "$cached_jar" "$EXPECTED_JAR_SHA256"
+  require_hash "$cached_pom" "$EXPECTED_POM_SHA256"
+  require_digest_sidecar \
+    "$cached_jar_sidecar" "$EXPECTED_JAR_SHA256" \
+    "consumer-cache JAR SHA-256 sidecar"
+  require_digest_sidecar \
+    "$cached_pom_sidecar" "$EXPECTED_POM_SHA256" \
+    "consumer-cache POM SHA-256 sidecar"
+  [[ -f "$repository_binding" && ! -L "$repository_binding" ]] \
+    || fail "missing regular consumer-cache _remote.repositories file"
+
+  expected_bindings="$(
+    printf '%s\n' \
+      "$RELEASE_JAR>routecontract-v0.1.0-local=" \
+      "$CACHED_RELEASE_POM>routecontract-v0.1.0-local=" \
+      | LC_ALL=C sort
+  )"
+  actual_bindings="$({
+    awk '!/^#/ && NF {print}' "$repository_binding" || true
+  } | LC_ALL=C sort)"
+  [[ "$actual_bindings" == "$expected_bindings" ]] \
+    || fail "consumer-cache _remote.repositories binding changed"
+}
+
+verify_consumer_cache
 
 printf '%s\n' \
   'ROUTECONTRACT_QUARKIVERSE_PROFILE_OFF fullReactor=PASS pilotDependency=ABSENT' \

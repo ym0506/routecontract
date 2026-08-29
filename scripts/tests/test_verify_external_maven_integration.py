@@ -10,6 +10,9 @@ from pathlib import Path
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = REPOSITORY_ROOT / "scripts" / "verify-external-maven-integration.sh"
+VALID_SOURCE_POM = (
+    REPOSITORY_ROOT / "examples" / "maven-pilot" / "integration-tests" / "pom.xml"
+).read_text(encoding="utf-8")
 VALID_GRAPH = """\
 [INFO] --- dependency:3.11.0:tree (default-cli) @ consumer ---
 [INFO] example:consumer:jar:1.0.0
@@ -20,6 +23,62 @@ VALID_GRAPH = """\
 [INFO] +- org.apache.calcite:calcite-linq4j:jar:1.42.0:test
 [INFO] +- com.fasterxml.jackson.core:jackson-databind:jar:2.18.9:compile
 [INFO] \\- io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:jar:0.1.0:test
+"""
+VALID_PROFILE_OFF_EFFECTIVE_POM = """\
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>example</groupId>
+  <artifactId>consumer</artifactId>
+  <version>1.0.0</version>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>example</groupId>
+        <artifactId>production-bom</artifactId>
+        <version>1.0.0</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.shardingsphere</groupId>
+      <artifactId>shardingsphere-jdbc</artifactId>
+      <version>5.5.3</version>
+      <exclusions>
+        <exclusion>
+          <groupId>example</groupId>
+          <artifactId>unrelated-production-exclusion</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>com.mysql</groupId>
+      <artifactId>mysql-connector-j</artifactId>
+      <version>8.4.0</version>
+    </dependency>
+  </dependencies>
+  <repositories>
+    <repository>
+      <id>production-repository</id>
+      <url>https://repo.example.invalid/releases</url>
+    </repository>
+  </repositories>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <configuration>
+              <sources><source>src/generated/java</source></sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>
 """
 
 
@@ -57,6 +116,40 @@ class ExternalMavenIntegrationVerifierTest(unittest.TestCase):
                     "example.BusinessTest",
                     "passes",
                 ],
+                capture_output=True,
+                check=False,
+                text=True,
+            )
+
+    def _run_effective_pom_parser(
+        self, effective_pom: str
+    ) -> subprocess.CompletedProcess[str]:
+        script = SCRIPT.read_text(encoding="utf-8")
+        marker = 'python3 -I - "$profile_off_effective_pom" <<\'PY\'\n'
+        start = script.index(marker) + len(marker)
+        parser = script[start : script.index("\nPY\n", start)]
+        with tempfile.TemporaryDirectory() as temporary:
+            pom_path = Path(temporary) / "effective-pom.xml"
+            pom_path.write_text(effective_pom, encoding="utf-8")
+            return subprocess.run(
+                [sys.executable, "-I", "-c", parser, pom_path],
+                capture_output=True,
+                check=False,
+                text=True,
+            )
+
+    def _run_source_pom_parser(
+        self, source_pom: str
+    ) -> subprocess.CompletedProcess[str]:
+        script = SCRIPT.read_text(encoding="utf-8")
+        marker = 'python3 -I - "$ROUTECONTRACT_OWNING_POM" <<\'PY\'\n'
+        start = script.index(marker) + len(marker)
+        parser = script[start : script.index("\nPY\n", start)]
+        with tempfile.TemporaryDirectory() as temporary:
+            pom_path = Path(temporary) / "pom.xml"
+            pom_path.write_text(source_pom, encoding="utf-8")
+            return subprocess.run(
+                [sys.executable, "-I", "-c", parser, pom_path],
                 capture_output=True,
                 check=False,
                 text=True,
@@ -207,6 +300,15 @@ class ExternalMavenIntegrationVerifierTest(unittest.TestCase):
         text = SCRIPT.read_text(encoding="utf-8")
         for required in (
             "profile-off build unexpectedly resolved RouteContract",
+            "owning source POM must contain exactly one routecontract-pilot profile",
+            "routecontract-pilot activation property changed",
+            "routecontract-pilot Jackson BOM import boundary changed",
+            "RouteContract dependency escaped routecontract-pilot",
+            "RouteContract repository escaped routecontract-pilot",
+            "RouteContract pilot source escaped routecontract-pilot",
+            "profile-off effective POM activated a RouteContract dependency",
+            "profile-off effective POM activated the RouteContract repository",
+            "profile-off effective POM activated the pilot source root",
             "no Maven dependency coordinates were parsed",
             "expected {cardinality} {qualifier}unclassified JAR dependency",
             '"prefix": prefix',
@@ -230,6 +332,333 @@ class ExternalMavenIntegrationVerifierTest(unittest.TestCase):
             "ROUTECONTRACT_EXTERNAL_MAVEN outcome=%s VERIFIED",
         ):
             self.assertIn(required, text)
+
+    def test_profile_off_effective_pom_accepts_isolated_profile(self) -> None:
+        completed = self._run_effective_pom_parser(
+            VALID_PROFILE_OFF_EFFECTIVE_POM
+        )
+        self.assertEqual(0, completed.returncode, completed.stderr)
+
+    def test_source_pom_accepts_exact_profile_nesting(self) -> None:
+        completed = self._run_source_pom_parser(VALID_SOURCE_POM)
+        self.assertEqual(0, completed.returncode, completed.stderr)
+
+    def test_source_pom_allows_existing_production_graph_controls(self) -> None:
+        production_management = """\
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.fasterxml.jackson</groupId>
+        <artifactId>jackson-bom</artifactId>
+        <version>2.18.9</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+"""
+        production_calcite = """\
+    <dependency>
+      <groupId>org.apache.calcite</groupId>
+      <artifactId>calcite-core</artifactId>
+      <version>1.42.0</version>
+      <scope>compile</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.locationtech.jts.io</groupId>
+          <artifactId>jts-io-common</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+"""
+        source_pom = VALID_SOURCE_POM.replace(
+            "  <dependencies>", production_management + "  <dependencies>", 1
+        ).replace(
+            "  </dependencies>\n\n  <build>",
+            production_calcite + "  </dependencies>\n\n  <build>",
+            1,
+        )
+        completed = self._run_source_pom_parser(source_pom)
+        self.assertEqual(0, completed.returncode, completed.stderr)
+
+    def test_source_pom_rejects_profile_boundary_mutations(self) -> None:
+        routecontract_dependency = """\
+    <dependency>
+      <groupId>io.github.ym0506.routecontract</groupId>
+      <artifactId>routecontract-shardingsphere-5.5</artifactId>
+      <version>0.1.0</version>
+      <scope>test</scope>
+    </dependency>
+"""
+        leaked_repository = """\
+  <repositories>
+    <repository>
+      <id>routecontract-verified-file-repository</id>
+      <url>${routecontractRepositoryUrl}</url>
+    </repository>
+  </repositories>
+
+"""
+        leaked_source_plugin = """\
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions><execution><configuration><sources>
+          <source>src/routeContractPilot/java</source>
+        </sources></configuration></execution></executions>
+      </plugin>
+"""
+        mutations = {
+            "missing exact profile": VALID_SOURCE_POM.replace(
+                "<id>routecontract-pilot</id>",
+                "<id>routecontract-pilot-renamed</id>",
+                1,
+            ),
+            "activation enabled by default": VALID_SOURCE_POM.replace(
+                "<activation>\n        <property>",
+                "<activation>\n        <activeByDefault>true</activeByDefault>\n"
+                "        <property>",
+                1,
+            ),
+            "activation value changed": VALID_SOURCE_POM.replace(
+                "<value>true</value>", "<value>false</value>", 1
+            ),
+            "Jackson BOM missing": VALID_SOURCE_POM.replace(
+                "<artifactId>jackson-bom</artifactId>",
+                "<artifactId>jackson-bom-missing</artifactId>",
+                1,
+            ),
+            "required exclusion missing": VALID_SOURCE_POM.replace(
+                "<artifactId>jts-io-common</artifactId>",
+                "<artifactId>jts-io-common-missing</artifactId>",
+                1,
+            ),
+            "repository policy changed": VALID_SOURCE_POM.replace(
+                "<checksumPolicy>fail</checksumPolicy>",
+                "<checksumPolicy>warn</checksumPolicy>",
+                1,
+            ),
+            "source execution changed": VALID_SOURCE_POM.replace(
+                "<source>src/routeContractPilot/java</source>",
+                "<source>src/test/java</source>",
+                1,
+            ),
+            "Surefire property changed": VALID_SOURCE_POM.replace(
+                "<routecontract.candidateRoot>target/routecontract"
+                "</routecontract.candidateRoot>",
+                "<routecontract.candidateRoot>target/other"
+                "</routecontract.candidateRoot>",
+                1,
+            ),
+            "RouteContract dependency escaped": VALID_SOURCE_POM.replace(
+                "  </dependencies>\n\n  <build>",
+                routecontract_dependency + "  </dependencies>\n\n  <build>",
+                1,
+            ),
+            "RouteContract repository escaped": VALID_SOURCE_POM.replace(
+                "  <build>", leaked_repository + "  <build>", 1
+            ),
+            "pilot source escaped": VALID_SOURCE_POM.replace(
+                "    </plugins>\n  </build>\n\n  <profiles>",
+                leaked_source_plugin
+                + "    </plugins>\n  </build>\n\n  <profiles>",
+                1,
+            ),
+        }
+        for name, source_pom in mutations.items():
+            with self.subTest(name=name):
+                self.assertNotEqual(VALID_SOURCE_POM, source_pom)
+                completed = self._run_source_pom_parser(source_pom)
+                self.assertNotEqual(0, completed.returncode)
+
+    def test_profile_off_effective_pom_allows_non_pilot_versions(self) -> None:
+        management_anchor = """\
+      <dependency>
+        <groupId>example</groupId>
+        <artifactId>production-bom</artifactId>
+        <version>1.0.0</version>
+      </dependency>"""
+        dependency_anchor = """\
+    <dependency>
+      <groupId>com.mysql</groupId>
+      <artifactId>mysql-connector-j</artifactId>
+      <version>8.4.0</version>
+    </dependency>"""
+        non_pilot_versions = VALID_PROFILE_OFF_EFFECTIVE_POM.replace(
+            management_anchor,
+            management_anchor
+            + """
+      <dependency>
+        <groupId>com.fasterxml.jackson</groupId>
+        <artifactId>jackson-bom</artifactId>
+        <version>2.19.0</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.calcite</groupId>
+        <artifactId>calcite-linq4j</artifactId>
+        <version>1.41.0</version>
+      </dependency>
+      <dependency>
+        <groupId>net.minidev</groupId>
+        <artifactId>json-smart</artifactId>
+        <version>2.5.2</version>
+      </dependency>""",
+        ).replace(
+            dependency_anchor,
+            dependency_anchor
+            + """
+    <dependency>
+      <groupId>org.apache.calcite</groupId>
+      <artifactId>calcite-core</artifactId>
+      <version>1.41.0</version>
+    </dependency>""",
+        )
+        completed = self._run_effective_pom_parser(non_pilot_versions)
+        self.assertEqual(0, completed.returncode, completed.stderr)
+
+    def test_profile_off_effective_pom_rejects_only_routecontract_activation_leaks(
+        self,
+    ) -> None:
+        management_anchor = """\
+      <dependency>
+        <groupId>example</groupId>
+        <artifactId>production-bom</artifactId>
+        <version>1.0.0</version>
+      </dependency>"""
+        dependency_anchor = """\
+    <dependency>
+      <groupId>com.mysql</groupId>
+      <artifactId>mysql-connector-j</artifactId>
+      <version>8.4.0</version>
+    </dependency>"""
+        source_anchor = "<sources><source>src/generated/java</source></sources>"
+        mutations = {
+            "global Jackson BOM": VALID_PROFILE_OFF_EFFECTIVE_POM.replace(
+                management_anchor,
+                management_anchor
+                + """
+      <dependency>
+        <groupId>com.fasterxml.jackson</groupId>
+        <artifactId>jackson-bom</artifactId>
+        <version>2.18.9</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>""",
+            ),
+            "global Calcite management": VALID_PROFILE_OFF_EFFECTIVE_POM.replace(
+                management_anchor,
+                management_anchor
+                + """
+      <dependency>
+        <groupId>org.apache.calcite</groupId>
+        <artifactId>calcite-linq4j</artifactId>
+        <version>1.42.0</version>
+      </dependency>""",
+            ),
+            "global minidev management": VALID_PROFILE_OFF_EFFECTIVE_POM.replace(
+                management_anchor,
+                management_anchor
+                + """
+      <dependency>
+        <groupId>net.minidev</groupId>
+        <artifactId>json-smart</artifactId>
+        <version>2.4.10</version>
+      </dependency>""",
+            ),
+            "direct RouteContract": VALID_PROFILE_OFF_EFFECTIVE_POM.replace(
+                dependency_anchor,
+                dependency_anchor
+                + """
+    <dependency>
+      <groupId>io.github.ym0506.routecontract</groupId>
+      <artifactId>routecontract-shardingsphere-5.5</artifactId>
+      <version>0.1.0</version>
+    </dependency>""",
+            ),
+            "other direct RouteContract artifact": VALID_PROFILE_OFF_EFFECTIVE_POM.replace(
+                dependency_anchor,
+                dependency_anchor
+                + """
+    <dependency>
+      <groupId>io.github.ym0506.routecontract</groupId>
+      <artifactId>routecontract-future-adapter</artifactId>
+      <version>9.9.9</version>
+    </dependency>""",
+            ),
+            "direct Calcite": VALID_PROFILE_OFF_EFFECTIVE_POM.replace(
+                dependency_anchor,
+                dependency_anchor
+                + """
+    <dependency>
+      <groupId>org.apache.calcite</groupId>
+      <artifactId>calcite-core</artifactId>
+      <version>1.42.0</version>
+    </dependency>""",
+            ),
+            "ShardingSphere pilot exclusion": VALID_PROFILE_OFF_EFFECTIVE_POM.replace(
+                """\
+        <exclusion>
+          <groupId>example</groupId>
+          <artifactId>unrelated-production-exclusion</artifactId>
+        </exclusion>""",
+                """\
+        <exclusion>
+          <groupId>org.locationtech.jts.io</groupId>
+          <artifactId>jts-io-common</artifactId>
+        </exclusion>""",
+            ),
+            "MySQL pilot exclusion": VALID_PROFILE_OFF_EFFECTIVE_POM.replace(
+                "<version>8.4.0</version>",
+                """\
+<version>8.4.0</version>
+      <exclusions>
+        <exclusion>
+          <groupId>com.google.protobuf</groupId>
+          <artifactId>protobuf-java</artifactId>
+        </exclusion>
+      </exclusions>""",
+            ),
+            "RouteContract repository": VALID_PROFILE_OFF_EFFECTIVE_POM.replace(
+                "production-repository",
+                "routecontract-verified-file-repository",
+            ),
+            "relative pilot source": VALID_PROFILE_OFF_EFFECTIVE_POM.replace(
+                source_anchor,
+                "<sources><source>src/routeContractPilot/java</source></sources>",
+            ),
+            "absolute pilot source": VALID_PROFILE_OFF_EFFECTIVE_POM.replace(
+                source_anchor,
+                "<sources><source>/work/src/routeContractPilot/java/</source></sources>",
+            ),
+            "missing MySQL base": VALID_PROFILE_OFF_EFFECTIVE_POM.replace(
+                dependency_anchor, ""
+            ),
+            "duplicate ShardingSphere base": VALID_PROFILE_OFF_EFFECTIVE_POM.replace(
+                dependency_anchor,
+                dependency_anchor
+                + """
+    <dependency>
+      <groupId>org.apache.shardingsphere</groupId>
+      <artifactId>shardingsphere-jdbc</artifactId>
+      <version>5.5.3</version>
+    </dependency>""",
+            ),
+        }
+        rejected = {
+            "direct RouteContract",
+            "other direct RouteContract artifact",
+            "RouteContract repository",
+            "relative pilot source",
+            "absolute pilot source",
+        }
+        for name, effective_pom in mutations.items():
+            with self.subTest(name=name):
+                completed = self._run_effective_pom_parser(effective_pom)
+                if name in rejected:
+                    self.assertNotEqual(0, completed.returncode)
+                else:
+                    self.assertEqual(0, completed.returncode, completed.stderr)
 
     def test_graph_parser_accepts_structurally_valid_dependency_tree(self) -> None:
         completed = self._run_graph_parser(VALID_GRAPH)
