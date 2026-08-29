@@ -15,12 +15,14 @@
     "jarSha256": "d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc",
     "pomSha256": "05570bfa238ef77db255a46efdd5bbb25e994ae0137db86491a46a25e28deac9",
     "dependencyScope": "compile inside the opt-in routecontract-pilot profile",
-    "dependencyScopeReason": "Quarkus 3.39 starts the test application in a separate runtime class loader before the JUnit test; compile scope makes the SQLExecutionHook service descriptor visible during application boot."
+    "dependencyScopeReason": "The opt-in profile uses compile scope so the provider is available to the Quarkus application runtime. The sealed run proves successful discovery and callbacks with that scope.",
+    "testScopeComparisonSealed": false,
+    "exactDiscoveryTimeSealed": false
   },
   "patch": {
     "file": "routecontract-pilot.patch",
-    "bytes": 7174,
-    "sha256": "d9842f7ad875cab9bd07cba58b12776f5d3a399d191fc00e1d4cefb8e969651e",
+    "bytes": 7171,
+    "sha256": "8265c2a9525ef8b6506ca90fdc5774996888e00d09c802624feeca7be967cfbe",
     "changedPaths": [
       "integration-tests/pom.xml",
       "integration-tests/src/routeContractPilot/java/io/quarkiverse/shardingsphere/jdbc/it/RouteContractInsertPilotTest.java"
@@ -132,6 +134,9 @@
       "operationId": "accounts.insert",
       "businessRows": "0->1 on ds_1.t_account_1; the other three table counts remained 0",
       "captureStatus": "COMPLETE",
+      "attemptStartCallback": "SQLExecutionHook.start",
+      "callbackReturnedMeaning": "ShardingSphere 5.5.3 subsequently invoked finishSuccess after the wrapped executeSQL call returned",
+      "terminalSignalsAreBusinessOutcomes": false,
       "sqlExecutionHookReportedPhysicalJdbcExecutionAttempts": 1,
       "callbackFailureCount": 0,
       "unknownOutcomeCount": 0,
@@ -157,6 +162,8 @@
   },
   "knownLimitations": [
     "H2 evidence does not prove MySQL behavior.",
+    "The sealed run does not compare test scope or establish the exact SQLExecutionHook discovery time.",
+    "The packet makes no HTTP-capture claim; it captures a direct CDI resource invocation inside the supported synchronous caller boundary.",
     "The opt-in run must use clean so Quarkus re-augments the application with the profile dependency.",
     "The bounded profile-on command selects only RouteContractInsertPilotTest; the upstream integration test inserts the same account id and shares the same H2 application state when both are selected together.",
     "No human approved baseline was created, so the final verifier match was intentionally not claimed."

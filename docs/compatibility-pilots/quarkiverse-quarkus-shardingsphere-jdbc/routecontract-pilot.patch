@@ -34,9 +34,9 @@ index 42fe450b04044a8f4f053964f6b289477ff560dc..9e88a118f4613181273f9946150148fa
 +          <artifactId>routecontract-shardingsphere-5.5</artifactId>
 +          <version>0.1.0</version>
 +          <!--
-+            Quarkus starts the test application in a separate runtime class loader before the
-+            JUnit test class runs. Compile scope is intentional inside this opt-in integration-test
-+            profile so the SQLExecutionHook service descriptor is visible during application boot.
++            Compile scope is intentional only inside this opt-in profile so the provider is available
++            to the Quarkus application runtime. The sealed run proves discovery and callbacks with
++            this scope; it does not compare test scope or seal the exact discovery time.
 +          -->
 +          <scope>compile</scope>
 +        </dependency>

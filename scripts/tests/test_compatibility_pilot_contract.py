@@ -287,14 +287,36 @@ class CompatibilityPilotContractTest(unittest.TestCase):
         self.assertFalse(
             self.receipt["verification"]["profileOn"]["approvedBaselineCreated"]
         )
-        normalized_readme = " ".join(self.readme.replace("**", "").split())
+        normalized_readme = " ".join(
+            self.readme.replace("**", "").replace("`", "").split()
+        )
         for phrase in (
             "not MySQL evidence",
             "a user result, adoption, production support or endorsement",
             "No human-approved baseline is included or created",
+            "does not seal a test-scope comparison or the exact discovery time",
+            "this packet makes no HTTP-capture claim",
+            "Each attempt begins with SQLExecutionHook.start",
             "does not satisfy the project's strict definition of an actual external user integration",
         ):
             self.assertIn(phrase, normalized_readme)
+
+        route_contract = self.receipt["routeContract"]
+        self.assertFalse(route_contract["testScopeComparisonSealed"])
+        self.assertFalse(route_contract["exactDiscoveryTimeSealed"])
+        observed = self.receipt["verification"]["observedOperation"]
+        self.assertEqual("SQLExecutionHook.start", observed["attemptStartCallback"])
+        self.assertIn("finishSuccess", observed["callbackReturnedMeaning"])
+        self.assertFalse(observed["terminalSignalsAreBusinessOutcomes"])
+
+        combined_claims = "\n".join((self.readme, self.patch, json.dumps(self.receipt)))
+        for unsupported in (
+            "test scope did not expose",
+            "separate runtime class loader before the JUnit test",
+            "visible during application boot",
+            "reported attempt corresponds to the ShardingSphere hook report made after",
+        ):
+            self.assertNotIn(unsupported, combined_claims)
 
     def test_packet_does_not_embed_private_paths_or_secrets(self) -> None:
         combined = "\n".join(

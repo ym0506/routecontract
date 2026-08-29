@@ -19,12 +19,12 @@ No human-approved baseline is included or created.
   no failure, error, or skip. RouteContract was absent from that build and no candidate was
   produced.
 - With `-DroutecontractPilot=true`, RouteContract `0.1.0` is placed in **compile scope only inside
-  the opt-in integration-test profile**. Quarkus 3.39 starts the test application in a separate
-  runtime class loader before the JUnit test class, so test scope did not expose the
-  `SQLExecutionHook` service descriptor during application boot.
-- The pilot invokes the injected CDI resource directly inside `RouteContract.capture`. Moving the
-  operation behind the RestAssured HTTP boundary crosses threads and is outside RouteContract
-  v0.1's supported synchronous capture boundary.
+  the opt-in integration-test profile** so the provider is available to the Quarkus application
+  runtime. The sealed run proves successful discovery and callbacks with that scope; it does not
+  seal a test-scope comparison or the exact discovery time.
+- The pilot deliberately invokes the injected CDI resource directly inside `RouteContract.capture`.
+  The existing RestAssured test is not captured because its application HTTP handoff is outside the
+  supported synchronous caller boundary; this packet makes no HTTP-capture claim.
 - The representative INSERT kept all four original preconditions, changed only
   `ds_1.t_account_1` from zero to one row, and produced a `COMPLETE` snapshot with one
   `SQLExecutionHook`-reported physical JDBC execution attempt, no callback failure and observed
@@ -34,14 +34,15 @@ No human-approved baseline is included or created.
   at the single intended failure: the human-approved baseline was absent.
 
 `COMPLETE` is RouteContract's capture status. It is not a claim that the snapshot is a complete
-route plan or that the enclosing transaction committed. A reported attempt corresponds to the
-ShardingSphere hook report made after its wrapped physical `executeSQL` call returned.
+route plan or that the enclosing transaction committed. Each attempt begins with
+`SQLExecutionHook.start`. In this successful snapshot, `CALLBACK_RETURNED` means ShardingSphere
+5.5.3 subsequently invoked `finishSuccess` after the wrapped `executeSQL` call returned.
 
 ## Sealed files
 
 | File | Purpose | SHA-256 |
 | --- | --- | --- |
-| `routecontract-pilot.patch` | Exact two-path opt-in patch | `d9842f7ad875cab9bd07cba58b12776f5d3a399d191fc00e1d4cefb8e969651e` |
+| `routecontract-pilot.patch` | Exact two-path opt-in patch | `8265c2a9525ef8b6506ca90fdc5774996888e00d09c802624feeca7be967cfbe` |
 | `reproduce.sh` | Fail-closed profile-off plus two-run profile-on reproducer | `bb37e66cde57d0398c2fc4abf5b5431b497f3939b00c22581d4b77951300130a` |
 | `maven-settings.xml` | Exact empty user/global Maven settings used by every Maven call | `132df1e0d6c1fc8da8e0bf7fc7fc4534505fa8cc3e50f3870150a580c17b7c4f` |
 | `expected-candidate.sha256` | Expected generated candidate digest | `4961872ab916d7556b9be1fec2722a5479e42731126a1a70d8b98939404efde6` |
