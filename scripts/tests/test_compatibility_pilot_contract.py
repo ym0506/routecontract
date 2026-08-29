@@ -53,6 +53,7 @@ class CompatibilityPilotContractTest(unittest.TestCase):
         patch_record = self.receipt["patch"]
         self.assertEqual(PATCH.stat().st_size, patch_record["bytes"])
         self.assertEqual(sha256(PATCH), patch_record["sha256"])
+        self.assertIn(patch_record["sha256"], self.readme)
         reproducer_record = self.receipt["reproducer"]
         self.assertEqual(REPRODUCER.stat().st_size, reproducer_record["bytes"])
         self.assertEqual(sha256(REPRODUCER), reproducer_record["sha256"])
@@ -86,6 +87,17 @@ class CompatibilityPilotContractTest(unittest.TestCase):
             )
         )
         self.assertFalse(self.receipt["patch"]["approvedBaselineIncluded"])
+
+        full_index_lines = {
+            line for line in self.patch.splitlines() if line.startswith("index ")
+        }
+        self.assertEqual(
+            {
+                "index 42fe450b04044a8f4f053964f6b289477ff560dc..d68d437365ba926077d285ceb17a1f1d07126926 100644",
+                "index 0000000000000000000000000000000000000000..dbc8992c095595685630a1b4f9bc54e3f79edad9",
+            },
+            full_index_lines,
+        )
 
     def test_reproducer_is_syntax_valid_and_seed_cleanup_is_symlink_safe(self) -> None:
         completed = subprocess.run(

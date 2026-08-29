@@ -22,7 +22,7 @@
   "patch": {
     "file": "routecontract-pilot.patch",
     "bytes": 7171,
-    "sha256": "8265c2a9525ef8b6506ca90fdc5774996888e00d09c802624feeca7be967cfbe",
+    "sha256": "44ce94606c6bdb3e560c6eab1d92f1c037cf6eeb20d2c49d072f77816fc031ec",
     "changedPaths": [
       "integration-tests/pom.xml",
       "integration-tests/src/routeContractPilot/java/io/quarkiverse/shardingsphere/jdbc/it/RouteContractInsertPilotTest.java"

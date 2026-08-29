@@ -1,5 +1,5 @@
 diff --git a/integration-tests/pom.xml b/integration-tests/pom.xml
-index 42fe450b04044a8f4f053964f6b289477ff560dc..9e88a118f4613181273f9946150148fa8c2d9de7 100644
+index 42fe450b04044a8f4f053964f6b289477ff560dc..d68d437365ba926077d285ceb17a1f1d07126926 100644
 --- a/integration-tests/pom.xml
 +++ b/integration-tests/pom.xml
 @@ -67,6 +67,73 @@

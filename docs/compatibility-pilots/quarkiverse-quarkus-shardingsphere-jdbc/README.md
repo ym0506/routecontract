@@ -42,7 +42,7 @@ route plan or that the enclosing transaction committed. Each attempt begins with
 
 | File | Purpose | SHA-256 |
 | --- | --- | --- |
-| `routecontract-pilot.patch` | Exact two-path opt-in patch | `8265c2a9525ef8b6506ca90fdc5774996888e00d09c802624feeca7be967cfbe` |
+| `routecontract-pilot.patch` | Exact two-path opt-in patch | `44ce94606c6bdb3e560c6eab1d92f1c037cf6eeb20d2c49d072f77816fc031ec` |
 | `reproduce.sh` | Fail-closed profile-off plus two-run profile-on reproducer | `bb37e66cde57d0398c2fc4abf5b5431b497f3939b00c22581d4b77951300130a` |
 | `maven-settings.xml` | Exact empty user/global Maven settings used by every Maven call | `132df1e0d6c1fc8da8e0bf7fc7fc4534505fa8cc3e50f3870150a580c17b7c4f` |
 | `expected-candidate.sha256` | Expected generated candidate digest | `4961872ab916d7556b9be1fec2722a5479e42731126a1a70d8b98939404efde6` |
