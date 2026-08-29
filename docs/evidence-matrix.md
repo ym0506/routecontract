@@ -60,12 +60,44 @@ The seven normal suites and the isolated consumer result below are available in 
 - `DataSourceProxyComparisonMySqlTest`: 1 test, 0 failures.
 - Root build total: 50 tests, 0 failures; isolated same-checkout generated-publication consumer: 1 test, 0 failures.
 - Canonical command `./gradlew --no-daemon --no-build-cache clean check assemble prepareVerifiedSbom`: `BUILD SUCCESSFUL` in 1 minute 10 seconds on the author's Java 17.0.15/macOS/Docker Engine 29.2.1 environment. The run compiled with warnings-as-errors, executed all 50 normal tests, assembled the library artifacts, generated aggregate/direct JSON and XML SBOMs, and verified Apache-2.0 first-party component metadata with counts `3/1/2` for aggregate/library/MySQL BOMs. Container startup dominates wall time; individual JUnit suite durations must not be presented as end-to-end runtime.
-- `./scripts/verify-standalone-consumer.sh` independently resolved the locally published Maven coordinate, auto-discovered the packaged SPI provider and passed 1/1 real-MySQL test.
+- `./scripts/verify-standalone-consumer.sh` used an isolated same-checkout consumer to resolve the locally published Maven coordinate, auto-discovered the packaged SPI provider and passed 1/1 real-MySQL test.
 - An exact-revision local audit of the PR #19 dependency candidate observed 3 reviewed OSV matches versus 12 in the older main graph. Separately, its 50-test root build and 1-test standalone consumer were green. The integration candidate stages only the sanitized summary in exact-tag release evidence. At this matrix's cutoff, no public final-tag run or immutable Release was recorded; later RC facts require the separate activation record, and the raw OSV report remains excluded.
 - `python3 -m unittest discover -s scripts/tests -v` passed the default fail-closed installer suite. The opt-in test separately used real locally built JARs and the generated POM rewritten to a strict `1.2.3-rc1` coordinate, together with synthetic source-ZIP/SBOM/test-summary fixtures, then installed that checksummed set into an isolated repository and passed the real-MySQL consumer. It is not a real Git archive, published Release or external-user result.
 - `./scripts/demo-manifest-ci-failure.sh` intentionally exited `1` after printing `RCM201` and `RCM202`; this red task is isolated from normal `test`/`check` and proves that the checked-in candidate propagates an uncaught build failure.
 
-Local copies of these files are ignored build output and can be overwritten. The linked Actions copies identify an immutable revision but expire after 90 days; the final release must publish permanent, checksummed replacements.
+Local copies of the historical snapshot files above are ignored build output and can be overwritten.
+Their linked Actions copies identify an immutable revision but expire after 90 days; the final
+release must publish permanent, checksummed replacements.
+
+### Post-snapshot Maven onboarding pilot — 2026-08-29 local provenance
+
+This later addendum does not change the 2026-08-11 evidence-register statuses above. In the current
+worktree, `./scripts/verify-maven-pilot.sh` passed with Apache Maven 3.9.14, Java 17,
+ShardingSphere-JDBC 5.5.3, and the digest-pinned MySQL 8.4.11 test container. The verifier proved:
+
+- the profile-off two-module reactor retained its business assertion while the RouteContract
+  dependency and SPI provider were absent, the pilot source was not added to the effective test
+  sources and its class was not compiled, and no approved baseline or candidate existed;
+- a fresh Maven cache rejected a deliberately corrupted Release-JAR SHA-256 sidecar before the
+  pilot test executed;
+- the opt-in dependency graph contained the exact RouteContract 0.1.0 coordinate once, only
+  ShardingSphere 5.5.3, Calcite Core/linq4j 1.42.0, and neither `jts-io-common` nor
+  `protobuf-java`;
+- the first real-MySQL pilot run retained the business result, captured one returned attempt on
+  `ds_0`, wrote a 655-byte candidate with SHA-256
+  `796d38c21c599812a4c0e31cae90c7f9377a109e3836beed4a04ff2bf554c818`, and failed only for the
+  missing human-approved baseline; and
+- a separate private harness copy mechanically matched those bytes using another fresh consumer
+  cache.
+
+The synthetic copy is deliberately not an approved baseline. This is same-checkout maintainer-run
+verification, not an independent Quick Start, external repository integration, user, adoption,
+production-use, performance, security, or endorsement result. Promotion beyond `verified-local`
+requires the checked-in verifier to pass on public CI; E10 remains pending until a non-author's
+qualifying public evidence is inspected.
+
+This addendum currently has no revision-bound public CI artifact, durable external receipt, or
+independent participant result. Do not associate it with the historical Actions evidence above.
 
 ## 1차 평가(서면): 30 points
 

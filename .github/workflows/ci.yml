@@ -17,7 +17,7 @@ jobs:
   build-and-sbom:
     name: Java 17 / MySQL integration / SBOM
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 40
 
     steps:
       - name: Check out source
@@ -70,6 +70,41 @@ jobs:
           architecture: x64
           check-latest: false
 
+      - name: Install exact Apache Maven 3.9.14
+        shell: bash
+        timeout-minutes: 10
+        run: |
+          set -euo pipefail
+          maven_archive="${RUNNER_TEMP}/apache-maven-3.9.14-bin.tar.gz"
+          maven_home="${RUNNER_TEMP}/apache-maven-3.9.14"
+          maven_url="https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.14/apache-maven-3.9.14-bin.tar.gz"
+          expected_sha512="d50af8ab5e6005b46a07f0ce9d3719e67cfdf898da988a84871304cd59fb1af0fef2f99dea709e6e66f21f732f905979b5c2dce6b6860406f60a70e84d9cf0b8"
+
+          test ! -e "${maven_archive}"
+          test ! -L "${maven_archive}"
+          test ! -e "${maven_home}"
+          test ! -L "${maven_home}"
+          curl --disable --proto '=https' --tlsv1.2 --fail --location \
+            --silent --show-error --retry 3 --connect-timeout 15 --max-time 300 \
+            --remove-on-error \
+            --max-filesize 20971520 \
+            --output "${maven_archive}" \
+            "${maven_url}"
+          printf '%s  %s\n' "${expected_sha512}" "${maven_archive}" \
+            | sha512sum --check --strict
+          tar --extract --gzip --file "${maven_archive}" --directory "${RUNNER_TEMP}"
+          test -d "${maven_home}"
+          test ! -L "${maven_home}"
+          test -f "${maven_home}/bin/mvn"
+          test ! -L "${maven_home}/bin/mvn"
+          test -x "${maven_home}/bin/mvn"
+          maven_version="$("${maven_home}/bin/mvn" -version 2>&1)"
+          printf '%s\n' "${maven_version}" | grep -Fqx \
+            'Apache Maven 3.9.14 (996c630dbc656c76214ce58821dcc58be960875b)'
+          printf '%s\n' "${maven_version}" | grep -Eq '^Java version: 17\.'
+          printf 'MAVEN_HOME=%s\n' "${maven_home}" >> "${GITHUB_ENV}"
+          printf '%s\n' "${maven_home}/bin" >> "${GITHUB_PATH}"
+
       - name: Install checksum-locked report-package test dependencies
         shell: bash
         run: |
@@ -99,6 +134,21 @@ jobs:
       - name: Verify same-checkout Maven publication consumer
         run: ./scripts/verify-standalone-consumer.sh
 
+      - name: Verify isolated Maven 3.9.14 onboarding pilot
+        shell: bash
+        timeout-minutes: 20
+        run: |
+          set -euo pipefail
+          docker info >/dev/null
+          mkdir -p build/ci-evidence
+          summary="build/ci-evidence/maven-pilot-summary.txt"
+          partial="${summary}.partial"
+          test ! -e "${summary}"
+          test ! -e "${partial}"
+          ./scripts/verify-maven-pilot.sh > "${partial}"
+          mv "${partial}" "${summary}"
+          cat "${summary}"
+
       - name: Record runner environment
         if: always()
         shell: bash
@@ -112,6 +162,7 @@ jobs:
             java -fullversion
             java -version
             ./gradlew --version
+            mvn -version
             docker version --format 'docker_client={{.Client.Version}} docker_server={{.Server.Version}}'
           } > build/ci-evidence/environment.txt 2>&1
 
@@ -135,6 +186,7 @@ jobs:
             examples/mysql/build/test-results/test/*.xml
             examples/standalone-consumer/build/test-results/test/*.xml
             build/ci-evidence/environment.txt
+            build/ci-evidence/maven-pilot-summary.txt
           if-no-files-found: warn
           retention-days: 90
 

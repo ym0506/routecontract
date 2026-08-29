@@ -57,11 +57,24 @@ SQL·parameter·connection 정보가 섞일 수 있는 하위 프로세스 원�
 
 Quick Start가 통과했다면 [첫 실제 통합 가이드](docs/first-integration.md)의 지원 경계와 중단
 조건을 확인하고, 기존 ShardingSphere-JDBC 5.5.3 통합 테스트에서 business assertion을 유지할
-대표 operation 하나를 고르세요. 가이드는 격리된 Gradle pilot에서 capture → candidate → 사람
-승인 baseline → candidate check를 연결합니다. 저장소별 빌드 격리와 사람 검토가 필요하므로
-완료 시간을 약속하지 않습니다.
+대표 operation 하나를 고르세요. 가이드는 격리된 Gradle Groovy 또는 Maven 3.9.14 pilot에서
+capture → candidate → 사람 승인 baseline → candidate check를 연결합니다. 저장소별 빌드 격리와
+사람 검토가 필요하므로 완료 시간을 약속하지 않습니다.
 `v0.1.0`은 Maven Central에 게시되어 있지 않으므로 가이드는 검증된 GitHub Release 자산을
 별도 로컬 Maven repository에 설치하는 현재 경로를 사용합니다.
+
+1,700여 줄 가이드를 처음부터 끝까지 읽지 말고, 다음 순서로 필요한 부분만 사용하세요.
+
+1. [고정된 Release 자산을 설치](docs/first-integration.md#2-install-the-exact-v010-release-assets)합니다.
+2. 빌드에 맞춰 [Gradle Groovy lane](docs/first-integration.md#gradle-groovy-dsl-opt-in-lane) 또는
+   [Maven 3.9.14 lane](docs/first-integration.md#maven-3914-opt-in-profile-lane) 하나만 선택합니다.
+3. 공통 단계인 [대표 operation](docs/first-integration.md#3-add-one-representative-operation) →
+   [사람의 baseline 승인](docs/first-integration.md#4-review-and-approve-the-first-baseline) →
+   [CI candidate check](docs/first-integration.md#5-run-the-candidate-check-in-ci)로 이동합니다.
+
+Maven 사용자는 체크인된 [두 모듈 reference fixture](examples/maven-pilot/README.md)를 먼저
+실행해 자신의 저장소와 다른 지점을 확인할 수 있습니다. 어느 lane에도 정확히 맞지 않으면
+일반 예시를 억지로 붙이지 말고 그 지점에서 중단하세요.
 
 처음 실행했거나 현재 환경에는 맞지 않는다고 판단했다면
 [stable v0.1.0 feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)에
@@ -147,15 +160,17 @@ MySQL fixture에서는 fingerprint와 parameter type 순서만 달라졌습니�
 | 동시에 열린 caller-operation scope | single-attempt/multi-attempt scope 20쌍에서 교차 귀속 0건; 물리 callback의 시간상 중첩은 강제하거나 측정하지 않음 |
 | 범용 JDBC 도구 비교 | datasource-proxy 외부 배치는 callback `1 → 1`, 물리 DS별 배치는 `1 → 2`, RouteContract도 `1 → 2` |
 | 격리된 소비자 빌드 | 같은 checkout에서 임시 Maven 저장소에 생성한 JAR와 POM만 사용하는 standalone consumer에서 SPI 자동 발견과 MySQL 실행 통과. 외부 채택 증거는 아님 |
+| 격리된 Maven 3.9.14 pilot | inactive profile, fresh cache, SHA-256 음성 검증, MySQL candidate와 mechanical match를 같은 checkout에서 검증. 사람 승인·외부 사용자·adoption 증거는 아님 |
 
 전체 52-test 검증:
 
 ```bash
 ./gradlew --no-daemon --no-build-cache clean check assemble validateOfficialCycloneDxSbom
 ./scripts/verify-standalone-consumer.sh
+./scripts/verify-maven-pilot.sh
 ```
 
-첫 명령은 Java 17, ShardingSphere-JDBC 5.5.3, digest로 고정한 MySQL 8.4.11 Testcontainers 환경에서 core 및 MySQL corpus 52개 테스트를 실행하고 JAR·Javadoc·SBOM을 생성합니다. 두 번째 명령은 별도 소비자 테스트 1개를 실행합니다. Docker가 필요합니다.
+첫 명령은 Java 17, ShardingSphere-JDBC 5.5.3, digest로 고정한 MySQL 8.4.11 Testcontainers 환경에서 core 및 MySQL corpus 52개 테스트를 실행하고 JAR·Javadoc·SBOM을 생성합니다. 두 번째 명령은 별도 소비자 테스트 1개를 실행합니다. 세 번째 명령은 exact Apache Maven 3.9.14가 필요하며 격리된 profile-off/checksum/candidate 경로를 검증합니다. 모두 Docker가 필요합니다.
 
 ## 기존 도구와의 정확한 차이
 
@@ -216,11 +231,12 @@ adoption으로 승격하지 않습니다.
 설치합니다.
 
 설치기가 출력한 로컬 Maven repository와 RouteContract 의존성을 기본 빌드에 바로 추가하지
-마세요. [Gradle Groovy DSL opt-in lane](docs/first-integration.md#gradle-groovy-dsl-opt-in-lane)은
-pilot property가 있을 때만 별도 source set·task·repository를 활성화하고, 기존 대표
-ShardingSphere-JDBC 5.5.3 fixture를 재사용합니다. 평상시 build와 IDE sync는 pilot과 로컬
-Release repository 없이 성공해야 합니다. `v0.1.0`은 이 Gradle 경로만 문서화하며, Maven이나
-Kotlin DSL 저장소는 검증되지 않은 일반 예시를 붙여 넣지 말고 fit blocker로 알려 주세요.
+마세요. [Gradle Groovy DSL 경로](docs/first-integration.md#gradle-groovy-dsl-opt-in-lane)는 pilot property가 있을 때만 별도
+source set·task·repository를 활성화하며, 같은 가이드는 inactive-by-default
+profile·fresh consumer cache·repository-scoped SHA-256을 쓰는 Maven 3.9.14 경로를 함께
+제공합니다. 두 경로 모두 기존 대표 ShardingSphere-JDBC 5.5.3 fixture를 재사용하며, 평상시
+build와 IDE sync는 pilot과 로컬 Release repository 없이 성공해야 합니다. Kotlin DSL과
+가이드의 검증 graph·classloader 경계를 벗어나는 Maven 저장소는 아직 fit blocker입니다.
 
 immutable `v0.1.0` 설치기에 포함된 MySQL OCI package-level 수동 검토는 UTC
 `2026-12-05`까지만 유효합니다. `2026-12-06` UTC부터 installer는 fail-closed로 중단하며,
@@ -384,6 +400,7 @@ failing test, 실제 MySQL 검증, 명시적인 지원 한계를 함께 제시�
 - [datasource-proxy 실증 비교](docs/empirical-comparison.md)
 - [검증 증거 매트릭스](docs/evidence-matrix.md)
 - [격리된 same-checkout Maven-publication consumer](examples/standalone-consumer/README.md)
+- [격리된 Maven 3.9.14 onboarding pilot](examples/maven-pilot/README.md)
 - [SBOM 생성과 검토](docs/sbom.md)
 - [출처·선행 작업 경계 공개](ORIGIN_AND_PRIOR_WORK.md)
 - [AI 보조 사용 공개](AI_ASSISTANCE.md)
