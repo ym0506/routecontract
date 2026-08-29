@@ -61,6 +61,7 @@ APPROVED_BASELINE = (
     / "orders.find-by-user-id.json"
 )
 VERIFIER = REPOSITORY_ROOT / "scripts" / "verify-maven-pilot.sh"
+INSTALLER = REPOSITORY_ROOT / "scripts" / "install-release-assets.py"
 CHECKSUM_PREPARER = REPOSITORY_ROOT / "scripts" / "prepare_maven_v0_1_0_checksums.py"
 INTEGRATION_GUIDE = REPOSITORY_ROOT / "docs" / "first-integration.md"
 CI_WORKFLOW = REPOSITORY_ROOT / ".github" / "workflows" / "ci.yml"
@@ -514,6 +515,24 @@ class MavenPilotContractTest(unittest.TestCase):
             '${repository_id}=SHA-256"'
         )
         self.assertIn(checksum_definition, self.verifier)
+        installer_sha256 = hashlib.sha256(INSTALLER.read_bytes()).hexdigest()
+        installer_hash_assignments = [
+            line
+            for line in self.verifier.splitlines()
+            if line.startswith("expected_installer_sha256=")
+        ]
+        self.assertEqual(
+            [f'expected_installer_sha256="{installer_sha256}"'],
+            installer_hash_assignments,
+        )
+        self.assertIn(
+            '|| die "release installer does not match the reviewed hash"',
+            self.verifier,
+        )
+        self.assertNotIn(
+            "release installer does not match the immutable v0.1.0 hash",
+            self.verifier,
+        )
         helper_sha256 = hashlib.sha256(CHECKSUM_PREPARER.read_bytes()).hexdigest()
         self.assertIn(
             f'expected_checksum_preparer_sha256="{helper_sha256}"', self.verifier

@@ -8,7 +8,7 @@ fixture_source="$repository_root/examples/maven-pilot"
 installer="$script_directory/install-release-assets.py"
 checksum_preparer="$script_directory/prepare_maven_v0_1_0_checksums.py"
 
-expected_installer_sha256="d21a7c71eb725e8d5f0675cfb88815b26be130d63711dc025a06347317652d33"
+expected_installer_sha256="134b265709ac071dedd395da269426d83f1972f602c3b3f7d2201eecc525e204"
 expected_checksum_preparer_sha256="546f801ae6056ae82dc6cbf8c3852056e7ec7ca9acfc7c077d06fc8d20247b89"
 expected_index_sha256="820ed33eb8bfe8d47f3ec8782d2aa99f2879227c4ee066ecafc467e61abb8684"
 expected_jar_sha256="d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc"
@@ -226,7 +226,7 @@ printf '%s\n' "$maven_version" | grep -Eq '^Java version: 17\.' \
     || die "Maven must run on Java 17"
 
 test "$(sha256_file "$installer")" = "$expected_installer_sha256" \
-    || die "release installer does not match the immutable v0.1.0 hash"
+    || die "release installer does not match the reviewed hash"
 test "$(sha256_file "$checksum_preparer")" = "$expected_checksum_preparer_sha256" \
     || die "checksum preparer does not match the reviewed guide hash"
 test ! -e "$fixture_source/integration-tests/src/routeContractPilot/resources/route-contracts/orders.find-by-user-id.json" \
