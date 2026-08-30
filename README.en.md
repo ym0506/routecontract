@@ -94,6 +94,9 @@ Do not read the roughly 1,700-line guide linearly. Use this shortest supported p
 Maven users can run the checked-in [two-module reference fixture](examples/maven-pilot/README.md)
 first and compare its boundaries with their own repository. If neither lane matches exactly, stop
 there instead of forcing a generic fragment into the build.
+After preparing the two Maven pilot tests, copy the [six-field example JSON](examples/maven-pilot/assisted-pilot.example.json)
+and use the [one-command runner](examples/maven-pilot/README.md#one-command-runner-for-an-adapted-external-maven-pilot)
+instead of assembling the existing verifier's twelve inputs by hand for `review` and `matched`.
 
 After a first run—or after deciding that the current scope is not a fit—use the
 [stable v0.1.2 feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)
