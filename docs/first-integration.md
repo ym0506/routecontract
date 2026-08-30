@@ -54,18 +54,96 @@ step requires a GitHub login, token, API call, or GitHub CLI.
 
 ## 2. Install the exact v0.1.2 Release assets
 
-RouteContract `0.1.2` is **not published to Maven Central**. Keep the exact `v0.1.2` checkout from
-step 1, download every asset from the [immutable GitHub Release](https://github.com/ym0506/routecontract/releases/tag/v0.1.2),
-and install the verified JAR and POM into a new, explicit local Maven repository. Replace all
-absolute example paths in this guide. The Release-asset and Maven-repository destinations must both
-be absent before step 2, and the Maven repository must not be `~/.m2/repository` or a path below it.
+RouteContract `0.1.2` is **not published to Maven Central**. The recommended wrapper below downloads
+the exact immutable [GitHub Release](https://github.com/ym0506/routecontract/releases/tag/v0.1.2),
+verifies its fixed anchors, and installs the Maven coordinate into a new explicit repository. It
+does not depend on the step 1 checkout. Replace `install_root` with a new normalized absolute path
+under a trusted existing canonical parent; the resulting `install_root/maven` must not be
+`~/.m2/repository` or a path below it.
+
+The wrapper itself is pinned to the actual post-tag bridge squash-merge commit and fixed SHA-256.
+It is a regular non-executable source file: invoke it with `python3 -I`, not as a shell command or
+direct executable.
+
+```bash
+(
+set -euo pipefail
+install_root="/absolute/path/to/new-routecontract-v0.1.2-install"
+helper_url="https://raw.githubusercontent.com/ym0506/routecontract/a11c5ca1df41e4a0d25d6e211dd2274e35d5b593/scripts/install-public-v0_1_2.py"
+expected_helper_size="33309"
+expected_helper_sha256="bec71208b138765bbc017589cb04ef0159e015364616e14dc19c633873b9ecb8"
+
+python3 -I -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 2)'
+test ! -e "${install_root}"
+test ! -L "${install_root}"
+mkdir -m 700 "${install_root}"
+helper="${install_root}/install-public-v0_1_2.py"
+repository_dir="${install_root}/maven"
+curl --disable --proto '=https' --proto-redir '=https' --tlsv1.2 \
+  --fail --silent --show-error --retry 3 --connect-timeout 15 --max-time 120 \
+  --max-redirs 0 --max-filesize "${expected_helper_size}" \
+  --output - "${helper_url}" | \
+  python3 -I -c '
+import os
+import sys
+
+destination = sys.argv[1]
+expected_size = int(sys.argv[2])
+payload = sys.stdin.buffer.read(expected_size + 1)
+if len(payload) != expected_size:
+    raise SystemExit(
+        f"wrapper byte count mismatch: expected {expected_size}, got {len(payload)}"
+    )
+flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+descriptor = os.open(destination, flags, 0o600)
+try:
+    os.fchmod(descriptor, 0o600)
+    view = memoryview(payload)
+    while view:
+        written = os.write(descriptor, view)
+        if written <= 0:
+            raise OSError("wrapper write made no progress")
+        view = view[written:]
+    os.fsync(descriptor)
+finally:
+    os.close(descriptor)
+' "${helper}" "${expected_helper_size}"
+test -f "${helper}"
+test ! -L "${helper}"
+actual_helper_size="$(python3 -I -c \
+  'import pathlib,sys; print(pathlib.Path(sys.argv[1]).stat().st_size)' "${helper}")"
+test "${actual_helper_size}" = "${expected_helper_size}"
+actual_helper_sha256="$(python3 -I -c \
+  'import hashlib,pathlib,sys; print(hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes()).hexdigest())' \
+  "${helper}")"
+test "${actual_helper_sha256}" = "${expected_helper_sha256}"
+python3 -I "${helper}" --repository "${repository_dir}"
+)
+```
+
+The command needs Bash, POSIX tools, `curl`, public HTTPS access, and Python 3.10 or newer, but no
+GitHub login, token, API call, or GitHub CLI. Success creates exactly four payloads plus eight SHA-1/SHA-256
+sidecars under `io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.2`. The wrapper
+delegates validation to the immutable tagged installer, uses the fixed-hash post-tag checksum helper
+without changing any Release payload bytes, and publishes only the verified 12-file coordinate. If
+the block fails at any stage, retain all of `install_root` for inspection and start again with
+another absent path; do not repair or reuse it. If the failure reports a path-binding change, the
+original path may no longer name the retained reservation. Do not repair, delete, or reuse either
+the original path or any moved reservation.
+
+<details>
+<summary>Manual asset-by-asset audit fallback (offline install after acquisition)</summary>
+
+Use this longer path only when you need a separately retained asset directory or want to audit each
+transport step. It requires the exact `v0.1.2` checkout from step 1. The Release-asset and
+Maven-repository destinations must both be absent.
 
 Important release boundary: the immutable `v0.1.2` Release body and tagged README still point to
 the `v0.1.0` onboarding path. This `main` guide is a post-release bridge for the immutable `v0.1.2`
 assets, not evidence that `v0.1.2` is a self-contained immutable onboarding Release. The installer
 and assets below come from the immutable tag. Every helper or verifier introduced after that tag is
-fetched through the exact bridge-commit permalink for the implementation commit and verified
-against the SHA-256 recorded here.
+fetched through its own exact bridge-commit permalink for that implementation and verified against
+the SHA-256 recorded here.
 
 ```bash
 (
@@ -133,6 +211,8 @@ installer from the exact checkout; the installer then verifies the exact 12-file
 every payload checksum before writing, and refuses to overwrite an existing coordinate. A failed
 attempt leaves its new directory for inspection; retry only with another absent destination.
 Checksums provide download integrity, not publisher identity.
+
+</details>
 
 The immutable `v0.1.2` installer is intentionally time-bounded by its embedded MySQL OCI
 package-level manual review through UTC `2026-12-05`. Beginning `2026-12-06` UTC it fails closed.
@@ -560,8 +640,15 @@ or a framework that needs RouteContract in a production runtime classloader is a
 this generic lane. Do not copy the fixture's dependency-management block into a production graph
 without reviewing its effect.
 
-The immutable `v0.1.2` installer writes only the four Maven artifacts. Before Maven consumes that
-repository, create exact Maven checksum sidecars with the helper introduced after `v0.1.2`. The
+If you used the recommended public wrapper in step 2, the exact eight checksum sidecars are already
+present; skip this subsection. Do not run the checksum helper again against that repository.
+
+<details>
+<summary>Manual fallback only: add checksum sidecars after the four-artifact installer</summary>
+
+The immutable `v0.1.2` installer used by the manual fallback writes only the four Maven artifacts.
+Before Maven consumes that repository, create exact Maven checksum sidecars with the helper
+introduced after `v0.1.2`. The
 exact helper is downloaded separately because the immutable tag cannot contain a later file; its
 transport URL is pinned to the exact bridge implementation commit and accepted only with the fixed
 helper digest below.
@@ -595,6 +682,8 @@ test "${actual_checksum_helper_sha256}" = "${expected_checksum_helper_sha256}"
 python3 -I "${checksum_helper}" --repository "${repository_dir}"
 )
 ```
+
+</details>
 
 Keep every pilot-only graph control inside an inactive-by-default profile in the owning module.
 Do not override the module's normal Surefire includes. The separate source root keeps the pilot

@@ -70,29 +70,100 @@ output that could contain SQL, parameters, or connection details.
 After the Quick Start passes, read the support boundary and stop conditions in the
 [first real integration guide](docs/first-integration.md), then choose one representative existing
 ShardingSphere-JDBC 5.5.3 integration test whose business assertion will remain. The guide connects
-capture → candidate → human-approved baseline → candidate check in an isolated Gradle Groovy or
-Maven 3.9.14 pilot. Repository-specific build isolation and human review are
+capture → candidate → human-approved baseline → candidate check in an isolated Gradle Groovy,
+Gradle Kotlin DSL, or Maven 3.9.14 pilot. Repository-specific build isolation and human review are
 required, so no completion time is
 promised. `v0.1.2` is not published to Maven Central; the guide installs
 verified GitHub Release assets into a separate local Maven repository.
 
+The shortest public installation path is below. Replace `install_root` with a new normalized
+absolute directory under a trusted existing canonical parent; its `maven` child must not be
+`~/.m2/repository` or a path below it. It needs public HTTPS network access, Bash and POSIX tools,
+`curl`, and Python 3.10 or newer, but no GitHub login, token, API call, or GitHub CLI.
+
+```bash
+(
+set -euo pipefail
+install_root="/absolute/path/to/new-routecontract-v0.1.2-install"
+helper_url="https://raw.githubusercontent.com/ym0506/routecontract/a11c5ca1df41e4a0d25d6e211dd2274e35d5b593/scripts/install-public-v0_1_2.py"
+expected_helper_size="33309"
+expected_helper_sha256="bec71208b138765bbc017589cb04ef0159e015364616e14dc19c633873b9ecb8"
+
+python3 -I -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 2)'
+test ! -e "${install_root}"
+test ! -L "${install_root}"
+mkdir -m 700 "${install_root}"
+helper="${install_root}/install-public-v0_1_2.py"
+repository_dir="${install_root}/maven"
+curl --disable --proto '=https' --proto-redir '=https' --tlsv1.2 \
+  --fail --silent --show-error --retry 3 --connect-timeout 15 --max-time 120 \
+  --max-redirs 0 --max-filesize "${expected_helper_size}" \
+  --output - "${helper_url}" | \
+  python3 -I -c '
+import os
+import sys
+
+destination = sys.argv[1]
+expected_size = int(sys.argv[2])
+payload = sys.stdin.buffer.read(expected_size + 1)
+if len(payload) != expected_size:
+    raise SystemExit(
+        f"wrapper byte count mismatch: expected {expected_size}, got {len(payload)}"
+    )
+flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+descriptor = os.open(destination, flags, 0o600)
+try:
+    os.fchmod(descriptor, 0o600)
+    view = memoryview(payload)
+    while view:
+        written = os.write(descriptor, view)
+        if written <= 0:
+            raise OSError("wrapper write made no progress")
+        view = view[written:]
+    os.fsync(descriptor)
+finally:
+    os.close(descriptor)
+' "${helper}" "${expected_helper_size}"
+test -f "${helper}"
+test ! -L "${helper}"
+actual_helper_size="$(python3 -I -c \
+  'import pathlib,sys; print(pathlib.Path(sys.argv[1]).stat().st_size)' "${helper}")"
+test "${actual_helper_size}" = "${expected_helper_size}"
+actual_helper_sha256="$(python3 -I -c \
+  'import hashlib,pathlib,sys; print(hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes()).hexdigest())' \
+  "${helper}")"
+test "${actual_helper_sha256}" = "${expected_helper_sha256}"
+python3 -I "${helper}" --repository "${repository_dir}"
+)
+```
+
+Success creates the exact
+`io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.2` coordinate with four
+payloads and eight SHA-1/SHA-256 sidecars. The commit-pinned public wrapper does not change
+immutable Release payload bytes; it invokes the fixed-hash post-tag checksum helper. The
+`2026-12-05 UTC` evidence-review expiry still applies. If any stage fails, retain all of
+`install_root` for inspection; do not repair or reuse it, and start with another new absolute path.
+If the failure reports a path-binding change, the original path may no longer name the retained
+reservation. Do not repair, delete, or reuse either the original path or any moved reservation.
+
 Important: the immutable `v0.1.2` Release body and the README stored in that tag still point to the
 `v0.1.0` onboarding path. The current `main` documentation and guide are a post-release bridge for
 consuming `v0.1.2` assets; they do not make `v0.1.2` a self-contained immutable onboarding Release.
-Helpers and verifiers added after the tag are pinned to the exact bridge implementation commit and
-the SHA-256 recorded in the guide.
+Each helper and verifier added after the tag is pinned to its own exact bridge-commit permalink for
+that implementation and the SHA-256 recorded in the guide.
 
-Do not read the roughly 1,700-line guide linearly. Use this shortest supported path:
+Do not read the long guide linearly. Use this shortest supported path:
 
 1. [Install the pinned Release assets](docs/first-integration.md#2-install-the-exact-v012-release-assets).
-2. Choose exactly one build lane: [Gradle Groovy](docs/first-integration.md#gradle-groovy-dsl-opt-in-lane)
-   or [Maven 3.9.14](docs/first-integration.md#maven-3914-opt-in-profile-lane).
+2. Choose exactly one build lane: [Gradle Groovy](docs/first-integration.md#gradle-groovy-dsl-opt-in-lane),
+   [Gradle Kotlin DSL](docs/first-integration.md#gradle-kotlin-dsl-opt-in-lane), or
+   [Maven 3.9.14](docs/first-integration.md#maven-3914-opt-in-profile-lane).
 3. Continue through the shared [representative operation](docs/first-integration.md#3-add-one-representative-operation)
    → [human baseline review](docs/first-integration.md#4-review-and-approve-the-first-baseline)
    → [CI candidate check](docs/first-integration.md#5-run-the-candidate-check-in-ci).
 
 Maven users can run the checked-in [two-module reference fixture](examples/maven-pilot/README.md)
-first and compare its boundaries with their own repository. If neither lane matches exactly, stop
+first and compare its boundaries with their own repository. If none of the lanes matches exactly, stop
 there instead of forcing a generic fragment into the build.
 After preparing the two Maven pilot tests, copy the [six-field example JSON](examples/maven-pilot/assisted-pilot.example.json)
 and use the [one-command runner](examples/maven-pilot/README.md#one-command-runner-for-an-adapted-external-maven-pilot)
@@ -247,10 +318,11 @@ limitations. None of these results implies production support or general perform
 
 This path becomes usable only after an annotated `v0.1.2` tag, a public immutable non-prerelease
 Release, a successful same-revision release-evidence run, and the exact asset set all exist.
-Download every public asset attached to that Release into a new empty directory, then install it to
-an empty absolute repository path rather than relying on `~/.m2`. [Step 2 of the first real
-integration guide](docs/first-integration.md#2-install-the-exact-v012-release-assets) uses fixed
-public URLs and a pinned checksum-index SHA-256, without a GitHub login, token, or API call.
+The default path uses a public wrapper pinned by its post-tag bridge commit, SHA-256, and exact size
+to download and verify the Release assets, then install the exact coordinate into an empty absolute
+repository outside `~/.m2`. [Step 2 of the first real integration
+guide](docs/first-integration.md#2-install-the-exact-v012-release-assets) provides both this short
+path and an asset-by-asset manual audit fallback, without a GitHub login, token, or API call.
 
 Do not add the resulting local Maven repository or RouteContract dependency directly to the
 default build. The [Gradle Groovy DSL](docs/first-integration.md#gradle-groovy-dsl-opt-in-lane) and
@@ -267,9 +339,10 @@ through UTC `2026-12-05`. Beginning `2026-12-06` UTC, the installer fails closed
 immutable Release with renewed evidence and do not bypass the expiry.
 
 <details>
-<summary>Exact supply-chain boundary enforced by the installer</summary>
+<summary>Exact supply-chain boundary enforced by the tag-pinned delegated installer</summary>
 
-The installer performs no network access. Before writing, it validates the
+The commit-pinned public wrapper downloads assets over HTTPS. The tag-pinned installer it delegates
+to then performs no network access. Before writing, the delegated installer validates the
 exact public-asset set, `SHA256SUMS`, the sanitized supply-chain summary's
 hash binding to the public SBOM/POM assets, non-SNAPSHOT POM coordinate, JAR
 structure and namespace-path rules, sources-JAR Java-package rules, a parent- and
@@ -280,8 +353,9 @@ compiled-`.class` and JTS/Mahout name/package boundaries, and the canonical
 `ym0506` provider namespace.
 It copies only the main, sources, and Javadoc JARs plus the POM into the
 explicit Maven layout, refuses to overwrite an existing coordinate, and rejects
-the conventional `~/.m2/repository` and every path below it as its target. Checksums verify download
-integrity, not publisher identity, so obtain the assets from the public Release
+the conventional `~/.m2/repository` and every path below it as its target. The wrapper's fixed-hash
+post-tag helper then creates exactly eight SHA-1/SHA-256 sidecars without changing any payload
+bytes. Checksums verify download integrity, not publisher identity, so obtain the assets from the public Release
 for that exact tag. These are name, path, declared-package, and dependency
 checks; they do not determine the semantic provenance of renamed or copied code.
 The final submission packaging
