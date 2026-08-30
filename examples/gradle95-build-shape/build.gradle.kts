@@ -296,7 +296,7 @@ if (pilotEnabled) {
     }
 
     val sourceSets = the<org.gradle.api.tasks.SourceSetContainer>()
-    val pilot = sourceSets.create("routeContractBuildShapePilot") {
+    val pilot = sourceSets.create("routeContractPilot") {
         compileClasspath += sourceSets.named("main").get().output
         runtimeClasspath += output + compileClasspath
     }
@@ -430,7 +430,7 @@ if (pilotEnabled) {
                     "buildshape/BuildShapeApplication.class"
             ).get().asFile.toPath()
             val pilotClass = layout.buildDirectory.file(
-                "classes/java/routeContractBuildShapePilot/io/github/ym0506/" +
+                "classes/java/routeContractPilot/io/github/ym0506/" +
                     "routecontract/examples/buildshape/" +
                     "RouteContractBuildShapePilotTest.class"
             ).get().asFile.toPath()

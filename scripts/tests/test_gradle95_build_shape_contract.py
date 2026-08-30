@@ -26,7 +26,7 @@ TARGET_TEST = (
 )
 PILOT_TEST = (
     FIXTURE
-    / "src/routeContractBuildShapePilot/java/io/github/ym0506/routecontract/"
+    / "src/routeContractPilot/java/io/github/ym0506/routecontract/"
     "examples/buildshape/RouteContractBuildShapePilotTest.java"
 )
 VERIFIER = ROOT / "scripts" / "verify-gradle95-build-shape.sh"
@@ -88,7 +88,7 @@ class Gradle95BuildShapeContractTest(unittest.TestCase):
             'routecontractRepository is accepted only when routecontractPilot=true',
             'platform("org.springframework.boot:spring-boot-dependencies:$bootBomVersion")',
             'languageVersion = JavaLanguageVersion.of(21)',
-            'sourceSets.create("routeContractBuildShapePilot")',
+            'sourceSets.create("routeContractPilot")',
             'languageVersion = JavaLanguageVersion.of(17)',
             'options.release = 17',
             'exclusiveContent',
