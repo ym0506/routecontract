@@ -31,7 +31,7 @@ MAX_CONFIG_BYTES = 16 * 1024
 MAX_VERIFIER_OUTPUT_BYTES = 1024 * 1024
 PROCESS_SIGNAL_GRACE_SECONDS = 2.0
 EXPECTED_VERIFIER_SHA256 = (
-    "69f233a5935f36a2e9068c25517fc3f15df4ef7da119e7a02feb9184df49e472"
+    "56db3afdef99286a488c98f726453e5623a182bc91737b08d1f8a2f01f2fabb5"
 )
 EXPECTED_INSTALLER_SHA256 = (
     "134b265709ac071dedd395da269426d83f1972f602c3b3f7d2201eecc525e204"
@@ -257,6 +257,12 @@ def _duplicate_safe_object(pairs: list[tuple[str, object]]) -> dict[str, object]
 
 
 def load_config(path: Path) -> dict[str, str]:
+    path_text = os.fspath(path)
+    if any(
+        unicodedata.category(character) in {"Cc", "Cf", "Cs", "Zl", "Zp"}
+        for character in path_text
+    ):
+        raise AssistedPilotError("config path contains an unsafe Unicode character")
     payload = _read_regular_file(path, "config", MAX_CONFIG_BYTES)
     try:
         text = payload.decode("utf-8", errors="strict")
@@ -275,8 +281,13 @@ def load_config(path: Path) -> dict[str, str]:
             raise AssistedPilotError(f"config field {key} must be a string")
         if unicodedata.normalize("NFC", value) != value:
             raise AssistedPilotError(f"config field {key} must use NFC text")
-        if any(unicodedata.category(character) == "Cc" for character in value):
-            raise AssistedPilotError(f"config field {key} contains a control character")
+        if any(
+            unicodedata.category(character) in {"Cc", "Cf", "Cs", "Zl", "Zp"}
+            for character in value
+        ):
+            raise AssistedPilotError(
+                f"config field {key} contains an unsafe Unicode character"
+            )
         result[key] = value
     return result
 
@@ -449,14 +460,24 @@ def _verify_verifier() -> None:
     _read_verified_execution_bundle()
 
 
+def _write_all(descriptor: int, payload: bytes, label: str) -> None:
+    offset = 0
+    while offset < len(payload):
+        try:
+            written = os.write(descriptor, payload[offset:])
+        except OSError as error:
+            raise AssistedPilotError(f"unable to write {label}") from error
+        if written <= 0:
+            raise AssistedPilotError(f"write made no progress for {label}")
+        offset += written
+
+
 def _write_private_bytes(path: Path, payload: bytes, mode: int) -> None:
     flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
     flags |= getattr(os, "O_CLOEXEC", 0)
     descriptor = os.open(path, flags, mode)
     try:
-        offset = 0
-        while offset < len(payload):
-            offset += os.write(descriptor, payload[offset:])
+        _write_all(descriptor, payload, "private execution-bundle file")
         os.fchmod(descriptor, mode)
     finally:
         os.close(descriptor)
@@ -526,9 +547,7 @@ def _write_private_file(path: Path, payload: str, mode: int = 0o600) -> None:
     descriptor = os.open(path, flags, mode)
     try:
         data = payload.encode("utf-8")
-        written = 0
-        while written < len(data):
-            written += os.write(descriptor, data[written:])
+        _write_all(descriptor, data, "private configuration file")
         os.fchmod(descriptor, mode)
     finally:
         os.close(descriptor)
@@ -635,9 +654,7 @@ def _extract_maven_archive(archive_path: Path, destination: Path) -> Path:
                         raise AssistedPilotError(
                             "pinned Maven archive member exceeded its declared size"
                         )
-                    offset = 0
-                    while offset < len(chunk):
-                        offset += os.write(descriptor, chunk[offset:])
+                    _write_all(descriptor, chunk, "pinned Maven archive member")
                 os.fchmod(descriptor, 0o700 if member.mode & 0o111 else 0o600)
             finally:
                 os.close(descriptor)

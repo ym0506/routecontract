@@ -754,6 +754,12 @@ dependency graph.
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>5.14.3</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.apache.shardingsphere</groupId>
       <artifactId>shardingsphere-jdbc</artifactId>
       <version>5.5.3</version>
@@ -789,6 +795,22 @@ dependency graph.
   <build>
     <plugins>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.14.1</version>
+        <executions>
+          <execution>
+            <id>default-testCompile</id>
+            <phase>test-compile</phase>
+            <goals><goal>testCompile</goal></goals>
+            <configuration>
+              <release>17</release>
+              <testRelease>17</testRelease>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
         <version>3.6.1</version>
@@ -808,6 +830,12 @@ dependency graph.
         <artifactId>maven-surefire-plugin</artifactId>
         <version>3.5.4</version>
         <configuration>
+          <reportsDirectory>${project.basedir}/target/surefire-reports</reportsDirectory>
+          <reportNameSuffix combine.self="override"></reportNameSuffix>
+          <disableXmlReport>false</disableXmlReport>
+          <useModulePath>false</useModulePath>
+          <promoteUserPropertiesToSystemProperties>false</promoteUserPropertiesToSystemProperties>
+          <rerunFailingTestsCount>0</rerunFailingTestsCount>
           <systemPropertyVariables>
             <routecontract.projectDir>${project.basedir}</routecontract.projectDir>
             <routecontract.candidateRoot>target/routecontract</routecontract.candidateRoot>
@@ -815,6 +843,27 @@ dependency graph.
             <routecontract.artifactJarPath>${routecontract.artifactJarPath}</routecontract.artifactJarPath>
           </systemPropertyVariables>
         </configuration>
+        <executions>
+          <execution>
+            <id>default-test</id>
+            <phase>test</phase>
+            <goals><goal>test</goal></goals>
+            <configuration>
+              <reportsDirectory>${project.basedir}/target/surefire-reports</reportsDirectory>
+              <reportNameSuffix combine.self="override"></reportNameSuffix>
+              <disableXmlReport>false</disableXmlReport>
+              <useModulePath>false</useModulePath>
+              <promoteUserPropertiesToSystemProperties>false</promoteUserPropertiesToSystemProperties>
+              <rerunFailingTestsCount>0</rerunFailingTestsCount>
+              <systemPropertyVariables>
+                <routecontract.projectDir>${project.basedir}</routecontract.projectDir>
+                <routecontract.candidateRoot>target/routecontract</routecontract.candidateRoot>
+                <routecontract.artifactJarName>routecontract-shardingsphere-5.5-0.1.2.jar</routecontract.artifactJarName>
+                <routecontract.artifactJarPath>${routecontract.artifactJarPath}</routecontract.artifactJarPath>
+              </systemPropertyVariables>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

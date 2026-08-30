@@ -1695,6 +1695,7 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
                 "io.github.ym0506.routecontract",
                 "routecontract-shardingsphere-5.5",
             ): ("0.1.2", "test"),
+            ("org.junit.jupiter", "junit-jupiter"): ("5.14.3", "test"),
             ("org.apache.shardingsphere", "shardingsphere-jdbc"): (
                 "5.5.3",
                 "compile",
