@@ -164,7 +164,7 @@
         <dependency>
           <groupId>io.github.ym0506.routecontract</groupId>
           <artifactId>routecontract-shardingsphere-5.5</artifactId>
-          <version>0.1.0</version>
+          <version>0.1.2</version>
           <scope>test</scope>
         </dependency>
         <dependency>
@@ -238,7 +238,7 @@
                 <api.version>1.44</api.version>
                 <routecontract.projectDir>${project.basedir}</routecontract.projectDir>
                 <routecontract.candidateRoot>target/routecontract</routecontract.candidateRoot>
-                <routecontract.artifactJarName>routecontract-shardingsphere-5.5-0.1.0.jar</routecontract.artifactJarName>
+                <routecontract.artifactJarName>routecontract-shardingsphere-5.5-0.1.2.jar</routecontract.artifactJarName>
                 <routecontract.artifactJarPath>${routecontract.artifactJarPath}</routecontract.artifactJarPath>
               </systemPropertyVariables>
             </configuration>

@@ -62,7 +62,7 @@ APPROVED_BASELINE = (
 )
 VERIFIER = REPOSITORY_ROOT / "scripts" / "verify-maven-pilot.sh"
 INSTALLER = REPOSITORY_ROOT / "scripts" / "install-release-assets.py"
-CHECKSUM_PREPARER = REPOSITORY_ROOT / "scripts" / "prepare_maven_v0_1_0_checksums.py"
+CHECKSUM_PREPARER = REPOSITORY_ROOT / "scripts" / "prepare_maven_v0_1_2_checksums.py"
 INTEGRATION_GUIDE = REPOSITORY_ROOT / "docs" / "first-integration.md"
 CI_WORKFLOW = REPOSITORY_ROOT / ".github" / "workflows" / "ci.yml"
 MAVEN_NAMESPACE = {"m": "http://maven.apache.org/POM/4.0.0"}
@@ -78,7 +78,7 @@ VALID_GRAPH = """\
 [INFO] |     \\- net.minidev:accessors-smart:jar:2.4.9:test
 [INFO] +- org.apache.calcite:calcite-linq4j:jar:1.42.0:test
 [INFO] +- com.fasterxml.jackson.core:jackson-databind:jar:2.18.9:test
-[INFO] \\- io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:jar:0.1.0:test
+[INFO] \\- io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:jar:0.1.2:test
 """
 
 
@@ -265,7 +265,7 @@ class MavenPilotContractTest(unittest.TestCase):
         routecontract = dependency_by_coordinate(
             profile_dependencies, ROUTECONTRACT_GROUP, ROUTECONTRACT_ARTIFACT
         )
-        self.assertEqual("0.1.0", required_text(routecontract, "m:version"))
+        self.assertEqual("0.1.2", required_text(routecontract, "m:version"))
         self.assertEqual("test", required_text(routecontract, "m:scope"))
         all_routecontract_dependencies = [
             dependency
@@ -444,8 +444,8 @@ class MavenPilotContractTest(unittest.TestCase):
                 "shardingsphere-jdbc:pom:5.5.3:test",
             ),
             "classifier": VALID_GRAPH.replace(
-                "routecontract-shardingsphere-5.5:jar:0.1.0:test",
-                "routecontract-shardingsphere-5.5:jar:tests:0.1.0:test",
+                "routecontract-shardingsphere-5.5:jar:0.1.2:test",
+                "routecontract-shardingsphere-5.5:jar:tests:0.1.2:test",
             ),
             "wrong scope": VALID_GRAPH.replace(
                 "shardingsphere-jdbc:jar:5.5.3:test",
@@ -530,7 +530,7 @@ class MavenPilotContractTest(unittest.TestCase):
             self.verifier,
         )
         self.assertNotIn(
-            "release installer does not match the immutable v0.1.0 hash",
+            "release installer does not match the immutable v0.1.2 hash",
             self.verifier,
         )
         helper_sha256 = hashlib.sha256(CHECKSUM_PREPARER.read_bytes()).hexdigest()

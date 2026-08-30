@@ -5,26 +5,26 @@ set -euo pipefail
 script_directory="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 routecontract_root="$(cd -- "${script_directory}/.." && pwd)"
 installer="${script_directory}/install-release-assets.py"
-checksum_preparer="${script_directory}/prepare_maven_v0_1_0_checksums.py"
+checksum_preparer="${script_directory}/prepare_maven_v0_1_2_checksums.py"
 
 expected_installer_sha256="134b265709ac071dedd395da269426d83f1972f602c3b3f7d2201eecc525e204"
-expected_checksum_preparer_sha256="546f801ae6056ae82dc6cbf8c3852056e7ec7ca9acfc7c077d06fc8d20247b89"
-expected_index_sha256="820ed33eb8bfe8d47f3ec8782d2aa99f2879227c4ee066ecafc467e61abb8684"
+expected_checksum_preparer_sha256="ee1928e578819fb597fffe7f1c72c055ff74ec6b36d37fe35f29c7fbd382b7b7"
+expected_index_sha256="7849adf417f0170b08d01902b023e8b328d8796f7c2aeacc471eb7acf8e2b217"
 expected_jar_sha256="d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc"
-expected_pom_sha256="05570bfa238ef77db255a46efdd5bbb25e994ae0137db86491a46a25e28deac9"
-release_base="https://github.com/ym0506/routecontract/releases/download/v0.1.0"
+expected_pom_sha256="70b5d4161d1532e9f9cb699071790a7806d87658511d931477544fa06037b85d"
+release_base="https://github.com/ym0506/routecontract/releases/download/v0.1.2"
 repository_id="routecontract-verified-file-repository"
 group_path="io/github/ym0506/routecontract"
 artifact_id="routecontract-shardingsphere-5.5"
-version="0.1.0"
+version="0.1.2"
 checksum_algorithm_property="-Daether.checksums.algorithms.${repository_id}=SHA-256"
 
 assets=(
     SHA256SUMS
-    routecontract-0.1.0-source.zip
-    routecontract-shardingsphere-5.5-0.1.0.jar
-    routecontract-shardingsphere-5.5-0.1.0-sources.jar
-    routecontract-shardingsphere-5.5-0.1.0-javadoc.jar
+    routecontract-0.1.2-source.zip
+    routecontract-shardingsphere-5.5-0.1.2.jar
+    routecontract-shardingsphere-5.5-0.1.2-sources.jar
+    routecontract-shardingsphere-5.5-0.1.2-javadoc.jar
     routecontract-shardingsphere-5.5.pom
     routecontract-shardingsphere-5.5-cyclonedx.json
     routecontract-shardingsphere-5.5-cyclonedx.xml
@@ -294,7 +294,7 @@ fi
 
 assert_regular_file "${release_assets_directory}/SHA256SUMS" "checksum index"
 test "$(sha256_file "${release_assets_directory}/SHA256SUMS")" = "$expected_index_sha256" \
-    || die "Release checksum index does not match the immutable v0.1.0 hash"
+    || die "Release checksum index does not match the immutable v0.1.2 hash"
 
 repository_directory="${temporary_root}/routecontract-maven"
 consumer_cache="${temporary_root}/consumer-cache"
@@ -387,7 +387,7 @@ routecontract = exact_one(
     ("io.github.ym0506.routecontract", "routecontract-shardingsphere-5.5"),
     "direct dependency",
 )
-if text(routecontract, "m:version") != "0.1.0" \
+if text(routecontract, "m:version") != "0.1.2" \
         or text(routecontract, "m:scope") != "test":
     raise SystemExit("routecontract-pilot RouteContract dependency boundary changed")
 
@@ -473,7 +473,7 @@ expected_system_properties = {
     "routecontract.projectDir": "${project.basedir}",
     "routecontract.candidateRoot": "target/routecontract",
     "routecontract.artifactJarName":
-        "routecontract-shardingsphere-5.5-0.1.0.jar",
+        "routecontract-shardingsphere-5.5-0.1.2.jar",
     "routecontract.artifactJarPath": "${routecontract.artifactJarPath}",
 }
 system_properties = surefire.find(
@@ -735,7 +735,7 @@ require_expected(
 require_expected(
     "io.github.ym0506.routecontract",
     "routecontract-shardingsphere-5.5",
-    "0.1.0",
+    "0.1.2",
     direct=True,
     allowed_scopes={"test"},
 )

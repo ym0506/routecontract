@@ -6,28 +6,28 @@ script_directory="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 repository_root="$(cd -- "$script_directory/.." && pwd)"
 fixture_source="$repository_root/examples/maven-pilot"
 installer="$script_directory/install-release-assets.py"
-checksum_preparer="$script_directory/prepare_maven_v0_1_0_checksums.py"
+checksum_preparer="$script_directory/prepare_maven_v0_1_2_checksums.py"
 
 expected_installer_sha256="134b265709ac071dedd395da269426d83f1972f602c3b3f7d2201eecc525e204"
-expected_checksum_preparer_sha256="546f801ae6056ae82dc6cbf8c3852056e7ec7ca9acfc7c077d06fc8d20247b89"
-expected_index_sha256="820ed33eb8bfe8d47f3ec8782d2aa99f2879227c4ee066ecafc467e61abb8684"
+expected_checksum_preparer_sha256="ee1928e578819fb597fffe7f1c72c055ff74ec6b36d37fe35f29c7fbd382b7b7"
+expected_index_sha256="7849adf417f0170b08d01902b023e8b328d8796f7c2aeacc471eb7acf8e2b217"
 expected_jar_sha256="d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc"
-expected_pom_sha256="05570bfa238ef77db255a46efdd5bbb25e994ae0137db86491a46a25e28deac9"
+expected_pom_sha256="70b5d4161d1532e9f9cb699071790a7806d87658511d931477544fa06037b85d"
 expected_candidate_sha256="796d38c21c599812a4c0e31cae90c7f9377a109e3836beed4a04ff2bf554c818"
 expected_candidate_bytes="655"
-release_base="https://github.com/ym0506/routecontract/releases/download/v0.1.0"
+release_base="https://github.com/ym0506/routecontract/releases/download/v0.1.2"
 artifact_id="routecontract-shardingsphere-5.5"
-version="0.1.0"
+version="0.1.2"
 group_path="io/github/ym0506/routecontract"
 repository_id="routecontract-verified-file-repository"
 checksum_algorithm_property="-Daether.checksums.algorithms.${repository_id}=SHA-256"
 
 assets=(
     SHA256SUMS
-    routecontract-0.1.0-source.zip
-    routecontract-shardingsphere-5.5-0.1.0.jar
-    routecontract-shardingsphere-5.5-0.1.0-sources.jar
-    routecontract-shardingsphere-5.5-0.1.0-javadoc.jar
+    routecontract-0.1.2-source.zip
+    routecontract-shardingsphere-5.5-0.1.2.jar
+    routecontract-shardingsphere-5.5-0.1.2-sources.jar
+    routecontract-shardingsphere-5.5-0.1.2-javadoc.jar
     routecontract-shardingsphere-5.5.pom
     routecontract-shardingsphere-5.5-cyclonedx.json
     routecontract-shardingsphere-5.5-cyclonedx.xml
@@ -42,7 +42,7 @@ usage() {
 Usage: ./scripts/verify-maven-pilot.sh [--release-assets-dir /absolute/path]
 
 Without an argument, the verifier anonymously downloads the exact immutable
-v0.1.0 GitHub Release assets.  The optional directory is only a download-cache
+v0.1.2 GitHub Release assets.  The optional directory is only a download-cache
 shortcut; the exact installer still validates its flat inventory and every
 declared SHA-256 before use.
 
@@ -273,15 +273,15 @@ else
 fi
 
 test "$(sha256_file "$release_assets_directory/SHA256SUMS")" = "$expected_index_sha256" \
-    || die "SHA256SUMS does not match the immutable v0.1.0 index hash"
+    || die "SHA256SUMS does not match the immutable v0.1.2 index hash"
 
 explicit_repository="$temporary_root/routecontract-maven-repository"
 install_output="$(python3 -I "$installer" \
     --release-assets-dir "$release_assets_directory" \
     --repository "$explicit_repository")"
 printf '%s\n' "$install_output" | grep -Fqx \
-    'Installed coordinate: io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0' \
-    || die "release installer did not report the exact v0.1.0 coordinate"
+    'Installed coordinate: io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.2' \
+    || die "release installer did not report the exact v0.1.2 coordinate"
 python3 -I "$checksum_preparer" --repository "$explicit_repository" \
     >"$temporary_root/checksum-preparation.log"
 
@@ -575,7 +575,7 @@ require_expected(
 require_expected(
     "io.github.ym0506.routecontract",
     "routecontract-shardingsphere-5.5",
-    "0.1.0",
+    "0.1.2",
     direct=True,
 )
 for expected in (
