@@ -81,7 +81,7 @@ dependencies {
             version { strictly '6.1' }
             because 'Align with the versions managed by the Apache ShardingSphere 5.5.3 parent POM'
         }
-        testImplementation('net.minidev:json-smart:2.4.10') {
+        testImplementation('net.minidev:json-smart:2.6.0') {
             version { strictly '2.4.10' }
             because 'Align with the versions managed by the Apache ShardingSphere 5.5.3 parent POM'
         }
