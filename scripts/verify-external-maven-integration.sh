@@ -150,6 +150,49 @@ assert_no_integrity_warning() {
     fi
 }
 
+extract_effective_pom() {
+    log="$1"
+    output="$2"
+    python3 -I - "$log" "$output" <<'PY'
+import os
+import pathlib
+import stat
+import sys
+import xml.etree.ElementTree as ET
+
+source = pathlib.Path(sys.argv[1])
+destination = pathlib.Path(sys.argv[2])
+metadata = os.lstat(source)
+if not stat.S_ISREG(metadata.st_mode) or source.is_symlink():
+    raise SystemExit("effective POM log is not a regular file")
+if metadata.st_size > 16 * 1024 * 1024:
+    raise SystemExit("effective POM log exceeds 16 MiB")
+payload = source.read_bytes()
+start_marker = b'<?xml version="1.0" encoding="UTF-8"?>'
+end_marker = b"</project>"
+if payload.count(start_marker) != 1 or payload.count(end_marker) != 1:
+    raise SystemExit("effective POM log does not contain one XML project")
+start = payload.index(start_marker)
+end = payload.index(end_marker, start) + len(end_marker)
+document = payload[start:end] + b"\n"
+root = ET.fromstring(document)
+if root.tag != "{http://maven.apache.org/POM/4.0.0}project":
+    raise SystemExit("effective POM XML root changed")
+flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_CLOEXEC", 0)
+descriptor = os.open(destination, flags, 0o600)
+try:
+    view = memoryview(document)
+    while view:
+        written = os.write(descriptor, view)
+        if written <= 0:
+            raise SystemExit("effective POM extraction was incomplete")
+        view = view[written:]
+    os.fsync(descriptor)
+finally:
+    os.close(descriptor)
+PY
+}
+
 report_suppressed_log() {
     printf '%s\n' \
         'ROUTECONTRACT_EXTERNAL_MAVEN_DIAGNOSTIC Maven output was not echoed because application logs can contain sensitive data; reproduce locally only after reviewing its output handling.' \
@@ -302,6 +345,8 @@ graph_log="${temporary_root}/dependency-tree.log"
 profile_log="${temporary_root}/profile-off.log"
 profile_off_effective_pom="${temporary_root}/profile-off-effective-pom.xml"
 profile_off_effective_log="${temporary_root}/profile-off-effective-pom.log"
+profile_on_effective_pom="${temporary_root}/profile-on-effective-pom.xml"
+profile_on_effective_log="${temporary_root}/profile-on-effective-pom.log"
 test_log="${temporary_root}/candidate-test.log"
 python3 -I "$installer" \
     --release-assets-dir "$release_assets_directory" \
@@ -321,12 +366,30 @@ qualified = lambda local: f"{{{namespace['m']}}}{local}"
 root = ET.parse(path).getroot()
 
 def text(element, child, required=True):
-    selected = element.find(child, namespace)
-    if selected is None or selected.text is None or not selected.text.strip():
+    matches = element.findall(child, namespace)
+    if not matches:
+        if required:
+            raise SystemExit(f"owning source POM is missing {child}")
+        return None
+    if len(matches) != 1:
+        raise SystemExit(f"owning source POM has duplicate {child}")
+    selected = matches[0]
+    if selected.text is None or not selected.text.strip():
         if required:
             raise SystemExit(f"owning source POM is missing {child}")
         return None
     return selected.text.strip()
+
+def exact_element(element, child, label):
+    matches = element.findall(child, namespace)
+    if len(matches) != 1:
+        raise SystemExit(f"routecontract-pilot must contain exactly one {label}")
+    return matches[0]
+
+def require_child_inventory(element, expected, label):
+    actual = sorted(child.tag.rsplit("}", 1)[-1] for child in element)
+    if actual != sorted(expected):
+        raise SystemExit(f"routecontract-pilot {label} child inventory changed")
 
 def coordinate(element):
     return text(element, "m:groupId"), text(element, "m:artifactId")
@@ -436,6 +499,54 @@ for child, expected_value in expected_repository_values.items():
         raise SystemExit(f"routecontract-pilot repository setting changed: {child}")
 
 plugins = pilot.findall("m:build/m:plugins/m:plugin", namespace)
+compiler = exact_one(
+    plugins,
+    ("org.apache.maven.plugins", "maven-compiler-plugin"),
+    "build plugin",
+)
+require_child_inventory(
+    compiler,
+    ["groupId", "artifactId", "version", "executions"],
+    "compiler plugin",
+)
+if text(compiler, "m:version") != "3.14.1":
+    raise SystemExit("routecontract-pilot compiler version changed")
+compiler_executions = [
+    execution
+    for execution in compiler.findall("m:executions/m:execution", namespace)
+    if text(execution, "m:id", required=False) == "default-testCompile"
+]
+if len(compiler_executions) != 1:
+    raise SystemExit("routecontract-pilot test compiler execution is not exact")
+compiler_execution = compiler_executions[0]
+require_child_inventory(
+    compiler_execution,
+    ["id", "phase", "goals", "configuration"],
+    "test compiler execution",
+)
+compiler_goals = [
+    (goal.text or "").strip()
+    for goal in compiler_execution.findall("m:goals/m:goal", namespace)
+]
+if text(compiler_execution, "m:phase") != "test-compile" \
+        or compiler_goals != ["testCompile"]:
+    raise SystemExit("routecontract-pilot test compiler lifecycle changed")
+compiler_configuration = exact_element(
+    compiler_execution,
+    "m:configuration",
+    "test compiler configuration",
+)
+if compiler_configuration.attrib:
+    raise SystemExit("routecontract-pilot test compiler merge boundary changed")
+require_child_inventory(
+    compiler_configuration,
+    ["release", "testRelease"],
+    "test compiler configuration",
+)
+if text(compiler_configuration, "m:release") != "17" \
+        or text(compiler_configuration, "m:testRelease") != "17":
+    raise SystemExit("routecontract-pilot test compiler Java boundary changed")
+
 build_helper = exact_one(
     plugins,
     ("org.codehaus.mojo", "build-helper-maven-plugin"),
@@ -469,6 +580,13 @@ surefire = exact_one(
     ("org.apache.maven.plugins", "maven-surefire-plugin"),
     "build plugin",
 )
+require_child_inventory(
+    surefire,
+    ["groupId", "artifactId", "version", "configuration", "executions"],
+    "Surefire plugin",
+)
+if text(surefire, "m:version") != "3.5.4":
+    raise SystemExit("routecontract-pilot Surefire version changed")
 expected_system_properties = {
     "routecontract.projectDir": "${project.basedir}",
     "routecontract.candidateRoot": "target/routecontract",
@@ -476,18 +594,104 @@ expected_system_properties = {
         "routecontract-shardingsphere-5.5-0.1.2.jar",
     "routecontract.artifactJarPath": "${routecontract.artifactJarPath}",
 }
-system_properties = surefire.find(
-    "m:configuration/m:systemPropertyVariables", namespace
-)
-if system_properties is None:
-    raise SystemExit("routecontract-pilot Surefire system properties are missing")
-for name, expected_value in expected_system_properties.items():
-    selected = system_properties.find(qualified(name))
-    actual = None if selected is None or selected.text is None else selected.text.strip()
-    if actual != expected_value:
+
+def verify_surefire_configuration(configuration, label):
+    if configuration.attrib:
+        raise SystemExit(f"routecontract-pilot Surefire {label} merge boundary changed")
+    require_child_inventory(
+        configuration,
+        [
+            "reportsDirectory",
+            "reportNameSuffix",
+            "disableXmlReport",
+            "useModulePath",
+            "promoteUserPropertiesToSystemProperties",
+            "rerunFailingTestsCount",
+            "systemPropertyVariables",
+        ],
+        f"Surefire {label} configuration",
+    )
+    expected_values = {
+        "m:reportsDirectory": "${project.basedir}/target/surefire-reports",
+        "m:disableXmlReport": "false",
+        "m:useModulePath": "false",
+        "m:promoteUserPropertiesToSystemProperties": "false",
+        "m:rerunFailingTestsCount": "0",
+    }
+    for child, expected_value in expected_values.items():
+        if text(configuration, child) != expected_value:
+            raise SystemExit(
+                f"routecontract-pilot Surefire {label} setting changed: {child}"
+            )
+    suffix = exact_element(
+        configuration,
+        "m:reportNameSuffix",
+        f"Surefire {label} reportNameSuffix",
+    )
+    if (suffix.text or "").strip() \
+            or suffix.attrib != {"combine.self": "override"}:
         raise SystemExit(
-            f"routecontract-pilot Surefire system property changed: {name}"
+            f"routecontract-pilot Surefire {label} report suffix changed"
         )
+    system_properties = exact_element(
+        configuration,
+        "m:systemPropertyVariables",
+        f"Surefire {label} systemPropertyVariables",
+    )
+    require_child_inventory(
+        system_properties,
+        list(expected_system_properties),
+        f"Surefire {label} system properties",
+    )
+    for name, expected_value in expected_system_properties.items():
+        selected = exact_element(
+            system_properties,
+            qualified(name),
+            f"Surefire {label} system property {name}",
+        )
+        actual = (
+            None
+            if selected is None or selected.text is None
+            else selected.text.strip()
+        )
+        if actual != expected_value:
+            raise SystemExit(
+                "routecontract-pilot Surefire "
+                f"{label} system property changed: {name}"
+            )
+
+verify_surefire_configuration(
+    exact_element(surefire, "m:configuration", "Surefire plugin configuration"),
+    "plugin",
+)
+surefire_executions = [
+    execution
+    for execution in surefire.findall("m:executions/m:execution", namespace)
+    if text(execution, "m:id", required=False) == "default-test"
+]
+if len(surefire_executions) != 1:
+    raise SystemExit("routecontract-pilot Surefire execution is not exact")
+surefire_execution = surefire_executions[0]
+require_child_inventory(
+    surefire_execution,
+    ["id", "phase", "goals", "configuration"],
+    "Surefire execution",
+)
+surefire_goals = [
+    (goal.text or "").strip()
+    for goal in surefire_execution.findall("m:goals/m:goal", namespace)
+]
+if text(surefire_execution, "m:phase") != "test" \
+        or surefire_goals != ["test"]:
+    raise SystemExit("routecontract-pilot Surefire lifecycle changed")
+verify_surefire_configuration(
+    exact_element(
+        surefire_execution,
+        "m:configuration",
+        "Surefire execution configuration",
+    ),
+    "execution",
+)
 
 for dependency in root.iter(qualified("dependency")):
     if dependency not in pilot_nodes \
@@ -516,26 +720,17 @@ cached_pom="${coordinate_directory}/${artifact_id}-${version}.pom"
 test ! -e "$consumer_cache" || die "consumer cache must start absent"
 
 mvn -B -ntp -Dstyle.color=never \
-    -f "$ROUTECONTRACT_REACTOR_POM" \
+    -f "$ROUTECONTRACT_OWNING_POM" \
     "-Dmaven.repo.local=${consumer_cache}" \
     -P=-routecontract-pilot \
     -DskipTests=false \
     -Dmaven.test.skip=false \
     -Dmaven.test.failure.ignore=false \
-    -pl "$ROUTECONTRACT_REACTOR_SELECTOR" -am clean install >"$profile_log" 2>&1 \
-    || { report_suppressed_log; die "profile-off reactor build failed"; }
-assert_no_integrity_warning "$profile_log"
-
-mvn -B -ntp -Dstyle.color=never \
-    -f "$ROUTECONTRACT_OWNING_POM" \
-    "-Dmaven.repo.local=${consumer_cache}" \
-    -P=-routecontract-pilot \
-    -DskipTests=true \
-    -Dmaven.test.skip=true \
     org.apache.maven.plugins:maven-help-plugin:3.5.1:effective-pom \
-    "-Doutput=${profile_off_effective_pom}" >"$profile_off_effective_log" 2>&1 \
+    >"$profile_off_effective_log" 2>&1 \
     || { report_suppressed_log; die "profile-off effective POM generation failed"; }
 assert_no_integrity_warning "$profile_off_effective_log"
+extract_effective_pom "$profile_off_effective_log" "$profile_off_effective_pom"
 python3 -I - "$profile_off_effective_pom" <<'PY'
 import pathlib
 import sys
@@ -555,6 +750,16 @@ def text(element, child):
 
 def coordinate(dependency):
     return text(dependency, "m:groupId"), text(dependency, "m:artifactId")
+
+rerun_properties = root.findall(
+    "m:properties/m:surefire.rerunFailingTestsCount", namespace
+)
+if len(rerun_properties) > 1 or (
+    rerun_properties and (rerun_properties[0].text or "").strip() != "0"
+):
+    raise SystemExit(
+        "profile-off effective POM enables Surefire test retries"
+    )
 
 dependencies = root.findall("m:dependencies/m:dependency", namespace)
 for dependency in dependencies:
@@ -585,7 +790,62 @@ if any(
     for source in active_sources
 ):
     raise SystemExit("profile-off effective POM activated the pilot source root")
+
+surefire_plugins = [
+    plugin
+    for plugin in root.findall("m:build/m:plugins/m:plugin", namespace)
+    if (plugin.findtext("m:artifactId", default="", namespaces=namespace) or "").strip()
+    == "maven-surefire-plugin"
+    and (plugin.findtext("m:groupId", default="", namespaces=namespace) or "").strip()
+    in {"", "org.apache.maven.plugins"}
+]
+if len(surefire_plugins) != 1:
+    raise SystemExit("profile-off effective POM must contain one Surefire plugin")
+executions = surefire_plugins[0].findall("m:executions/m:execution", namespace)
+if len(executions) != 1:
+    raise SystemExit(
+        "profile-off effective POM must contain one Surefire execution for "
+        "exactly-once evidence"
+    )
+execution = executions[0]
+execution_id = (
+    execution.findtext("m:id", default="", namespaces=namespace) or ""
+).strip()
+phase = (
+    execution.findtext("m:phase", default="", namespaces=namespace) or ""
+).strip()
+goals = [
+    (goal.text or "").strip()
+    for goal in execution.findall("m:goals/m:goal", namespace)
+]
+if execution_id != "default-test" or phase != "test" or goals != ["test"]:
+    raise SystemExit("profile-off effective POM Surefire lifecycle is not exact")
+for label, configuration in (
+    ("plugin", surefire_plugins[0].find("m:configuration", namespace)),
+    ("execution", execution.find("m:configuration", namespace)),
+):
+    if configuration is None:
+        continue
+    retry_values = configuration.findall("m:rerunFailingTestsCount", namespace)
+    if len(retry_values) > 1 or (
+        retry_values and (retry_values[0].text or "").strip() != "0"
+    ):
+        raise SystemExit(
+            f"profile-off effective POM Surefire {label} enables test retries"
+        )
 PY
+
+mvn -B -ntp -Dstyle.color=never \
+    -f "$ROUTECONTRACT_REACTOR_POM" \
+    "-Dmaven.repo.local=${consumer_cache}" \
+    -P=-routecontract-pilot \
+    -DskipTests=false \
+    -Dmaven.test.skip=false \
+    -Dmaven.test.failure.ignore=false \
+    -pl "$ROUTECONTRACT_REACTOR_SELECTOR" -am clean install >"$profile_log" 2>&1 \
+    || { report_suppressed_log; die "profile-off reactor build failed"; }
+assert_no_integrity_warning "$profile_log"
+
 validate_confined_path \
     "$ROUTECONTRACT_PROFILE_OFF_REPORT" "$routecontract_owning_target" \
     "profile-off Surefire report" regular
@@ -610,6 +870,11 @@ if len(matches) != 1:
     raise SystemExit(f"expected exactly one profile-off testcase, found {len(matches)}")
 if any(matches[0].findall(name) for name in ("failure", "error", "skipped")):
     raise SystemExit("profile-off testcase did not pass")
+if any(
+    root.findall(f".//{name}")
+    for name in ("rerunFailure", "rerunError", "flakyFailure", "flakyError")
+):
+    raise SystemExit("profile-off Surefire report contains retry evidence")
 PY
 test ! -e "${consumer_cache}/${group_path}/${artifact_id}" \
     || die "profile-off build unexpectedly resolved RouteContract"
@@ -625,6 +890,118 @@ mvn -B -ntp -Dstyle.color=never \
     "$checksum_algorithm_property" \
     -DskipTests=false \
     -Dmaven.test.skip=false \
+    -Dmaven.test.failure.ignore=false \
+    "-Dtest=${ROUTECONTRACT_TEST_CLASS}#${ROUTECONTRACT_TEST_METHOD}" \
+    org.apache.maven.plugins:maven-help-plugin:3.5.1:effective-pom \
+    >"$profile_on_effective_log" 2>&1 \
+    || { report_suppressed_log; die "profile-on effective POM generation failed"; }
+assert_no_integrity_warning "$profile_on_effective_log"
+extract_effective_pom "$profile_on_effective_log" "$profile_on_effective_pom"
+python3 -I - \
+    "$profile_on_effective_pom" \
+    "$routecontract_owning_directory" \
+    "$routecontract_owning_target" \
+    "$cached_jar" <<'PY'
+import pathlib
+import sys
+import xml.etree.ElementTree as ET
+
+path = pathlib.Path(sys.argv[1])
+if path.is_symlink() or not path.is_file():
+    raise SystemExit("profile-on effective POM is not a regular file")
+namespace = {"m": "http://maven.apache.org/POM/4.0.0"}
+root = ET.parse(path).getroot()
+owning_directory = pathlib.Path(sys.argv[2]).resolve(strict=True)
+owning_target = pathlib.Path(sys.argv[3])
+cached_jar = pathlib.Path(sys.argv[4])
+
+surefire_plugins = [
+    plugin
+    for plugin in root.findall("m:build/m:plugins/m:plugin", namespace)
+    if (plugin.findtext("m:artifactId", default="", namespaces=namespace) or "").strip()
+    == "maven-surefire-plugin"
+    and (plugin.findtext("m:groupId", default="", namespaces=namespace) or "").strip()
+    in {"", "org.apache.maven.plugins"}
+]
+if len(surefire_plugins) != 1:
+    raise SystemExit("profile-on effective POM must contain one Surefire plugin")
+surefire = surefire_plugins[0]
+executions = surefire.findall("m:executions/m:execution", namespace)
+if len(executions) != 1:
+    raise SystemExit(
+        "profile-on effective POM must contain one Surefire execution for "
+        "exactly-once evidence"
+    )
+execution = executions[0]
+execution_id = (
+    execution.findtext("m:id", default="", namespaces=namespace) or ""
+).strip()
+phase = (
+    execution.findtext("m:phase", default="", namespaces=namespace) or ""
+).strip()
+goals = [
+    (goal.text or "").strip()
+    for goal in execution.findall("m:goals/m:goal", namespace)
+]
+if execution_id != "default-test" or phase != "test" or goals != ["test"]:
+    raise SystemExit("profile-on effective POM Surefire lifecycle is not exact")
+
+expected = {
+    "reportsDirectory": str(owning_target / "surefire-reports"),
+    "reportNameSuffix": "",
+    "disableXmlReport": "false",
+    "promoteUserPropertiesToSystemProperties": "false",
+    "rerunFailingTestsCount": "0",
+}
+for configuration_label, configuration in (
+    ("plugin", surefire.find("m:configuration", namespace)),
+    ("execution", execution.find("m:configuration", namespace)),
+):
+    if configuration is None:
+        raise SystemExit(
+            f"profile-on effective POM Surefire {configuration_label} configuration is missing"
+        )
+    for name, expected_value in expected.items():
+        matches = configuration.findall(f"m:{name}", namespace)
+        if len(matches) != 1 or (matches[0].text or "").strip() != expected_value:
+            raise SystemExit(
+                "profile-on effective POM Surefire "
+                f"{configuration_label} {name} is not exact"
+            )
+    properties = configuration.findall("m:systemPropertyVariables", namespace)
+    if len(properties) != 1:
+        raise SystemExit(
+            "profile-on effective POM Surefire "
+            f"{configuration_label} system properties are ambiguous"
+        )
+    expected_properties = {
+        "routecontract.projectDir": str(owning_directory),
+        "routecontract.candidateRoot": "target/routecontract",
+        "routecontract.artifactJarName":
+            "routecontract-shardingsphere-5.5-0.1.2.jar",
+        "routecontract.artifactJarPath": str(cached_jar),
+    }
+    for name, expected_value in expected_properties.items():
+        matches = properties[0].findall(
+            f"{{{namespace['m']}}}{name}"
+        )
+        if len(matches) != 1 or (matches[0].text or "").strip() != expected_value:
+            raise SystemExit(
+                "profile-on effective POM Surefire "
+                f"{configuration_label} property {name} is not exact"
+            )
+PY
+
+mvn -B -ntp -Dstyle.color=never \
+    -f "$ROUTECONTRACT_OWNING_POM" \
+    "-Dmaven.repo.local=${consumer_cache}" \
+    -DroutecontractPilot=true \
+    "-DroutecontractRepositoryUrl=${repository_uri}" \
+    "-Droutecontract.artifactJarPath=${cached_jar}" \
+    "$checksum_algorithm_property" \
+    -DskipTests=false \
+    -Dmaven.test.skip=false \
+    -Dmaven.test.failure.ignore=false \
     "-Dtest=${ROUTECONTRACT_TEST_CLASS}#${ROUTECONTRACT_TEST_METHOD}" \
     org.apache.maven.plugins:maven-dependency-plugin:3.11.0:tree >"$graph_log" 2>&1 \
     || { report_suppressed_log; die "dependency graph resolution failed"; }
@@ -858,6 +1235,11 @@ if actual_counts != expected_counts:
 if len(cases) != 1 or cases[0].attrib.get("classname") != class_name \
         or cases[0].attrib.get("name") != method_name:
     raise SystemExit("the exact selected Surefire testcase did not run once")
+if any(
+    root.findall(f".//{name}")
+    for name in ("rerunFailure", "rerunError", "flakyFailure", "flakyError")
+):
+    raise SystemExit("selected Surefire testcase contains retry evidence")
 if outcome == "review":
     failures = cases[0].findall("failure")
     expected = (

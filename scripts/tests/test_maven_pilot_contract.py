@@ -434,6 +434,34 @@ class MavenPilotContractTest(unittest.TestCase):
         ):
             self.assertIn(exact_graph_assertion, self.verifier)
 
+    def test_first_integration_maven_profile_matches_the_verified_report_contract(self) -> None:
+        for required_fragment in (
+            "<artifactId>junit-jupiter</artifactId>",
+            "<version>5.14.3</version>",
+            "<artifactId>maven-compiler-plugin</artifactId>",
+            "<version>3.14.1</version>",
+            "<id>default-testCompile</id>",
+            "<phase>test-compile</phase>",
+            "<goal>testCompile</goal>",
+            "<release>17</release>",
+            "<testRelease>17</testRelease>",
+            "<artifactId>maven-surefire-plugin</artifactId>",
+            "<version>3.5.4</version>",
+            "<id>default-test</id>",
+            "<phase>test</phase>",
+            "<goal>test</goal>",
+            "<reportsDirectory>${project.basedir}/target/surefire-reports</reportsDirectory>",
+            '<reportNameSuffix combine.self="override"></reportNameSuffix>',
+            "<disableXmlReport>false</disableXmlReport>",
+            "<promoteUserPropertiesToSystemProperties>false"
+            "</promoteUserPropertiesToSystemProperties>",
+        ):
+            self.assertIn(required_fragment, self.guide)
+        self.assertEqual(
+            2,
+            self.guide.count("<rerunFailingTestsCount>0</rerunFailingTestsCount>"),
+        )
+
     def test_same_checkout_graph_parser_enforces_structural_coordinates(self) -> None:
         completed = self._run_graph_parser(VALID_GRAPH)
         self.assertEqual(0, completed.returncode, completed.stderr)

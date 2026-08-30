@@ -5,6 +5,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 
@@ -72,6 +73,67 @@ VALID_PROFILE_OFF_EFFECTIVE_POM = """\
           <execution>
             <configuration>
               <sources><source>src/generated/java</source></sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>default-test</id>
+            <phase>test</phase>
+            <goals><goal>test</goal></goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>
+"""
+VALID_PROFILE_ON_EFFECTIVE_POM = """\
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>example</groupId>
+  <artifactId>consumer</artifactId>
+  <version>1.0.0</version>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.5.4</version>
+        <configuration>
+          <reportsDirectory>${project.basedir}/target/surefire-reports</reportsDirectory>
+          <reportNameSuffix></reportNameSuffix>
+          <disableXmlReport>false</disableXmlReport>
+          <promoteUserPropertiesToSystemProperties>false</promoteUserPropertiesToSystemProperties>
+          <rerunFailingTestsCount>0</rerunFailingTestsCount>
+          <systemPropertyVariables>
+            <routecontract.projectDir>${project.basedir}</routecontract.projectDir>
+            <routecontract.candidateRoot>target/routecontract</routecontract.candidateRoot>
+            <routecontract.artifactJarName>routecontract-shardingsphere-5.5-0.1.2.jar</routecontract.artifactJarName>
+            <routecontract.artifactJarPath>${routecontract.artifactJarPath}</routecontract.artifactJarPath>
+          </systemPropertyVariables>
+        </configuration>
+        <executions>
+          <execution>
+            <id>default-test</id>
+            <phase>test</phase>
+            <goals><goal>test</goal></goals>
+            <configuration>
+              <reportsDirectory>${project.basedir}/target/surefire-reports</reportsDirectory>
+              <reportNameSuffix></reportNameSuffix>
+              <disableXmlReport>false</disableXmlReport>
+              <promoteUserPropertiesToSystemProperties>false</promoteUserPropertiesToSystemProperties>
+              <rerunFailingTestsCount>0</rerunFailingTestsCount>
+              <systemPropertyVariables>
+                <routecontract.projectDir>${project.basedir}</routecontract.projectDir>
+                <routecontract.candidateRoot>target/routecontract</routecontract.candidateRoot>
+                <routecontract.artifactJarName>routecontract-shardingsphere-5.5-0.1.2.jar</routecontract.artifactJarName>
+                <routecontract.artifactJarPath>${routecontract.artifactJarPath}</routecontract.artifactJarPath>
+              </systemPropertyVariables>
             </configuration>
           </execution>
         </executions>
@@ -150,6 +212,94 @@ class ExternalMavenIntegrationVerifierTest(unittest.TestCase):
             pom_path.write_text(source_pom, encoding="utf-8")
             return subprocess.run(
                 [sys.executable, "-I", "-c", parser, pom_path],
+                capture_output=True,
+                check=False,
+                text=True,
+            )
+
+    def _run_profile_on_effective_pom_parser(
+        self, effective_pom: str
+    ) -> subprocess.CompletedProcess[str]:
+        script = SCRIPT.read_text(encoding="utf-8")
+        marker = '    "$cached_jar" <<\'PY\'\n'
+        start = script.index(marker) + len(marker)
+        parser = script[start : script.index("\nPY\n", start)]
+        with tempfile.TemporaryDirectory() as temporary:
+            pom_path = Path(temporary) / "profile-on-effective-pom.xml"
+            owning_directory = pom_path.parent.resolve(strict=True)
+            owning_target = owning_directory / "target"
+            cached_jar = owning_directory / "cache" / "routecontract.jar"
+            materialized = effective_pom.replace(
+                "${project.basedir}", os.fspath(owning_directory)
+            ).replace(
+                "${routecontract.artifactJarPath}", os.fspath(cached_jar)
+            )
+            pom_path.write_text(materialized, encoding="utf-8")
+            return subprocess.run(
+                [
+                    sys.executable,
+                    "-I",
+                    "-c",
+                    parser,
+                    pom_path,
+                    owning_directory,
+                    owning_target,
+                    cached_jar,
+                ],
+                capture_output=True,
+                check=False,
+                text=True,
+            )
+
+    def _run_selected_report_parser(
+        self, *, retry_element: str | None = None
+    ) -> subprocess.CompletedProcess[str]:
+        script = SCRIPT.read_text(encoding="utf-8")
+        marker = '    "$ROUTECONTRACT_APPROVED_PATH" <<\'PY\'\n'
+        start = script.index(marker) + len(marker)
+        parser = script[start : script.index("\nPY\n", start)]
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            report = root / "TEST-pilot.xml"
+            candidate = root / "candidate.json"
+            approved = root / "approved.json"
+            suite = ET.Element(
+                "testsuite",
+                tests="1",
+                failures="1",
+                errors="0",
+                skipped="0",
+            )
+            case = ET.SubElement(
+                suite,
+                "testcase",
+                classname="example.ContractTest",
+                name="capturesCandidate",
+            )
+            ET.SubElement(
+                case,
+                "failure",
+                message=(
+                    f"No approved baseline. Review {candidate} and copy it to "
+                    f"{approved} only after human approval."
+                ),
+            )
+            if retry_element is not None:
+                ET.SubElement(case, retry_element)
+            report.write_bytes(ET.tostring(suite, encoding="utf-8"))
+            return subprocess.run(
+                [
+                    sys.executable,
+                    "-I",
+                    "-c",
+                    parser,
+                    "review",
+                    report,
+                    "example.ContractTest",
+                    "capturesCandidate",
+                    candidate,
+                    approved,
+                ],
                 capture_output=True,
                 check=False,
                 text=True,
@@ -339,6 +489,91 @@ class ExternalMavenIntegrationVerifierTest(unittest.TestCase):
         )
         self.assertEqual(0, completed.returncode, completed.stderr)
 
+    def test_effective_poms_enforce_single_surefire_invocation(self) -> None:
+        profile_on = self._run_profile_on_effective_pom_parser(
+            VALID_PROFILE_ON_EFFECTIVE_POM
+        )
+        self.assertEqual(0, profile_on.returncode, profile_on.stderr)
+
+        extra_execution = """\
+          <execution>
+            <id>second-test</id>
+            <phase>test</phase>
+            <goals><goal>test</goal></goals>
+          </execution>
+"""
+        profile_on_extra = self._run_profile_on_effective_pom_parser(
+            VALID_PROFILE_ON_EFFECTIVE_POM.replace(
+                "        </executions>",
+                extra_execution + "        </executions>",
+                1,
+            )
+        )
+        self.assertNotEqual(0, profile_on_extra.returncode)
+        self.assertIn("one Surefire execution", profile_on_extra.stderr)
+
+        profile_on_rerun = self._run_profile_on_effective_pom_parser(
+            VALID_PROFILE_ON_EFFECTIVE_POM.replace(
+                "<rerunFailingTestsCount>0</rerunFailingTestsCount>",
+                "<rerunFailingTestsCount>1</rerunFailingTestsCount>",
+                1,
+            )
+        )
+        self.assertNotEqual(0, profile_on_rerun.returncode)
+        self.assertIn("rerunFailingTestsCount is not exact", profile_on_rerun.stderr)
+
+        inherited_profile_off_execution = """\
+          <execution>
+            <id>second-test</id>
+            <phase>test</phase>
+            <goals><goal>test</goal></goals>
+          </execution>
+"""
+        profile_off_extra = self._run_effective_pom_parser(
+            VALID_PROFILE_OFF_EFFECTIVE_POM.replace(
+                "            <goals><goal>test</goal></goals>\n"
+                "          </execution>\n"
+                "        </executions>\n"
+                "      </plugin>\n"
+                "    </plugins>",
+                "            <goals><goal>test</goal></goals>\n"
+                "          </execution>\n"
+                + inherited_profile_off_execution
+                + "        </executions>\n"
+                "      </plugin>\n"
+                "    </plugins>",
+                1,
+            )
+        )
+        self.assertNotEqual(0, profile_off_extra.returncode)
+        self.assertIn("one Surefire execution", profile_off_extra.stderr)
+
+        profile_off_retry_property = self._run_effective_pom_parser(
+            VALID_PROFILE_OFF_EFFECTIVE_POM.replace(
+                "  <modelVersion>4.0.0</modelVersion>",
+                "  <modelVersion>4.0.0</modelVersion>\n"
+                "  <properties><surefire.rerunFailingTestsCount>1"
+                "</surefire.rerunFailingTestsCount></properties>",
+                1,
+            )
+        )
+        self.assertNotEqual(0, profile_off_retry_property.returncode)
+        self.assertIn("enables Surefire test retries", profile_off_retry_property.stderr)
+
+    def test_selected_report_rejects_retry_evidence(self) -> None:
+        accepted = self._run_selected_report_parser()
+        self.assertEqual(0, accepted.returncode, accepted.stderr)
+        for element in (
+            "rerunFailure",
+            "rerunError",
+            "flakyFailure",
+            "flakyError",
+        ):
+            with self.subTest(element=element):
+                rejected = self._run_selected_report_parser(retry_element=element)
+                self.assertNotEqual(0, rejected.returncode)
+                self.assertIn("retry evidence", rejected.stderr)
+
     def test_source_pom_accepts_exact_profile_nesting(self) -> None:
         completed = self._run_source_pom_parser(VALID_SOURCE_POM)
         self.assertEqual(0, completed.returncode, completed.stderr)
@@ -449,6 +684,11 @@ class ExternalMavenIntegrationVerifierTest(unittest.TestCase):
                 "</routecontract.candidateRoot>",
                 "<routecontract.candidateRoot>target/other"
                 "</routecontract.candidateRoot>",
+                1,
+            ),
+            "Surefire retry count changed": VALID_SOURCE_POM.replace(
+                "<rerunFailingTestsCount>0</rerunFailingTestsCount>",
+                "<rerunFailingTestsCount>1</rerunFailingTestsCount>",
                 1,
             ),
             "RouteContract dependency escaped": VALID_SOURCE_POM.replace(
@@ -758,7 +998,7 @@ class ExternalMavenIntegrationVerifierTest(unittest.TestCase):
 
     def test_profile_off_rejects_failure_ignored_suite(self) -> None:
         script = SCRIPT.read_text(encoding="utf-8")
-        self.assertEqual(2, script.count("-Dmaven.test.failure.ignore=false"))
+        self.assertEqual(5, script.count("-Dmaven.test.failure.ignore=false"))
         passing = (
             '<testsuite tests="1" failures="0" errors="0" skipped="0">'
             '<testcase classname="example.BusinessTest" name="passes"/>'
@@ -776,6 +1016,20 @@ class ExternalMavenIntegrationVerifierTest(unittest.TestCase):
         completed = self._run_profile_parser(failing_suite)
         self.assertNotEqual(0, completed.returncode)
         self.assertIn("suite contains a failure or error", completed.stderr)
+
+        for element in (
+            "rerunFailure",
+            "rerunError",
+            "flakyFailure",
+            "flakyError",
+        ):
+            with self.subTest(element=element):
+                retry_suite = passing.replace(
+                    "/>", f"><{element}/></testcase>", 1
+                )
+                completed = self._run_profile_parser(retry_suite)
+                self.assertNotEqual(0, completed.returncode)
+                self.assertIn("retry evidence", completed.stderr)
 
 
 if __name__ == "__main__":

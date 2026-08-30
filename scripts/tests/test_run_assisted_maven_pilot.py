@@ -219,6 +219,8 @@ class AssistedMavenPilotWrapperTest(unittest.TestCase):
             "nonstring": json.dumps({**valid, "operationId": 7}).encode(),
             "invalid utf8": b"\xff",
             "control": json.dumps({**valid, "operationId": "bad\nvalue"}).encode(),
+            "format": json.dumps({**valid, "operationId": "bad\u202evalue"}).encode(),
+            "surrogate": json.dumps({**valid, "projectRoot": "\ud800"}).encode(),
             "not nfc": json.dumps(
                 {**valid, "operationId": "e\N{COMBINING ACUTE ACCENT}"}
             ).encode(),
@@ -230,6 +232,21 @@ class AssistedMavenPilotWrapperTest(unittest.TestCase):
                 path.write_bytes(payload)
                 with self.assertRaises(self.module.AssistedPilotError):
                     self.module.load_config(path)
+
+    def test_private_writer_rejects_zero_progress(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            target = Path(temporary).resolve(strict=True) / "private.bin"
+            with mock.patch.object(self.module.os, "write", return_value=0):
+                with self.assertRaisesRegex(
+                    self.module.AssistedPilotError,
+                    "write made no progress",
+                ):
+                    self.module._write_private_bytes(target, b"payload", 0o600)
+        with self.assertRaisesRegex(
+            self.module.AssistedPilotError,
+            "config path contains an unsafe Unicode character",
+        ):
+            self.module.load_config(Path("\ud800"))
 
     def test_rejects_oversized_or_symlink_config(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

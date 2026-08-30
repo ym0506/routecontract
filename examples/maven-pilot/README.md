@@ -109,3 +109,75 @@ and inspect the repository afterward if the host or process is forcibly terminat
 The external integration guide must continue to require a person to review and approve a real
 repository's candidate. Never reuse this fixture's candidate, alias, policy, or synthetic copy as
 another repository's baseline.
+
+## Review-only starter bundle
+
+`scripts/render-maven-pilot-starter.py` reduces the mechanical first-pass work for a narrow Maven
+target without touching that target. It supports only a clean Git worktree at an exact commit,
+Java 17, Apache Maven 3.9.14, exactly ShardingSphere-JDBC 5.5.3, and the existing isolated
+`routecontract-pilot` semantics. It is not a general POM merger or operation detector.
+
+Copy [`starter.example.json`](starter.example.json) outside the target repository, replace the
+target-specific paths, commit/POM digests, test and Java identifiers, operation, budgets, aliases,
+and dependency scope, and bind `expectedTargetCommit` and `expectedPomSha256` to the clean target
+checkout. Preserve `schemaVersion`, `profileOffTestShape`, and the four exact tool/dependency
+version fields; the renderer rejects any drift in those fixed boundary values.
+The target root and owning module must both have tracked, mode-`100644` POMs. The strict JSON rejects
+duplicate or unknown keys, unsupported versions, unsafe Java/path identifiers, alias collisions,
+ambiguous or pre-existing pilot configuration, symlink traversal, a dirty/moved target, and stale
+candidate, test, or baseline paths.
+
+Choose a new absent output directory outside the target under an existing canonical directory that
+you own, that is not group- or other-writable, and that has no macOS extended ACL, then run from
+this RouteContract checkout:
+
+```bash
+python3 -I scripts/render-maven-pilot-starter.py \
+  --config /absolute/path/to/routecontract-maven-starter.json \
+  --output /absolute/path/to/new-routecontract-review-bundle
+```
+
+The exact success marker is:
+
+```text
+ROUTECONTRACT_MAVEN_PILOT_STARTER targetCommit=<40-hex> manifestSha256=<64-hex> files=5 VERIFIED
+```
+
+The mode-`0700` bundle contains five mode-`0600` files:
+
+- `routecontract-pilot.patch`: a deterministic two-path review patch for the owning POM and one new
+  pilot test;
+- `assisted-pilot.json`: the existing six-field runner input; it is host-local because it retains
+  the target's absolute `projectRoot`, so do not commit it or copy it to another checkout;
+- `pilot-spec.json`: normalized review inputs, including sorted aliases and explicit budgets; it
+  retains the same host-local absolute `projectRoot`, so review it but do not commit or copy it;
+- `NEXT-STEPS.md`: the candidate → human review → matched-check sequence;
+- `bundle-manifest.json`: a generation-time target record, template hashes, output hashes, and an
+  explicit `baselineGenerated: false` statement. It is not a consume-time guard: immediately
+  before review or application, require the same clean commit and owning-POM SHA-256 or rerun the
+  generator.
+
+Retain the success marker separately from the bundle. Before consuming the output, require the
+SHA-256 of `bundle-manifest.json` to equal its `manifestSha256` field and verify every byte count and
+SHA-256 under `generatedFiles`. This detects a named output directory replaced after rendering.
+
+The generated Java test contains `ROUTECONTRACT_STARTER_REVIEW_REQUIRED` inside its capture block.
+It therefore cannot create a candidate or accidentally pass until a target maintainer replaces that
+single fail-closed statement with one supported operation and preserves the operation's existing
+business assertion. The generator never applies the patch, runs target code, creates or copies a
+baseline, claims approval, or changes the target repository's Git status. Review the bundle's
+`NEXT-STEPS.md` before any manual target action. A successful render is `verified - unit` evidence about bundle generation,
+not MySQL evidence, an external integration, adoption, or endorsement.
+
+The selected `profileOffTest` is restricted to one ordinary, non-parameterized Surefire testcase;
+declare that shape explicitly in the strict config. The isolated profile pins JUnit Jupiter,
+test compilation at Java 17, and the default XML report path/name expected by the existing runner.
+The reactor and owning POMs must not customize the build directory or Surefire report directory,
+report suffix, or XML-report setting. Their effective inherited model must likewise preserve the
+default `target/surefire-reports/TEST-<fully-qualified-class>.xml` layout; if the wrapper cannot
+observe that exact layout, stop instead of treating a missing report as evidence. The generator
+checks every canonical tracked local parent POM between the owning module and reactor root. An
+external parent above the reactor root remains an explicit consume-time compatibility boundary;
+the wrapper's exact report requirement is the final fail-closed check.
+Any nonzero renderer exit makes every file at the requested output path invalid; never use a
+partial or concurrently changed directory.
