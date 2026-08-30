@@ -7,6 +7,25 @@ RouteContract follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) a
 
 No changes yet.
 
+## [0.1.2]
+
+This section records the narrow recovery source delta prepared for stable version `0.1.2`. Its
+presence alone does not prove that an annotated tag, public immutable non-prerelease Release,
+same-revision release-evidence run, Maven Central publication, or external-user result exists.
+
+### Changed
+
+- Refresh the pinned official Maven OSV database generation after the `v0.1.1` exact-tag evidence
+  attempt stopped before Release creation because its pinned official generation returned HTTP 404.
+- Advance only the release-target source identity and its corresponding README declarations from
+  `0.1.1` / `v0.1.1` to `0.1.2` / `v0.1.2`; runtime and API behavior are unchanged.
+
+### Boundaries
+
+- The annotated `v0.1.1` tag is preserved and unmoved, and no `v0.1.1` GitHub Release was published.
+- This recovery refreshes the external OSV evidence input and source identity only; it makes no claim
+  of Maven Central availability, external users, adoption, production use, or endorsement.
+
 ## [0.1.1]
 
 This section records the source delta prepared for stable version `0.1.1`. Its presence alone does not prove
