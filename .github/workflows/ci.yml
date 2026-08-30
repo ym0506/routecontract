@@ -539,6 +539,157 @@ jobs:
           if-no-files-found: warn
           retention-days: 90
 
+  gradle95-build-shape:
+    name: Gradle 9.5.1 / JDK 21 to 17 / Boot BOM isolation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up exact pilot JDK 17
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: '17.0.20+101'
+          architecture: x64
+          verify-signature: true
+
+      - name: Capture exact JDK 17 home before switching runtimes
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(java -XshowSettings:properties -version 2>&1 \
+            | sed -n 's/^[[:space:]]*java.specification.version = //p')" = '17'
+          printf 'ROUTECONTRACT_BUILD_SHAPE_JDK17_HOME=%s\n' "${JAVA_HOME}" \
+            >> "${GITHUB_ENV}"
+
+      - name: Set up exact Gradle and target JDK 21
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: '21.0.12+8.0.LTS'
+          architecture: x64
+          verify-signature: true
+
+      - name: Verify the active JDK 21 runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(java -XshowSettings:properties -version 2>&1 \
+            | sed -n 's/^[[:space:]]*java.specification.version = //p')" = '21'
+          test -x "${ROUTECONTRACT_BUILD_SHAPE_JDK17_HOME}/bin/java"
+          test "$("${ROUTECONTRACT_BUILD_SHAPE_JDK17_HOME}/bin/java" \
+            -XshowSettings:properties -version 2>&1 \
+            | sed -n 's/^[[:space:]]*java.specification.version = //p')" = '17'
+
+      - name: Set up exact Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12.14'
+          architecture: x64
+          check-latest: false
+
+      - name: Validate both Gradle wrappers
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          dependency-graph: disabled
+          validate-wrappers: true
+
+      - name: Download and verify exact v0.1.2 assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          asset_dir="${RUNNER_TEMP}/routecontract-gradle95-assets"
+          evidence_dir="${RUNNER_TEMP}/routecontract-gradle95-evidence"
+          release_base="https://github.com/ym0506/routecontract/releases/download/v0.1.2"
+          expected_index_sha256="7849adf417f0170b08d01902b023e8b328d8796f7c2aeacc471eb7acf8e2b217"
+          assets=(
+            SHA256SUMS
+            routecontract-0.1.2-source.zip
+            routecontract-shardingsphere-5.5-0.1.2.jar
+            routecontract-shardingsphere-5.5-0.1.2-sources.jar
+            routecontract-shardingsphere-5.5-0.1.2-javadoc.jar
+            routecontract-shardingsphere-5.5.pom
+            routecontract-shardingsphere-5.5-cyclonedx.json
+            routecontract-shardingsphere-5.5-cyclonedx.xml
+            routecontract-aggregate-cyclonedx.json
+            routecontract-aggregate-cyclonedx.xml
+            supply-chain-evidence.json
+            test-summary.txt
+          )
+          test ! -e "${asset_dir}"
+          test ! -e "${evidence_dir}"
+          mkdir "${asset_dir}" "${evidence_dir}"
+          for asset in "${assets[@]}"; do
+            curl --disable --proto '=https' --tlsv1.2 --fail --location \
+              --silent --show-error --retry 3 --connect-timeout 15 --max-time 300 \
+              --remove-on-error --max-filesize 5242880 \
+              --output "${asset_dir}/${asset}" "${release_base}/${asset}"
+          done
+          test "$(sha256sum "${asset_dir}/SHA256SUMS" | awk '{print $1}')" = \
+            "${expected_index_sha256}"
+          {
+            printf '%s  SHA256SUMS\n' "${expected_index_sha256}"
+            cat "${asset_dir}/SHA256SUMS"
+          } > "${evidence_dir}/release-assets.sha256"
+          (
+            cd "${asset_dir}"
+            sha256sum --check --strict "${evidence_dir}/release-assets.sha256"
+          ) > "${evidence_dir}/release-assets-check.txt"
+          printf 'ROUTECONTRACT_BUILD_SHAPE_ASSETS=%s\n' "${asset_dir}" \
+            >> "${GITHUB_ENV}"
+          printf 'ROUTECONTRACT_BUILD_SHAPE_EVIDENCE=%s\n' "${evidence_dir}" \
+            >> "${GITHUB_ENV}"
+
+      - name: Verify the two exact build-shape cells
+        shell: bash
+        timeout-minutes: 25
+        run: |
+          set -euo pipefail
+          summary="${ROUTECONTRACT_BUILD_SHAPE_EVIDENCE}/summary.txt"
+          partial="${summary}.partial"
+          receipt="${ROUTECONTRACT_BUILD_SHAPE_EVIDENCE}/build-shape-receipt.json"
+          test -z "$(git status --porcelain=v1 --untracked-files=all \
+            --ignore-submodules=none)"
+          set +e
+          ./scripts/verify-gradle95-build-shape.sh \
+            --release-assets-dir "${ROUTECONTRACT_BUILD_SHAPE_ASSETS}" \
+            --jdk17-home "${ROUTECONTRACT_BUILD_SHAPE_JDK17_HOME}" \
+            --receipt-output "${receipt}" > "${partial}" 2>&1
+          status="$?"
+          set -e
+          cat "${partial}"
+          if test "${status}" != 0; then
+            exit "${status}"
+          fi
+          mv "${partial}" "${summary}"
+          test -s "${receipt}"
+          test "$(grep -c '^ROUTECONTRACT_GRADLE95_BUILD_SHAPE_VERIFY ' \
+            "${summary}")" = 1
+          python3 -I scripts/validate-gradle95-build-shape-receipt.py \
+            "${receipt}" \
+            > "${ROUTECONTRACT_BUILD_SHAPE_EVIDENCE}/receipt-validation.txt"
+          (
+            cd "${ROUTECONTRACT_BUILD_SHAPE_EVIDENCE}"
+            sha256sum summary.txt build-shape-receipt.json receipt-validation.txt \
+              > verifier-evidence.sha256
+          )
+          test -z "$(git status --porcelain=v1 --untracked-files=all \
+            --ignore-submodules=none)"
+
+      - name: Upload Gradle 9.5.1 build-shape evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: routecontract-gradle95-build-shape-${{ github.sha }}
+          path: ${{ runner.temp }}/routecontract-gradle95-evidence/
+          if-no-files-found: warn
+          retention-days: 90
+
   dependency-review:
     name: Dependency review
     if: github.event_name == 'pull_request'
