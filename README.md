@@ -208,7 +208,7 @@ datasource-proxy도 충분히 신뢰할 수 있는 직접 구현 대안입니다
 | 혼합 자동화 | `scripts/`, `.github/workflows/`, `security/`, `gradle/` | `scripts/`에는 사용자용 Quick Start·Release-asset 설치 도구와 maintainer용 release·공급망·시연 검증 도구가 함께 있다. 모두 consumer runtime API는 아니다. |
 | 검증·제출 보조 | `submission/`, `scripts/video-demo-session.sh`, `docs/evidence-matrix.md` | 증거 추적·결과보고서·재현 패키징 자료이며 배포 제품이 아니다. |
 
-이 소스는 안정판 대상 project version `0.1.0`과 대응 tag 이름 `v0.1.0`을 선언합니다.
+이 소스는 안정판 대상 project version `0.1.1`과 대응 tag 이름 `v0.1.1`을 선언합니다.
 이 버전 문자열이나 checkout만으로 annotated tag, 공개·불변 non-prerelease
 Release, 동일 revision의 release-evidence run 또는 외부 사용자 결과를 증명하지는 않습니다.
 공개 자산은 [릴리스 절차](RELEASING.md)에 따라 tag·Release·evidence run의 revision 일치와
