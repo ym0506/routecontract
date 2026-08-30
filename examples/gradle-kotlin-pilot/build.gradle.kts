@@ -7,7 +7,7 @@ import java.util.HexFormat as JHexFormat
 plugins { java }
 
 group = "io.github.ym0506.routecontract.examples"
-version = "0.1.0"
+version = "0.1.2"
 
 repositories { mavenCentral() }
 
@@ -66,6 +66,8 @@ tasks.withType<org.gradle.api.tasks.compile.JavaCompile>().configureEach {
 tasks.test {
     useJUnitPlatform()
     maxParallelForks = 1
+    systemProperty("user.home", System.getenv("HOME"))
+    systemProperty("java.io.tmpdir", System.getenv("TMPDIR"))
     systemProperty("routecontract.projectDir", projectDir.absolutePath)
     testLogging {
         events("passed", "skipped", "failed")
@@ -81,11 +83,11 @@ val routeContractPilotEnabled = providers.gradleProperty("routecontractPilot")
 
 if (routeContractPilotEnabled.get()) {
     val expectedRouteContractCoordinate =
-        "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0"
+        "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.2"
     val expectedRouteContractJarSha256 =
         "d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc"
     val expectedRouteContractPomSha256 =
-        "05570bfa238ef77db255a46efdd5bbb25e994ae0137db86491a46a25e28deac9"
+        "70b5d4161d1532e9f9cb699071790a7806d87658511d931477544fa06037b85d"
     val routeContractRepository = providers.gradleProperty("routecontractRepository")
         .orElse(providers.environmentVariable("ROUTECONTRACT_REPOSITORY"))
     if (!routeContractRepository.isPresent || routeContractRepository.get().isBlank()) {
@@ -119,13 +121,13 @@ if (routeContractPilotEnabled.get()) {
         )
     }
     val routeContractCoordinateDirectory = routeContractRepositoryRoot.resolve(
-        "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.0"
+        "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.2"
     ).normalize()
     val routeContractRepositoryJar = routeContractCoordinateDirectory.resolve(
-        "routecontract-shardingsphere-5.5-0.1.0.jar"
+        "routecontract-shardingsphere-5.5-0.1.2.jar"
     )
     val routeContractRepositoryPom = routeContractCoordinateDirectory.resolve(
-        "routecontract-shardingsphere-5.5-0.1.0.pom"
+        "routecontract-shardingsphere-5.5-0.1.2.pom"
     )
 
     repositories {
@@ -286,7 +288,7 @@ if (routeContractPilotEnabled.get()) {
         if (declaredDependencies.size != 1 || declaredDependencies.any { dependency ->
                 dependency.group != "io.github.ym0506.routecontract" ||
                     dependency.name != "routecontract-shardingsphere-5.5" ||
-                    dependency.version != "0.1.0"
+                    dependency.version != "0.1.2"
             }
         ) {
             throw GradleException(
@@ -311,7 +313,7 @@ if (routeContractPilotEnabled.get()) {
             ?: throw GradleException("RouteContract origin selection must be a module component")
         if (requestedModule.group != "io.github.ym0506.routecontract" ||
             requestedModule.module != "routecontract-shardingsphere-5.5" ||
-            requestedModule.version != "0.1.0" ||
+            requestedModule.version != "0.1.2" ||
             selectedModule.group != requestedModule.group ||
             selectedModule.module != requestedModule.module ||
             selectedModule.version != requestedModule.version
@@ -325,7 +327,7 @@ if (routeContractPilotEnabled.get()) {
             originArtifacts,
             "io.github.ym0506.routecontract",
             "routecontract-shardingsphere-5.5",
-            "0.1.0"
+            "0.1.2"
         ).single()
         listOf(
             "JAR" to routeContractRepositoryJar,
@@ -456,7 +458,7 @@ if (routeContractPilotEnabled.get()) {
             artifacts,
             "io.github.ym0506.routecontract",
             "routecontract-shardingsphere-5.5",
-            "0.1.0"
+            "0.1.2"
         )
         val jackson2 = artifacts.filter { artifact ->
             val artifactGroup = artifact.moduleVersion.id.group
@@ -603,6 +605,8 @@ if (routeContractPilotEnabled.get()) {
         }
         useJUnitPlatform()
         maxParallelForks = 1
+        systemProperty("user.home", System.getenv("HOME"))
+        systemProperty("java.io.tmpdir", System.getenv("TMPDIR"))
         systemProperty("routecontract.projectDir", projectDir.absolutePath)
         systemProperty("routecontract.candidateRoot", "build/routecontract")
         systemProperty(
@@ -628,7 +632,7 @@ if (routeContractPilotEnabled.get()) {
         )
         systemProperty(
             "routecontract.artifactJarName",
-            "routecontract-shardingsphere-5.5-0.1.0.jar"
+            "routecontract-shardingsphere-5.5-0.1.2.jar"
         )
         doFirst {
             val artifactPath = verifyRouteContractPilotGraph()

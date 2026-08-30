@@ -2,8 +2,8 @@
 
 This internal fixture exercises the inactive-by-default Gradle Kotlin DSL lane documented in
 `docs/first-integration.md`. The default test graph has no RouteContract repository or dependency.
-The opt-in source set resolves the exact installed `v0.1.0` Release GAV
-`io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0` through an exclusive
+The opt-in source set resolves the exact installed `v0.1.2` Release GAV
+`io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.2` through an exclusive
 absolute local Maven repository, verifies the canonical coordinate JAR and POM paths and SHA-256
 values, class origin, and reviewed dependency graph, and runs one synchronous
 ShardingSphere-JDBC 5.5.3 operation against the digest-pinned MySQL 8.4.11 image. That
@@ -24,23 +24,28 @@ repositories { mavenCentral() }
 ```
 
 The target must have a preinstalled JDK 17. This fixture deliberately does not install or provision
-a JDK and therefore is not proof that a Java-21-only target such as the current HsinDumas checkout
-is ready. The repository property must be an absolute, real local directory with no symlink path
+a JDK and therefore is not proof that a different Java-21-only target is ready. The repository
+property must be an absolute, real local directory with no symlink path
 components; a `file:` URI is not accepted.
 
 The verifier bootstraps one immutable, wrapper-pinned Gradle 8.14.4 tool distribution, then gives
-every independent semantic case a distinct Gradle user home and project cache that are absent when
-that case starts. An origin-only, non-transitive configuration resolves the exact RouteContract GAV
-offline from a fresh cache, which proves that this module cannot fall back to a remote repository.
+every independent semantic case a distinct HOME, temporary directory, Gradle user home, and
+project cache under an `env -i` allowlist. An origin-only, non-transitive configuration resolves
+the exact RouteContract GAV offline from a fresh cache. A valid ordinary decoy cannot rescue an
+incomplete designated repository, and a poisoned ordinary decoy is ignored when the designated
+repository is valid, proving the exclusive-content boundary rather than relying on offline mode.
 The full selected-invariant graph and MySQL run remain online; this lane does not claim a locked,
 hermetic closure. The verifier proves marker-only compilation, rejects relative and symlink-backed
 repositories plus wrong, missing-metadata, POM-tampered, and JAR-tampered GAV layouts, proves a
-missing-baseline failure, and proves a separate synthetic match in a temporary copy. That copy is
-test scaffolding, not human approval or external adoption. Run from the repository root:
+pre-operation runtime origin/hash check, proves a missing-baseline failure, and proves a separate
+synthetic match in a temporary copy. The path-free output receipt discloses that runtime paths and
+artifact copies are deleted on exit; it keeps their hashes and the candidate/JUnit evidence hashes
+without pretending the temporary files remain. That copy is test scaffolding, not human approval
+or external adoption. Run from the repository root:
 
 ```bash
 ./scripts/verify-gradle-kotlin-pilot.sh \
-  --release-assets-dir /absolute/path/to/the/exact-v0.1.0-release-assets \
+  --release-assets-dir /absolute/path/to/the/exact-v0.1.2-release-assets \
   --provenance-output /absolute/path/to/an/absent/provenance.json
 ```
 

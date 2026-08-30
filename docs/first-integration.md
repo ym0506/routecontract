@@ -485,7 +485,7 @@ Platform 1.14.3 dependencies. The complete fixture has been exercised with the r
 SHA-256-pinned Gradle 8.14.4 wrapper, Java 17, and the digest-pinned MySQL 8.4.11 image. This does
 not claim compatibility with another Gradle release.
 
-Run the internal verifier against an already downloaded exact `v0.1.0` Release-asset directory:
+Run the internal verifier against an already downloaded exact `v0.1.2` Release-asset directory:
 
 ```bash
 ./scripts/verify-gradle-kotlin-pilot.sh \
@@ -500,9 +500,9 @@ local filesystem directory whose real path is identical and contains no symlink 
 pass a `file:` URI. The exact coordinate JAR must also be a real regular file below that directory.
 The pilot task independently requests a Java 17 launcher and compiler but does not provision a
 JDK. A preinstalled JDK 17 is required. If the target has only a newer toolchain, stop and report
-that fit blocker rather than claiming this fixture covers it; in particular, this local fixture is
-not evidence that the current Java-21 HsinDumas checkout is integrated. Do not lower the normal
-toolchain merely to make this pilot pass.
+that fit blocker rather than claiming this fixture covers it. A passing local fixture is not
+evidence that a different Java-21-only target is integrated. Do not lower the normal toolchain
+merely to make this pilot pass.
 
 Use the same reusable Gradle commands and success marker as the Groovy lane, replacing
 `:owning-module` with the actual project path:
@@ -523,14 +523,20 @@ ROUTECONTRACT_REPOSITORY=/absolute/real/path/to/routecontract-maven \
 
 The checked-in fixture bootstraps one immutable wrapper-pinned Gradle 8.14.4 distribution, then
 gives the marker, repository-path, GAV-negative, profile-off, GAV-origin, graph, missing-baseline,
-and matched cases separate Gradle user homes and project caches that are absent at case start. A
-fresh-cache offline, origin-only, non-transitive configuration proves exact RouteContract GAV
-selection without remote fallback. It rejects wrong, missing-metadata, POM-tampered, and
-JAR-tampered local GAV layouts before accepting the exact opt-in graph. The full dependency graph
-and MySQL operation remain online and enforce the listed selected invariants; this is not a claim of
-a locked, hermetic full dependency closure. The preserved JSON provenance records the requested and
-selected GAV, canonical JAR/POM paths and hashes, and in-JVM API/provider/SPI origins while keeping
-`externalUser`, `humanApprovedBaseline`, and `adoption` false. The synthetic copy remains CI
+and matched cases separate HOME, temporary, Gradle-user-home, and project-cache directories under
+an `env -i` allowlist. An origin-only, non-transitive fresh-cache configuration proves exact
+RouteContract GAV selection. A valid ordinary decoy cannot rescue an incomplete designated
+repository, and a poisoned ordinary decoy is ignored when the designated repository is valid. It
+also rejects wrong, missing-metadata, POM-tampered, and JAR-tampered designated GAV layouts before
+accepting the exact opt-in graph. The full dependency graph and MySQL operation remain online and
+enforce the listed selected invariants; this is not a claim of a locked, hermetic full dependency
+closure. The test JVM verifies the JAR/POM hashes and API/provider/SPI origins before MySQL or the
+representative RouteContract operation starts, and rehashes immediately around that operation.
+The live runtime observation uses temporary paths and is validated before cleanup. The preserved
+path-free JSON receipt records exact artifact identities, toolchain/wrapper pins, source-binding
+status, candidate/JUnit/runtime-observation hashes, and the deletion boundary; it does not claim
+that the temporary JAR, POM, caches, or reports remain available. It keeps `externalUser`,
+`humanApprovedBaseline`, `adoption`, and `endorsement` false. The synthetic copy remains CI
 scaffolding rather than human approval or external adoption. A target repository that only runs H2,
 including H2 `MODE=MySQL`, still has only `verified - H2` evidence;
 that mode does not satisfy the published MySQL 8.4.11 boundary.

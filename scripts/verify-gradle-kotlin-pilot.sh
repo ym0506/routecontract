@@ -8,14 +8,15 @@ fixture_source="$repository_root/examples/gradle-kotlin-pilot"
 installer="$script_directory/install-release-assets.py"
 provenance_validator="$script_directory/validate-gradle-kotlin-pilot-provenance.py"
 expected_jar_sha256="d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc"
-expected_pom_sha256="05570bfa238ef77db255a46efdd5bbb25e994ae0137db86491a46a25e28deac9"
+expected_pom_sha256="70b5d4161d1532e9f9cb699071790a7806d87658511d931477544fa06037b85d"
+expected_wrapper_jar_sha256="7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172"
 
 usage() {
     cat <<'EOF'
 Usage: ./scripts/verify-gradle-kotlin-pilot.sh --release-assets-dir /absolute/path \
   [--provenance-output /absolute/absent/file.json]
 
-The directory must contain the exact immutable v0.1.0 GitHub Release asset
+The directory must contain the exact immutable v0.1.2 GitHub Release asset
 inventory. The verifier installs it into an absent temporary Maven repository,
 runs the profile-off fixture, verifies the Kotlin DSL graph, verifies the
 missing-baseline failure, and proves a separate synthetic candidate match.
@@ -35,6 +36,10 @@ sha256_file() {
     python3 -I -c \
         'import hashlib,pathlib,sys; print(hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes()).hexdigest())' \
         "$1"
+}
+
+file_size() {
+    python3 -I -c 'import pathlib,sys; print(pathlib.Path(sys.argv[1]).stat().st_size)' "$1"
 }
 
 lstat_identity() {
@@ -238,10 +243,33 @@ for command in docker java ln python3 tar; do
         || die "required command is missing: $command"
 done
 for path in "$repository_root/gradlew" "$installer" "$provenance_validator" \
+    "$repository_root/gradle/wrapper/gradle-wrapper.jar" \
+    "$repository_root/gradle/wrapper/gradle-wrapper.properties" \
     "$fixture_source/build.gradle.kts"; do
     test -f "$path" || die "required regular file is missing: $path"
     test ! -L "$path" || die "required file must not be a symbolic link: $path"
 done
+wrapper_jar_sha256="$(sha256_file "$repository_root/gradle/wrapper/gradle-wrapper.jar")"
+test "$wrapper_jar_sha256" = "$expected_wrapper_jar_sha256" \
+    || die "Gradle wrapper JAR SHA-256 is not the exact reviewed value"
+python3 -I - "$repository_root/gradle/wrapper/gradle-wrapper.properties" <<'PY'
+import pathlib
+import sys
+
+path = pathlib.Path(sys.argv[1])
+expected = (
+    "distributionBase=GRADLE_USER_HOME\n"
+    "distributionPath=wrapper/dists\n"
+    "distributionUrl=https\\://services.gradle.org/distributions/gradle-8.14.4-bin.zip\n"
+    "distributionSha256Sum=f1771298a70f6db5a29daf62378c4e18a17fc33c9ba6b14362e0cdf40610380d\n"
+    "networkTimeout=10000\n"
+    "validateDistributionUrl=true\n"
+    "zipStoreBase=GRADLE_USER_HOME\n"
+    "zipStorePath=wrapper/dists\n"
+)
+if path.read_text(encoding="utf-8") != expected:
+    raise SystemExit("Gradle wrapper properties are not the exact reviewed bytes")
+PY
 test ! -e "$fixture_source/src/routeContractPilot/resources/route-contracts/orders.find-by-user-id.json" \
     || die "source fixture must not contain an approved or synthetic baseline"
 test ! -L "$fixture_source/src/routeContractPilot/resources/route-contracts/orders.find-by-user-id.json" \
@@ -255,10 +283,33 @@ PY
 java_version="$(java -version 2>&1)"
 printf '%s\n' "$java_version" | grep -Eq '^(openjdk|java) version "17\.' \
     || die "the Gradle Kotlin pilot must run on Java 17"
+verified_java_home="$(java -XshowSettings:properties -version 2>&1 \
+    | sed -n 's/^[[:space:]]*java.home = //p')"
+test -n "$verified_java_home" \
+    || die "could not resolve the verified Java 17 home"
+verified_java_home="$(cd -- "$verified_java_home" && pwd -P)"
+test -x "$verified_java_home/bin/java" && test ! -L "$verified_java_home/bin/java" \
+    || die "the verified Java 17 executable is not one real executable file"
+test "$("$verified_java_home/bin/java" -fullversion 2>&1)" = "$(java -fullversion 2>&1)" \
+    || die "the canonical Java home does not match the verified Java command"
 docker info >/dev/null
+resolved_docker_host="$(docker context inspect --format '{{.Endpoints.docker.Host}}')"
+case "$resolved_docker_host" in
+    unix:///*) ;;
+    *) die "the isolated verifier requires a local unix Docker endpoint" ;;
+esac
+test -S "${resolved_docker_host#unix://}" \
+    || die "the active Docker unix endpoint is not a socket"
 
 temporary_root="$(mktemp -d "${TMPDIR:-/tmp}/routecontract-gradle-kotlin-pilot.XXXXXX")"
 temporary_root="$(cd -- "$temporary_root" && pwd -P)"
+docker_validation_home="$temporary_root/docker-validation-home"
+mkdir "$docker_validation_home"
+env -i \
+    "PATH=$PATH" \
+    "HOME=$docker_validation_home" \
+    "DOCKER_HOST=$resolved_docker_host" \
+    docker info >/dev/null
 cleanup() {
     case "$temporary_root" in
         */routecontract-gradle-kotlin-pilot.*)
@@ -273,14 +324,20 @@ cleanup() {
 trap cleanup EXIT
 
 bootstrap_gradle_home="$temporary_root/bootstrap-gradle-home"
+bootstrap_home="$temporary_root/bootstrap-home"
+bootstrap_tmp="$temporary_root/bootstrap-tmp"
 test ! -e "$bootstrap_gradle_home" && test ! -L "$bootstrap_gradle_home" \
     || die "Gradle wrapper bootstrap cache must start absent"
-env \
-    -u GRADLE_RO_DEP_CACHE \
-    -u GRADLE_OPTS \
-    -u JAVA_TOOL_OPTIONS \
-    -u _JAVA_OPTIONS \
-    GRADLE_USER_HOME="$bootstrap_gradle_home" \
+mkdir "$bootstrap_home" "$bootstrap_tmp"
+bootstrap_environment=(
+    "PATH=$PATH"
+    "HOME=$bootstrap_home"
+    "TMPDIR=$bootstrap_tmp"
+    "LC_ALL=C"
+    "GRADLE_USER_HOME=$bootstrap_gradle_home"
+    "JAVA_HOME=$verified_java_home"
+)
+env -i "${bootstrap_environment[@]}" \
     "$repository_root/gradlew" --no-daemon --version \
     >"$temporary_root/gradle-bootstrap.log" 2>&1
 gradle_command="$(python3 -I - "$bootstrap_gradle_home" <<'PY'
@@ -320,10 +377,17 @@ prepare_case_caches() {
     mkdir "$case_root"
     case_gradle_home="$case_root/gradle-user-home"
     case_project_cache="$case_root/project-cache"
+    case_home="$case_root/home"
+    case_tmp="$case_root/tmp"
     test ! -e "$case_gradle_home" && test ! -L "$case_gradle_home" \
         || die "Gradle user cache must start absent: $case_name"
     test ! -e "$case_project_cache" && test ! -L "$case_project_cache" \
         || die "Gradle project cache must start absent: $case_name"
+    test ! -e "$case_home" && test ! -L "$case_home" \
+        || die "case HOME must start absent: $case_name"
+    test ! -e "$case_tmp" && test ! -L "$case_tmp" \
+        || die "case TMPDIR must start absent: $case_name"
+    mkdir "$case_home" "$case_tmp"
     if grep -Fqx "$case_gradle_home|$case_project_cache" "$cache_record"; then
         die "Gradle verification case cache pair was reused: $case_name"
     fi
@@ -331,15 +395,19 @@ prepare_case_caches() {
 }
 
 run_gradle_case() {
-    env \
-        -u ROUTECONTRACT_REPOSITORY \
-        -u ORG_GRADLE_PROJECT_routecontractRepository \
-        -u ORG_GRADLE_PROJECT_routecontractPilot \
-        -u GRADLE_RO_DEP_CACHE \
-        -u GRADLE_OPTS \
-        -u JAVA_TOOL_OPTIONS \
-        -u _JAVA_OPTIONS \
-        GRADLE_USER_HOME="$case_gradle_home" \
+    local -a case_environment=(
+        "PATH=$PATH"
+        "HOME=$case_home"
+        "TMPDIR=$case_tmp"
+        "LC_ALL=C"
+        "GRADLE_USER_HOME=$case_gradle_home"
+        "DOCKER_HOST=$resolved_docker_host"
+        "JAVA_HOME=$verified_java_home"
+    )
+    if [[ -S /var/run/docker.sock ]]; then
+        case_environment+=("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock")
+    fi
+    env -i "${case_environment[@]}" \
         "$gradle_command" \
         --no-daemon \
         --no-build-cache \
@@ -360,11 +428,12 @@ test ! -e "$repository"
 python3 -I "$installer" \
     --release-assets-dir "$release_assets_directory" \
     --repository "$repository" >"$temporary_root/install.log"
-cached_jar="$repository/io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.0/routecontract-shardingsphere-5.5-0.1.0.jar"
-cached_pom="$repository/io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.0/routecontract-shardingsphere-5.5-0.1.0.pom"
-gav_marker="ROUTECONTRACT_GRADLE_GAV coordinate=io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0 jarSha256=$expected_jar_sha256 pomSha256=$expected_pom_sha256 resolved=VERIFIED"
-provenance_marker="ROUTECONTRACT_GRADLE_PROVENANCE coordinate=io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0 jarSha256=$expected_jar_sha256 pomSha256=$expected_pom_sha256 origins=EXACT claim=SELECTED_INVARIANTS_ONLY"
-runtime_origin_marker="ROUTECONTRACT_GRADLE_RUNTIME_ORIGIN coordinate=io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0 jarSha256=$expected_jar_sha256 pomSha256=$expected_pom_sha256 apiOrigin=EXACT providerOrigin=EXACT serviceDescriptorCount=1"
+cached_jar="$repository/io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.2/routecontract-shardingsphere-5.5-0.1.2.jar"
+cached_pom="$repository/io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.2/routecontract-shardingsphere-5.5-0.1.2.pom"
+gav_marker="ROUTECONTRACT_GRADLE_GAV coordinate=io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.2 jarSha256=$expected_jar_sha256 pomSha256=$expected_pom_sha256 resolved=VERIFIED"
+live_provenance_marker="ROUTECONTRACT_GRADLE_PROVENANCE coordinate=io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.2 jarSha256=$expected_jar_sha256 pomSha256=$expected_pom_sha256 origins=EXACT claim=SELECTED_INVARIANTS_ONLY"
+receipt_provenance_marker="ROUTECONTRACT_GRADLE_PROVENANCE coordinate=io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.2 jarSha256=$expected_jar_sha256 pomSha256=$expected_pom_sha256 runtimeOriginEvidence=HASHED_EPHEMERAL_OBSERVATIONS claim=SELECTED_INVARIANTS_ONLY"
+runtime_origin_marker="ROUTECONTRACT_GRADLE_RUNTIME_ORIGIN coordinate=io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.2 jarSha256=$expected_jar_sha256 pomSha256=$expected_pom_sha256 apiOrigin=EXACT providerOrigin=EXACT serviceDescriptorCount=1"
 test "$(sha256_file "$cached_jar")" = "$expected_jar_sha256" \
     || die "installed RouteContract JAR hash changed"
 test "$(sha256_file "$cached_pom")" = "$expected_pom_sha256" \
@@ -374,6 +443,7 @@ wrong_gav_repository="$temporary_root/wrong-gav-repository"
 missing_gav_repository="$temporary_root/missing-gav-repository"
 tampered_pom_repository="$temporary_root/tampered-pom-repository"
 tampered_gav_repository="$temporary_root/tampered-gav-repository"
+decoy_init_script="$temporary_root/decoy-repository.init.gradle"
 python3 -I - "$repository" "$wrong_gav_repository" \
     "$missing_gav_repository" "$tampered_pom_repository" \
     "$tampered_gav_repository" <<'PY'
@@ -387,32 +457,32 @@ source, wrong, missing, tampered_pom, tampered_jar = map(
 coordinate = pathlib.Path(
     "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5"
 )
-source_version = source / coordinate / "0.1.0"
+source_version = source / coordinate / "0.1.2"
 
 wrong_version = wrong / coordinate / "0.1.1"
 wrong_version.mkdir(parents=True)
 shutil.copyfile(
-    source_version / "routecontract-shardingsphere-5.5-0.1.0.jar",
+    source_version / "routecontract-shardingsphere-5.5-0.1.2.jar",
     wrong_version / "routecontract-shardingsphere-5.5-0.1.1.jar",
 )
 shutil.copyfile(
-    source_version / "routecontract-shardingsphere-5.5-0.1.0.pom",
+    source_version / "routecontract-shardingsphere-5.5-0.1.2.pom",
     wrong_version / "routecontract-shardingsphere-5.5-0.1.1.pom",
 )
 
-missing_version = missing / coordinate / "0.1.0"
+missing_version = missing / coordinate / "0.1.2"
 missing_version.mkdir(parents=True)
 shutil.copyfile(
-    source_version / "routecontract-shardingsphere-5.5-0.1.0.jar",
-    missing_version / "routecontract-shardingsphere-5.5-0.1.0.jar",
+    source_version / "routecontract-shardingsphere-5.5-0.1.2.jar",
+    missing_version / "routecontract-shardingsphere-5.5-0.1.2.jar",
 )
 
 shutil.copytree(source, tampered_pom)
 tampered_pom_file = (
     tampered_pom
     / coordinate
-    / "0.1.0"
-    / "routecontract-shardingsphere-5.5-0.1.0.pom"
+    / "0.1.2"
+    / "routecontract-shardingsphere-5.5-0.1.2.pom"
 )
 with tampered_pom_file.open("ab") as stream:
     stream.write(b"<!-- ROUTECONTRACT_TAMPERED_POM -->\n")
@@ -421,12 +491,25 @@ shutil.copytree(source, tampered_jar)
 tampered_jar = (
     tampered_jar
     / coordinate
-    / "0.1.0"
-    / "routecontract-shardingsphere-5.5-0.1.0.jar"
+    / "0.1.2"
+    / "routecontract-shardingsphere-5.5-0.1.2.jar"
 )
 with tampered_jar.open("ab") as stream:
     stream.write(b"ROUTECONTRACT_TAMPERED_GAV\n")
 PY
+cat >"$decoy_init_script" <<'EOF'
+allprojects {
+    repositories {
+        maven {
+            name = "routeContractDecoyRepository"
+            url = uri(System.getProperty("routecontract.decoyRepository"))
+            metadataSources { mavenPom() }
+        }
+    }
+}
+EOF
+test -f "$decoy_init_script" && test ! -L "$decoy_init_script" \
+    || die "decoy repository init script must be one real file"
 
 missing_repository_property_log="$temporary_root/missing-repository-property.log"
 prepare_case_caches missing-repository-property
@@ -499,6 +582,8 @@ prepare_case_caches wrong-gav
 set +e
 run_gradle_case \
     --offline \
+    --init-script "$decoy_init_script" \
+    "-Droutecontract.decoyRepository=$repository" \
     -p "$fixture" -ProutecontractPilot=true \
     "-ProutecontractRepository=$wrong_gav_repository" \
     routeContractPilotArtifactProvenance \
@@ -508,9 +593,18 @@ set -e
 test "$wrong_gav_status" = 1 \
     || die "wrong RouteContract GAV must exit exactly 1"
 grep -Fq \
-    'io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0' \
+    'io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.2' \
     "$wrong_gav_log" \
     || die "wrong RouteContract GAV did not fail while resolving the exact coordinate"
+grep -Fq \
+    "$wrong_gav_repository/io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.2/routecontract-shardingsphere-5.5-0.1.2.pom" \
+    "$wrong_gav_log" \
+    || die "exclusive lookup did not name the designated missing POM"
+if grep -Fq \
+        "$repository/io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.2/routecontract-shardingsphere-5.5-0.1.2.pom" \
+        "$wrong_gav_log"; then
+    die "exclusive lookup fell through to the valid ordinary decoy repository"
+fi
 assert_no_fixed_line "$gav_marker" "$wrong_gav_log"
 
 missing_gav_log="$temporary_root/missing-gav.log"
@@ -526,7 +620,7 @@ set -e
 test "$missing_gav_status" = 1 \
     || die "missing RouteContract GAV metadata must exit exactly 1"
 grep -Fq \
-    'io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0' \
+    'io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.2' \
     "$missing_gav_log" \
     || die "missing RouteContract GAV metadata did not fail during exact resolution"
 assert_no_fixed_line "$gav_marker" "$missing_gav_log"
@@ -622,6 +716,8 @@ gav_origin_log="$temporary_root/gav-origin.log"
 prepare_case_caches gav-origin
 run_gradle_case \
     --offline \
+    --init-script "$decoy_init_script" \
+    "-Droutecontract.decoyRepository=$tampered_gav_repository" \
     -p "$fixture" \
     -ProutecontractPilot=true "-ProutecontractRepository=$repository" \
     routeContractPilotArtifactProvenance >"$gav_origin_log" 2>&1
@@ -653,15 +749,19 @@ assert_one_fixed_line "$runtime_origin_marker" "$missing_log"
 test -f "$candidate" && test ! -L "$candidate" \
     || die "missing-baseline run did not create a regular candidate"
 candidate_sha256="$(sha256_file "$candidate")"
+missing_candidate_bytes="$(file_size "$candidate")"
 report="$fixture/build/test-results/routeContractPilot/TEST-io.github.ym0506.routecontract.examples.gradle.kotlin.GradleKotlinRouteContractPilotTest.xml"
 parse_junit_report missing "$report" "$candidate" "$approved"
+missing_report_sha256="$(sha256_file "$report")"
+missing_report_bytes="$(file_size "$report")"
 provenance="$fixture/build/routecontract/gradle-kotlin-pilot-provenance.json"
 test -f "$provenance" && test ! -L "$provenance" \
     || die "missing-baseline run did not create a regular provenance artifact"
 python3 -I "$provenance_validator" "$provenance" \
     >"$temporary_root/missing-provenance-validation.log"
-assert_one_fixed_line "$provenance_marker" \
+assert_one_fixed_line "$live_provenance_marker" \
     "$temporary_root/missing-provenance-validation.log"
+missing_runtime_observation_sha256="$(sha256_file "$provenance")"
 
 approved_absent_identity="$(lstat_identity "$approved")"
 test "$approved_absent_identity" = "ABSENT" \
@@ -692,21 +792,164 @@ approved_identity_after_match="$(lstat_identity "$approved")"
 test "$approved_identity_after_match" = "$approved_identity_before_match" \
     || die "matched run changed the synthetic baseline lstat identity"
 parse_junit_report matched "$report" "$candidate" "$approved"
+matched_report_sha256="$(sha256_file "$report")"
+matched_report_bytes="$(file_size "$report")"
+matched_candidate_bytes="$(file_size "$candidate")"
 test -f "$provenance" && test ! -L "$provenance" \
     || die "matched run did not create a regular provenance artifact"
 python3 -I "$provenance_validator" "$provenance" \
     >"$temporary_root/matched-provenance-validation.log"
-assert_one_fixed_line "$provenance_marker" \
+assert_one_fixed_line "$live_provenance_marker" \
     "$temporary_root/matched-provenance-validation.log"
-provenance_sha256="$(sha256_file "$provenance")"
-if [[ -n "$provenance_output" ]]; then
-    exclusive_regular_copy \
-        "$provenance" "$provenance_output" "$(dirname -- "$provenance_output")"
-    test "$(sha256_file "$provenance_output")" = "$provenance_sha256" \
-        || die "preserved provenance output changed during exclusive copy"
-fi
+matched_runtime_observation_sha256="$(sha256_file "$provenance")"
 
+source_revision=""
+source_tree=""
+source_clean="false"
+source_binding="unbound-source-copy"
+if command -v git >/dev/null 2>&1; then
+    git_toplevel="$(git -C "$repository_root" rev-parse --show-toplevel 2>/dev/null || true)"
+    if [[ -n "$git_toplevel" ]]; then
+        git_toplevel="$(cd -- "$git_toplevel" && pwd -P)"
+    fi
+    if [[ "$git_toplevel" == "$repository_root" ]]; then
+        source_revision="$(git -C "$repository_root" rev-parse HEAD)"
+        source_tree="$(git -C "$repository_root" rev-parse 'HEAD^{tree}')"
+        if [[ -z "$(git -C "$repository_root" status --porcelain=v1 \
+                --untracked-files=all --ignore-submodules=none)" ]]; then
+            source_clean="true"
+            source_binding="exact-clean-checkout"
+        else
+            source_binding="head-only-dirty-worktree"
+        fi
+    fi
+fi
+test "$(sha256_file "$repository_root/gradle/wrapper/gradle-wrapper.jar")" \
+    = "$wrapper_jar_sha256" \
+    || die "Gradle wrapper JAR changed during verification"
+receipt="$temporary_root/gradle-kotlin-pilot-receipt.json"
+python3 -I - "$receipt" \
+    "$source_revision" "$source_tree" "$source_clean" "$source_binding" \
+    "$wrapper_jar_sha256" "$expected_jar_sha256" "$expected_pom_sha256" \
+    "$candidate_sha256" "$missing_candidate_bytes" \
+    "$missing_report_sha256" "$missing_report_bytes" \
+    "$missing_runtime_observation_sha256" \
+    "$matched_candidate_bytes" "$matched_report_sha256" "$matched_report_bytes" \
+    "$matched_runtime_observation_sha256" <<'PY'
+import json
+import os
+import pathlib
+import sys
+
+(
+    destination_text,
+    revision,
+    tree,
+    clean_text,
+    source_binding,
+    wrapper_jar_sha256,
+    jar_sha256,
+    pom_sha256,
+    candidate_sha256,
+    missing_candidate_bytes,
+    missing_report_sha256,
+    missing_report_bytes,
+    missing_observation_sha256,
+    matched_candidate_bytes,
+    matched_report_sha256,
+    matched_report_bytes,
+    matched_observation_sha256,
+) = sys.argv[1:]
+destination = pathlib.Path(destination_text)
+document = {
+    "schemaVersion": 2,
+    "coordinate": (
+        "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.2"
+    ),
+    "source": {
+        "revision": revision or None,
+        "tree": tree or None,
+        "clean": clean_text == "true",
+        "binding": source_binding,
+    },
+    "toolchain": {
+        "gradleVersion": "8.14.4",
+        "javaMajor": 17,
+        "wrapperDistributionUrl": (
+            "https://services.gradle.org/distributions/gradle-8.14.4-bin.zip"
+        ),
+        "wrapperDistributionSha256": (
+            "f1771298a70f6db5a29daf62378c4e18a17fc33c9ba6b14362e0cdf40610380d"
+        ),
+        "wrapperJarSha256": wrapper_jar_sha256,
+    },
+    "artifacts": {
+        "jar": {
+            "fileName": "routecontract-shardingsphere-5.5-0.1.2.jar",
+            "sha256": jar_sha256,
+            "retained": False,
+        },
+        "pom": {
+            "fileName": "routecontract-shardingsphere-5.5-0.1.2.pom",
+            "sha256": pom_sha256,
+            "retained": False,
+        },
+    },
+    "verification": {
+        "environmentIsolation": "env-i-allowlist",
+        "caseCount": 14,
+        "cachePairsUnique": True,
+        "decoyFallback": "designated-exclusive-repository-only",
+        "runtimePreflight": "before-mysql-and-routecontract-operation",
+        "pathsEphemeral": True,
+        "missingBaseline": {
+            "outcome": "EXPECTED_MISSING_HUMAN_BASELINE",
+            "candidateSha256": candidate_sha256,
+            "candidateBytes": int(missing_candidate_bytes),
+            "junitSha256": missing_report_sha256,
+            "junitBytes": int(missing_report_bytes),
+            "tests": 1,
+            "failures": 1,
+            "errors": 0,
+            "skipped": 0,
+            "runtimeObservationSha256": missing_observation_sha256,
+        },
+        "matched": {
+            "outcome": "SYNTHETIC_MATCH_PASS",
+            "candidateSha256": candidate_sha256,
+            "candidateBytes": int(matched_candidate_bytes),
+            "junitSha256": matched_report_sha256,
+            "junitBytes": int(matched_report_bytes),
+            "tests": 1,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "runtimeObservationSha256": matched_observation_sha256,
+        },
+    },
+    "claimBoundary": {
+        "externalUser": False,
+        "humanApprovedBaseline": False,
+        "adoption": False,
+        "endorsement": False,
+    },
+}
+flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+if hasattr(os, "O_NOFOLLOW"):
+    flags |= os.O_NOFOLLOW
+descriptor = os.open(destination, flags, 0o600)
+with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as stream:
+    json.dump(document, stream, sort_keys=True, indent=2)
+    stream.write("\n")
+    stream.flush()
+    os.fsync(stream.fileno())
+PY
+python3 -I "$provenance_validator" "$receipt" \
+    >"$temporary_root/receipt-validation.log"
+assert_one_fixed_line "$receipt_provenance_marker" "$temporary_root/receipt-validation.log"
+provenance_sha256="$(sha256_file "$receipt")"
 test ! -e "$fixture_source/src/routeContractPilot/resources/route-contracts/orders.find-by-user-id.json" \
+    && test ! -L "$fixture_source/src/routeContractPilot/resources/route-contracts/orders.find-by-user-id.json" \
     || die "verifier mutated the source fixture baseline"
 test ! -e "$fixture/.gradle" && test ! -L "$fixture/.gradle" \
     || die "verifier created a project-local .gradle cache"
@@ -714,8 +957,14 @@ test "$(wc -l <"$cache_record" | tr -d ' ')" = 14 \
     || die "verifier did not use exactly fourteen independent Gradle cache pairs"
 test "$(sort -u "$cache_record" | wc -l | tr -d ' ')" = 14 \
     || die "verifier reused a Gradle user/project cache pair"
+if [[ -n "$provenance_output" ]]; then
+    exclusive_regular_copy \
+        "$receipt" "$provenance_output" "$(dirname -- "$provenance_output")"
+    test "$(sha256_file "$provenance_output")" = "$provenance_sha256" \
+        || die "preserved provenance output changed during exclusive copy"
+fi
 printf 'ROUTECONTRACT_GRADLE_KOTLIN_VERIFY markerCopy=PASS repositoryBoundary=PASS profileOff=PASS graph=VERIFIED '\
-'gavResolution=PASS gavNoRemoteFallback=OFFLINE_FRESH_CACHE gavNegativeCases=PASS cacheIsolation=PASS artifactOrigin=EXACT_COORDINATE_JAR '\
-'provenance=VALIDATED missingBaseline=EXPECTED matched=PASS mysql=8.4.11 shardingsphere=5.5.3 jarSha256=%s pomSha256=%s candidateSha256=%s provenanceSha256=%s\n' \
+'gavResolution=PASS gavNoRemoteFallback=DECOY_REJECTED_OFFLINE_FRESH_CACHE gavNegativeCases=PASS environmentIsolation=ALLOWLISTED cacheIsolation=PASS artifactOrigin=EXACT_COORDINATE_JAR '\
+'runtimePreflight=BEFORE_OPERATION provenance=VALIDATED pathsEphemeral=true missingBaseline=EXPECTED matched=PASS mysql=8.4.11 shardingsphere=5.5.3 gradle=8.14.4 java=17 wrapperDistributionSha256=f1771298a70f6db5a29daf62378c4e18a17fc33c9ba6b14362e0cdf40610380d wrapperJarSha256=7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172 jarSha256=%s pomSha256=%s candidateSha256=%s missingReportSha256=%s matchedReportSha256=%s provenanceSha256=%s\n' \
     "$expected_jar_sha256" "$expected_pom_sha256" "$candidate_sha256" \
-    "$provenance_sha256"
+    "$missing_report_sha256" "$matched_report_sha256" "$provenance_sha256"

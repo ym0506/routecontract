@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import importlib.util
 import json
@@ -55,6 +56,7 @@ APPROVED_BASELINE = (
     / "orders.find-by-user-id.json"
 )
 GUIDE = REPOSITORY_ROOT / "docs" / "first-integration.md"
+CI = REPOSITORY_ROOT / ".github" / "workflows" / "ci.yml"
 VERIFIER = REPOSITORY_ROOT / "scripts" / "verify-gradle-kotlin-pilot.sh"
 PROVENANCE_VALIDATOR = (
     REPOSITORY_ROOT / "scripts" / "validate-gradle-kotlin-pilot-provenance.py"
@@ -67,6 +69,7 @@ class GradleKotlinPilotContractTest(unittest.TestCase):
         cls.build = BUILD.read_text(encoding="utf-8")
         cls.readme = README.read_text(encoding="utf-8")
         cls.guide = GUIDE.read_text(encoding="utf-8")
+        cls.ci = CI.read_text(encoding="utf-8")
         cls.verifier = VERIFIER.read_text(encoding="utf-8")
         cls.pilot_test = PILOT_TEST.read_text(encoding="utf-8")
         cls.business_test = BUSINESS_TEST.read_text(encoding="utf-8")
@@ -83,6 +86,7 @@ class GradleKotlinPilotContractTest(unittest.TestCase):
             ORDER_QUERY,
             VERIFIER,
             PROVENANCE_VALIDATOR,
+            CI,
         ):
             self.assertTrue(path.is_file(), path)
             self.assertFalse(path.is_symlink(), path)
@@ -103,8 +107,8 @@ class GradleKotlinPilotContractTest(unittest.TestCase):
             'sourceSets.create("routeContractPilot")',
             'RouteContract repository must be an absolute local filesystem directory',
             'RouteContract repository path must not contain symbolic-link components',
-            'routecontract-shardingsphere-5.5-0.1.0.jar',
-            'routecontract-shardingsphere-5.5-0.1.0.pom',
+            'routecontract-shardingsphere-5.5-0.1.2.jar',
+            'routecontract-shardingsphere-5.5-0.1.2.pom',
             'expectedRouteContractPomSha256',
             'RouteContract repository POM SHA-256 mismatch:',
             'exclusiveContent',
@@ -127,7 +131,7 @@ class GradleKotlinPilotContractTest(unittest.TestCase):
             'version { strictly("2.4.10") }',
             '"net.minidev:accessors-smart"',
             'version { strictly("2.4.9") }',
-            '"io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0"',
+            '"io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.2"',
             'tasks.register("routeContractPilotGraph")',
             'tasks.register(\n        "routeContractPilotArtifactProvenance"',
             'isTransitive = false',
@@ -165,7 +169,10 @@ class GradleKotlinPilotContractTest(unittest.TestCase):
             " ".join(self.guide.split()),
         )
         self.assertIn("preinstalled JDK 17", self.guide)
-        self.assertIn("not evidence that the current Java-21 HsinDumas", self.guide)
+        self.assertIn(
+            "not evidence that a different Java-21-only target",
+            " ".join(self.guide.split()),
+        )
         self.assertNotIn("Gradle 9.5.1", self.guide)
         self.assertNotIn(
             "needs Kotlin DSL, stop and report that fit blocker",
@@ -190,7 +197,7 @@ class GradleKotlinPilotContractTest(unittest.TestCase):
         lane_start = self.build.index("// ROUTECONTRACT_KOTLIN_DSL_START")
         coordinate = (
             '"io.github.ym0506.routecontract:'
-            'routecontract-shardingsphere-5.5:0.1.0"'
+            'routecontract-shardingsphere-5.5:0.1.2"'
         )
         self.assertEqual(1, self.build.count(coordinate))
         self.assertGreater(self.build.index(coordinate), lane_start)
@@ -236,8 +243,9 @@ class GradleKotlinPilotContractTest(unittest.TestCase):
             "markerCopy=PASS",
             "repositoryBoundary=PASS",
             "gavResolution=PASS",
-            "gavNoRemoteFallback=OFFLINE_FRESH_CACHE",
+            "gavNoRemoteFallback=DECOY_REJECTED_OFFLINE_FRESH_CACHE",
             "gavNegativeCases=PASS",
+            "environmentIsolation=ALLOWLISTED",
             "cacheIsolation=PASS",
             "artifactOrigin=EXACT_COORDINATE_JAR",
             "assert_no_fixed_line()",
@@ -262,15 +270,25 @@ class GradleKotlinPilotContractTest(unittest.TestCase):
             "ROUTECONTRACT_GRADLE_KOTLIN_PILOT candidateCheck=MATCHED",
             "matched run changed the synthetic baseline lstat identity",
             "verifier mutated the source fixture baseline",
+            '&& test ! -L "$fixture_source/src/routeContractPilot/resources/route-contracts/orders.find-by-user-id.json"',
             "verifier created a project-local .gradle cache",
             "--exclude .gradle --exclude build",
             "prepare_case_caches()",
             "run_gradle_case()",
-            'GRADLE_USER_HOME="$case_gradle_home"',
+            '"GRADLE_USER_HOME=$case_gradle_home"',
             '--project-cache-dir "$case_project_cache"',
             "--no-configuration-cache",
             "--no-watch-fs",
-            "-u GRADLE_RO_DEP_CACHE",
+            'env -i "${case_environment[@]}"',
+            '"HOME=$case_home"',
+            '"TMPDIR=$case_tmp"',
+            '"LC_ALL=C"',
+            'routeContractDecoyRepository',
+            'routecontract.decoyRepository',
+            '"-Droutecontract.decoyRepository=$repository"',
+            '"-Droutecontract.decoyRepository=$tampered_gav_repository"',
+            "exclusive lookup did not name the designated missing POM",
+            "exclusive lookup fell through to the valid ordinary decoy repository",
             "routeContractPilotArtifactProvenance",
             "--offline",
             "Gradle user cache must start absent",
@@ -280,6 +298,12 @@ class GradleKotlinPilotContractTest(unittest.TestCase):
             "jarSha256=%s pomSha256=%s candidateSha256=%s",
             "provenanceSha256=%s",
             "candidateSha256=%s",
+            "wrapperDistributionSha256=f1771298a70f6db5a29daf62378c4e18a17fc33c9ba6b14362e0cdf40610380d",
+            "wrapperJarSha256=7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172",
+            "runtimeOriginEvidence=HASHED_EPHEMERAL_OBSERVATIONS",
+            "rev-parse --show-toplevel",
+            '[[ "$git_toplevel" == "$repository_root" ]]',
+            'source_binding="unbound-source-copy"',
         ):
             self.assertIn(required, self.verifier)
         for case_name in (
@@ -305,6 +329,31 @@ class GradleKotlinPilotContractTest(unittest.TestCase):
             )
         self.assertIn("parse_junit_report missing", self.verifier)
         self.assertIn("parse_junit_report matched", self.verifier)
+        final_cache_gate = self.verifier.index(
+            '|| die "verifier reused a Gradle user/project cache pair"'
+        )
+        preserved_receipt_copy = self.verifier.index(
+            '"$receipt" "$provenance_output" "$(dirname -- "$provenance_output")"'
+        )
+        final_success_marker = self.verifier.index(
+            "ROUTECONTRACT_GRADLE_KOTLIN_VERIFY markerCopy=PASS"
+        )
+        self.assertLess(final_cache_gate, preserved_receipt_copy)
+        self.assertLess(preserved_receipt_copy, final_success_marker)
+
+    def test_required_ci_workflow_runs_and_preserves_the_full_lane(self) -> None:
+        for required in (
+            "gradle-kotlin-pilot:\n"
+            "    name: Gradle Kotlin DSL / MySQL assisted pilot",
+            "expected_index_sha256=\"7849adf417f0170b08d01902b023e8b328d8796f7c2aeacc471eb7acf8e2b217\"",
+            "./scripts/verify-gradle-kotlin-pilot.sh",
+            "--release-assets-dir \"${ROUTECONTRACT_RELEASE_ASSETS}\"",
+            "--provenance-output \"${provenance}\"",
+            "python3 -I scripts/validate-gradle-kotlin-pilot-provenance.py",
+            "routecontract-gradle-kotlin-evidence-${{ github.sha }}",
+            "verifier-evidence.sha256",
+        ):
+            self.assertIn(required, self.ci)
 
     def test_provenance_output_contract_executes_and_rejects_origin_drift(self) -> None:
         spec = importlib.util.spec_from_file_location(
@@ -323,11 +372,11 @@ class GradleKotlinPilotContractTest(unittest.TestCase):
                 / "ym0506"
                 / "routecontract"
                 / "routecontract-shardingsphere-5.5"
-                / "0.1.0"
+                / "0.1.2"
             )
             coordinate.mkdir(parents=True)
-            jar = coordinate / "routecontract-shardingsphere-5.5-0.1.0.jar"
-            pom = coordinate / "routecontract-shardingsphere-5.5-0.1.0.pom"
+            jar = coordinate / "routecontract-shardingsphere-5.5-0.1.2.jar"
+            pom = coordinate / "routecontract-shardingsphere-5.5-0.1.2.pom"
             jar.write_bytes(b"synthetic provenance contract jar\n")
             pom.write_bytes(b"synthetic provenance contract pom\n")
             jar_sha = hashlib.sha256(jar.read_bytes()).hexdigest()
@@ -339,6 +388,7 @@ class GradleKotlinPilotContractTest(unittest.TestCase):
                 "schemaVersion": 1,
                 "coordinate": module.COORDINATE,
                 "resolvedComponent": module.COORDINATE,
+                "pathsEphemeral": True,
                 "repositoryRoot": str(root),
                 "jar": {"path": str(jar), "sha256": jar_sha},
                 "pom": {"path": str(pom), "sha256": pom_sha},
@@ -349,7 +399,9 @@ class GradleKotlinPilotContractTest(unittest.TestCase):
                     "serviceDescriptorJars": [str(jar)],
                 },
                 "claimBoundary": {
-                    "dependencyVerification": "selected-invariant-graph-only",
+                    "dependencyVerification": (
+                        "selected-invariant-graph-and-pre-operation-runtime-origin"
+                    ),
                     "externalUser": False,
                     "humanApprovedBaseline": False,
                     "adoption": False,
@@ -360,10 +412,156 @@ class GradleKotlinPilotContractTest(unittest.TestCase):
             )
             validated = module.validate(provenance)
             self.assertEqual(module.COORDINATE, validated["resolvedComponent"])
+            valid_runtime_observation = copy.deepcopy(document)
             document["origins"]["providerClass"] = str(pom)
             provenance.write_text(json.dumps(document) + "\n", encoding="utf-8")
             with self.assertRaisesRegex(
                 module.ProvenanceError, "API and provider origins"
+            ):
+                module.validate(provenance)
+
+            for dotted_key, wrong_value in (
+                ("schemaVersion", True),
+                ("pathsEphemeral", 1),
+                ("origins.serviceDescriptorCount", True),
+                ("claimBoundary.externalUser", 0),
+            ):
+                drifted = copy.deepcopy(valid_runtime_observation)
+                cursor = drifted
+                components = dotted_key.split(".")
+                for component in components[:-1]:
+                    cursor = cursor[component]
+                cursor[components[-1]] = wrong_value
+                provenance.write_text(json.dumps(drifted) + "\n", encoding="utf-8")
+                with self.subTest(runtime_dotted_key=dotted_key):
+                    with self.assertRaises(module.ProvenanceError):
+                        module.validate(provenance)
+
+            receipt = {
+                "schemaVersion": 2,
+                "coordinate": module.COORDINATE,
+                "source": {
+                    "revision": None,
+                    "tree": None,
+                    "clean": False,
+                    "binding": "unbound-source-copy",
+                },
+                "toolchain": {
+                    "gradleVersion": "8.14.4",
+                    "javaMajor": 17,
+                    "wrapperDistributionUrl": module.WRAPPER_DISTRIBUTION_URL,
+                    "wrapperDistributionSha256": (
+                        module.WRAPPER_DISTRIBUTION_SHA256
+                    ),
+                    "wrapperJarSha256": module.WRAPPER_JAR_SHA256,
+                },
+                "artifacts": {
+                    "jar": {
+                        "fileName": "routecontract-shardingsphere-5.5-0.1.2.jar",
+                        "sha256": jar_sha,
+                        "retained": False,
+                    },
+                    "pom": {
+                        "fileName": "routecontract-shardingsphere-5.5-0.1.2.pom",
+                        "sha256": pom_sha,
+                        "retained": False,
+                    },
+                },
+                "verification": {
+                    "environmentIsolation": "env-i-allowlist",
+                    "caseCount": 14,
+                    "cachePairsUnique": True,
+                    "decoyFallback": "designated-exclusive-repository-only",
+                    "runtimePreflight": (
+                        "before-mysql-and-routecontract-operation"
+                    ),
+                    "pathsEphemeral": True,
+                    "missingBaseline": {
+                        "outcome": "EXPECTED_MISSING_HUMAN_BASELINE",
+                        "candidateSha256": "b" * 64,
+                        "candidateBytes": 1,
+                        "junitSha256": "c" * 64,
+                        "junitBytes": 2,
+                        "tests": 1,
+                        "failures": 1,
+                        "errors": 0,
+                        "skipped": 0,
+                        "runtimeObservationSha256": "d" * 64,
+                    },
+                    "matched": {
+                        "outcome": "SYNTHETIC_MATCH_PASS",
+                        "candidateSha256": "b" * 64,
+                        "candidateBytes": 1,
+                        "junitSha256": "e" * 64,
+                        "junitBytes": 2,
+                        "tests": 1,
+                        "failures": 0,
+                        "errors": 0,
+                        "skipped": 0,
+                        "runtimeObservationSha256": "f" * 64,
+                    },
+                },
+                "claimBoundary": {
+                    "externalUser": False,
+                    "humanApprovedBaseline": False,
+                    "adoption": False,
+                    "endorsement": False,
+                },
+            }
+            provenance.write_text(
+                json.dumps(receipt, sort_keys=True) + "\n", encoding="utf-8"
+            )
+            validated_receipt = module.validate(provenance)
+            self.assertEqual(2, validated_receipt["schemaVersion"])
+            clean_receipt = copy.deepcopy(receipt)
+            clean_receipt["source"] = {
+                "revision": "1" * 40,
+                "tree": "2" * 40,
+                "clean": True,
+                "binding": "exact-clean-checkout",
+            }
+            provenance.write_text(
+                json.dumps(clean_receipt, sort_keys=True) + "\n", encoding="utf-8"
+            )
+            self.assertTrue(module.validate(provenance)["source"]["clean"])
+            mixed_object_format = copy.deepcopy(clean_receipt)
+            mixed_object_format["source"]["tree"] = "2" * 64
+            provenance.write_text(
+                json.dumps(mixed_object_format) + "\n", encoding="utf-8"
+            )
+            with self.assertRaisesRegex(module.ProvenanceError, "object formats"):
+                module.validate(provenance)
+
+            type_drift_cases = (
+                ("schemaVersion", 2.0),
+                ("toolchain.javaMajor", 17.0),
+                ("verification.caseCount", 14.0),
+                ("artifacts.jar.retained", 0),
+                ("claimBoundary.externalUser", 0),
+                ("verification.matched.candidateBytes", True),
+                ("toolchain.wrapperJarSha256", "a" * 64),
+            )
+            for dotted_key, wrong_value in type_drift_cases:
+                drifted = copy.deepcopy(receipt)
+                cursor = drifted
+                components = dotted_key.split(".")
+                for component in components[:-1]:
+                    cursor = cursor[component]
+                cursor[components[-1]] = wrong_value
+                provenance.write_text(json.dumps(drifted) + "\n", encoding="utf-8")
+                with self.subTest(dotted_key=dotted_key):
+                    with self.assertRaises(module.ProvenanceError):
+                        module.validate(provenance)
+
+            duplicate_root = json.dumps(receipt)[:-1] + ', "schemaVersion": 2}'
+            provenance.write_text(duplicate_root + "\n", encoding="utf-8")
+            with self.assertRaisesRegex(module.ProvenanceError, "duplicate JSON key"):
+                module.validate(provenance)
+
+            receipt["verification"]["matched"]["candidateSha256"] = "0" * 64
+            provenance.write_text(json.dumps(receipt) + "\n", encoding="utf-8")
+            with self.assertRaisesRegex(
+                module.ProvenanceError, "candidates must be byte-identical"
             ):
                 module.validate(provenance)
 

@@ -5,7 +5,16 @@ RouteContract follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) a
 
 ## Unreleased
 
-No changes yet.
+### Added
+
+- Add an inactive-by-default Gradle Kotlin DSL assisted-pilot lane with exact `v0.1.2` local
+  repository provenance, real MySQL verification, missing-baseline failure, and a separate
+  synthetic match check.
+
+### Boundaries
+
+- The fixture, CI result, and synthetic match are maintainer-side verification only. They do not
+  establish a human-approved external baseline, adoption, production use, or endorsement.
 
 ## [0.1.2]
 

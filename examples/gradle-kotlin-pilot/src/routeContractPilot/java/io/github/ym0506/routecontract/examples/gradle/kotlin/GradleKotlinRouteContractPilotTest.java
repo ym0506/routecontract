@@ -11,7 +11,6 @@ import io.github.ym0506.routecontract.manifest.ManifestStore;
 import io.github.ym0506.routecontract.manifest.ManifestVerifier;
 import io.github.ym0506.routecontract.manifest.ObservedExecutionManifest;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.net.JarURLConnection;
@@ -45,15 +44,11 @@ class GradleKotlinRouteContractPilotTest {
     private static MySqlShardingFixture fixture;
     private static OrderQueryService orderQueryService;
 
-    @BeforeAll
-    static void startFixture() throws Exception {
-        fixture = new MySqlShardingFixture();
-        orderQueryService = new OrderQueryService(fixture.start());
-    }
-
     @AfterAll
     static void stopFixture() throws Exception {
-        fixture.close();
+        if (fixture != null) {
+            fixture.close();
+        }
     }
 
     @Test
@@ -71,6 +66,21 @@ class GradleKotlinRouteContractPilotTest {
         assertEquals(List.of(expectedArtifactJar), serviceDescriptorJars,
                 "the Gradle Kotlin pilot must expose exactly one matching provider descriptor "
                         + "from the exact cached Release JAR");
+        Path repositoryRoot = expectedRepositoryRoot();
+        Path artifactPom = expectedArtifactPom(repositoryRoot, expectedArtifactJar);
+        String jarSha256 = sha256(expectedArtifactJar);
+        String pomSha256 = sha256(artifactPom);
+        assertEquals(System.getProperty("routecontract.artifactJarSha256"), jarSha256);
+        assertEquals(System.getProperty("routecontract.artifactPomSha256"), pomSha256);
+        System.out.println("ROUTECONTRACT_GRADLE_RUNTIME_ORIGIN coordinate="
+                + System.getProperty("routecontract.coordinate")
+                + " jarSha256=" + jarSha256 + " pomSha256=" + pomSha256
+                + " apiOrigin=EXACT providerOrigin=EXACT serviceDescriptorCount=1");
+
+        // No container, ShardingSphere data source, or RouteContract operation starts before the
+        // runtime origin and both immutable artifact hashes have passed in this test JVM.
+        fixture = new MySqlShardingFixture();
+        orderQueryService = new OrderQueryService(fixture.start());
 
         Path projectDir = Path.of(System.getProperty("routecontract.projectDir"))
                 .toAbsolutePath().normalize();
@@ -101,9 +111,17 @@ class GradleKotlinRouteContractPilotTest {
                 reviewedMaxAttempts, reviewedMaxDataSources);
         boolean baselineMissing = Files.notExists(approvedPath);
 
+        assertEquals(jarSha256, sha256(expectedArtifactJar),
+                "RouteContract JAR changed between runtime preflight and operation");
+        assertEquals(pomSha256, sha256(artifactPom),
+                "RouteContract POM changed between runtime preflight and operation");
         CapturedResult<Long> capture = RouteContract.captureResult(
                 "gradle-kotlin-pilot-orders.find-by-user-id",
                 () -> orderQueryService.countByUserId(3L));
+        assertEquals(jarSha256, sha256(expectedArtifactJar),
+                "RouteContract JAR changed while the representative operation ran");
+        assertEquals(pomSha256, sha256(artifactPom),
+                "RouteContract POM changed while the representative operation ran");
         assertEquals(1L, capture.value());
         RouteSnapshot snapshot = capture.snapshot();
         RouteAssertions.assertThat(snapshot)
@@ -130,6 +148,10 @@ class GradleKotlinRouteContractPilotTest {
         writeProvenance(
                 projectDir,
                 expectedArtifactJar,
+                artifactPom,
+                repositoryRoot,
+                jarSha256,
+                pomSha256,
                 routeContractClassOrigin,
                 providerClassOrigin,
                 serviceDescriptorJars);
@@ -148,7 +170,7 @@ class GradleKotlinRouteContractPilotTest {
     }
 
     private static Path expectedArtifactJar() throws Exception {
-        assertEquals("routecontract-shardingsphere-5.5-0.1.0.jar", ARTIFACT_JAR_NAME);
+        assertEquals("routecontract-shardingsphere-5.5-0.1.2.jar", ARTIFACT_JAR_NAME);
         if (ARTIFACT_JAR_PATH == null || ARTIFACT_JAR_PATH.isBlank()) {
             fail("routecontract.artifactJarPath must identify the exact repository Release JAR");
         }
@@ -164,38 +186,17 @@ class GradleKotlinRouteContractPilotTest {
     private static void writeProvenance(
             Path projectDir,
             Path artifactJar,
+            Path artifactPom,
+            Path repositoryRoot,
+            String jarSha256,
+            String pomSha256,
             Path routeContractClassOrigin,
             Path providerClassOrigin,
             List<Path> serviceDescriptorJars) throws Exception {
         String coordinate = System.getProperty("routecontract.coordinate");
         assertEquals(
-                "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0",
+                "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.2",
                 coordinate);
-        Path repositoryRoot = Path.of(System.getProperty("routecontract.repositoryRoot"));
-        if (!repositoryRoot.isAbsolute() || Files.isSymbolicLink(repositoryRoot)) {
-            fail("routecontract.repositoryRoot must identify an absolute real directory");
-        }
-        repositoryRoot = repositoryRoot.toRealPath();
-        Path expectedCoordinateDirectory = repositoryRoot.resolve(
-                "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.0");
-        assertEquals(
-                expectedCoordinateDirectory.resolve(
-                        "routecontract-shardingsphere-5.5-0.1.0.jar"),
-                artifactJar);
-        Path artifactPom = Path.of(System.getProperty("routecontract.artifactPomPath"));
-        if (!artifactPom.isAbsolute() || Files.isSymbolicLink(artifactPom)) {
-            fail("routecontract.artifactPomPath must identify an absolute non-symlink path");
-        }
-        artifactPom = artifactPom.toRealPath();
-        assertEquals(
-                expectedCoordinateDirectory.resolve(
-                        "routecontract-shardingsphere-5.5-0.1.0.pom"),
-                artifactPom);
-        String jarSha256 = sha256(artifactJar);
-        String pomSha256 = sha256(artifactPom);
-        assertEquals(System.getProperty("routecontract.artifactJarSha256"), jarSha256);
-        assertEquals(System.getProperty("routecontract.artifactPomSha256"), pomSha256);
-
         String provenanceProperty = System.getProperty("routecontract.provenancePath");
         if (provenanceProperty == null || provenanceProperty.isBlank()) {
             fail("routecontract.provenancePath must be set by the isolated pilot lane");
@@ -222,6 +223,7 @@ class GradleKotlinRouteContractPilotTest {
                 + "  \"schemaVersion\": 1,\n"
                 + "  \"coordinate\": " + jsonString(coordinate) + ",\n"
                 + "  \"resolvedComponent\": " + jsonString(coordinate) + ",\n"
+                + "  \"pathsEphemeral\": true,\n"
                 + "  \"repositoryRoot\": " + jsonString(repositoryRoot.toString()) + ",\n"
                 + "  \"jar\": {\"path\": " + jsonString(artifactJar.toString())
                 + ", \"sha256\": " + jsonString(jarSha256) + "},\n"
@@ -237,7 +239,8 @@ class GradleKotlinRouteContractPilotTest {
                 + jsonString(serviceDescriptorJars.get(0).toString()) + "]\n"
                 + "  },\n"
                 + "  \"claimBoundary\": {\"dependencyVerification\": "
-                + "\"selected-invariant-graph-only\", \"externalUser\": false, "
+                + "\"selected-invariant-graph-and-pre-operation-runtime-origin\", "
+                + "\"externalUser\": false, "
                 + "\"humanApprovedBaseline\": false, \"adoption\": false}\n"
                 + "}\n";
         Files.writeString(
@@ -246,9 +249,34 @@ class GradleKotlinRouteContractPilotTest {
                 StandardCharsets.UTF_8,
                 StandardOpenOption.CREATE_NEW,
                 StandardOpenOption.WRITE);
-        System.out.println("ROUTECONTRACT_GRADLE_RUNTIME_ORIGIN coordinate=" + coordinate
-                + " jarSha256=" + jarSha256 + " pomSha256=" + pomSha256
-                + " apiOrigin=EXACT providerOrigin=EXACT serviceDescriptorCount=1");
+    }
+
+    private static Path expectedRepositoryRoot() throws Exception {
+        Path repositoryRoot = Path.of(System.getProperty("routecontract.repositoryRoot"));
+        if (!repositoryRoot.isAbsolute() || Files.isSymbolicLink(repositoryRoot)) {
+            fail("routecontract.repositoryRoot must identify an absolute real directory");
+        }
+        return repositoryRoot.toRealPath();
+    }
+
+    private static Path expectedArtifactPom(
+            Path repositoryRoot, Path artifactJar) throws Exception {
+        Path expectedCoordinateDirectory = repositoryRoot.resolve(
+                "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.2");
+        assertEquals(
+                expectedCoordinateDirectory.resolve(
+                        "routecontract-shardingsphere-5.5-0.1.2.jar"),
+                artifactJar);
+        Path artifactPom = Path.of(System.getProperty("routecontract.artifactPomPath"));
+        if (!artifactPom.isAbsolute() || Files.isSymbolicLink(artifactPom)) {
+            fail("routecontract.artifactPomPath must identify an absolute non-symlink path");
+        }
+        artifactPom = artifactPom.toRealPath();
+        assertEquals(
+                expectedCoordinateDirectory.resolve(
+                        "routecontract-shardingsphere-5.5-0.1.2.pom"),
+                artifactPom);
+        return artifactPom;
     }
 
     private static String sha256(Path path) throws Exception {

@@ -394,6 +394,151 @@ jobs:
           if-no-files-found: warn
           retention-days: 90
 
+  gradle-kotlin-pilot:
+    name: Gradle Kotlin DSL / MySQL assisted pilot
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: '17.0.20+101'
+          architecture: x64
+          verify-signature: true
+
+      - name: Verify exact Temurin runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "${JAVA_HOME}/release"
+          test "$(grep -Ec '^IMPLEMENTOR_VERSION=' "${JAVA_HOME}/release")" = '1'
+          test "$(grep -Ec '^JAVA_RUNTIME_VERSION=' "${JAVA_HOME}/release")" = '1'
+          grep -Fxq 'IMPLEMENTOR_VERSION="Temurin-17.0.20.1+1"' "${JAVA_HOME}/release"
+          grep -Fxq 'JAVA_RUNTIME_VERSION="17.0.20.1+1"' "${JAVA_HOME}/release"
+          test "$("${JAVA_HOME}/bin/java" -fullversion 2>&1)" = \
+            'openjdk full version "17.0.20.1+1"'
+          test -f "${JAVA_HOME}/jmods/jdk.javadoc.jmod"
+          test ! -L "${JAVA_HOME}/jmods/jdk.javadoc.jmod"
+          test "$(sha256sum "${JAVA_HOME}/jmods/jdk.javadoc.jmod" | awk '{print $1}')" = \
+            '4fd0541eb01b08f79a280484ec11569d87cebdf2b90a5e5b4bff695732d049ea'
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12.14'
+          architecture: x64
+          check-latest: false
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          dependency-graph: disabled
+          validate-wrappers: true
+
+      - name: Download and verify exact v0.1.2 assets once
+        shell: bash
+        run: |
+          set -euo pipefail
+          asset_dir="${RUNNER_TEMP}/routecontract-v0.1.2-assets"
+          evidence_dir="${RUNNER_TEMP}/routecontract-gradle-kotlin-evidence"
+          release_base="https://github.com/ym0506/routecontract/releases/download/v0.1.2"
+          expected_index_sha256="7849adf417f0170b08d01902b023e8b328d8796f7c2aeacc471eb7acf8e2b217"
+          assets=(
+            SHA256SUMS
+            routecontract-0.1.2-source.zip
+            routecontract-shardingsphere-5.5-0.1.2.jar
+            routecontract-shardingsphere-5.5-0.1.2-sources.jar
+            routecontract-shardingsphere-5.5-0.1.2-javadoc.jar
+            routecontract-shardingsphere-5.5.pom
+            routecontract-shardingsphere-5.5-cyclonedx.json
+            routecontract-shardingsphere-5.5-cyclonedx.xml
+            routecontract-aggregate-cyclonedx.json
+            routecontract-aggregate-cyclonedx.xml
+            supply-chain-evidence.json
+            test-summary.txt
+          )
+
+          test ! -e "${asset_dir}"
+          test ! -L "${asset_dir}"
+          test ! -e "${evidence_dir}"
+          mkdir "${asset_dir}" "${evidence_dir}"
+          for asset in "${assets[@]}"; do
+            curl --disable --proto '=https' --tlsv1.2 --fail --location \
+              --silent --show-error --retry 3 --connect-timeout 15 --max-time 300 \
+              --remove-on-error --max-filesize 5242880 \
+              --output "${asset_dir}/${asset}" \
+              "${release_base}/${asset}"
+          done
+          test "$(find "${asset_dir}" -mindepth 1 -maxdepth 1 -type f \
+            | wc -l | tr -d ' ')" = "${#assets[@]}"
+          test -z "$(find "${asset_dir}" -mindepth 1 -maxdepth 1 \
+            ! -type f -print -quit)"
+          test "$(sha256sum "${asset_dir}/SHA256SUMS" | awk '{print $1}')" = \
+            "${expected_index_sha256}"
+          {
+            printf '%s  SHA256SUMS\n' "${expected_index_sha256}"
+            cat "${asset_dir}/SHA256SUMS"
+          } > "${evidence_dir}/release-assets.sha256"
+          (
+            cd "${asset_dir}"
+            sha256sum --check --strict "${evidence_dir}/release-assets.sha256"
+          ) | tee "${evidence_dir}/release-assets-check.txt"
+          printf 'ROUTECONTRACT_RELEASE_ASSETS=%s\n' "${asset_dir}" >> "${GITHUB_ENV}"
+          printf 'ROUTECONTRACT_KOTLIN_EVIDENCE=%s\n' "${evidence_dir}" \
+            >> "${GITHUB_ENV}"
+
+      - name: Verify complete Gradle Kotlin assisted-pilot lane
+        shell: bash
+        timeout-minutes: 40
+        run: |
+          set -euo pipefail
+          docker info >/dev/null
+          summary="${ROUTECONTRACT_KOTLIN_EVIDENCE}/summary.txt"
+          partial="${summary}.partial"
+          provenance="${ROUTECONTRACT_KOTLIN_EVIDENCE}/provenance.json"
+          test -z "$(git status --porcelain=v1 --untracked-files=all \
+            --ignore-submodules=none)"
+          set +e
+          ./scripts/verify-gradle-kotlin-pilot.sh \
+            --release-assets-dir "${ROUTECONTRACT_RELEASE_ASSETS}" \
+            --provenance-output "${provenance}" \
+            > "${partial}" 2>&1
+          status="$?"
+          set -e
+          cat "${partial}"
+          if test "${status}" != 0; then
+            exit "${status}"
+          fi
+          mv "${partial}" "${summary}"
+          test -s "${provenance}"
+          test "$(grep -c '^ROUTECONTRACT_GRADLE_KOTLIN_VERIFY ' \
+            "${summary}")" = 1
+          python3 -I scripts/validate-gradle-kotlin-pilot-provenance.py \
+            "${provenance}" > "${ROUTECONTRACT_KOTLIN_EVIDENCE}/receipt-validation.txt"
+          (
+            cd "${ROUTECONTRACT_KOTLIN_EVIDENCE}"
+            sha256sum summary.txt provenance.json receipt-validation.txt \
+              > verifier-evidence.sha256
+          )
+          test -z "$(git status --porcelain=v1 --untracked-files=all \
+            --ignore-submodules=none)"
+
+      - name: Upload Gradle Kotlin pilot evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: routecontract-gradle-kotlin-evidence-${{ github.sha }}
+          path: ${{ runner.temp }}/routecontract-gradle-kotlin-evidence/
+          if-no-files-found: warn
+          retention-days: 90
+
   dependency-review:
     name: Dependency review
     if: github.event_name == 'pull_request'
