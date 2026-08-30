@@ -451,8 +451,89 @@ and shell postconditions together and verify that adapted lane before relying on
 If `settings.gradle` enforces `RepositoriesMode.FAIL_ON_PROJECT_REPOS`, place the same conditional
 `exclusiveContent` repository in the existing `dependencyResolutionManagement` block instead; the
 repository path must not be read when the pilot property is absent. If the repository cannot
-isolate this lane or needs Kotlin DSL, stop and report that fit blocker rather than adding an
-untested generic build fragment.
+isolate this lane, stop and report that fit blocker rather than weakening repository policy.
+
+### Gradle Kotlin DSL opt-in lane
+
+The repository includes a runnable
+[Gradle Kotlin DSL pilot](../examples/gradle-kotlin-pilot/README.md). Its `build.gradle.kts` contains
+the complete adaptation block between `ROUTECONTRACT_KOTLIN_DSL_START` and
+`ROUTECONTRACT_KOTLIN_DSL_END`; a contract test requires this guide to keep pointing at those
+tested bytes. The block uses fully qualified Gradle types and the explicitly aliased JDK types in
+the prelude below, and the verifier extracts those
+exact marker-bounded bytes into a fresh script with only this tested prelude:
+
+```kotlin
+import java.nio.file.Files as JFiles
+import java.nio.file.LinkOption as JLinkOption
+import java.nio.file.Path as JPath
+import java.security.MessageDigest as JMessageDigest
+import java.util.HexFormat as JHexFormat
+
+plugins { java }
+
+repositories { mavenCentral() }
+```
+
+The lane uses the same inactive-by-default source-set, exclusive local-Maven-repository isolation,
+exact GAV resolution, canonical coordinate JAR and POM paths and hashes, dependency graph, evidence
+cleanup, candidate, and human-approval boundaries as the Groovy lane. The exclusive-content filter
+prevents the RouteContract module from falling back to Maven Central. Unlike a target's ordinary
+test configuration, the pilot configuration declares its own exact
+ShardingSphere-JDBC 5.5.3, MySQL Connector/J 26.7.0, Testcontainers 1.21.4, JUnit 5.14.3, and JUnit
+Platform 1.14.3 dependencies. The complete fixture has been exercised with the repository's
+SHA-256-pinned Gradle 8.14.4 wrapper, Java 17, and the digest-pinned MySQL 8.4.11 image. This does
+not claim compatibility with another Gradle release.
+
+Run the internal verifier against an already downloaded exact `v0.1.0` Release-asset directory:
+
+```bash
+./scripts/verify-gradle-kotlin-pilot.sh \
+  --release-assets-dir "/absolute/path/to/routecontract-release-assets" \
+  --provenance-output "/absolute/path/to/absent/gradle-kotlin-provenance.json"
+```
+
+For an external repository, copy the tested prelude if it is not already present and then copy the
+full marker-bounded block into the owning module's `build.gradle.kts`. Adapt only the
+operation-specific candidate and JUnit-report paths. Pass `routecontractRepository` as an absolute
+local filesystem directory whose real path is identical and contains no symlink component; do not
+pass a `file:` URI. The exact coordinate JAR must also be a real regular file below that directory.
+The pilot task independently requests a Java 17 launcher and compiler but does not provision a
+JDK. A preinstalled JDK 17 is required. If the target has only a newer toolchain, stop and report
+that fit blocker rather than claiming this fixture covers it; in particular, this local fixture is
+not evidence that the current Java-21 HsinDumas checkout is integrated. Do not lower the normal
+toolchain merely to make this pilot pass.
+
+Use the same reusable Gradle commands and success marker as the Groovy lane, replacing
+`:owning-module` with the actual project path:
+
+```bash
+ROUTECONTRACT_REPOSITORY=/absolute/real/path/to/routecontract-maven \
+  ./gradlew -ProutecontractPilot=true \
+  :owning-module:dependencies --configuration routeContractPilotRuntimeClasspath
+ROUTECONTRACT_REPOSITORY=/absolute/real/path/to/routecontract-maven \
+  ./gradlew -ProutecontractPilot=true :owning-module:routeContractPilotGraph
+test "$(ROUTECONTRACT_REPOSITORY=/absolute/real/path/to/routecontract-maven \
+  ./gradlew -q -ProutecontractPilot=true :owning-module:routeContractPilotGraph \
+  | grep -Fxc 'ROUTECONTRACT_GRADLE_GRAPH VERIFIED')" -eq 1
+ROUTECONTRACT_REPOSITORY=/absolute/real/path/to/routecontract-maven \
+  ./gradlew -ProutecontractPilot=true --no-build-cache --rerun-tasks \
+  :owning-module:routeContractPilot
+```
+
+The checked-in fixture bootstraps one immutable wrapper-pinned Gradle 8.14.4 distribution, then
+gives the marker, repository-path, GAV-negative, profile-off, GAV-origin, graph, missing-baseline,
+and matched cases separate Gradle user homes and project caches that are absent at case start. A
+fresh-cache offline, origin-only, non-transitive configuration proves exact RouteContract GAV
+selection without remote fallback. It rejects wrong, missing-metadata, POM-tampered, and
+JAR-tampered local GAV layouts before accepting the exact opt-in graph. The full dependency graph
+and MySQL operation remain online and enforce the listed selected invariants; this is not a claim of
+a locked, hermetic full dependency closure. The preserved JSON provenance records the requested and
+selected GAV, canonical JAR/POM paths and hashes, and in-JVM API/provider/SPI origins while keeping
+`externalUser`, `humanApprovedBaseline`, and `adoption` false. The synthetic copy remains CI
+scaffolding rather than human approval or external adoption. A target repository that only runs H2,
+including H2 `MODE=MySQL`, still has only `verified - H2` evidence;
+that mode does not satisfy the published MySQL 8.4.11 boundary.
 
 ### Maven 3.9.14 opt-in profile lane
 
