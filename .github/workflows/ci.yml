@@ -571,7 +571,7 @@ jobs:
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: temurin
-          java-version: '21.0.12+8'
+          java-version: '21.0.12+8.0.LTS'
           architecture: x64
           verify-signature: true
 

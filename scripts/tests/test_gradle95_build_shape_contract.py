@@ -186,7 +186,7 @@ class Gradle95BuildShapeContractTest(unittest.TestCase):
             "Gradle 9.5.1 / JDK 21 to 17 / Boot BOM isolation",
             "java-version: '17.0.20+101'",
             "printf 'ROUTECONTRACT_BUILD_SHAPE_JDK17_HOME=%s\\n'",
-            "java-version: '21.0.12+8'",
+            "java-version: '21.0.12+8.0.LTS'",
             "verify-gradle95-build-shape.sh",
             '--jdk17-home "${ROUTECONTRACT_BUILD_SHAPE_JDK17_HOME}"',
             "build-shape-receipt.json",
