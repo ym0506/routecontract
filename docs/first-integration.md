@@ -142,8 +142,8 @@ Important release boundary: the immutable `v0.1.2` Release body and tagged READM
 the `v0.1.0` onboarding path. This `main` guide is a post-release bridge for the immutable `v0.1.2`
 assets, not evidence that `v0.1.2` is a self-contained immutable onboarding Release. The installer
 and assets below come from the immutable tag. Every helper or verifier introduced after that tag is
-fetched through its own exact implementation-commit permalink and verified against the SHA-256
-recorded here.
+fetched through its own exact bridge-commit permalink for that implementation and verified against
+the SHA-256 recorded here.
 
 ```bash
 (

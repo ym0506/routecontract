@@ -149,8 +149,8 @@ reservation. Do not repair, delete, or reuse either the original path or any mov
 Important: the immutable `v0.1.2` Release body and the README stored in that tag still point to the
 `v0.1.0` onboarding path. The current `main` documentation and guide are a post-release bridge for
 consuming `v0.1.2` assets; they do not make `v0.1.2` a self-contained immutable onboarding Release.
-Each helper and verifier added after the tag is pinned to its own exact implementation-commit
-permalink and the SHA-256 recorded in the guide.
+Each helper and verifier added after the tag is pinned to its own exact bridge-commit permalink for
+that implementation and the SHA-256 recorded in the guide.
 
 Do not read the long guide linearly. Use this shortest supported path:
 

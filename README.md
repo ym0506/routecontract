@@ -149,8 +149,8 @@ coordinate에 payload 4개와 SHA-1·SHA-256 sidecar 8개가 생깁니다. commi
 중요: 불변 `v0.1.2` Release 본문과 해당 tag에 포함된 README는 아직 `v0.1.0` 온보딩
 경로를 가리킵니다. 지금 보고 있는 `main` 문서와 가이드는 `v0.1.2` 자산을 소비하기 위한
 release 이후 bridge이며, `v0.1.2` 자체가 완결된 불변 온보딩 Release라는 뜻이 아닙니다.
-tag 이후에 추가된 각 helper와 verifier는 각각의 exact implementation commit permalink와
-문서에 적힌 SHA-256에 함께 고정되어 있습니다.
+tag 이후에 추가된 각 helper와 verifier는 해당 구현의 exact bridge-commit permalink와 문서에
+적힌 SHA-256에 함께 고정되어 있습니다.
 
 긴 가이드를 처음부터 끝까지 읽지 말고, 다음 순서로 필요한 부분만 사용하세요.
 
