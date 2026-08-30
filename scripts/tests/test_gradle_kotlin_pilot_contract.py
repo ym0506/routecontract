@@ -342,6 +342,9 @@ class GradleKotlinPilotContractTest(unittest.TestCase):
         self.assertLess(preserved_receipt_copy, final_success_marker)
 
     def test_required_ci_workflow_runs_and_preserves_the_full_lane(self) -> None:
+        lane_start = self.ci.index("  gradle-kotlin-pilot:")
+        lane_end = self.ci.index("\n  gradle95-build-shape:", lane_start)
+        lane = self.ci[lane_start:lane_end]
         for required in (
             "gradle-kotlin-pilot:\n"
             "    name: Gradle Kotlin DSL / MySQL assisted pilot",
@@ -354,6 +357,8 @@ class GradleKotlinPilotContractTest(unittest.TestCase):
             "verifier-evidence.sha256",
         ):
             self.assertIn(required, self.ci)
+        self.assertIn("--retry 3 --retry-all-errors", lane)
+        self.assertIn("--remove-on-error", lane)
 
     def test_provenance_output_contract_executes_and_rejects_origin_drift(self) -> None:
         spec = importlib.util.spec_from_file_location(

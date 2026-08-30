@@ -181,6 +181,9 @@ class Gradle95BuildShapeContractTest(unittest.TestCase):
             self.assertIn(required, self.verifier)
 
     def test_ci_runs_the_lane_with_both_exact_jdk_homes(self) -> None:
+        lane_start = self.ci.index("  gradle95-build-shape:")
+        lane_end = self.ci.index("\n  dependency-review:", lane_start)
+        lane = self.ci[lane_start:lane_end]
         for required in (
             "gradle95-build-shape:",
             "Gradle 9.5.1 / JDK 21 to 17 / Boot BOM isolation",
@@ -194,6 +197,8 @@ class Gradle95BuildShapeContractTest(unittest.TestCase):
             "receipt-validation.txt",
         ):
             self.assertIn(required, self.ci)
+        self.assertIn("--retry 3 --retry-all-errors", lane)
+        self.assertIn("--remove-on-error", lane)
 
     @staticmethod
     def valid_receipt(repository: Path = ROOT) -> dict[str, object]:

@@ -471,7 +471,8 @@ jobs:
           mkdir "${asset_dir}" "${evidence_dir}"
           for asset in "${assets[@]}"; do
             curl --disable --proto '=https' --tlsv1.2 --fail --location \
-              --silent --show-error --retry 3 --connect-timeout 15 --max-time 300 \
+              --silent --show-error --retry 3 --retry-all-errors \
+              --connect-timeout 15 --max-time 300 \
               --remove-on-error --max-filesize 5242880 \
               --output "${asset_dir}/${asset}" \
               "${release_base}/${asset}"
@@ -626,7 +627,8 @@ jobs:
           mkdir "${asset_dir}" "${evidence_dir}"
           for asset in "${assets[@]}"; do
             curl --disable --proto '=https' --tlsv1.2 --fail --location \
-              --silent --show-error --retry 3 --connect-timeout 15 --max-time 300 \
+              --silent --show-error --retry 3 --retry-all-errors \
+              --connect-timeout 15 --max-time 300 \
               --remove-on-error --max-filesize 5242880 \
               --output "${asset_dir}/${asset}" "${release_base}/${asset}"
           done
