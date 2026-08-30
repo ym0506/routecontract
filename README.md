@@ -93,6 +93,9 @@ SHA-256에 함께 고정되어 있습니다.
 Maven 사용자는 체크인된 [두 모듈 reference fixture](examples/maven-pilot/README.md)를 먼저
 실행해 자신의 저장소와 다른 지점을 확인할 수 있습니다. 어느 lane에도 정확히 맞지 않으면
 일반 예시를 억지로 붙이지 말고 그 지점에서 중단하세요.
+Maven pilot 두 테스트를 준비한 뒤에는 [6개 필드 예제 JSON](examples/maven-pilot/assisted-pilot.example.json)을
+복사하고 [one-command runner](examples/maven-pilot/README.md#one-command-runner-for-an-adapted-external-maven-pilot)로
+기존 검증기의 12개 입력을 직접 조립하지 않고 `review`·`matched` 경계를 실행할 수 있습니다.
 
 처음 실행했거나 현재 환경에는 맞지 않는다고 판단했다면
 [stable v0.1.2 feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)에
