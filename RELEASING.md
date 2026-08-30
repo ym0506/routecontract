@@ -264,7 +264,7 @@ records required invariants rather than copying an unstable JSON schema.
 
 Before any upload, record and independently compare:
 
-- a stable project version of at least `0.1.1`; its annotated `vVERSION` tag
+- a stable project version strictly greater than `0.1.2`; its annotated `vVERSION` tag
   object OID, raw-object size and SHA-256; its peeled commit and tree; and the
   public `main` commit from which that tag was created;
 - the successful release-evidence workflow identity and file SHA-256, run ID,
@@ -311,17 +311,23 @@ parent and the checked-in Wrapper:
 ```bash
 (
 set -e
-release_version=0.1.1
+release_version=REPLACE_WITH_SEPARATELY_APPROVED_LATER_STABLE_VERSION
 staging_parent=/absolute/path/to/new-private-central-staging
 reviewed_primary_fingerprint=REPLACE_WITH_40_UPPERCASE_HEX
 test ! -e "${staging_parent}"
 mkdir -m 700 "${staging_parent}"
+gpg_options="${staging_parent}/gpg-options"
+printf '%s\n' \
+  'no-auto-key-retrieve' \
+  'digest-algo SHA384' > "${gpg_options}"
+chmod 600 "${gpg_options}"
 GNUPGHOME=/absolute/path/to/protected-gnupg-home ./gradlew \
   --no-daemon --no-build-cache --no-configuration-cache \
   :routecontract-shardingsphere-5.5:publishMavenJavaPublicationToCentralStagingRepository \
   -ProutecontractCentralStagingDirectory="${staging_parent}/repository" \
   -ProutecontractCentralSigning=true \
   -Psigning.gnupg.executable=gpg \
+  -Psigning.gnupg.optionsFile="${gpg_options}" \
   -Psigning.gnupg.keyName="${reviewed_primary_fingerprint}!"
 )
 ```
@@ -347,6 +353,98 @@ evidence-only files: bind their exact names, sizes and bytes to the private
 candidate receipt, but exclude them from the Central bundle. If a future
 publication design intentionally adds any of them as Maven artifacts, review
 that change first and include them in the upload allowlist and public readback.
+
+### Credential-free deterministic upload bundle
+
+After the signed staging tree and public-key-only verification home pass the
+checks above, use `scripts/prepare-central-upload-bundle.py`. The script has no
+HTTP client, Portal credential input, signing operation or publication mode. It
+only reads one local Gradle Maven staging repository, a separately reviewed
+payload manifest and a public-key-only GnuPG home, then creates a deterministic
+ZIP plus a path-free receipt in a new absent output directory.
+All file and directory arguments must be absolute normalized canonical paths;
+the tool rejects a symlink in any argument's existing path.
+Manifest, staging, tool, bundle, receipt and created output files must each be
+regular files with exactly one hard link. Repository traversal stays anchored
+to opened directories with `O_NOFOLLOW` and compares directory identities
+before and after every read. The output directory is mode `0700`; its two files
+are mode `0600`. A write, readback or descriptor-close failure closes every
+descriptor it can and fails without any failure-time rename, unlink or directory
+removal. The new output directory may therefore remain partial at the requested
+path and must be inspected and removed manually before a fresh attempt. This
+conservative rule prevents cleanup races from deleting or replacing unrelated
+objects.
+Secret-material names in the public GnuPG home fail even when they are symlink
+aliases or dangling links.
+The tool exports the exact verified public key into a tool-created private,
+public-only temporary GnuPG home and uses that snapshot for every signature
+check, so signature verification does not reopen the caller's keyring.
+
+The reviewed payload manifest is a strict canonical JSON document with schema
+version `1`, the exact `io.github.ym0506.routecontract` group,
+`routecontract-shardingsphere-5.5` artifact, one stable SemVer strictly greater
+than `0.1.2`, and exactly five lexicographically ordered payload records. Each
+record has only `name`, `size` and `sha256`. The five records are the POM,
+Gradle Module Metadata, main JAR, sources JAR and Javadoc JAR. The manifest must
+be produced and approved as part of the approval-bound candidate; the bundle
+tool never creates or edits it and does not turn computed staging hashes into
+approval. A later release-evidence design must therefore retain and review the
+exact Gradle Module Metadata bytes; the current `v0.1.2` release evidence does
+not do that and cannot be substituted.
+
+The upload ZIP contains exactly 30 regular files under the one Maven version
+path:
+
+- the five reviewed payloads;
+- one detached ASCII-armored primary-key signature for each payload; and
+- `.md5`, `.sha1`, `.sha256` and `.sha512` sidecars for each payload.
+
+The local Gradle staging tree also contains four checksum sidecars for each
+`.asc` file and artifact-level `maven-metadata.xml` plus four checksums. The tool
+requires that exact local-only inventory, verifies every checksum and detached
+signature, and excludes those 25 files from the upload ZIP. Signature sidecars
+do not need checksums, and repository-level metadata is local publication
+bookkeeping rather than version payload. Any other file, directory, symlink or
+special file fails closed.
+
+The ZIP uses lexicographic entry order, stored entries, the fixed ZIP epoch,
+regular mode `0644`, no directory entries, no archive comment and no extra
+fields. For identical signed staging bytes and reviewed manifest, its bytes and
+SHA-256 are identical. The receipt is canonical sorted JSON and binds the exact
+manifest bytes, tool bytes, coordinate, primary fingerprint, ZIP name, byte
+count, SHA-256 and every entry name, size and SHA-256. It explicitly records
+that credentials, upload, validation, Publish, public readback and availability
+are outside its scope.
+
+Use a fresh GnuPG home containing only the independently retrieved public key.
+The tool rejects secret-key material and verifies exactly one SHA-384 detached
+signature per payload from the expected 40-character uppercase primary
+fingerprint. It never retrieves a key or follows a network path.
+
+```bash
+python3 -I scripts/prepare-central-upload-bundle.py build \
+  --repository /absolute/path/to/new-private-central-staging/repository \
+  --reviewed-payload-manifest /absolute/path/to/reviewed-payloads.json \
+  --public-gpg-home /absolute/path/to/fresh-public-only-gnupg-home \
+  --expected-primary-fingerprint REPLACE_WITH_40_UPPERCASE_HEX \
+  --output-directory /absolute/path/to/new-private-central-bundle
+
+python3 -I scripts/prepare-central-upload-bundle.py verify \
+  --repository /absolute/path/to/new-private-central-staging/repository \
+  --bundle /absolute/path/to/new-private-central-bundle/routecontract-shardingsphere-5.5-VERSION-central-upload.zip \
+  --receipt /absolute/path/to/new-private-central-bundle/routecontract-shardingsphere-5.5-VERSION-central-upload-receipt.json \
+  --reviewed-payload-manifest /absolute/path/to/reviewed-payloads.json \
+  --public-gpg-home /absolute/path/to/fresh-public-only-gnupg-home \
+  --expected-primary-fingerprint REPLACE_WITH_40_UPPERCASE_HEX
+```
+
+The receipt is local bundle evidence only. Independently compare its reviewed
+manifest binding, tag, commit, tree, workflow run, release evidence and public
+key facts with the approval-bound candidate before recording upload intent.
+Never pass the bundle to a network client merely because this verifier succeeds.
+The CLI success marker uses the version and both SHA-256 values returned by the
+same completed build or verification operation; it never reopens those paths to
+construct a later attestation.
 
 ### Portal upload, validation and publication
 
