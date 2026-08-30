@@ -4,6 +4,15 @@
 
 [![CI](https://github.com/ym0506/routecontract/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ym0506/routecontract/actions/workflows/ci.yml?query=branch%3Amain)
 
+> **Start an assisted pilot with a 30-minute fit check — no setup before opting in**
+>
+> If you maintain a public Java 17 repository with exactly ShardingSphere-JDBC 5.5.3 and one
+> existing synchronous non-batch `PreparedStatement` test, [leave the three-line `interested`
+> reply in Discussion #34](https://github.com/ym0506/routecontract/discussions/34). I will inspect
+> the public code first and return a fit/not-fit answer; if it fits, I will prepare a private
+> first-pass patch for one representative operation. Nothing is published, baseline-approved,
+> or described as adoption without your separate confirmation.
+
 [Apache ShardingSphere-JDBC](https://github.com/apache/shardingsphere) is JDBC middleware that can split one logical SQL operation across multiple data sources inside a Java application. RouteContract is a Java testing library that compares execution-structure changes missed by business-result tests with a human-reviewed baseline and fails a manifest assertion. Configuring that assertion as a required CI check can stop an unapproved change from merging.
 
 - **Who:** developers and teams using or evaluating Apache ShardingSphere-JDBC 5.5.3
