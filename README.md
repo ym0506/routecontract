@@ -4,6 +4,18 @@
 
 [![CI](https://github.com/ym0506/routecontract/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ym0506/routecontract/actions/workflows/ci.yml?query=branch%3Amain)
 
+> **Maintainers: start with a 30-minute fit check — no setup required.**
+> [English pilot details](README.en.md) · [Reply `interested` in Discussion #34](https://github.com/ym0506/routecontract/discussions/34)
+>
+> **30분 fit check로 assisted pilot 시작 — 신청 전 설치 불필요**
+>
+> 공개 Java 17 저장소에서 정확히 ShardingSphere-JDBC 5.5.3과 기존 동기식 non-batch
+> `PreparedStatement` 테스트 하나를 유지한다면 [Discussion #34에 `interested` 3줄 답글을
+> 남기세요](https://github.com/ym0506/routecontract/discussions/34). 먼저 공개 코드만 보고
+> fit/not-fit을 답하고, 맞으면 대표 operation 하나의 private first-pass patch를 준비합니다.
+> 별도 확인 전에는 공개 PR을 열거나 baseline을 승인하지 않으며, 이를 채택으로 표현하지
+> 않습니다.
+
 [Apache ShardingSphere-JDBC](https://github.com/apache/shardingsphere)는 Java 애플리케이션 안에서 하나의 논리 SQL을 여러 data source로 나눠 실행할 수 있는 JDBC middleware입니다. RouteContract는 기능 결과만 보는 테스트가 놓칠 수 있는 실행 구조 변화를 사람이 검토한 승인본과 비교해 manifest assertion을 실패시키는 Java 테스트 라이브러리입니다. 이 assertion을 required CI check로 설정하면 승인되지 않은 변화가 merge되는 것을 막을 수 있습니다.
 
 - **사용자:** Apache ShardingSphere-JDBC 5.5.3을 사용하거나 도입을 평가하는 Java 개발자·팀
@@ -12,12 +24,6 @@
 - **검증 경계:** Java 17, 정확히 ShardingSphere-JDBC 5.5.3, 정상 반환·비-interrupt 동기식 non-batch `PreparedStatement`; SQL 의미 동치나 complete route plan·commit·비즈니스 성공은 판정하지 않음
 
 [2분 54초 시연 영상 보기](https://www.youtube.com/watch?v=pcgvNNxd1mM)
-
-공개 저장소의 대표 operation 하나에서 30분 scoping·first-pass assisted pilot을 원한다면
-[Discussion #34의 `interested` 양식](https://github.com/ym0506/routecontract/discussions/34)으로
-opt in하세요. RouteContract maintainer가 기존 ShardingSphere-JDBC 5.5.3 테스트 하나의 작은
-opt-in lane 초안을 준비하도록 돕습니다. 공개 PR은 별도 확인이 있어야 하며, baseline 승인과
-채택 결정은 외부 maintainer에게만 있습니다. pass·star·endorsement는 요청하지 않습니다.
 
 ![같은 업무 결과에서 승인본과 candidate의 관측 실행 시도 및 data-source alias가 1에서 2로 달라져 RCM201과 RCM202가 발생한 실제 MySQL 검증](submission/assets/baseline-candidate.png)
 
