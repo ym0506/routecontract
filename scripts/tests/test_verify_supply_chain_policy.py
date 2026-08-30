@@ -620,6 +620,9 @@ class SupplyChainPolicyTest(unittest.TestCase):
   <groupId>io.github.ym0506.routecontract</groupId>
   <artifactId>routecontract-shardingsphere-5.5</artifactId>
   <version>0.1.0</version>
+  <name>RouteContract for Apache ShardingSphere-JDBC 5.5.3</name>
+  <description>Operation-scoped contracts over physical JDBC execution attempts reported by Apache ShardingSphere-JDBC 5.5.3 SQLExecutionHook</description>
+  <url>https://github.com/ym0506/routecontract</url>
   <licenses>
     <license>
       <name>The Apache License, Version 2.0</name>
@@ -627,6 +630,19 @@ class SupplyChainPolicyTest(unittest.TestCase):
       <distribution>repo</distribution>
     </license>
   </licenses>
+  <developers>
+    <developer>
+      <id>ym0506</id>
+      <name>ym0506</name>
+      <email>atat9828@naver.com</email>
+      <url>https://github.com/ym0506</url>
+    </developer>
+  </developers>
+  <scm>
+    <connection>scm:git:https://github.com/ym0506/routecontract.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/ym0506/routecontract.git</developerConnection>
+    <url>https://github.com/ym0506/routecontract</url>
+  </scm>
   <dependencies>
     <dependency>
       <groupId>com.example</groupId>
@@ -1893,6 +1909,76 @@ empty=
 
         self.assertNotEqual(0, result.returncode)
         self.assertIn("exact Apache-2.0 license", result.stderr)
+
+    def test_accepts_exact_central_pom_metadata(self) -> None:
+        self.write_fixture()
+        result = self.prepare_inventory()
+        self.assertEqual(0, result.returncode, result.stderr)
+
+    def test_rejects_missing_duplicate_or_wrong_central_developer(self) -> None:
+        developer = (
+            "    <developer>\n"
+            "      <id>ym0506</id>\n"
+            "      <name>ym0506</name>\n"
+            "      <email>atat9828@naver.com</email>\n"
+            "      <url>https://github.com/ym0506</url>\n"
+            "    </developer>\n"
+        )
+        developers = f"  <developers>\n{developer}  </developers>\n"
+        cases = (
+            ("missing", developers, "", "must contain one developers element"),
+            ("duplicate", developer, developer * 2, "declaration is ambiguous"),
+            (
+                "wrong",
+                "<email>atat9828@naver.com</email>",
+                "<email>wrong@example.com</email>",
+                "exact RouteContract developer",
+            ),
+        )
+        for case, old, new, error in cases:
+            with self.subTest(case=case):
+                self.write_fixture()
+                content = self.published_pom.read_text(encoding="utf-8")
+                self.published_pom.write_text(
+                    content.replace(old, new, 1), encoding="utf-8"
+                )
+                result = self.prepare_inventory()
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn(error, result.stderr)
+
+    def test_rejects_missing_or_wrong_central_project_metadata(self) -> None:
+        project_name = (
+            "<name>RouteContract for Apache ShardingSphere-JDBC 5.5.3</name>"
+        )
+        cases = (
+            (project_name, "", "one project name"),
+            (project_name, project_name * 2, "one project name"),
+            (
+                "Operation-scoped contracts over physical JDBC execution attempts",
+                "Wrong contract",
+                "project description",
+            ),
+            (
+                "https://github.com/ym0506/routecontract</url>",
+                "https://example.invalid/project</url>",
+                "project url",
+            ),
+            (
+                "scm:git:https://github.com/ym0506/routecontract.git",
+                "scm:git:https://example.invalid/wrong.git",
+                "exact RouteContract scm",
+            ),
+        )
+        for old, new, error in cases:
+            with self.subTest(old=old):
+                self.write_fixture()
+                content = self.published_pom.read_text(encoding="utf-8")
+                self.published_pom.write_text(
+                    content.replace(old, new, 1), encoding="utf-8"
+                )
+                result = self.prepare_inventory()
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn(error, result.stderr)
 
     def test_rejects_utf16_published_pom_with_dtd_and_entity(self) -> None:
         self.write_fixture()

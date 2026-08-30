@@ -246,6 +246,170 @@ release with an explicit design and verification path. Do not imply SLSA
 provenance or reproducible builds unless those properties have been separately
 implemented and verified.
 
+## Future Maven Central publication (`v0.1.1` and later)
+
+The immutable GitHub Release `v0.1.0` remains unchanged and is not published
+to Maven Central. This section applies only to a future stable version whose
+semantic version is `0.1.1` or later. It does not authorize overwriting,
+retagging, or describing `0.1.0` as a Central artifact.
+
+Use the current official [Central publishing guide](https://central.sonatype.org/publish/publish-portal-guide/),
+[Portal API documentation](https://central.sonatype.org/publish/publish-portal-api/)
+and [GPG requirements](https://central.sonatype.org/publish/requirements/gpg/)
+at action time. Portal fields and response shapes can change; this checklist
+records required invariants rather than copying an unstable JSON schema.
+
+### Approval-bound candidate
+
+Before any upload, record and independently compare:
+
+- a stable project version of at least `0.1.1`; its annotated `vVERSION` tag
+  object OID, raw-object size and SHA-256; its peeled commit and tree; and the
+  public `main` commit from which that tag was created;
+- the successful release-evidence workflow identity and file SHA-256, run ID,
+  `run_attempt` and `head_sha`, plus every evidence artifact ID, digest and flat
+  filename allowlist, all bound to that peeled commit; also record the exact
+  source checkout and clean-tree result;
+- the generated POM coordinates and required project, license, developer and
+  SCM metadata; Gradle Module Metadata; main, sources and Javadoc JARs; direct
+  and aggregate CycloneDX JSON/XML SBOMs; supply-chain policy result; and the
+  exact name, size and SHA-256 of every reviewed file;
+- the source and Javadoc JAR contents, first-party package namespace, notices,
+  and absence of credentials, private paths, generated local state and
+  unrelated artifacts; and
+- Central Portal namespace ownership showing `io.github.ym0506` as verified.
+
+Any mismatch creates a new candidate. Do not repair an already uploaded or
+published coordinate in place. Later upload, validation and Publish checks bind
+to the immutable tag, peeled commit, tree and workflow run; unrelated later
+development may advance `main`.
+
+### Signing and local staging
+
+The release signature uses the reviewed protected OpenPGP primary key selected
+by its full uppercase fingerprint. Keep the private key and passphrase in a
+protected maintainer-controlled GnuPG home; let `gpg-agent` request the
+passphrase. Never store private-key material, passphrases or Central
+credentials in Git, Gradle properties, shell history, command output, CI logs
+or artifacts. Shell tracing must remain disabled. Recording the public primary
+fingerprint and verified signature status in the private release receipt is
+expected.
+
+Central's current GPG requirements require the signing-capable primary key and
+do not accept a signing subkey. Therefore the command below selects the exact
+reviewed 40-hex primary fingerprint with `!`. If that official rule changes,
+review the new rule before changing the release procedure.
+
+CI may generate an ephemeral throwaway key only to test signing configuration.
+That key and its signatures are test data, are never uploaded or retained as
+artifacts, and are not release evidence.
+
+From a fresh detached checkout of the reviewed tag, use a new private staging
+parent and the checked-in Wrapper:
+
+```bash
+(
+set -e
+release_version=0.1.1
+staging_parent=/absolute/path/to/new-private-central-staging
+reviewed_primary_fingerprint=REPLACE_WITH_40_UPPERCASE_HEX
+test ! -e "${staging_parent}"
+mkdir -m 700 "${staging_parent}"
+GNUPGHOME=/absolute/path/to/protected-gnupg-home ./gradlew \
+  --no-daemon --no-build-cache --no-configuration-cache \
+  :routecontract-shardingsphere-5.5:publishMavenJavaPublicationToCentralStagingRepository \
+  -ProutecontractCentralStagingDirectory="${staging_parent}/repository" \
+  -ProutecontractCentralSigning=true \
+  -Psigning.gnupg.executable=gpg \
+  -Psigning.gnupg.keyName="${reviewed_primary_fingerprint}!"
+)
+```
+
+Before upload, recheck the official list of Central-supported keyservers and
+distribute the exact public primary key to one currently supported server. In a
+fresh empty private `GNUPGHOME`, receive/import it from that same server using
+only read-only retrieval, then require the exact reviewed uppercase 40-hex
+primary fingerprint and a signing-capable, current, nonexpired and nonrevoked
+primary key. Stop if any condition or retrieval fails.
+
+Confirm the staged version equals `${release_version}`. Reject symlinks,
+special files, nested surprises, unexpected names and files outside the one
+coordinate. Recompute every checksum over its named staged file and compare the
+result, then use only the fresh keyring above to verify every detached signature
+against the reviewed primary fingerprint. Compare the POM, Gradle Module
+Metadata and three JAR bytes with the approval-bound evidence. Gradle
+repository-level `maven-metadata.xml` is local bookkeeping and is not part of
+the version upload bundle.
+
+The direct and aggregate SBOMs and supply-chain policy result remain
+evidence-only files: bind their exact names, sizes and bytes to the private
+candidate receipt, but exclude them from the Central bundle. If a future
+publication design intentionally adds any of them as Maven artifacts, review
+that change first and include them in the upload allowlist and public readback.
+
+### Portal upload, validation and publication
+
+1. Create one exact upload bundle containing only the reviewed Maven version
+   payload, each payload's detached signature and required payload checksum
+   sidecars. Record its SHA-256 and filename allowlist in a private receipt that
+   contains no credential.
+2. Upload once as `USER_MANAGED`, never automatic publication. Record an
+   upload-intent entry before the request and then the returned deployment ID
+   and observed result without editing earlier receipt entries.
+3. Wait for Portal validation. A maintainer must inspect the exact deployment
+   ID, namespace, version, component files, signatures and reported errors,
+   and compare downloadable candidate bytes with the local reviewed bundle.
+4. Record publish intent, then issue one explicit Publish action for that exact
+   validated deployment. Do not use a retrying client for upload or Publish.
+5. If an upload or Publish times out, loses its response, or otherwise has an
+   ambiguous result, do not repeat the mutation. Reconcile only with read-only
+   status, deployment listing and byte-download checks. Record the observed
+   state; if the outcome cannot be proved, stop and make no availability
+   claim.
+
+Central credentials must never be stored or logged; supply them only as
+action-time inputs and do not print them. Authenticated HTTP requests must use
+the exact `central.sonatype.com` HTTPS origin and must not follow redirects.
+Remove the credential from the environment immediately after the action.
+
+### Public readback and availability claim
+
+After Portal reports publication, wait for the coordinate to appear through
+the official public Maven Central repository. Fetch the exact POM, Gradle
+metadata, main/sources/Javadoc JARs and other published version files without
+authentication and compare them byte-for-byte with the reviewed staged
+payload. A Portal success response alone is not public-availability evidence.
+
+Then run the standalone consumer from a clean reviewed source checkout with a
+new empty Gradle cache and only the public Maven Central endpoint for the
+RouteContract group:
+
+```bash
+(
+set -e
+fresh_gradle_home=/absolute/path/to/new-empty-gradle-home
+test ! -e "${fresh_gradle_home}"
+mkdir -m 700 "${fresh_gradle_home}"
+ROUTECONTRACT_REPOSITORY=https://repo.maven.apache.org/maven2 \
+ROUTECONTRACT_GROUP=io.github.ym0506.routecontract \
+ROUTECONTRACT_VERSION=0.1.1 \
+GRADLE_USER_HOME="${fresh_gradle_home}" ./gradlew \
+  --no-daemon --no-build-cache --no-configuration-cache \
+  --refresh-dependencies -p examples/standalone-consumer clean test
+)
+```
+
+The consumer must not use `mavenLocal()`, a file repository, a project
+dependency, a composite build, an authenticated deployment endpoint or an old
+cache. Claim Maven Central availability only after both unauthenticated byte
+readback and this fresh-cache consumer pass.
+
+Published Central coordinates are immutable. If any published byte, metadata,
+signature or verification result is wrong, preserve the evidence, stop using
+that version, fix the cause and release a higher stable version with a new
+tag, tree, CI run, signatures and deployment. Never delete and reuse the
+version.
+
 ## Known supply-chain boundaries
 
 - Maven and Gradle artifacts are resolved over HTTPS, the Wrapper distribution
