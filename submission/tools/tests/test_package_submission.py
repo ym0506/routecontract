@@ -955,9 +955,9 @@ class SubmissionClaimTextTest(unittest.TestCase):
             "      - name: Install checksum-locked report-package test dependencies"
         )
         package_tests = "      - name: Test fail-closed contest packaging rules"
-        for workflow, quick_start, package_job, python_setup_count in (
-            (ci_workflow, ci_quick_start, ci_package_job, 2),
-            (release_evidence, release_quick_start, release_package_job, 1),
+        for workflow, quick_start, package_job, python_setup_count, architecture_count in (
+            (ci_workflow, ci_quick_start, ci_package_job, 3, 7),
+            (release_evidence, release_quick_start, release_package_job, 1, 2),
         ):
             self.assertIn(package_job, workflow)
             self.assertEqual(
@@ -979,9 +979,7 @@ class SubmissionClaimTextTest(unittest.TestCase):
             self.assertEqual(
                 python_setup_count, workflow.count("python-version: '3.12.14'")
             )
-            self.assertEqual(
-                python_setup_count * 2, workflow.count("architecture: x64")
-            )
+            self.assertEqual(architecture_count, workflow.count("architecture: x64"))
             self.assertEqual(
                 python_setup_count, workflow.count("check-latest: false")
             )
