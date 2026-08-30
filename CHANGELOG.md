@@ -7,6 +7,34 @@ RouteContract follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) a
 
 No changes yet.
 
+## [0.1.1]
+
+This section records the source delta prepared for stable version `0.1.1`. Its presence alone does not prove
+that an annotated tag, public immutable non-prerelease Release, same-revision release-evidence run,
+Maven Central publication, or external-user result exists.
+
+### Added
+
+- Add a neutral stable-feedback form and assisted-pilot onboarding for one representative operation.
+- Add isolated Gradle Groovy and Maven 3.9.14 first-integration lanes, provenance verification, and
+  checked-in Quarkiverse compatibility-pilot reproduction materials.
+- Add local Maven publication metadata, signing/staging checks, and maintainer procedures for a future
+  Maven Central deployment.
+
+### Changed
+
+- Harden CI, release-evidence, SBOM, supply-chain, isolated-consumer, and submission-package checks,
+  and surface the public demonstration and onboarding paths in both READMEs.
+
+### Boundaries
+
+- Runtime/API behavior and the supported Java 17, ShardingSphere-JDBC 5.5.3, synchronous non-batch
+  `PreparedStatement` boundary are unchanged from `0.1.0`.
+- The immutable `v0.1.0` GitHub Release remains the verified public installation path until any
+  `0.1.1` registry publication passes anonymous postpublication verification.
+- Feedback, pilot fixtures, CI success, and maintainer-local reproduction do not by themselves establish
+  external adoption, production use, or endorsement.
+
 ## [0.1.0]
 
 This section records the source delta for stable version `0.1.0`. Its presence alone does not prove
