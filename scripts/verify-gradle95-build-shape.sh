@@ -256,7 +256,15 @@ run_cell() {
             clean test routeContractBuildShapeTargetGraph routeContractBuildShapePilot
         )
     fi
+    set +e
     run_gradle "$project" "$log" "${arguments[@]}"
+    local status="$?"
+    set -e
+    if [[ "$status" -ne 0 ]]; then
+        printf 'ERROR: %s Gradle case failed; final log lines follow\n' "$name" >&2
+        tail -n 120 "$log" >&2
+        die "$name Gradle verification exited $status"
+    fi
     test "$(grep -c '^ROUTECONTRACT_BUILD_SHAPE_TARGET_GRAPH ' "$log")" = "1" \
         || die "$name did not emit one target graph marker"
     grep -Fq "bootBom=$bom" "$log" || die "$name did not bind its exact BOM"
@@ -434,9 +442,9 @@ source_status_after="$(git -C "$repository_root" status --porcelain=v1 \
     --untracked-files=all --ignore-submodules=none)"
 test -z "$source_status_after" \
     || die "build-shape verifier mutated the clean source checkout"
-printf '%s\n' \
-    "ROUTECONTRACT_GRADLE95_BUILD_SHAPE_VERIFY result=PASS cells=2 " \
-    "gradleRuntime=21 pilotRuntime=17 adoptionClaim=false externalTarget=false " \
-    "wrapperDistributionSha256=bafc141b619ad6350fd975fc903156dd5c151998cc8b058e8c1044ab5f7b031f " \
-    "wrapperJarSha256=497c8c2a7e5031f6aa847f88104aa80a93532ec32ee17bdb8d1d2f67a194a9c7 " \
-    "receiptSha256=$receipt_sha256"
+success_marker="ROUTECONTRACT_GRADLE95_BUILD_SHAPE_VERIFY result=PASS cells=2"
+success_marker+=" gradleRuntime=21 pilotRuntime=17 adoptionClaim=false externalTarget=false"
+success_marker+=" wrapperDistributionSha256=bafc141b619ad6350fd975fc903156dd5c151998cc8b058e8c1044ab5f7b031f"
+success_marker+=" wrapperJarSha256=497c8c2a7e5031f6aa847f88104aa80a93532ec32ee17bdb8d1d2f67a194a9c7"
+success_marker+=" receiptSha256=$receipt_sha256"
+printf '%s\n' "$success_marker"

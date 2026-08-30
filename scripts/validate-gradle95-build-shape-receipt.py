@@ -128,6 +128,23 @@ def validate(receipt: Any) -> None:
         raise ReceiptError("sourceRevision does not match this checkout HEAD")
     if receipt["sourceTree"] != actual_tree:
         raise ReceiptError("sourceTree does not match this checkout HEAD tree")
+    status = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(repository_root),
+            "status",
+            "--porcelain=v1",
+            "--untracked-files=all",
+            "--ignore-submodules=none",
+        ],
+        capture_output=True,
+        check=False,
+    )
+    if status.returncode != 0 or status.stderr:
+        raise ReceiptError("validator could not establish exact Git source status")
+    if status.stdout:
+        raise ReceiptError("source checkout must be clean when validating the receipt")
 
     gradle = receipt["gradle"]
     exact_mapping(gradle, {

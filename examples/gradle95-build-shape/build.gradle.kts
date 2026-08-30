@@ -107,6 +107,78 @@ fun exactArtifact(
     return matches.single()
 }
 
+fun canonicalComponentId(
+    identifier: org.gradle.api.artifacts.component.ComponentIdentifier,
+): String = when (identifier) {
+    is org.gradle.api.artifacts.component.ModuleComponentIdentifier ->
+        "module:${identifier.group}:${identifier.module}:${identifier.version}"
+    is org.gradle.api.artifacts.component.ProjectComponentIdentifier ->
+        "project:${identifier.build.buildPath}:${identifier.projectPath}"
+    else -> throw GradleException(
+        "Unsupported component identifier in the exact target graph: " +
+            identifier.javaClass.name
+    )
+}
+
+fun canonicalRequestedId(
+    selector: org.gradle.api.artifacts.component.ComponentSelector,
+): String = when (selector) {
+    is org.gradle.api.artifacts.component.ModuleComponentSelector ->
+        "module:${selector.group}:${selector.module}:${selector.version}"
+    is org.gradle.api.artifacts.component.ProjectComponentSelector ->
+        "project:${selector.buildPath}:${selector.projectPath}"
+    else -> throw GradleException(
+        "Unsupported component selector in the exact target graph: " +
+            selector.javaClass.name
+    )
+}
+
+data class CanonicalResolutionGraph(
+    val sha256: String,
+    val componentCount: Int,
+    val edgeCount: Int,
+)
+
+fun canonicalResolutionGraph(
+    configuration: org.gradle.api.artifacts.Configuration,
+): CanonicalResolutionGraph {
+    val result = configuration.incoming.resolutionResult
+    val failures = result.allDependencies
+        .filterIsInstance<org.gradle.api.artifacts.result.UnresolvedDependencyResult>()
+        .toList()
+    if (failures.isNotEmpty()) {
+        throw GradleException(
+            "Target ResolutionResult must have no unresolved dependency edges"
+        )
+    }
+    val components = result.allComponents.map { component ->
+        "component|${canonicalComponentId(component.id)}"
+    }.sorted()
+    if (components.size != components.toSet().size) {
+        throw GradleException("Target ResolutionResult contains duplicate component IDs")
+    }
+    val edges = result.allComponents.flatMap { component ->
+        val from = canonicalComponentId(component.id)
+        component.dependencies.map { dependency ->
+            val resolved = dependency
+                as? org.gradle.api.artifacts.result.ResolvedDependencyResult
+                ?: throw GradleException(
+                    "Target ResolutionResult contains a non-resolved dependency edge"
+                )
+            "edge|from=$from|requested=${canonicalRequestedId(resolved.requested)}|" +
+                "selected=${canonicalComponentId(resolved.selected.id)}|" +
+                "constraint=${resolved.isConstraint}"
+        }
+    }.sorted()
+    val lines = components + edges
+    val fingerprint = sha256((lines.joinToString("\n") + "\n").toByteArray())
+    return CanonicalResolutionGraph(
+        sha256 = fingerprint,
+        componentCount = components.size,
+        edgeCount = edges.size,
+    )
+}
+
 val expectedTargetVersions = mapOf(
     "3.5.16" to ("6.3.3" to "5.12.2"),
     "4.1.0" to ("7.0.2" to "6.0.3"),
@@ -140,6 +212,7 @@ tasks.register("routeContractBuildShapeTargetGraph") {
                 "Requested and selected Spring Boot BOM must both be exactly $bootBomVersion"
             )
         }
+        targetRuntime.resolvedConfiguration.rethrowFailure()
         val artifacts = targetRuntime.resolvedConfiguration.resolvedArtifacts.toList()
         if (artifacts.any { artifact ->
                 artifact.moduleVersion.id.group == "io.github.ym0506.routecontract"
@@ -157,12 +230,13 @@ tasks.register("routeContractBuildShapeTargetGraph") {
             "junit-jupiter-api",
             expected.second,
         )
-        val coordinates = artifactCoordinates(targetRuntime)
-        val fingerprint = sha256((coordinates.joinToString("\n") + "\n").toByteArray())
+        val graph = canonicalResolutionGraph(targetRuntime)
         println(
             "ROUTECONTRACT_BUILD_SHAPE_TARGET_GRAPH " +
-                "bootBom=$bootBomVersion sha256=$fingerprint " +
-                "routeContract=ABSENT hikari=${expected.first} junit=${expected.second}"
+                "bootBom=$bootBomVersion sha256=${graph.sha256} " +
+                "components=${graph.componentCount} edges=${graph.edgeCount} " +
+                "bomEdge=DIRECT_EXACT routeContract=ABSENT " +
+                "hikari=${expected.first} junit=${expected.second}"
         )
     }
 }

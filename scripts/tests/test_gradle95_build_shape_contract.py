@@ -95,6 +95,13 @@ class Gradle95BuildShapeContractTest(unittest.TestCase):
             'routeContractBuildShapeRepository',
             'isTransitive = false',
             'routeContractBuildShapeTargetGraph',
+            'result.allComponents',
+            'result.allDependencies',
+            'UnresolvedDependencyResult',
+            'Target ResolutionResult must have no unresolved dependency edges',
+            '"component|${canonicalComponentId(component.id)}"',
+            '"edge|from=$from|requested=${canonicalRequestedId(resolved.requested)}|"',
+            '"selected=${canonicalComponentId(resolved.selected.id)}|"',
             "Expected exactly one direct Spring Boot BOM edge",
             "Requested and selected Spring Boot BOM must both be exactly",
             'RouteContract must be absent from the target test runtime graph',
@@ -155,6 +162,8 @@ class Gradle95BuildShapeContractTest(unittest.TestCase):
             "pilot graph changed across Spring Boot BOM cells",
             "case GRADLE_USER_HOME must start absent",
             "verifier did not use exactly ten unique case GRADLE_USER_HOME directories",
+            "Gradle case failed; final log lines follow",
+            'tail -n 120 "$log"',
             "mainClassMajor=61 pilotClassMajor=61",
             "source checkout must start clean",
             "receipt output must be outside the source repository",
@@ -167,6 +176,7 @@ class Gradle95BuildShapeContractTest(unittest.TestCase):
             '"springBootRuntimeCompatibilityClaim": False',
             '"baselineApproved": False',
             '"candidateChecked": False',
+            'printf \'%s\\n\' "$success_marker"',
         ):
             self.assertIn(required, self.verifier)
 
@@ -186,15 +196,15 @@ class Gradle95BuildShapeContractTest(unittest.TestCase):
             self.assertIn(required, self.ci)
 
     @staticmethod
-    def valid_receipt() -> dict[str, object]:
+    def valid_receipt(repository: Path = ROOT) -> dict[str, object]:
         source_revision = subprocess.run(
-            ["git", "-C", str(ROOT), "rev-parse", "HEAD"],
+            ["git", "-C", str(repository), "rev-parse", "HEAD"],
             capture_output=True,
             check=True,
             text=True,
         ).stdout.strip()
         source_tree = subprocess.run(
-            ["git", "-C", str(ROOT), "rev-parse", "HEAD^{tree}"],
+            ["git", "-C", str(repository), "rev-parse", "HEAD^{tree}"],
             capture_output=True,
             check=True,
             text=True,
@@ -267,13 +277,18 @@ class Gradle95BuildShapeContractTest(unittest.TestCase):
         self,
     ) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            receipt = Path(temporary) / "receipt.json"
+            root = Path(temporary)
+            repository = self.make_minimal_validator_repository(root)
+            validator = repository / "scripts" / VALIDATOR.name
+            receipt = root / "receipt.json"
             receipt.write_text(
-                json.dumps(self.valid_receipt(), indent=2, sort_keys=True) + "\n",
+                json.dumps(
+                    self.valid_receipt(repository), indent=2, sort_keys=True
+                ) + "\n",
                 encoding="utf-8",
             )
             accepted = subprocess.run(
-                ["python3", "-I", str(VALIDATOR), str(receipt)],
+                ["python3", "-I", str(validator), str(receipt)],
                 capture_output=True,
                 check=False,
                 text=True,
@@ -309,7 +324,7 @@ class Gradle95BuildShapeContractTest(unittest.TestCase):
             )
             for keys, replacement, expected_error in mutations:
                 with self.subTest(keys=keys):
-                    changed = json.loads(json.dumps(self.valid_receipt()))
+                    changed = json.loads(json.dumps(self.valid_receipt(repository)))
                     target = changed
                     for key in keys[:-1]:
                         target = target[key]
@@ -319,13 +334,78 @@ class Gradle95BuildShapeContractTest(unittest.TestCase):
                         encoding="utf-8",
                     )
                     rejected = subprocess.run(
-                        ["python3", "-I", str(VALIDATOR), str(receipt)],
+                        ["python3", "-I", str(validator), str(receipt)],
                         capture_output=True,
                         check=False,
                         text=True,
                     )
                     self.assertEqual(1, rejected.returncode)
                     self.assertIn(expected_error, rejected.stderr)
+
+    def make_minimal_validator_repository(self, root: Path) -> Path:
+        repository = root / "validator-repo"
+        scripts = repository / "scripts"
+        scripts.mkdir(parents=True)
+        shutil.copy2(VALIDATOR, scripts / VALIDATOR.name)
+        (repository / "tracked.txt").write_text("clean\n", encoding="utf-8")
+        subprocess.run(["git", "init", "-q", str(repository)], check=True)
+        subprocess.run(["git", "-C", str(repository), "add", "."], check=True)
+        subprocess.run(
+            [
+                "git",
+                "-C",
+                str(repository),
+                "-c",
+                "user.name=RouteContract Tests",
+                "-c",
+                "user.email=tests@example.invalid",
+                "commit",
+                "-q",
+                "-m",
+                "validator fixture",
+            ],
+            check=True,
+        )
+        return repository
+
+    def test_independent_validator_rejects_tracked_and_untracked_source_dirt(
+        self,
+    ) -> None:
+        for dirty_kind in ("tracked", "untracked"):
+            with self.subTest(dirty_kind=dirty_kind), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                repository = self.make_minimal_validator_repository(root)
+                receipt = root / "receipt.json"
+                receipt.write_text(
+                    json.dumps(
+                        self.valid_receipt(repository), indent=2, sort_keys=True
+                    ) + "\n",
+                    encoding="utf-8",
+                )
+                if dirty_kind == "tracked":
+                    (repository / "tracked.txt").write_text(
+                        "changed\n", encoding="utf-8"
+                    )
+                else:
+                    (repository / "untracked.txt").write_text(
+                        "dirty\n", encoding="utf-8"
+                    )
+                completed = subprocess.run(
+                    [
+                        "python3",
+                        "-I",
+                        str(repository / "scripts" / VALIDATOR.name),
+                        str(receipt),
+                    ],
+                    capture_output=True,
+                    check=False,
+                    text=True,
+                )
+                self.assertEqual(1, completed.returncode)
+                self.assertIn(
+                    "source checkout must be clean when validating the receipt",
+                    completed.stderr,
+                )
 
     def make_minimal_verifier_repository(self, root: Path) -> Path:
         repository = root / "repo"
