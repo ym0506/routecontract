@@ -1,12 +1,12 @@
-name: Stable v0.1.0 feedback
-description: Share a first run, blocker, documentation note, or fit assessment for RouteContract v0.1.0.
+name: Stable v0.1.2 feedback
+description: Share a first run, blocker, documentation note, or fit assessment for RouteContract v0.1.2.
 title: "[stable-feedback] "
 labels: [community, needs-triage]
 body:
   - type: markdown
     attributes:
       value: |
-        Thank you for trying or reviewing RouteContract v0.1.0. Positive, negative, blocked, and not-a-fit outcomes are all useful.
+        Thank you for trying or reviewing RouteContract v0.1.2. Positive, negative, blocked, and not-a-fit outcomes are all useful.
 
         This form records self-reported usability and fit feedback. It does not by itself establish production use, adoption, security, performance, or endorsement.
 
@@ -19,8 +19,8 @@ body:
       description: Choose the last stage reached in order. Each numbered stage includes the earlier stages.
       options:
         - Stage 0 — reviewed the README and support boundary
-        - Stage 1 — also ran the exact v0.1.0 Quick Start
-        - Stage 2 — also verified and installed the exact v0.1.0 Release assets
+        - Stage 1 — also ran the exact v0.1.2 Quick Start
+        - Stage 2 — also verified and installed the exact v0.1.2 Release assets
         - Stage 3 — also captured one representative operation in a repository I own, maintain, or am authorized to modify
         - Stage 4 — also human-reviewed and committed an approved baseline there
         - Stage 5 — also ran a candidate check against that baseline locally or in CI
@@ -47,7 +47,7 @@ body:
     attributes:
       label: Environment, if code ran
       description: Version and platform only; no employer, hostname, or private path is needed.
-      placeholder: RouteContract 0.1.0; ShardingSphere-JDBC 5.5.3; Java 17; Linux x86_64; Docker 27
+      placeholder: RouteContract 0.1.2; ShardingSphere-JDBC 5.5.3; Java 17; Linux x86_64; Docker 27
 
   - type: textarea
     id: result

@@ -33,15 +33,15 @@ dependencies, and the digest-pinned MySQL container image when it is not already
 ```bash
 (
 set -euo pipefail
-source_dir="routecontract-v0.1.0"
+source_dir="routecontract-v0.1.2"
 test ! -e "${source_dir}"
 test ! -L "${source_dir}"
-git clone --quiet --depth 1 --branch v0.1.0 --single-branch \
+git clone --quiet --depth 1 --branch v0.1.2 --single-branch \
   https://github.com/ym0506/routecontract.git "${source_dir}"
-test "$(git -C "${source_dir}" cat-file -t refs/tags/v0.1.0)" = tag
-test "$(git -C "${source_dir}" rev-parse refs/tags/v0.1.0)" = e3944631ad827e88d4936b75e9b738ef50a22b20
-test "$(git -C "${source_dir}" rev-parse 'refs/tags/v0.1.0^{}')" = db203cfd9202ff10cd22c41cf04034eca5177341
-test "$(git -C "${source_dir}" rev-parse HEAD)" = db203cfd9202ff10cd22c41cf04034eca5177341
+test "$(git -C "${source_dir}" cat-file -t refs/tags/v0.1.2)" = tag
+test "$(git -C "${source_dir}" rev-parse refs/tags/v0.1.2)" = 6adacbe04d60b3af83d9067a14a878d26a6c90f5
+test "$(git -C "${source_dir}" rev-parse 'refs/tags/v0.1.2^{}')" = fc4fdd16c21574afa1150654ce354cf8004b138b
+test "$(git -C "${source_dir}" rev-parse HEAD)" = fc4fdd16c21574afa1150654ce354cf8004b138b
 test -z "$(git -C "${source_dir}" status --short)"
 cd "${source_dir}"
 ./scripts/quickstart-demo.sh
@@ -73,12 +73,18 @@ ShardingSphere-JDBC 5.5.3 integration test whose business assertion will remain.
 capture → candidate → human-approved baseline → candidate check in an isolated Gradle Groovy or
 Maven 3.9.14 pilot. Repository-specific build isolation and human review are
 required, so no completion time is
-promised. `v0.1.0` is not published to Maven Central; the guide installs
+promised. `v0.1.2` is not published to Maven Central; the guide installs
 verified GitHub Release assets into a separate local Maven repository.
+
+Important: the immutable `v0.1.2` Release body and the README stored in that tag still point to the
+`v0.1.0` onboarding path. The current `main` documentation and guide are a post-release bridge for
+consuming `v0.1.2` assets; they do not make `v0.1.2` a self-contained immutable onboarding Release.
+Helpers and verifiers added after the tag are pinned to the exact bridge implementation commit and
+the SHA-256 recorded in the guide.
 
 Do not read the roughly 1,700-line guide linearly. Use this shortest supported path:
 
-1. [Install the pinned Release assets](docs/first-integration.md#2-install-the-exact-v010-release-assets).
+1. [Install the pinned Release assets](docs/first-integration.md#2-install-the-exact-v012-release-assets).
 2. Choose exactly one build lane: [Gradle Groovy](docs/first-integration.md#gradle-groovy-dsl-opt-in-lane)
    or [Maven 3.9.14](docs/first-integration.md#maven-3914-opt-in-profile-lane).
 3. Continue through the shared [representative operation](docs/first-integration.md#3-add-one-representative-operation)
@@ -90,7 +96,7 @@ first and compare its boundaries with their own repository. If neither lane matc
 there instead of forcing a generic fragment into the build.
 
 After a first run—or after deciding that the current scope is not a fit—use the
-[stable v0.1.0 feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)
+[stable v0.1.2 feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)
 to share a success, blocker, unsupported setup, or not-a-fit result. Do not put raw SQL, bind values,
 JDBC URLs, real topology, full logs, or other sensitive information in the public Issue.
 
@@ -236,11 +242,11 @@ limitations. None of these results implies production support or general perform
 
 ## Consume public Release assets without a registry
 
-This path becomes usable only after an annotated `v0.1.0` tag, a public immutable non-prerelease
+This path becomes usable only after an annotated `v0.1.2` tag, a public immutable non-prerelease
 Release, a successful same-revision release-evidence run, and the exact asset set all exist.
 Download every public asset attached to that Release into a new empty directory, then install it to
 an empty absolute repository path rather than relying on `~/.m2`. [Step 2 of the first real
-integration guide](docs/first-integration.md#2-install-the-exact-v010-release-assets) uses fixed
+integration guide](docs/first-integration.md#2-install-the-exact-v012-release-assets) uses fixed
 public URLs and a pinned checksum-index SHA-256, without a GitHub login, token, or API call.
 
 Do not add the resulting local Maven repository or RouteContract dependency directly to the
@@ -252,7 +258,7 @@ existing ShardingSphere-JDBC 5.5.3 dependency, and the normal build and IDE sync
 without the pilot or local Release repository. Kotlin DSL and Maven repositories outside the
 guide's verified graph and classloader boundary remain fit blockers.
 
-The embedded MySQL OCI package-level manual review in the immutable `v0.1.0` installer is valid
+The embedded MySQL OCI package-level manual review in the immutable `v0.1.2` installer is valid
 through UTC `2026-12-05`. Beginning `2026-12-06` UTC, the installer fails closed; use a newer
 immutable Release with renewed evidence and do not bypass the expiry.
 
@@ -364,8 +370,8 @@ One capture retains at most 10,000 physical execution attempts. At the next atte
 
 ## Dependency and Release compatibility details
 
-The exact coordinate in the postpublication-verified stable `v0.1.0` Release is
-`io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0`; it is not claimed to exist
+The exact coordinate in the postpublication-verified stable `v0.1.2` Release is
+`io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.2`; it is not claimed to exist
 on Maven Central. Do not add it directly to the default dependency graph. Use it only in the
 isolated pilot from the [first real integration guide](docs/first-integration.md), which reuses the
 existing ShardingSphere-JDBC 5.5.3 fixture and requires inspection of its complete runtime
@@ -395,7 +401,7 @@ Snapshots and manifests do not store raw SQL, parameter values, connection prope
 
 ## Contributing and extension gates
 
-If you are reviewing the `v0.1.0` documentation, Quick Start, Release installation, or fit for the
+If you are reviewing the `v0.1.2` documentation, Quick Start, Release installation, or fit for the
 first time, use the [short stable feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)
 for a successful, blocked, unsupported, or not-a-fit outcome. This record is self-reported usability
 and fit feedback; it does not by itself establish production use, adoption, security, performance,
