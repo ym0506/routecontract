@@ -42,8 +42,8 @@ substitute.
 
 ## Future Maven Central changes
 
-The immutable `v0.1.0` GitHub Release is not a Maven Central publication.
-Changes intended for a future stable `v0.1.1` or later must follow the
+The immutable `v0.1.2` GitHub Release is not a Maven Central publication.
+Changes intended for a separately approved later stable version must follow the
 approval, signing, `USER_MANAGED` upload, human validation, explicit Publish
 and public-readback checklist in [RELEASING.md](RELEASING.md). Never put the
 protected release private key, its passphrase or a Central credential in the
@@ -71,8 +71,8 @@ publication and is not evidence of a signed candidate or public availability.
 
 ## Release feedback
 
-For an ordinary first review or run of stable `v0.1.0`, use the
-[Stable v0.1.0 feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml).
+For an ordinary first review or run of stable `v0.1.2`, use the
+[Stable v0.1.2 feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml).
 Successful, blocked, unsupported, and not-a-fit outcomes are equally useful. This short form records
 self-reported usability and fit feedback; it does not by itself prove an independent run, production
 use, adoption, security, performance, or endorsement.

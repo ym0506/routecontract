@@ -900,12 +900,12 @@ class SubmissionClaimTextTest(unittest.TestCase):
             )
             self.assertIn(
                 "io.github.ym0506.routecontract:"
-                "routecontract-shardingsphere-5.5:0.1.0",
+                "routecontract-shardingsphere-5.5:0.1.2",
                 readme,
             )
             self.assertIn("(docs/first-integration.md)", readme)
             for block in re.findall(r"```groovy\n(.*?)```", readme, re.DOTALL):
-                self.assertNotIn("routecontract-shardingsphere-5.5:0.1.0", block)
+                self.assertNotIn("routecontract-shardingsphere-5.5:0.1.2", block)
         self.assertIn(
             "[Verification evidence matrix](docs/evidence-matrix.md)",
             readme_en,
@@ -924,7 +924,7 @@ class SubmissionClaimTextTest(unittest.TestCase):
         ):
             release_section = readme.split(heading, 1)[1].split("\n## ", 1)[0]
             ordered = (
-                "docs/first-integration.md#2-install-the-exact-v010-release-assets",
+                "docs/first-integration.md#2-install-the-exact-v012-release-assets",
                 "docs/first-integration.md#gradle-groovy-dsl-opt-in-lane",
                 "2026-12-05",
                 "2026-12-06",
@@ -1376,6 +1376,10 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             self.assertIn("5.5.3", section)
             self.assertIn("Maven Central", section)
             self.assertTrue(
+                "완결된 불변 온보딩 Release" in section
+                or "self-contained immutable onboarding Release" in section
+            )
+            self.assertTrue(
                 "완료 시간을 약속하지" in section
                 or "no completion time is\npromised" in section
             )
@@ -1384,7 +1388,7 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
                 section.index("issues/new?template=stable-feedback.yml"),
             )
             for anchor in (
-                "#2-install-the-exact-v010-release-assets",
+                "#2-install-the-exact-v012-release-assets",
                 "#gradle-groovy-dsl-opt-in-lane",
                 "#maven-3914-opt-in-profile-lane",
                 "#3-add-one-representative-operation",
@@ -1407,7 +1411,9 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             "Step 2 additionally requires `curl` and Python 3.10 or newer",
             "Neither\nstep requires a GitHub login, token, API call, or GitHub CLI",
             "runner needs Git, `curl`, Python\n3.10 or newer",
-            "RouteContract `0.1.0` is **not published to Maven Central**",
+            "RouteContract `0.1.2` is **not published to Maven Central**",
+            "not evidence that `v0.1.2` is a self-contained immutable onboarding Release",
+            "exact bridge-commit permalink",
             'providers.gradleProperty("routecontractRepository")',
             'providers.environmentVariable("ROUTECONTRACT_REPOSITORY")',
             'sourceSets.create("routeContractPilot")',
@@ -1418,7 +1424,7 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             "src/routeContractPilot/resources",
             'systemProperty "routecontract.projectDir", projectDir.absolutePath',
             'systemProperty "routecontract.candidateRoot", "build/routecontract"',
-            'systemProperty "routecontract.artifactJarName", "routecontract-shardingsphere-5.5-0.1.0.jar"',
+            'systemProperty "routecontract.artifactJarName", "routecontract-shardingsphere-5.5-0.1.2.jar"',
             'systemProperty "routecontract.artifactJarPath", artifactPath.toRealPath().toString()',
             ".resolvedConfiguration.resolvedArtifacts.toList()",
             "def routeContractCoordinates = artifacts.findAll",
@@ -1463,7 +1469,7 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             'java.nio.file.Files.deleteIfExists(path)',
             "Refusing to replace a non-regular pilot evidence path",
             "dependsOn(routeContractPilotPrepare)",
-            "routecontract-0.1.0-source.zip",
+            "routecontract-0.1.2-source.zip",
             "/scripts/install-release-assets.py",
             "RepositoriesMode.FAIL_ON_PROJECT_REPOS",
             "normal build and IDE sync must still succeed",
@@ -1474,9 +1480,10 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             "### Maven 3.9.14 opt-in profile lane",
             "two-module Maven pilot",
             "same-checkout fixture and its synthetic match are CI scaffolding, not human approval or\nexternal adoption",
-            "scripts/prepare_maven_v0_1_0_checksums.py",
-            "https://raw.githubusercontent.com/ym0506/routecontract/main/scripts/prepare_maven_v0_1_0_checksums.py",
-            "moving transport URL is never trusted without the fixed helper digest",
+            "scripts/prepare_maven_v0_1_2_checksums.py",
+            "https://raw.githubusercontent.com/ym0506/routecontract/2264b6e6292ee80f131148f2acef601cbaede096/scripts/prepare_maven_v0_1_2_checksums.py",
+            "https://raw.githubusercontent.com/ym0506/routecontract/2264b6e6292ee80f131148f2acef601cbaede096/scripts/verify-external-maven-integration.sh",
+            "transport URL is pinned to the exact bridge implementation commit",
             "exact\ntwelve-file coordinate inventory",
             "private, single-writer directory",
             "<profile>",
@@ -1486,7 +1493,7 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             "<scope>test</scope>",
             "<source>src/routeContractPilot/java</source>",
             "<routecontract.candidateRoot>target/routecontract</routecontract.candidateRoot>",
-            "<routecontract.artifactJarName>routecontract-shardingsphere-5.5-0.1.0.jar</routecontract.artifactJarName>",
+            "<routecontract.artifactJarName>routecontract-shardingsphere-5.5-0.1.2.jar</routecontract.artifactJarName>",
             "<routecontract.artifactJarPath>${routecontract.artifactJarPath}</routecontract.artifactJarPath>",
             "-Daether.checksums.algorithms.routecontract-verified-file-repository=SHA-256",
             "Maven has no Gradle `exclusiveContent` equivalent",
@@ -1503,11 +1510,11 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             'test ! -e "${routecontract_cache_root}"',
             'test ! -L "${routecontract_cache_root}"',
             'expected_jar_sha256="d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc"',
-            'expected_pom_sha256="05570bfa238ef77db255a46efdd5bbb25e994ae0137db86491a46a25e28deac9"',
-            '"routecontract-shardingsphere-5.5-0.1.0.pom>${repository_id}="',
-            '"routecontract-shardingsphere-5.5-0.1.0.jar>${repository_id}="',
-            "expected_index_sha256=\"820ed33e",
-            "expected_installer_sha256=\"d21a7c71",
+            'expected_pom_sha256="70b5d4161d1532e9f9cb699071790a7806d87658511d931477544fa06037b85d"',
+            '"routecontract-shardingsphere-5.5-0.1.2.pom>${repository_id}="',
+            '"routecontract-shardingsphere-5.5-0.1.2.jar>${repository_id}="',
+            "expected_index_sha256=\"7849adf4",
+            "expected_installer_sha256=\"134b2657",
             "2026-12-06",
             "assertEquals(201L, actualId); // Keep the existing business assertion.",
             "ManifestPolicy policy = ManifestPolicy.strict(",
@@ -1568,11 +1575,11 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             guide.index("## 4. Review and approve the first baseline"),
         )
         for unquoted_shell_path in (
-            "  /absolute/path/to/routecontract-v0.1.0",
-            "cd /absolute/path/to/routecontract-v0.1.0",
+            "  /absolute/path/to/routecontract-v0.1.2",
+            "cd /absolute/path/to/routecontract-v0.1.2",
             "mkdir /absolute/path/to/routecontract-release-assets",
             "--dir /absolute/path/to/routecontract-release-assets",
-            "python3 /absolute/path/to/routecontract-v0.1.0",
+            "python3 /absolute/path/to/routecontract-v0.1.2",
             "--release-assets-dir /absolute/path/to/routecontract-release-assets",
             "--repository /absolute/path/to/routecontract-maven",
             "cd /absolute/path/to/your-repository",
@@ -1585,7 +1592,7 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
         self.assertEqual(1, guide.count("<profile>"))
         self.assertGreaterEqual(guide.count("mvn -B -ntp"), 3)
         self.assertLess(
-            guide.index("scripts/prepare_maven_v0_1_0_checksums.py"),
+            guide.index("scripts/prepare_maven_v0_1_2_checksums.py"),
             guide.index("<profile>"),
         )
         graph_goal = guide.index(
@@ -1679,7 +1686,7 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             (
                 "io.github.ym0506.routecontract",
                 "routecontract-shardingsphere-5.5",
-            ): ("0.1.0", "test"),
+            ): ("0.1.2", "test"),
             ("org.apache.shardingsphere", "shardingsphere-jdbc"): (
                 "5.5.3",
                 "compile",
@@ -1822,7 +1829,7 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             (
                 "[INFO] --- dependency:3.11.0:tree (default-cli) @ orders ---",
                 "[INFO] com.example:orders:jar:1.0.0",
-                "[INFO] +- io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:jar:0.1.0:test",
+                "[INFO] +- io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:jar:0.1.2:test",
                 "[INFO] +- org.apache.shardingsphere:shardingsphere-jdbc:jar:5.5.3:compile",
                 "[INFO] |  +- org.apache.shardingsphere:shardingsphere-infra-executor:jar:5.5.3:compile",
                 "[INFO] |  +- org.apache.calcite:calcite-core:jar:1.42.0:compile",
@@ -1862,16 +1869,16 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
 
             negative_graphs = {
                 "pom type": valid_graph_with_minidev.replace(
-                    "routecontract-shardingsphere-5.5:jar:0.1.0:test",
-                    "routecontract-shardingsphere-5.5:pom:0.1.0:test",
+                    "routecontract-shardingsphere-5.5:jar:0.1.2:test",
+                    "routecontract-shardingsphere-5.5:pom:0.1.2:test",
                 ),
                 "classifier": valid_graph_with_minidev.replace(
-                    "routecontract-shardingsphere-5.5:jar:0.1.0:test",
-                    "routecontract-shardingsphere-5.5:jar:tests:0.1.0:test",
+                    "routecontract-shardingsphere-5.5:jar:0.1.2:test",
+                    "routecontract-shardingsphere-5.5:jar:tests:0.1.2:test",
                 ),
                 "wrong scope": valid_graph_with_minidev.replace(
-                    "routecontract-shardingsphere-5.5:jar:0.1.0:test",
-                    "routecontract-shardingsphere-5.5:jar:0.1.0:compile",
+                    "routecontract-shardingsphere-5.5:jar:0.1.2:test",
+                    "routecontract-shardingsphere-5.5:jar:0.1.2:compile",
                 ),
                 "transitive depth": valid_graph_with_minidev.replace(
                     "[INFO] +- io.github.ym0506.routecontract:",
@@ -1967,7 +1974,7 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
         ci_block = next(
             block
             for block in yaml_blocks
-            if "- name: Install exact RouteContract v0.1.0 Release assets" in block
+            if "- name: Install exact RouteContract v0.1.2 Release assets" in block
         )
         maven_ci_block = next(
             block
@@ -1979,20 +1986,22 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             "ROUTECONTRACT_PROFILE_OFF_REPORT:",
             "ROUTECONTRACT_APPROVED_PATH:",
             "134b265709ac071dedd395da269426d83f1972f602c3b3f7d2201eecc525e204",
-            "https://raw.githubusercontent.com/ym0506/routecontract/main/scripts/install-release-assets.py",
+            "https://raw.githubusercontent.com/ym0506/routecontract/v0.1.2/scripts/install-release-assets.py",
+            "https://raw.githubusercontent.com/ym0506/routecontract/2264b6e6292ee80f131148f2acef601cbaede096/scripts/prepare_maven_v0_1_2_checksums.py",
+            "https://raw.githubusercontent.com/ym0506/routecontract/2264b6e6292ee80f131148f2acef601cbaede096/scripts/verify-external-maven-integration.sh",
             "verify-external-maven-integration.sh",
-            "72a694e95c5c7d8ac3bf330dfe0e8e9b32b5a572bb5429895918fae45a8f8cde",
+            "69f233a5935f36a2e9068c25517fc3f15df4ef7da119e7a02feb9184df49e472",
             'bash "${tool_dir}/verify-external-maven-integration.sh"',
         ):
             self.assertIn(required, maven_ci_block)
         for required in (
-            'release_base="https://github.com/ym0506/routecontract/releases/download/v0.1.0"',
-            'expected_index_sha256="820ed33eb8bfe8d47f3ec8782d2aa99f2879227c4ee066ecafc467e61abb8684"',
-            'expected_installer_sha256="d21a7c71eb725e8d5f0675cfb88815b26be130d63711dc025a06347317652d33"',
-            'expected_tag_object="e3944631ad827e88d4936b75e9b738ef50a22b20"',
-            'expected_commit="db203cfd9202ff10cd22c41cf04034eca5177341"',
-            "cat-file -t refs/tags/v0.1.0",
-            "rev-parse 'refs/tags/v0.1.0^{}'",
+            'release_base="https://github.com/ym0506/routecontract/releases/download/v0.1.2"',
+            'expected_index_sha256="7849adf417f0170b08d01902b023e8b328d8796f7c2aeacc471eb7acf8e2b217"',
+            'expected_installer_sha256="134b265709ac071dedd395da269426d83f1972f602c3b3f7d2201eecc525e204"',
+            'expected_tag_object="6adacbe04d60b3af83d9067a14a878d26a6c90f5"',
+            'expected_commit="fc4fdd16c21574afa1150654ce354cf8004b138b"',
+            "cat-file -t refs/tags/v0.1.2",
+            "rev-parse 'refs/tags/v0.1.2^{}'",
             "symbolic-ref -q HEAD",
             "status --short",
             "curl --disable --proto '=https' --tlsv1.2 --fail --location",
@@ -2003,10 +2012,10 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             self.assertIn(required, ci_block)
         expected_assets = (
             "SHA256SUMS",
-            "routecontract-0.1.0-source.zip",
-            "routecontract-shardingsphere-5.5-0.1.0.jar",
-            "routecontract-shardingsphere-5.5-0.1.0-sources.jar",
-            "routecontract-shardingsphere-5.5-0.1.0-javadoc.jar",
+            "routecontract-0.1.2-source.zip",
+            "routecontract-shardingsphere-5.5-0.1.2.jar",
+            "routecontract-shardingsphere-5.5-0.1.2-sources.jar",
+            "routecontract-shardingsphere-5.5-0.1.2-javadoc.jar",
             "routecontract-shardingsphere-5.5.pom",
             "routecontract-shardingsphere-5.5-cyclonedx.json",
             "routecontract-shardingsphere-5.5-cyclonedx.xml",
@@ -2072,8 +2081,8 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
         self.assertNotIn("id: path", form)
         stage_options = (
             "Stage 0 — reviewed the README and support boundary",
-            "Stage 1 — also ran the exact v0.1.0 Quick Start",
-            "Stage 2 — also verified and installed the exact v0.1.0 Release assets",
+            "Stage 1 — also ran the exact v0.1.2 Quick Start",
+            "Stage 2 — also verified and installed the exact v0.1.2 Release assets",
             "Stage 3 — also captured one representative operation in a repository I own, maintain, or am authorized to modify",
             "Stage 4 — also human-reviewed and committed an approved baseline there",
             "Stage 5 — also ran a candidate check against that baseline locally or in CI",
@@ -2170,8 +2179,8 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
                 "new ManifestVerifier().verify(approved, snapshot, aliases)",
                 readme,
             )
-            self.assertIn("e3944631ad827e88d4936b75e9b738ef50a22b20", readme)
-            self.assertIn("db203cfd9202ff10cd22c41cf04034eca5177341", readme)
+            self.assertIn("6adacbe04d60b3af83d9067a14a878d26a6c90f5", readme)
+            self.assertIn("fc4fdd16c21574afa1150654ce354cf8004b138b", readme)
 
     def test_readme_quick_start_stops_before_project_code_on_revision_mismatch(self) -> None:
         for readme_name in ("README.md", "README.en.md"):
@@ -2183,9 +2192,9 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             self.assertLess(block.index('test ! -e "${source_dir}"'), block.index("git clone"))
             self.assertLess(block.index('test ! -L "${source_dir}"'), block.index("git clone"))
             for verification in (
-                "cat-file -t refs/tags/v0.1.0",
-                "rev-parse refs/tags/v0.1.0",
-                "rev-parse 'refs/tags/v0.1.0^{}'",
+                "cat-file -t refs/tags/v0.1.2",
+                "rev-parse refs/tags/v0.1.2",
+                "rev-parse 'refs/tags/v0.1.2^{}'",
                 "rev-parse HEAD",
                 "status --short",
             ):

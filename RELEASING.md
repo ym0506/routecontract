@@ -246,12 +246,13 @@ release with an explicit design and verification path. Do not imply SLSA
 provenance or reproducible builds unless those properties have been separately
 implemented and verified.
 
-## Future Maven Central publication (`v0.1.1` and later)
+## Future Maven Central publication (a separately approved later release)
 
-The immutable GitHub Release `v0.1.0` remains unchanged and is not published
-to Maven Central. This section applies only to a future stable version whose
-semantic version is `0.1.1` or later. It does not authorize overwriting,
-retagging, or describing `0.1.0` as a Central artifact.
+The immutable GitHub Releases `v0.1.0` and `v0.1.2` remain unchanged and are
+not published to Maven Central. This section applies only to a later stable
+version selected through a separate release approval. It does not authorize
+overwriting, retagging, or describing `0.1.0` or `0.1.2` as a Central artifact,
+and it does not plan or authorize another release by itself.
 
 Use the current official [Central publishing guide](https://central.sonatype.org/publish/publish-portal-guide/),
 [Portal API documentation](https://central.sonatype.org/publish/publish-portal-api/)

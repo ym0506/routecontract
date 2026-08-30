@@ -140,7 +140,7 @@ class MavenRouteContractPilotTest {
     }
 
     private static Path expectedArtifactJar() throws Exception {
-        assertEquals("routecontract-shardingsphere-5.5-0.1.0.jar", ARTIFACT_JAR_NAME);
+        assertEquals("routecontract-shardingsphere-5.5-0.1.2.jar", ARTIFACT_JAR_NAME);
         if (ARTIFACT_JAR_PATH == null || ARTIFACT_JAR_PATH.isBlank()) {
             fail("routecontract.artifactJarPath must identify the exact cached Release JAR");
         }

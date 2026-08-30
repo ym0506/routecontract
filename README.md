@@ -36,15 +36,15 @@ digest-pinned MySQL container image를 내려받기 위한 네트워크가 필�
 ```bash
 (
 set -euo pipefail
-source_dir="routecontract-v0.1.0"
+source_dir="routecontract-v0.1.2"
 test ! -e "${source_dir}"
 test ! -L "${source_dir}"
-git clone --quiet --depth 1 --branch v0.1.0 --single-branch \
+git clone --quiet --depth 1 --branch v0.1.2 --single-branch \
   https://github.com/ym0506/routecontract.git "${source_dir}"
-test "$(git -C "${source_dir}" cat-file -t refs/tags/v0.1.0)" = tag
-test "$(git -C "${source_dir}" rev-parse refs/tags/v0.1.0)" = e3944631ad827e88d4936b75e9b738ef50a22b20
-test "$(git -C "${source_dir}" rev-parse 'refs/tags/v0.1.0^{}')" = db203cfd9202ff10cd22c41cf04034eca5177341
-test "$(git -C "${source_dir}" rev-parse HEAD)" = db203cfd9202ff10cd22c41cf04034eca5177341
+test "$(git -C "${source_dir}" cat-file -t refs/tags/v0.1.2)" = tag
+test "$(git -C "${source_dir}" rev-parse refs/tags/v0.1.2)" = 6adacbe04d60b3af83d9067a14a878d26a6c90f5
+test "$(git -C "${source_dir}" rev-parse 'refs/tags/v0.1.2^{}')" = fc4fdd16c21574afa1150654ce354cf8004b138b
+test "$(git -C "${source_dir}" rev-parse HEAD)" = fc4fdd16c21574afa1150654ce354cf8004b138b
 test -z "$(git -C "${source_dir}" status --short)"
 cd "${source_dir}"
 ./scripts/quickstart-demo.sh
@@ -72,12 +72,18 @@ Quick Start가 통과했다면 [첫 실제 통합 가이드](docs/first-integrat
 대표 operation 하나를 고르세요. 가이드는 격리된 Gradle Groovy 또는 Maven 3.9.14 pilot에서
 capture → candidate → 사람 승인 baseline → candidate check를 연결합니다. 저장소별 빌드 격리와
 사람 검토가 필요하므로 완료 시간을 약속하지 않습니다.
-`v0.1.0`은 Maven Central에 게시되어 있지 않으므로 가이드는 검증된 GitHub Release 자산을
+`v0.1.2`는 Maven Central에 게시되어 있지 않으므로 가이드는 검증된 GitHub Release 자산을
 별도 로컬 Maven repository에 설치하는 현재 경로를 사용합니다.
+
+중요: 불변 `v0.1.2` Release 본문과 해당 tag에 포함된 README는 아직 `v0.1.0` 온보딩
+경로를 가리킵니다. 지금 보고 있는 `main` 문서와 가이드는 `v0.1.2` 자산을 소비하기 위한
+release 이후 bridge이며, `v0.1.2` 자체가 완결된 불변 온보딩 Release라는 뜻이 아닙니다.
+tag 이후에 추가된 helper와 verifier는 bridge 구현의 exact commit permalink와 문서에 적힌
+SHA-256에 함께 고정되어 있습니다.
 
 1,700여 줄 가이드를 처음부터 끝까지 읽지 말고, 다음 순서로 필요한 부분만 사용하세요.
 
-1. [고정된 Release 자산을 설치](docs/first-integration.md#2-install-the-exact-v010-release-assets)합니다.
+1. [고정된 Release 자산을 설치](docs/first-integration.md#2-install-the-exact-v012-release-assets)합니다.
 2. 빌드에 맞춰 [Gradle Groovy lane](docs/first-integration.md#gradle-groovy-dsl-opt-in-lane) 또는
    [Maven 3.9.14 lane](docs/first-integration.md#maven-3914-opt-in-profile-lane) 하나만 선택합니다.
 3. 공통 단계인 [대표 operation](docs/first-integration.md#3-add-one-representative-operation) →
@@ -89,7 +95,7 @@ Maven 사용자는 체크인된 [두 모듈 reference fixture](examples/maven-pi
 일반 예시를 억지로 붙이지 말고 그 지점에서 중단하세요.
 
 처음 실행했거나 현재 환경에는 맞지 않는다고 판단했다면
-[stable v0.1.0 feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)에
+[stable v0.1.2 feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)에
 성공·막힌 지점·지원 범위 밖·필요 없음 중 어느 결과든 짧게 남길 수 있습니다. 공개 Issue에는
 원문 SQL, bind 값, JDBC URL, 실제 topology, full log 같은 민감 정보를 넣지 마세요.
 
@@ -235,10 +241,10 @@ adoption으로 승격하지 않습니다.
 
 ## 공개 Release 자산을 registry 없이 사용하기
 
-이 경로는 annotated `v0.1.0` tag, 공개·불변 non-prerelease Release, 동일 revision의
+이 경로는 annotated `v0.1.2` tag, 공개·불변 non-prerelease Release, 동일 revision의
 성공한 release-evidence run과 정확한 자산 집합이 모두 존재한 뒤 사용할 수 있습니다.
 해당 Release에 첨부된 공개 자산 전체를 새 빈 디렉터리에 내려받은 다음,
-`~/.m2`가 아닌 빈 절대경로에 설치합니다. [첫 실제 통합 가이드의 2단계](docs/first-integration.md#2-install-the-exact-v010-release-assets)는
+`~/.m2`가 아닌 빈 절대경로에 설치합니다. [첫 실제 통합 가이드의 2단계](docs/first-integration.md#2-install-the-exact-v012-release-assets)는
 로그인·토큰·GitHub API 없이 고정 URL과 checksum-index SHA-256을 검증한 뒤 exact 자산을
 설치합니다.
 
@@ -250,7 +256,7 @@ profile·fresh consumer cache·repository-scoped SHA-256을 쓰는 Maven 3.9.14 
 build와 IDE sync는 pilot과 로컬 Release repository 없이 성공해야 합니다. Kotlin DSL과
 가이드의 검증 graph·classloader 경계를 벗어나는 Maven 저장소는 아직 fit blocker입니다.
 
-immutable `v0.1.0` 설치기에 포함된 MySQL OCI package-level 수동 검토는 UTC
+immutable `v0.1.2` 설치기에 포함된 MySQL OCI package-level 수동 검토는 UTC
 `2026-12-05`까지만 유효합니다. `2026-12-06` UTC부터 installer는 fail-closed로 중단하며,
 그때는 검토가 갱신된 더 최신 immutable Release를 사용해야 합니다. 만료 검사를 우회하지
 마세요.
@@ -361,8 +367,8 @@ manifest match를 통과시키지 않습니다.
 
 ## 의존성·Release 호환성 상세
 
-게시 후 검증을 통과한 안정 `v0.1.0` Release의 exact coordinate는
-`io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0`이며 Maven Central
+게시 후 검증을 통과한 안정 `v0.1.2` Release의 exact coordinate는
+`io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.2`이며 Maven Central
 게시를 주장하지 않습니다. 이 좌표를 기본 dependency graph에 바로 붙이지 말고
 [첫 실제 통합 가이드](docs/first-integration.md)의 격리된 pilot에서만 사용하세요. 그 pilot은
 기존 ShardingSphere-JDBC 5.5.3 fixture의 실제 graph를 재사용하고 전체 runtime classpath를
@@ -391,7 +397,7 @@ Javadoc classifier에는 OpenJDK standard-doclet 정적 자산과 `legal/` 고�
 
 ## 기여와 확장
 
-`v0.1.0`의 문서·Quick Start·Release 설치·실제 적용 가능성을 처음 검토했다면
+`v0.1.2`의 문서·Quick Start·Release 설치·실제 적용 가능성을 처음 검토했다면
 [짧은 stable feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)에
 성공, blocker, 지원 범위 밖 또는 필요 없음 중 어느 결과든 남길 수 있습니다. 이 기록은
 self-reported usability/fit feedback이며 그 자체로 production 사용, adoption, security,

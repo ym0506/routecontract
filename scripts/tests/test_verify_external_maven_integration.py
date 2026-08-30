@@ -22,7 +22,7 @@ VALID_GRAPH = """\
 [INFO] |     \\- net.minidev:accessors-smart:jar:2.4.9:compile
 [INFO] +- org.apache.calcite:calcite-linq4j:jar:1.42.0:test
 [INFO] +- com.fasterxml.jackson.core:jackson-databind:jar:2.18.9:compile
-[INFO] \\- io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:jar:0.1.0:test
+[INFO] \\- io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:jar:0.1.2:test
 """
 VALID_PROFILE_OFF_EFFECTIVE_POM = """\
 <project xmlns="http://maven.apache.org/POM/4.0.0">
@@ -387,7 +387,7 @@ class ExternalMavenIntegrationVerifierTest(unittest.TestCase):
     <dependency>
       <groupId>io.github.ym0506.routecontract</groupId>
       <artifactId>routecontract-shardingsphere-5.5</artifactId>
-      <version>0.1.0</version>
+      <version>0.1.2</version>
       <scope>test</scope>
     </dependency>
 """
@@ -573,7 +573,7 @@ class ExternalMavenIntegrationVerifierTest(unittest.TestCase):
     <dependency>
       <groupId>io.github.ym0506.routecontract</groupId>
       <artifactId>routecontract-shardingsphere-5.5</artifactId>
-      <version>0.1.0</version>
+      <version>0.1.2</version>
     </dependency>""",
             ),
             "other direct RouteContract artifact": VALID_PROFILE_OFF_EFFECTIVE_POM.replace(
@@ -672,8 +672,8 @@ class ExternalMavenIntegrationVerifierTest(unittest.TestCase):
     def test_graph_parser_rejects_disallowed_structure_and_scopes(self) -> None:
         mutations = {
             "RouteContract compile scope": VALID_GRAPH.replace(
-                "routecontract-shardingsphere-5.5:jar:0.1.0:test",
-                "routecontract-shardingsphere-5.5:jar:0.1.0:compile",
+                "routecontract-shardingsphere-5.5:jar:0.1.2:test",
+                "routecontract-shardingsphere-5.5:jar:0.1.2:compile",
             ),
             "JDBC provided scope": VALID_GRAPH.replace(
                 "shardingsphere-jdbc:jar:5.5.3:compile",
