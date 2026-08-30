@@ -208,7 +208,7 @@ Code map (representative boundaries; a directory is not assumed to have only one
 | Mixed automation | `scripts/`, `.github/workflows/`, `security/`, `gradle/` | `scripts/` contains user-facing Quick Start and Release-asset installation tools plus maintainer release, supply-chain, and demonstration-verification tools. None is a consumer runtime API. |
 | Verification/submission support | `submission/`, `scripts/video-demo-session.sh`, `docs/evidence-matrix.md` | Evidence tracking, result-report, and reproducible packaging material; not part of the shipped product. |
 
-This source declares release-target project version `0.1.1`, with corresponding tag name `v0.1.1`.
+This source declares release-target project version `0.1.2`, with corresponding tag name `v0.1.2`.
 A version string or checkout does not prove that an annotated tag, public immutable
 non-prerelease Release, same-revision release-evidence run, or external-user result exists.
 Use public assets only after verifying tag/Release/evidence-run revision identity and every
