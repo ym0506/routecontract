@@ -252,12 +252,14 @@ adoption으로 승격하지 않습니다.
 설치합니다.
 
 설치기가 출력한 로컬 Maven repository와 RouteContract 의존성을 기본 빌드에 바로 추가하지
-마세요. [Gradle Groovy DSL 경로](docs/first-integration.md#gradle-groovy-dsl-opt-in-lane)는 pilot property가 있을 때만 별도
-source set·task·repository를 활성화하며, 같은 가이드는 inactive-by-default
+마세요. [Gradle Groovy DSL](docs/first-integration.md#gradle-groovy-dsl-opt-in-lane)과
+[Gradle Kotlin DSL](docs/first-integration.md#gradle-kotlin-dsl-opt-in-lane) 경로는 pilot property가
+있을 때만 별도 source set·task·repository를 활성화하며, 같은 가이드는 inactive-by-default
 profile·fresh consumer cache·repository-scoped SHA-256을 쓰는 Maven 3.9.14 경로를 함께
-제공합니다. 두 경로 모두 기존 대표 ShardingSphere-JDBC 5.5.3 fixture를 재사용하며, 평상시
-build와 IDE sync는 pilot과 로컬 Release repository 없이 성공해야 합니다. Kotlin DSL과
-가이드의 검증 graph·classloader 경계를 벗어나는 Maven 저장소는 아직 fit blocker입니다.
+제공합니다. 세 경로 모두 대표 fixture의 기존 ShardingSphere-JDBC 5.5.3 의존성을 재사용하며,
+평상시 build와 IDE sync는 pilot과 로컬 Release repository 없이 성공해야 합니다. 선택한
+경로에서 검증한 범위를 벗어나는 build layout·toolchain·repository·graph·classloader는 아직
+fit blocker입니다.
 
 immutable `v0.1.2` 설치기에 포함된 MySQL OCI package-level 수동 검토는 UTC
 `2026-12-05`까지만 유효합니다. `2026-12-06` UTC부터 installer는 fail-closed로 중단하며,

@@ -253,13 +253,14 @@ integration guide](docs/first-integration.md#2-install-the-exact-v012-release-as
 public URLs and a pinned checksum-index SHA-256, without a GitHub login, token, or API call.
 
 Do not add the resulting local Maven repository or RouteContract dependency directly to the
-default build. The [Gradle Groovy DSL lane](docs/first-integration.md#gradle-groovy-dsl-opt-in-lane)
-activates a separate source set, task, and repository only when the pilot property is present; the
-same guide also provides a Maven 3.9.14 lane with an inactive-by-default profile, a fresh
-consumer cache, and repository-scoped SHA-256 validation. Both reuse the representative fixture's
-existing ShardingSphere-JDBC 5.5.3 dependency, and the normal build and IDE sync must succeed
-without the pilot or local Release repository. Kotlin DSL and Maven repositories outside the
-guide's verified graph and classloader boundary remain fit blockers.
+default build. The [Gradle Groovy DSL](docs/first-integration.md#gradle-groovy-dsl-opt-in-lane) and
+[Gradle Kotlin DSL](docs/first-integration.md#gradle-kotlin-dsl-opt-in-lane) lanes activate a
+separate source set, task, and repository only when the pilot property is present; the same guide
+also provides a Maven 3.9.14 lane with an inactive-by-default profile, a fresh consumer cache, and
+repository-scoped SHA-256 validation. All three reuse a representative fixture's existing
+ShardingSphere-JDBC 5.5.3 dependency, and the normal build and IDE sync must succeed without the
+pilot or local Release repository. Build layouts, toolchains, repositories, graphs, or
+classloaders outside the verified boundary of the selected lane remain fit blockers.
 
 The embedded MySQL OCI package-level manual review in the immutable `v0.1.2` installer is valid
 through UTC `2026-12-05`. Beginning `2026-12-06` UTC, the installer fails closed; use a newer

@@ -955,9 +955,9 @@ class SubmissionClaimTextTest(unittest.TestCase):
             "      - name: Install checksum-locked report-package test dependencies"
         )
         package_tests = "      - name: Test fail-closed contest packaging rules"
-        for workflow, quick_start, package_job in (
-            (ci_workflow, ci_quick_start, ci_package_job),
-            (release_evidence, release_quick_start, release_package_job),
+        for workflow, quick_start, package_job, python_setup_count in (
+            (ci_workflow, ci_quick_start, ci_package_job, 2),
+            (release_evidence, release_quick_start, release_package_job, 1),
         ):
             self.assertIn(package_job, workflow)
             self.assertEqual(
@@ -970,15 +970,21 @@ class SubmissionClaimTextTest(unittest.TestCase):
                 "--requirement submission/report-builder-requirements.txt", workflow
             )
             self.assertEqual(
-                1,
+                python_setup_count,
                 workflow.count(
                     "uses: actions/setup-python@"
                     "5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0"
                 ),
             )
-            self.assertEqual(1, workflow.count("python-version: '3.12.14'"))
-            self.assertEqual(2, workflow.count("architecture: x64"))
-            self.assertEqual(1, workflow.count("check-latest: false"))
+            self.assertEqual(
+                python_setup_count, workflow.count("python-version: '3.12.14'")
+            )
+            self.assertEqual(
+                python_setup_count * 2, workflow.count("architecture: x64")
+            )
+            self.assertEqual(
+                python_setup_count, workflow.count("check-latest: false")
+            )
             self.assertIn("${RUNNER_TEMP}/routecontract-report-test-venv", workflow)
             self.assertEqual(1, workflow.count('test ! -e "${report_venv}"'))
             self.assertEqual(1, workflow.count('python -m venv "${report_venv}"'))
@@ -1473,7 +1479,11 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             "/scripts/install-release-assets.py",
             "RepositoriesMode.FAIL_ON_PROJECT_REPOS",
             "normal build and IDE sync must still succeed",
-            "needs Kotlin DSL",
+            "### Gradle Kotlin DSL opt-in lane",
+            "ROUTECONTRACT_KOTLIN_DSL_START",
+            "ROUTECONTRACT_KOTLIN_DSL_END",
+            "H2 `MODE=MySQL`",
+            "does not satisfy the published MySQL 8.4.11 boundary",
             "never disable them",
             "dependency-report task can still exit `0` while printing",
             "do not treat `BUILD SUCCESSFUL`\nalone as a usable graph",
