@@ -153,6 +153,57 @@ class PublicV012InstallerTest(unittest.TestCase):
             module.EXPECTED_DOWNLOAD_SIZES,
         )
 
+    def test_public_docs_pin_the_exact_wrapper_contract(self) -> None:
+        wrapper_url = (
+            "https://raw.githubusercontent.com/ym0506/routecontract/"
+            "a11c5ca1df41e4a0d25d6e211dd2274e35d5b593/"
+            "scripts/install-public-v0_1_2.py"
+        )
+        wrapper_sha256 = (
+            "bec71208b138765bbc017589cb04ef0159e015364616e14dc19c633873b9ecb8"
+        )
+        required_fragments = (
+            wrapper_url,
+            'expected_helper_size="33309"',
+            f'expected_helper_sha256="{wrapper_sha256}"',
+            '--max-filesize "${expected_helper_size}"',
+            "payload = sys.stdin.buffer.read(expected_size + 1)",
+            'flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)',
+            'test -f "${helper}"',
+            'test ! -L "${helper}"',
+            'test "${actual_helper_size}" = "${expected_helper_size}"',
+            'python3 -I "${helper}" --repository "${repository_dir}"',
+        )
+
+        for relative_path in (
+            "README.md",
+            "README.en.md",
+            "docs/first-integration.md",
+        ):
+            with self.subTest(relative_path=relative_path):
+                contents = (REPOSITORY_ROOT / relative_path).read_text(
+                    encoding="utf-8"
+                )
+                for fragment in required_fragments:
+                    self.assertIn(fragment, contents)
+                self.assertNotIn(
+                    "raw.githubusercontent.com/ym0506/routecontract/main/"
+                    "scripts/install-public-v0_1_2.py",
+                    contents,
+                )
+
+        guide = (REPOSITORY_ROOT / "docs/first-integration.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertLess(
+            guide.index("The recommended wrapper below downloads"),
+            guide.index("Manual asset-by-asset audit fallback"),
+        )
+        self.assertIn(
+            "Do not run the checksum helper again against that repository.",
+            guide,
+        )
+
     def test_downloads_exact_public_state_then_delegates_once(self) -> None:
         module = load_installer()
         asset_payloads, installer_payload, preparer_payload, downloader = self._fixture(

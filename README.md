@@ -69,29 +69,101 @@ SQL·parameter·connection 정보가 섞일 수 있는 하위 프로세스 원�
 
 Quick Start가 통과했다면 [첫 실제 통합 가이드](docs/first-integration.md)의 지원 경계와 중단
 조건을 확인하고, 기존 ShardingSphere-JDBC 5.5.3 통합 테스트에서 business assertion을 유지할
-대표 operation 하나를 고르세요. 가이드는 격리된 Gradle Groovy 또는 Maven 3.9.14 pilot에서
-capture → candidate → 사람 승인 baseline → candidate check를 연결합니다. 저장소별 빌드 격리와
+대표 operation 하나를 고르세요. 가이드는 격리된 Gradle Groovy·Gradle Kotlin DSL 또는
+Maven 3.9.14 pilot에서 capture → candidate → 사람 승인 baseline → candidate check를 연결합니다. 저장소별 빌드 격리와
 사람 검토가 필요하므로 완료 시간을 약속하지 않습니다.
 `v0.1.2`는 Maven Central에 게시되어 있지 않으므로 가이드는 검증된 GitHub Release 자산을
 별도 로컬 Maven repository에 설치하는 현재 경로를 사용합니다.
 
+가장 짧은 공개 설치 경로는 아래와 같습니다. `install_root`는 신뢰할 수 있는 기존 canonical
+parent 아래의 정규화된 절대 경로의 새 디렉터리로 바꾸고, 그 아래 `maven` 경로가
+`~/.m2/repository` 또는 그 하위가 되지 않게 하세요. 공개 HTTPS 네트워크, Bash와 POSIX
+tools, `curl`, Python 3.10 이상이 필요하지만 GitHub
+로그인·token·API·GitHub CLI는 필요하지 않습니다.
+
+```bash
+(
+set -euo pipefail
+install_root="/absolute/path/to/new-routecontract-v0.1.2-install"
+helper_url="https://raw.githubusercontent.com/ym0506/routecontract/a11c5ca1df41e4a0d25d6e211dd2274e35d5b593/scripts/install-public-v0_1_2.py"
+expected_helper_size="33309"
+expected_helper_sha256="bec71208b138765bbc017589cb04ef0159e015364616e14dc19c633873b9ecb8"
+
+python3 -I -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 2)'
+test ! -e "${install_root}"
+test ! -L "${install_root}"
+mkdir -m 700 "${install_root}"
+helper="${install_root}/install-public-v0_1_2.py"
+repository_dir="${install_root}/maven"
+curl --disable --proto '=https' --proto-redir '=https' --tlsv1.2 \
+  --fail --silent --show-error --retry 3 --connect-timeout 15 --max-time 120 \
+  --max-redirs 0 --max-filesize "${expected_helper_size}" \
+  --output - "${helper_url}" | \
+  python3 -I -c '
+import os
+import sys
+
+destination = sys.argv[1]
+expected_size = int(sys.argv[2])
+payload = sys.stdin.buffer.read(expected_size + 1)
+if len(payload) != expected_size:
+    raise SystemExit(
+        f"wrapper byte count mismatch: expected {expected_size}, got {len(payload)}"
+    )
+flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+descriptor = os.open(destination, flags, 0o600)
+try:
+    os.fchmod(descriptor, 0o600)
+    view = memoryview(payload)
+    while view:
+        written = os.write(descriptor, view)
+        if written <= 0:
+            raise OSError("wrapper write made no progress")
+        view = view[written:]
+    os.fsync(descriptor)
+finally:
+    os.close(descriptor)
+' "${helper}" "${expected_helper_size}"
+test -f "${helper}"
+test ! -L "${helper}"
+actual_helper_size="$(python3 -I -c \
+  'import pathlib,sys; print(pathlib.Path(sys.argv[1]).stat().st_size)' "${helper}")"
+test "${actual_helper_size}" = "${expected_helper_size}"
+actual_helper_sha256="$(python3 -I -c \
+  'import hashlib,pathlib,sys; print(hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes()).hexdigest())' \
+  "${helper}")"
+test "${actual_helper_sha256}" = "${expected_helper_sha256}"
+python3 -I "${helper}" --repository "${repository_dir}"
+)
+```
+
+성공하면 exact `io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.2`
+coordinate에 payload 4개와 SHA-1·SHA-256 sidecar 8개가 생깁니다. commit-pinned 공개 wrapper는
+불변 Release payload를 바꾸지 않고 고정 해시로 검증된 post-tag checksum helper를 호출합니다.
+`2026-12-05 UTC` evidence-review 만료도 그대로 적용됩니다. 어느 단계에서든 실패하면
+`install_root` 전체를 조사용으로 보존하고, 고치거나 재사용하지 말고 다른 새 절대 경로에서
+다시 시작하세요. 실패가 path-binding change를 보고했다면 원래 경로가 보존된 reservation을
+더 이상 가리키지 않을 수 있습니다. 원래 경로나 이동된 reservation 어느 쪽도 고치거나
+삭제하거나 재사용하지 마세요.
+
 중요: 불변 `v0.1.2` Release 본문과 해당 tag에 포함된 README는 아직 `v0.1.0` 온보딩
 경로를 가리킵니다. 지금 보고 있는 `main` 문서와 가이드는 `v0.1.2` 자산을 소비하기 위한
 release 이후 bridge이며, `v0.1.2` 자체가 완결된 불변 온보딩 Release라는 뜻이 아닙니다.
-tag 이후에 추가된 helper와 verifier는 bridge 구현의 exact commit permalink와 문서에 적힌
-SHA-256에 함께 고정되어 있습니다.
+tag 이후에 추가된 각 helper와 verifier는 각각의 exact implementation commit permalink와
+문서에 적힌 SHA-256에 함께 고정되어 있습니다.
 
-1,700여 줄 가이드를 처음부터 끝까지 읽지 말고, 다음 순서로 필요한 부분만 사용하세요.
+긴 가이드를 처음부터 끝까지 읽지 말고, 다음 순서로 필요한 부분만 사용하세요.
 
 1. [고정된 Release 자산을 설치](docs/first-integration.md#2-install-the-exact-v012-release-assets)합니다.
-2. 빌드에 맞춰 [Gradle Groovy lane](docs/first-integration.md#gradle-groovy-dsl-opt-in-lane) 또는
+2. 빌드에 맞춰 [Gradle Groovy lane](docs/first-integration.md#gradle-groovy-dsl-opt-in-lane),
+   [Gradle Kotlin DSL lane](docs/first-integration.md#gradle-kotlin-dsl-opt-in-lane), 또는
    [Maven 3.9.14 lane](docs/first-integration.md#maven-3914-opt-in-profile-lane) 하나만 선택합니다.
 3. 공통 단계인 [대표 operation](docs/first-integration.md#3-add-one-representative-operation) →
    [사람의 baseline 승인](docs/first-integration.md#4-review-and-approve-the-first-baseline) →
    [CI candidate check](docs/first-integration.md#5-run-the-candidate-check-in-ci)로 이동합니다.
 
 Maven 사용자는 체크인된 [두 모듈 reference fixture](examples/maven-pilot/README.md)를 먼저
-실행해 자신의 저장소와 다른 지점을 확인할 수 있습니다. 어느 lane에도 정확히 맞지 않으면
+실행해 자신의 저장소와 다른 지점을 확인할 수 있습니다. 어떤 lane에도 정확히 맞지 않으면
 일반 예시를 억지로 붙이지 말고 그 지점에서 중단하세요.
 Maven pilot 두 테스트를 준비한 뒤에는 [6개 필드 예제 JSON](examples/maven-pilot/assisted-pilot.example.json)을
 복사하고 [one-command runner](examples/maven-pilot/README.md#one-command-runner-for-an-adapted-external-maven-pilot)로
@@ -246,10 +318,10 @@ adoption으로 승격하지 않습니다.
 
 이 경로는 annotated `v0.1.2` tag, 공개·불변 non-prerelease Release, 동일 revision의
 성공한 release-evidence run과 정확한 자산 집합이 모두 존재한 뒤 사용할 수 있습니다.
-해당 Release에 첨부된 공개 자산 전체를 새 빈 디렉터리에 내려받은 다음,
-`~/.m2`가 아닌 빈 절대경로에 설치합니다. [첫 실제 통합 가이드의 2단계](docs/first-integration.md#2-install-the-exact-v012-release-assets)는
-로그인·토큰·GitHub API 없이 고정 URL과 checksum-index SHA-256을 검증한 뒤 exact 자산을
-설치합니다.
+기본 경로는 post-tag bridge commit과 SHA-256·정확한 크기로 고정한 공개 wrapper가 Release
+자산을 내려받아 검증하고, `~/.m2`가 아닌 빈 절대경로에 exact coordinate를 설치하는 방식입니다.
+[첫 실제 통합 가이드의 2단계](docs/first-integration.md#2-install-the-exact-v012-release-assets)는
+로그인·토큰·GitHub API 없이 이 짧은 경로와 자산별 수동 감사 fallback을 모두 제공합니다.
 
 설치기가 출력한 로컬 Maven repository와 RouteContract 의존성을 기본 빌드에 바로 추가하지
 마세요. [Gradle Groovy DSL](docs/first-integration.md#gradle-groovy-dsl-opt-in-lane)과
@@ -267,9 +339,10 @@ immutable `v0.1.2` 설치기에 포함된 MySQL OCI package-level 수동 검토�
 마세요.
 
 <details>
-<summary>설치기가 검증하는 정확한 공급망 경계</summary>
+<summary>tag-pinned 내부 설치기가 검증하는 정확한 공급망 경계</summary>
 
-설치기는 네트워크를 사용하지 않습니다. 공개 자산의 정확한 파일 목록, `SHA256SUMS`,
+commit-pinned 공개 wrapper는 HTTPS로 자산을 받습니다. 그 뒤 wrapper가 호출하는 tag-pinned
+내부 설치기는 네트워크를 사용하지 않습니다. 내부 설치기는 공개 자산의 정확한 파일 목록, `SHA256SUMS`,
 sanitized supply-chain evidence와 공개 SBOM/POM의 hash 결합, non-SNAPSHOT POM 좌표,
 parent·relocation 없는 POM, JAR의 namespace-path와 sources JAR의 Java package 검사,
 source ZIP의 단일 버전 root,
@@ -277,7 +350,9 @@ source ZIP의 단일 버전 root,
 compiled `.class` 및 JTS/Mahout 이름·package 경계, canonical `ym0506` provider namespace를
 먼저 검증한 후 main/sources/Javadoc JAR와 POM만 명시한 Maven
 레이아웃에 복사합니다. 기존 좌표는 덮어쓰지 않으며 관례적인 `~/.m2/repository`와 그 하위 경로를
-target으로 지정하면 거부합니다. 체크섬은 다운로드 무결성을 확인할 뿐 게시자 신원을 인증하지 않으므로, 자산은
+target으로 지정하면 거부합니다. 그 뒤 wrapper의 고정 해시 post-tag helper가 payload byte를
+바꾸지 않고 정확한 SHA-1·SHA-256 sidecar 8개만 만듭니다. 체크섬은 다운로드 무결성을 확인할
+뿐 게시자 신원을 인증하지 않으므로, 자산은
 반드시 해당 tag의 공개 Release에서 받아야 합니다. 이 검사는 이름·경로·선언 package·의존성
 경계이며 이름을 바꾸거나 복사한 코드의 의미적 출처를 판정하지 않습니다. release archive가
 최종 tag의 tracked Git tree와
