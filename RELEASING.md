@@ -364,6 +364,21 @@ payload manifest and a public-key-only GnuPG home, then creates a deterministic
 ZIP plus a path-free receipt in a new absent output directory.
 All file and directory arguments must be absolute normalized canonical paths;
 the tool rejects a symlink in any argument's existing path.
+Manifest, staging, tool, bundle, receipt and created output files must each be
+regular files with exactly one hard link. Repository traversal stays anchored
+to opened directories with `O_NOFOLLOW` and compares directory identities
+before and after every read. The output directory is mode `0700`; its two files
+are mode `0600`. A write, readback or descriptor-close failure closes every
+descriptor it can and fails without any failure-time rename, unlink or directory
+removal. The new output directory may therefore remain partial at the requested
+path and must be inspected and removed manually before a fresh attempt. This
+conservative rule prevents cleanup races from deleting or replacing unrelated
+objects.
+Secret-material names in the public GnuPG home fail even when they are symlink
+aliases or dangling links.
+The tool exports the exact verified public key into a tool-created private,
+public-only temporary GnuPG home and uses that snapshot for every signature
+check, so signature verification does not reopen the caller's keyring.
 
 The reviewed payload manifest is a strict canonical JSON document with schema
 version `1`, the exact `io.github.ym0506.routecontract` group,
@@ -427,6 +442,9 @@ The receipt is local bundle evidence only. Independently compare its reviewed
 manifest binding, tag, commit, tree, workflow run, release evidence and public
 key facts with the approval-bound candidate before recording upload intent.
 Never pass the bundle to a network client merely because this verifier succeeds.
+The CLI success marker uses the version and both SHA-256 values returned by the
+same completed build or verification operation; it never reopens those paths to
+construct a later attestation.
 
 ### Portal upload, validation and publication
 

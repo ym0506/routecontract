@@ -44,6 +44,13 @@ _SEMVER = re.compile(r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\Z")
 _UPPER_FINGERPRINT = re.compile(r"[0-9A-F]{40}\Z")
 _LOWER_SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 _SAFE_OUTPUT_LEAF = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]*\Z")
+_O_NOFOLLOW = getattr(os, "O_NOFOLLOW", None)
+_O_DIRECTORY = getattr(os, "O_DIRECTORY", None)
+_O_NONBLOCK = getattr(os, "O_NONBLOCK", None)
+_HAS_REQUIRED_DIR_FD = all(
+    function in os.supports_dir_fd
+    for function in (os.open, os.stat, os.mkdir)
+)
 
 
 class BundleError(RuntimeError):
@@ -60,6 +67,14 @@ class PreparedStaging(NamedTuple):
     upload_entries: dict[str, bytes]
     entry_kinds: dict[str, str]
     excluded_entries: list[dict[str, object]]
+
+
+class VerifiedBundleResult(NamedTuple):
+    version: str
+    bundle_path: Path
+    receipt_path: Path
+    bundle_sha256: str
+    receipt_sha256: str
 
 
 def _sha256(payload: bytes) -> str:
@@ -89,6 +104,77 @@ def _metadata(value: os.stat_result) -> tuple[int, ...]:
         value.st_mtime_ns,
         value.st_ctime_ns,
     )
+
+
+def _identity(value: os.stat_result) -> tuple[int, int, int]:
+    return (value.st_dev, value.st_ino, stat.S_IFMT(value.st_mode))
+
+
+def _require_single_link(value: os.stat_result, label: str) -> None:
+    if value.st_nlink != 1:
+        raise BundleError(f"{label} must have exactly one hard link")
+
+
+def _directory_flags() -> int:
+    if _O_NOFOLLOW is None or _O_DIRECTORY is None or not _HAS_REQUIRED_DIR_FD:
+        raise BundleError(
+            "this platform lacks required O_NOFOLLOW/O_DIRECTORY/dir_fd support"
+        )
+    return os.O_RDONLY | _O_NOFOLLOW | _O_DIRECTORY | getattr(os, "O_CLOEXEC", 0)
+
+
+def _regular_read_flags() -> int:
+    if _O_NOFOLLOW is None or _O_NONBLOCK is None:
+        raise BundleError("this platform lacks required O_NOFOLLOW/O_NONBLOCK support")
+    return os.O_RDONLY | _O_NOFOLLOW | _O_NONBLOCK | getattr(os, "O_CLOEXEC", 0)
+
+
+def _close_descriptor(descriptor: int, label: str) -> None:
+    try:
+        os.close(descriptor)
+    except OSError as error:
+        raise BundleError(f"could not close {label}") from error
+
+
+def _open_absolute_directory(path: Path, label: str) -> tuple[int, os.stat_result]:
+    _canonical_existing_path(path, label, directory=True)
+    flags = _directory_flags()
+    try:
+        descriptor = os.open(Path(path.anchor), flags)
+    except OSError as error:
+        raise BundleError(f"could not open {label} root directory") from error
+    try:
+        for component in path.parts[1:]:
+            try:
+                child = os.open(component, flags, dir_fd=descriptor)
+            except OSError as error:
+                raise BundleError(
+                    f"{label} path component must be a real directory"
+                ) from error
+            try:
+                opened = os.fstat(child)
+                named = os.stat(component, dir_fd=descriptor, follow_symlinks=False)
+                if not stat.S_ISDIR(opened.st_mode) or _metadata(opened) != _metadata(named):
+                    raise BundleError(f"{label} directory identity changed while opening")
+                _close_descriptor(descriptor, f"{label} ancestor directory")
+            except BaseException:
+                try:
+                    os.close(child)
+                except OSError:
+                    pass
+                raise
+            descriptor = child
+        opened = os.fstat(descriptor)
+        named = os.stat(path, follow_symlinks=False)
+        if not stat.S_ISDIR(opened.st_mode) or _metadata(opened) != _metadata(named):
+            raise BundleError(f"{label} directory identity changed while opening")
+        return descriptor, opened
+    except BaseException:
+        try:
+            os.close(descriptor)
+        except OSError:
+            pass
+        raise
 
 
 def _canonical_json(value: object) -> bytes:
@@ -153,15 +239,18 @@ def _canonical_existing_path(path: Path, label: str, *, directory: bool) -> Path
 
 def _read_stable_regular(path: Path, label: str, maximum: int) -> bytes:
     _canonical_existing_path(path, label, directory=False)
-    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
     try:
-        descriptor = os.open(path, flags)
+        descriptor = os.open(path, _regular_read_flags())
     except OSError as error:
         raise BundleError(f"{label} must be a regular non-symlink file") from error
+    failure: BaseException | None = None
+    payload = b""
+    after: os.stat_result | None = None
     try:
         before = os.fstat(descriptor)
         if not stat.S_ISREG(before.st_mode):
             raise BundleError(f"{label} must be a regular non-symlink file")
+        _require_single_link(before, label)
         if before.st_size > maximum:
             raise BundleError(f"{label} exceeds its size limit")
         chunks: list[bytes] = []
@@ -178,8 +267,16 @@ def _read_stable_regular(path: Path, label: str, maximum: int) -> bytes:
             raise BundleError(f"{label} exceeds its size limit")
         if _metadata(before) != _metadata(after):
             raise BundleError(f"{label} changed while it was read")
-    finally:
-        os.close(descriptor)
+    except BaseException as error:
+        failure = error
+    try:
+        _close_descriptor(descriptor, label)
+    except BundleError as error:
+        if failure is None:
+            failure = error
+    if failure is not None:
+        raise failure
+    assert after is not None
     try:
         named = os.lstat(path)
         resolved_after = path.resolve(strict=True)
@@ -277,13 +374,70 @@ def _expected_inventory(version: str, payload_names: list[str]) -> tuple[set[str
     return files, directories
 
 
-def _scan_repository(repository: Path) -> tuple[dict[str, tuple[int, ...]], set[str]]:
-    files: dict[str, tuple[int, ...]] = {}
-    directories: set[str] = set()
+def _read_regular_at(
+    directory_fd: int,
+    name: str,
+    label: str,
+    maximum: int,
+    expected: tuple[int, ...],
+) -> bytes:
+    try:
+        descriptor = os.open(name, _regular_read_flags(), dir_fd=directory_fd)
+    except OSError as error:
+        raise BundleError(f"{label} must remain a regular non-symlink file") from error
+    failure: BaseException | None = None
+    payload = b""
+    try:
+        before = os.fstat(descriptor)
+        if not stat.S_ISREG(before.st_mode) or _metadata(before) != expected:
+            raise BundleError(f"{label} identity changed before it was read")
+        _require_single_link(before, label)
+        if before.st_size > maximum:
+            raise BundleError(f"{label} exceeds its size limit")
+        chunks: list[bytes] = []
+        remaining = maximum + 1
+        while remaining:
+            chunk = os.read(descriptor, min(64 * 1024, remaining))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            remaining -= len(chunk)
+        payload = b"".join(chunks)
+        after = os.fstat(descriptor)
+        named = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+        if len(payload) > maximum:
+            raise BundleError(f"{label} exceeds its size limit")
+        if _metadata(before) != _metadata(after) or _metadata(after) != _metadata(named):
+            raise BundleError(f"{label} identity changed while it was read")
+    except BaseException as error:
+        failure = error
+    try:
+        _close_descriptor(descriptor, label)
+    except BundleError as error:
+        if failure is None:
+            failure = error
+    if failure is not None:
+        raise failure
+    return payload
 
-    def visit(directory: Path, relative: PurePosixPath) -> None:
+
+def _walk_repository(
+    root_descriptor: int, *, read_files: bool
+) -> tuple[
+    tuple[int, ...],
+    dict[str, tuple[int, ...]],
+    dict[str, tuple[int, ...]],
+    dict[str, bytes],
+]:
+    files: dict[str, tuple[int, ...]] = {}
+    directories: dict[str, tuple[int, ...]] = {}
+    contents: dict[str, bytes] = {}
+
+    def visit(directory_fd: int, relative: PurePosixPath) -> None:
+        parent_before = os.fstat(directory_fd)
         try:
-            entries = sorted(os.scandir(directory), key=lambda entry: entry.name)
+            with os.scandir(directory_fd) as iterator:
+                entries = sorted(iterator, key=lambda entry: entry.name)
         except OSError as error:
             raise BundleError("could not enumerate staging repository") from error
         for entry in entries:
@@ -293,39 +447,124 @@ def _scan_repository(repository: Path) -> tuple[dict[str, tuple[int, ...]], set[
                 metadata = entry.stat(follow_symlinks=False)
             except OSError as error:
                 raise BundleError("staging repository entry disappeared") from error
-            if entry.is_symlink():
+            if stat.S_ISLNK(metadata.st_mode):
                 raise BundleError(f"staging repository contains a symbolic link: {logical}")
             if stat.S_ISDIR(metadata.st_mode):
-                directories.add(logical)
-                visit(Path(entry.path), child_relative)
+                try:
+                    child_descriptor = os.open(
+                        entry.name, _directory_flags(), dir_fd=directory_fd
+                    )
+                except OSError as error:
+                    raise BundleError(
+                        f"staging repository directory could not be opened: {logical}"
+                    ) from error
+                child_failure: BaseException | None = None
+                try:
+                    opened = os.fstat(child_descriptor)
+                    named = os.stat(
+                        entry.name, dir_fd=directory_fd, follow_symlinks=False
+                    )
+                    if (
+                        not stat.S_ISDIR(opened.st_mode)
+                        or _metadata(metadata) != _metadata(opened)
+                        or _metadata(opened) != _metadata(named)
+                    ):
+                        raise BundleError(
+                            f"staging repository directory identity changed: {logical}"
+                        )
+                    directories[logical] = _metadata(opened)
+                    visit(child_descriptor, child_relative)
+                    named_after = os.stat(
+                        entry.name, dir_fd=directory_fd, follow_symlinks=False
+                    )
+                    if _metadata(opened) != _metadata(named_after):
+                        raise BundleError(
+                            f"staging repository directory identity changed: {logical}"
+                        )
+                except BaseException as error:
+                    child_failure = error
+                try:
+                    _close_descriptor(
+                        child_descriptor, f"staging repository directory {logical}"
+                    )
+                except BundleError as error:
+                    if child_failure is None:
+                        child_failure = error
+                if child_failure is not None:
+                    raise child_failure
             elif stat.S_ISREG(metadata.st_mode):
+                _require_single_link(metadata, f"staging file {logical}")
                 files[logical] = _metadata(metadata)
+                if read_files:
+                    contents[logical] = _read_regular_at(
+                        directory_fd,
+                        entry.name,
+                        f"staging file {logical}",
+                        MAX_STAGING_FILE_BYTES,
+                        files[logical],
+                    )
             else:
                 raise BundleError(f"staging repository contains a special file: {logical}")
+        parent_after = os.fstat(directory_fd)
+        if _metadata(parent_before) != _metadata(parent_after):
+            label = str(relative) if relative.parts else "."
+            raise BundleError(
+                f"staging repository directory identity changed: {label}"
+            )
 
-    visit(repository, PurePosixPath())
-    return files, directories
+    root_before = os.fstat(root_descriptor)
+    visit(root_descriptor, PurePosixPath())
+    root_after = os.fstat(root_descriptor)
+    if _metadata(root_before) != _metadata(root_after):
+        raise BundleError("staging repository root identity changed")
+    return _metadata(root_after), files, directories, contents
 
 
 def _read_repository(
     repository: Path, expected_files: set[str], expected_directories: set[str]
 ) -> dict[str, bytes]:
-    first_files, first_directories = _scan_repository(repository)
-    if set(first_files) != expected_files or first_directories != expected_directories:
-        raise BundleError("staging inventory mismatch: expected one exact Maven coordinate")
-    if sum(metadata[6] for metadata in first_files.values()) > MAX_STAGING_BYTES:
-        raise BundleError("staging repository exceeds its total size limit")
-    contents = {
-        logical: _read_stable_regular(
-            repository.joinpath(*PurePosixPath(logical).parts),
-            f"staging file {logical}",
-            MAX_STAGING_FILE_BYTES,
+    root_descriptor, opened_root = _open_absolute_directory(
+        repository, "staging repository"
+    )
+    failure: BaseException | None = None
+    contents: dict[str, bytes] = {}
+    try:
+        first_root, first_files, first_directories, _ = _walk_repository(
+            root_descriptor, read_files=False
         )
-        for logical in sorted(expected_files)
-    }
-    second_files, second_directories = _scan_repository(repository)
-    if second_files != first_files or second_directories != first_directories:
-        raise BundleError("staging repository changed while it was read")
+        if set(first_files) != expected_files or set(first_directories) != expected_directories:
+            raise BundleError(
+                "staging inventory mismatch: expected one exact Maven coordinate"
+            )
+        if sum(metadata[6] for metadata in first_files.values()) > MAX_STAGING_BYTES:
+            raise BundleError("staging repository exceeds its total size limit")
+        read_root, read_files, read_directories, contents = _walk_repository(
+            root_descriptor, read_files=True
+        )
+        final_root, final_files, final_directories, _ = _walk_repository(
+            root_descriptor, read_files=False
+        )
+        first_snapshot = (first_root, first_files, first_directories)
+        if (
+            (read_root, read_files, read_directories) != first_snapshot
+            or (final_root, final_files, final_directories) != first_snapshot
+        ):
+            raise BundleError("staging repository changed while it was read")
+        named_root = os.stat(repository, follow_symlinks=False)
+        if (
+            _metadata(opened_root) != _metadata(os.fstat(root_descriptor))
+            or _metadata(opened_root) != _metadata(named_root)
+        ):
+            raise BundleError("staging repository root identity changed")
+    except BaseException as error:
+        failure = error
+    try:
+        _close_descriptor(root_descriptor, "staging repository root")
+    except BundleError as error:
+        if failure is None:
+            failure = error
+    if failure is not None:
+        raise failure
     return contents
 
 
@@ -402,24 +641,39 @@ def _verify_module_metadata(contents: dict[str, bytes], version: str) -> None:
             )
 
 
-def _gpg_command(home: Path, arguments: list[str]) -> subprocess.CompletedProcess[bytes]:
+def _gpg_command(
+    home: Path,
+    arguments: list[str],
+    *,
+    input_payload: bytes | None = None,
+) -> subprocess.CompletedProcess[bytes]:
     executable = shutil.which("gpg")
     if executable is None:
         raise BundleError("GnuPG is required to verify staged signatures")
     environment = os.environ.copy()
     environment["LC_ALL"] = "C"
     try:
+        command = [
+            executable,
+            "--no-options",
+            "--homedir",
+            os.fspath(home),
+            "--batch",
+            "--no-auto-key-retrieve",
+            *arguments,
+        ]
+        if input_payload is None:
+            return subprocess.run(
+                command,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                env=environment,
+                check=False,
+            )
         return subprocess.run(
-            [
-                executable,
-                "--no-options",
-                "--homedir",
-                os.fspath(home),
-                "--batch",
-                "--no-auto-key-retrieve",
-                *arguments,
-            ],
-            stdin=subprocess.DEVNULL,
+            command,
+            input=input_payload,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             env=environment,
@@ -429,60 +683,143 @@ def _gpg_command(home: Path, arguments: list[str]) -> subprocess.CompletedProces
         raise BundleError("could not execute GnuPG") from error
 
 
-def _verify_public_gpg_home(home: Path, expected_fingerprint: str) -> None:
-    _canonical_existing_path(home, "public GnuPG home", directory=True)
-    metadata = os.stat(home, follow_symlinks=False)
-    if metadata.st_uid != os.geteuid() or stat.S_IMODE(metadata.st_mode) & 0o077:
-        raise BundleError("public GnuPG home must be private to the current user")
-    private_directory = home / "private-keys-v1.d"
-    if private_directory.exists():
-        try:
-            with os.scandir(private_directory) as entries:
-                if any(entries):
-                    raise BundleError("public GnuPG home contains secret-key material")
-        except OSError as error:
-            raise BundleError("could not inspect public GnuPG home") from error
-    if (home / "secring.gpg").exists():
+def _inspect_secret_material_names(home_descriptor: int) -> None:
+    try:
+        secring = os.stat(
+            "secring.gpg", dir_fd=home_descriptor, follow_symlinks=False
+        )
+    except FileNotFoundError:
+        secring = None
+    except OSError as error:
+        raise BundleError("could not inspect public GnuPG home") from error
+    if secring is not None:
         raise BundleError("public GnuPG home contains secret-key material")
 
-    secret_listing = _gpg_command(
-        home, ["--with-colons", "--fixed-list-mode", "--list-secret-keys"]
-    )
-    if any(line.startswith(b"sec:") for line in secret_listing.stdout.splitlines()):
+    try:
+        private_named = os.stat(
+            "private-keys-v1.d", dir_fd=home_descriptor, follow_symlinks=False
+        )
+    except FileNotFoundError:
+        return
+    except OSError as error:
+        raise BundleError("could not inspect public GnuPG home") from error
+    if not stat.S_ISDIR(private_named.st_mode):
         raise BundleError("public GnuPG home contains secret-key material")
-    if secret_listing.returncode not in (0, 2):
-        raise BundleError("could not inspect public GnuPG home for secret keys")
+    try:
+        private_descriptor = os.open(
+            "private-keys-v1.d", _directory_flags(), dir_fd=home_descriptor
+        )
+    except OSError as error:
+        raise BundleError("public GnuPG home contains secret-key material") from error
+    failure: BaseException | None = None
+    try:
+        opened = os.fstat(private_descriptor)
+        named = os.stat(
+            "private-keys-v1.d", dir_fd=home_descriptor, follow_symlinks=False
+        )
+        if (
+            _metadata(private_named) != _metadata(opened)
+            or _metadata(opened) != _metadata(named)
+            or opened.st_uid != os.geteuid()
+            or stat.S_IMODE(opened.st_mode) & 0o077
+        ):
+            raise BundleError("public GnuPG home contains secret-key material")
+        with os.scandir(private_descriptor) as entries:
+            if any(entries):
+                raise BundleError("public GnuPG home contains secret-key material")
+    except BaseException as error:
+        failure = error
+    try:
+        _close_descriptor(private_descriptor, "public GnuPG private-key directory")
+    except BundleError as error:
+        if failure is None:
+            failure = error
+    if failure is not None:
+        raise failure
 
-    public_listing = _gpg_command(
-        home,
-        [
-            "--with-colons",
-            "--fixed-list-mode",
-            "--fingerprint",
-            "--list-keys",
-        ],
+
+def _verify_public_gpg_home(home: Path, expected_fingerprint: str) -> bytes:
+    home_descriptor, opened_home = _open_absolute_directory(
+        home, "public GnuPG home"
     )
-    if public_listing.returncode != 0:
-        raise BundleError("could not list the public verification key")
-    lines = [line.decode("utf-8", "strict").split(":") for line in public_listing.stdout.splitlines()]
-    primary_records = [line for line in lines if line[0] == "pub"]
-    primary_fingerprints: list[str] = []
-    current_primary = False
-    for line in lines:
-        if line[0] == "pub":
-            current_primary = True
-        elif line[0] == "sub":
-            current_primary = False
-        elif line[0] == "fpr" and current_primary:
-            primary_fingerprints.append(line[9])
-            current_primary = False
-    if len(primary_records) != 1 or primary_fingerprints != [expected_fingerprint]:
-        raise BundleError("public GnuPG home must contain exactly the expected primary key")
-    primary = primary_records[0]
-    validity = primary[1]
-    capabilities = primary[11] if len(primary) > 11 else ""
-    if validity in {"e", "r"} or "s" not in capabilities.lower():
-        raise BundleError("expected public primary key must be current and signing-capable")
+    failure: BaseException | None = None
+    exported_public_key: bytes | None = None
+    try:
+        if (
+            opened_home.st_uid != os.geteuid()
+            or stat.S_IMODE(opened_home.st_mode) & 0o077
+        ):
+            raise BundleError("public GnuPG home must be private to the current user")
+        _inspect_secret_material_names(home_descriptor)
+
+        secret_listing = _gpg_command(
+            home, ["--with-colons", "--fixed-list-mode", "--list-secret-keys"]
+        )
+        if any(line.startswith(b"sec:") for line in secret_listing.stdout.splitlines()):
+            raise BundleError("public GnuPG home contains secret-key material")
+        if secret_listing.returncode not in (0, 2):
+            raise BundleError("could not inspect public GnuPG home for secret keys")
+
+        public_listing = _gpg_command(
+            home,
+            [
+                "--with-colons",
+                "--fixed-list-mode",
+                "--fingerprint",
+                "--list-keys",
+            ],
+        )
+        if public_listing.returncode != 0:
+            raise BundleError("could not list the public verification key")
+        lines = [
+            line.decode("utf-8", "strict").split(":")
+            for line in public_listing.stdout.splitlines()
+        ]
+        primary_records = [line for line in lines if line[0] == "pub"]
+        primary_fingerprints: list[str] = []
+        current_primary = False
+        for line in lines:
+            if line[0] == "pub":
+                current_primary = True
+            elif line[0] == "sub":
+                current_primary = False
+            elif line[0] == "fpr" and current_primary:
+                primary_fingerprints.append(line[9])
+                current_primary = False
+        if len(primary_records) != 1 or primary_fingerprints != [expected_fingerprint]:
+            raise BundleError(
+                "public GnuPG home must contain exactly the expected primary key"
+            )
+        primary = primary_records[0]
+        validity = primary[1]
+        capabilities = primary[11] if len(primary) > 11 else ""
+        if validity in {"e", "r"} or "s" not in capabilities.lower():
+            raise BundleError(
+                "expected public primary key must be current and signing-capable"
+            )
+        exported = _gpg_command(home, ["--export", expected_fingerprint])
+        if exported.returncode != 0 or not exported.stdout:
+            raise BundleError("could not export the public verification key")
+        exported_public_key = exported.stdout
+        _inspect_secret_material_names(home_descriptor)
+        named_home = os.stat(home, follow_symlinks=False)
+        if (
+            _identity(opened_home) != _identity(os.fstat(home_descriptor))
+            or _identity(opened_home) != _identity(named_home)
+        ):
+            raise BundleError("public GnuPG home identity changed during verification")
+    except BaseException as error:
+        failure = error
+    try:
+        _close_descriptor(home_descriptor, "public GnuPG home")
+    except BundleError as error:
+        if failure is None:
+            failure = error
+    if failure is not None:
+        raise failure
+    if exported_public_key is None:
+        raise BundleError("public verification key was not captured")
+    return exported_public_key
 
 
 def _verify_signature(
@@ -544,7 +881,9 @@ def _prepare_staging(
     )
     expected_files, expected_directories = _expected_inventory(version, payload_names)
     contents = _read_repository(repository, expected_files, expected_directories)
-    _verify_public_gpg_home(public_gpg_home, expected_primary_fingerprint)
+    verified_public_key = _verify_public_gpg_home(
+        public_gpg_home, expected_primary_fingerprint
+    )
 
     coordinate_path = GROUP_PATH / ARTIFACT_ID / version
     reviewed_records = manifest_value["payloads"]
@@ -569,15 +908,32 @@ def _prepare_staging(
 
     _verify_xml_coordinates(contents, version)
     _verify_module_metadata(contents, version)
-    for name in payload_names:
-        payload_path = str(coordinate_path / name)
-        _verify_signature(
-            contents[f"{payload_path}.asc"],
-            contents[payload_path],
-            public_gpg_home,
-            expected_primary_fingerprint,
-            name,
+    with tempfile.TemporaryDirectory(
+        prefix="rc-central-key-", dir="/tmp"
+    ) as temporary_public_home:
+        snapshot_home = Path(temporary_public_home).resolve()
+        snapshot_home.chmod(0o700)
+        imported = _gpg_command(
+            snapshot_home,
+            ["--import"],
+            input_payload=verified_public_key,
         )
+        if imported.returncode != 0:
+            raise BundleError("could not create the public-key verification snapshot")
+        snapshot_public_key = _verify_public_gpg_home(
+            snapshot_home, expected_primary_fingerprint
+        )
+        if snapshot_public_key != verified_public_key:
+            raise BundleError("public-key verification snapshot changed key bytes")
+        for name in payload_names:
+            payload_path = str(coordinate_path / name)
+            _verify_signature(
+                contents[f"{payload_path}.asc"],
+                contents[payload_path],
+                snapshot_home,
+                expected_primary_fingerprint,
+                name,
+            )
 
     upload_entries: dict[str, bytes] = {}
     entry_kinds: dict[str, str] = {}
@@ -769,15 +1125,28 @@ def _validate_output(output: Path, forbidden_roots: Sequence[Path]) -> tuple[Pat
     return output, parent
 
 
-def _write_file(directory_fd: int, name: str, payload: bytes) -> None:
-    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_CLOEXEC", 0) | getattr(
-        os, "O_NOFOLLOW", 0
+def _write_file(directory_fd: int, name: str, payload: bytes) -> os.stat_result:
+    if _O_NOFOLLOW is None or not _HAS_REQUIRED_DIR_FD:
+        raise BundleError("this platform lacks required safe output-file support")
+    flags = (
+        os.O_WRONLY
+        | os.O_CREAT
+        | os.O_EXCL
+        | _O_NOFOLLOW
+        | getattr(os, "O_CLOEXEC", 0)
     )
     try:
         descriptor = os.open(name, flags, 0o600, dir_fd=directory_fd)
     except OSError as error:
         raise BundleError(f"could not create output file: {name}") from error
+    failure: BaseException | None = None
+    created: os.stat_result | None = None
+    final: os.stat_result | None = None
     try:
+        created = os.fstat(descriptor)
+        if not stat.S_ISREG(created.st_mode):
+            raise BundleError(f"created output is not a regular file: {name}")
+        _require_single_link(created, f"output file {name}")
         os.fchmod(descriptor, 0o600)
         view = memoryview(payload)
         while view:
@@ -786,26 +1155,54 @@ def _write_file(directory_fd: int, name: str, payload: bytes) -> None:
                 raise BundleError(f"output write made no progress: {name}")
             view = view[written:]
         os.fsync(descriptor)
-    except BaseException:
-        try:
-            os.unlink(name, dir_fd=directory_fd)
-        except OSError:
-            pass
-        raise
-    finally:
-        os.close(descriptor)
-
-
-def _read_output_file(directory_fd: int, name: str, maximum: int) -> bytes:
-    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+        final = os.fstat(descriptor)
+        named = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+        if (
+            _identity(created) != _identity(final)
+            or _metadata(final) != _metadata(named)
+            or not stat.S_ISREG(final.st_mode)
+            or final.st_uid != os.geteuid()
+            or stat.S_IMODE(final.st_mode) != 0o600
+        ):
+            raise BundleError(f"output file identity or mode changed: {name}")
+        _require_single_link(final, f"output file {name}")
+    except BaseException as error:
+        failure = error
     try:
-        descriptor = os.open(name, flags, dir_fd=directory_fd)
+        _close_descriptor(descriptor, f"output file {name}")
+    except BundleError as error:
+        if failure is None:
+            failure = error
+    if failure is not None:
+        raise failure
+    if final is None:
+        raise BundleError(f"output file did not reach a verified state: {name}")
+    return final
+
+
+def _read_output_file(
+    directory_fd: int,
+    name: str,
+    maximum: int,
+    expected: os.stat_result,
+) -> bytes:
+    try:
+        descriptor = os.open(name, _regular_read_flags(), dir_fd=directory_fd)
     except OSError as error:
         raise BundleError(f"could not reopen output file: {name}") from error
+    failure: BaseException | None = None
+    payload = b""
     try:
         before = os.fstat(descriptor)
-        if not stat.S_ISREG(before.st_mode) or before.st_size > maximum:
+        if (
+            not stat.S_ISREG(before.st_mode)
+            or _identity(before) != _identity(expected)
+            or before.st_uid != os.geteuid()
+            or stat.S_IMODE(before.st_mode) != 0o600
+            or before.st_size > maximum
+        ):
             raise BundleError(f"output file has an invalid type or size: {name}")
+        _require_single_link(before, f"output file {name}")
         chunks: list[bytes] = []
         remaining = maximum + 1
         while remaining:
@@ -823,9 +1220,16 @@ def _read_output_file(directory_fd: int, name: str, maximum: int) -> bytes:
             or _metadata(after) != _metadata(named)
         ):
             raise BundleError(f"output file identity changed during readback: {name}")
-        return payload
-    finally:
-        os.close(descriptor)
+    except BaseException as error:
+        failure = error
+    try:
+        _close_descriptor(descriptor, f"output file readback {name}")
+    except BundleError as error:
+        if failure is None:
+            failure = error
+    if failure is not None:
+        raise failure
+    return payload
 
 
 def _write_outputs(
@@ -835,78 +1239,137 @@ def _write_outputs(
     receipt_name: str,
     receipt: bytes,
 ) -> None:
-    created: list[str] = []
+    created: dict[str, os.stat_result] = {}
     parent_descriptor: int | None = None
     output_descriptor: int | None = None
-    output_created = False
+    parent_identity: os.stat_result | None = None
+    output_identity: os.stat_result | None = None
+    output_was_created = False
+    failure: BaseException | None = None
     try:
-        parent_descriptor = os.open(
-            output.parent,
-            os.O_RDONLY
-            | getattr(os, "O_CLOEXEC", 0)
-            | getattr(os, "O_DIRECTORY", 0)
-            | getattr(os, "O_NOFOLLOW", 0),
+        parent_descriptor, parent_identity = _open_absolute_directory(
+            output.parent, "output parent"
         )
-        parent_before = os.fstat(parent_descriptor)
-        parent_named = os.stat(output.parent, follow_symlinks=False)
-        if _metadata(parent_before) != _metadata(parent_named):
-            raise BundleError("output parent identity changed before creation")
+        if (
+            parent_identity.st_uid != os.geteuid()
+            or stat.S_IMODE(parent_identity.st_mode) & 0o022
+        ):
+            raise BundleError(
+                "output parent must be owned by the current user and not writable by others"
+            )
         os.mkdir(output.name, mode=0o700, dir_fd=parent_descriptor)
-        output_created = True
-        output_descriptor = os.open(
-            output.name,
-            os.O_RDONLY
-            | getattr(os, "O_CLOEXEC", 0)
-            | getattr(os, "O_DIRECTORY", 0)
-            | getattr(os, "O_NOFOLLOW", 0),
-            dir_fd=parent_descriptor,
-        )
+        output_was_created = True
+        try:
+            output_descriptor = os.open(
+                output.name,
+                _directory_flags(),
+                dir_fd=parent_descriptor,
+            )
+        except OSError as error:
+            raise BundleError(
+                "output directory identity changed during creation"
+            ) from error
         output_named = os.stat(
             output.name, dir_fd=parent_descriptor, follow_symlinks=False
         )
+        opened_output = os.fstat(output_descriptor)
         if (
             not stat.S_ISDIR(output_named.st_mode)
-            or _metadata(os.fstat(output_descriptor)) != _metadata(output_named)
+            or _metadata(opened_output) != _metadata(output_named)
         ):
             raise BundleError("output directory identity changed during creation")
+        output_identity = opened_output
         os.fchmod(output_descriptor, 0o700)
+        private_output = os.fstat(output_descriptor)
+        if (
+            _identity(private_output) != _identity(output_identity)
+            or private_output.st_uid != os.geteuid()
+            or stat.S_IMODE(private_output.st_mode) != 0o700
+        ):
+            raise BundleError("output directory owner or mode is not private")
         for name, payload in ((bundle_name, bundle), (receipt_name, receipt)):
-            _write_file(output_descriptor, name, payload)
-            created.append(name)
-        if _read_output_file(output_descriptor, bundle_name, MAX_BUNDLE_BYTES) != bundle:
+            created[name] = _write_file(output_descriptor, name, payload)
+        if (
+            _read_output_file(
+                output_descriptor,
+                bundle_name,
+                MAX_BUNDLE_BYTES,
+                created[bundle_name],
+            )
+            != bundle
+        ):
             raise BundleError("written bundle bytes changed during readback")
-        if _read_output_file(output_descriptor, receipt_name, MAX_RECEIPT_BYTES) != receipt:
+        if (
+            _read_output_file(
+                output_descriptor,
+                receipt_name,
+                MAX_RECEIPT_BYTES,
+                created[receipt_name],
+            )
+            != receipt
+        ):
             raise BundleError("written receipt bytes changed during readback")
+        for name, expected in created.items():
+            current = os.stat(
+                name, dir_fd=output_descriptor, follow_symlinks=False
+            )
+            if (
+                _metadata(current) != _metadata(expected)
+                or current.st_uid != os.geteuid()
+                or stat.S_IMODE(current.st_mode) != 0o600
+            ):
+                raise BundleError(f"output file identity or mode changed: {name}")
+            _require_single_link(current, f"output file {name}")
         parent_after = os.stat(output.parent, follow_symlinks=False)
         output_after = os.stat(
             output.name, dir_fd=parent_descriptor, follow_symlinks=False
         )
-        if _metadata(os.fstat(parent_descriptor)) != _metadata(parent_after):
+        opened_parent_after = os.fstat(parent_descriptor)
+        if (
+            _metadata(opened_parent_after) != _metadata(parent_after)
+            or opened_parent_after.st_uid != os.geteuid()
+            or stat.S_IMODE(opened_parent_after.st_mode) & 0o022
+        ):
             raise BundleError("output parent identity changed during creation")
-        if _metadata(os.fstat(output_descriptor)) != _metadata(output_after):
+        if (
+            _metadata(os.fstat(output_descriptor)) != _metadata(output_after)
+            or _identity(output_after) != _identity(output_identity)
+            or output_after.st_uid != os.geteuid()
+            or stat.S_IMODE(output_after.st_mode) != 0o700
+        ):
             raise BundleError("output directory identity changed during creation")
         os.fsync(output_descriptor)
         os.fsync(parent_descriptor)
     except BaseException as error:
-        if output_descriptor is not None:
-            for name in reversed(created):
-                try:
-                    os.unlink(name, dir_fd=output_descriptor)
-                except OSError:
-                    pass
-        if output_created and parent_descriptor is not None:
-            try:
-                os.rmdir(output.name, dir_fd=parent_descriptor)
-            except OSError:
-                pass
-        if isinstance(error, OSError):
-            raise BundleError("output directory identity changed during creation") from error
-        raise
-    finally:
-        if output_descriptor is not None:
-            os.close(output_descriptor)
-        if parent_descriptor is not None:
-            os.close(parent_descriptor)
+        failure = error
+
+    if output_descriptor is not None:
+        try:
+            _close_descriptor(output_descriptor, "output directory")
+        except BundleError as error:
+            if failure is None:
+                failure = error
+        output_descriptor = None
+
+    if parent_descriptor is not None:
+        try:
+            _close_descriptor(parent_descriptor, "output parent")
+        except BundleError as error:
+            if failure is None:
+                failure = error
+        parent_descriptor = None
+
+    if failure is not None:
+        if isinstance(failure, OSError):
+            message = "output transaction failed"
+        else:
+            message = str(failure)
+        if output_was_created:
+            message += (
+                "; partial output may remain at the requested path; "
+                "failure handling performed no rename or deletion"
+            )
+        raise BundleError(message) from failure
 
 
 def build_bundle(
@@ -916,7 +1379,7 @@ def build_bundle(
     public_gpg_home: Path,
     expected_primary_fingerprint: str,
     output_directory: Path,
-) -> tuple[Path, Path]:
+) -> VerifiedBundleResult:
     repository = Path(repository)
     reviewed_manifest_path = Path(reviewed_manifest_path)
     public_gpg_home = Path(public_gpg_home)
@@ -942,7 +1405,13 @@ def build_bundle(
     _write_outputs(output_directory, bundle_name, bundle, receipt_name, receipt)
     bundle_path = output_directory / bundle_name
     receipt_path = output_directory / receipt_name
-    return bundle_path, receipt_path
+    return VerifiedBundleResult(
+        version=prepared.version,
+        bundle_path=bundle_path,
+        receipt_path=receipt_path,
+        bundle_sha256=_sha256(bundle),
+        receipt_sha256=_sha256(receipt),
+    )
 
 
 def _receipt_claims(value: dict[str, object]) -> None:
@@ -971,7 +1440,7 @@ def verify_bundle(
     reviewed_manifest_path: Path,
     public_gpg_home: Path,
     expected_primary_fingerprint: str,
-) -> str:
+) -> VerifiedBundleResult:
     repository = Path(repository)
     bundle_path = Path(bundle_path)
     receipt_path = Path(receipt_path)
@@ -1028,7 +1497,13 @@ def verify_bundle(
     )
     if receipt_value != expected_receipt:
         raise BundleError("bundle receipt does not match the verified inputs and tool")
-    return prepared.version
+    return VerifiedBundleResult(
+        version=prepared.version,
+        bundle_path=bundle_path,
+        receipt_path=receipt_path,
+        bundle_sha256=_sha256(bundle),
+        receipt_sha256=_sha256(receipt_bytes),
+    )
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -1058,19 +1533,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     arguments = _parser().parse_args(argv)
     try:
         if arguments.command == "build":
-            bundle, receipt = build_bundle(
+            result = build_bundle(
                 repository=arguments.repository,
                 reviewed_manifest_path=arguments.reviewed_payload_manifest,
                 public_gpg_home=arguments.public_gpg_home,
                 expected_primary_fingerprint=arguments.expected_primary_fingerprint,
                 output_directory=arguments.output_directory,
             )
-            receipt_sha256 = _sha256(_read_stable_regular(receipt, "written receipt", MAX_RECEIPT_BYTES))
-            bundle_sha256 = _sha256(_read_stable_regular(bundle, "written bundle", MAX_BUNDLE_BYTES))
-            coordinate = f"{GROUP_ID}:{ARTIFACT_ID}:{bundle.name.removeprefix(ARTIFACT_ID + '-').removesuffix('-central-upload.zip')}"
             marker = "ROUTECONTRACT_CENTRAL_BUNDLE_BUILT"
         else:
-            version = verify_bundle(
+            result = verify_bundle(
                 repository=arguments.repository,
                 bundle_path=arguments.bundle,
                 receipt_path=arguments.receipt,
@@ -1078,16 +1550,14 @@ def main(argv: Sequence[str] | None = None) -> int:
                 public_gpg_home=arguments.public_gpg_home,
                 expected_primary_fingerprint=arguments.expected_primary_fingerprint,
             )
-            receipt_sha256 = _sha256(_read_stable_regular(arguments.receipt, "bundle receipt", MAX_RECEIPT_BYTES))
-            bundle_sha256 = _sha256(_read_stable_regular(arguments.bundle, "Central upload bundle", MAX_BUNDLE_BYTES))
-            coordinate = f"{GROUP_ID}:{ARTIFACT_ID}:{version}"
             marker = "ROUTECONTRACT_CENTRAL_BUNDLE_VERIFIED"
     except (BundleError, OSError) as error:
         print(f"routecontract Central bundle error: {error}", file=sys.stderr)
         return 2
     print(
-        f"{marker} coordinate={coordinate} entries=30 "
-        f"bundleSha256={bundle_sha256} receiptSha256={receipt_sha256} VERIFIED"
+        f"{marker} coordinate={GROUP_ID}:{ARTIFACT_ID}:{result.version} entries=30 "
+        f"bundleSha256={result.bundle_sha256} "
+        f"receiptSha256={result.receipt_sha256} VERIFIED"
     )
     return 0
 

@@ -3,12 +3,15 @@
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import importlib.util
+import io
 import json
 import os
 from pathlib import Path
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -282,13 +285,23 @@ class CentralUploadBundleTest(unittest.TestCase):
         )
 
     def test_builds_and_verifies_exact_deterministic_thirty_entry_bundle(self) -> None:
-        first_bundle, first_receipt = self.build()
-        self.verify(first_bundle, first_receipt)
-        second_bundle, second_receipt = self.build(self.root / "second-output")
+        first = self.build()
+        verified = self.verify(first.bundle_path, first.receipt_path)
+        second = self.build(self.root / "second-output")
 
-        self.assertEqual(first_bundle.read_bytes(), second_bundle.read_bytes())
-        self.assertEqual(first_receipt.read_bytes(), second_receipt.read_bytes())
-        with zipfile.ZipFile(first_bundle) as archive:
+        for result in (first, verified, second):
+            self.assertEqual(VERSION, result.version)
+            self.assertEqual(
+                hashlib.sha256(result.bundle_path.read_bytes()).hexdigest(),
+                result.bundle_sha256,
+            )
+            self.assertEqual(
+                hashlib.sha256(result.receipt_path.read_bytes()).hexdigest(),
+                result.receipt_sha256,
+            )
+        self.assertEqual(first.bundle_path.read_bytes(), second.bundle_path.read_bytes())
+        self.assertEqual(first.receipt_path.read_bytes(), second.receipt_path.read_bytes())
+        with zipfile.ZipFile(first.bundle_path) as archive:
             self.assertEqual(30, len(archive.infolist()))
             self.assertEqual(
                 sorted(info.filename for info in archive.infolist()),
@@ -301,7 +314,7 @@ class CentralUploadBundleTest(unittest.TestCase):
                 self.assertEqual(b"", info.extra)
                 self.assertEqual(b"", info.comment)
 
-        receipt = json.loads(first_receipt.read_text(encoding="utf-8"))
+        receipt = json.loads(first.receipt_path.read_text(encoding="utf-8"))
         self.assertEqual(30, receipt["bundle"]["entryCount"])
         self.assertEqual(25, len(receipt["excludedStagingEntries"]))
         self.assertEqual(
@@ -316,7 +329,7 @@ class CentralUploadBundleTest(unittest.TestCase):
             },
             receipt["claims"],
         )
-        receipt_text = first_receipt.read_text(encoding="utf-8")
+        receipt_text = first.receipt_path.read_text(encoding="utf-8")
         self.assertNotIn(str(self.root), receipt_text)
         self.assertNotIn(str(self.public_home), receipt_text)
 
@@ -475,8 +488,448 @@ class CentralUploadBundleTest(unittest.TestCase):
         self.assertEqual([], list(attacker.iterdir()))
         self.assertFalse((attacker / f"{ARTIFACT_ID}-{VERSION}-central-upload.zip").exists())
 
+    @unittest.skipUnless(hasattr(os, "link"), "hard links are unavailable")
+    def test_rejects_hardlinked_inputs_and_creates_private_single_link_outputs(self) -> None:
+        manifest_link = self.root / "manifest-hardlink.json"
+        os.link(self.manifest, manifest_link)
+        try:
+            with self.assertRaisesRegex(RuntimeError, "exactly one hard link"):
+                self.build()
+        finally:
+            manifest_link.unlink()
+
+        payload = (
+            self.repository
+            / GROUP_PATH
+            / ARTIFACT_ID
+            / VERSION
+            / next(iter(self.payloads))
+        )
+        payload_link = self.root / "payload-hardlink"
+        os.link(payload, payload_link)
+        try:
+            with self.assertRaisesRegex(RuntimeError, "exactly one hard link"):
+                self.build()
+        finally:
+            payload_link.unlink()
+
+        tool_link = self.root / "tool-hardlink.py"
+        os.link(PREPARER, tool_link)
+        try:
+            with self.assertRaisesRegex(RuntimeError, "exactly one hard link"):
+                self.build()
+        finally:
+            tool_link.unlink()
+
+        built = self.build()
+        self.assertEqual(0o700, stat.S_IMODE(os.lstat(self.output).st_mode))
+        for path in (built.bundle_path, built.receipt_path):
+            metadata = os.lstat(path)
+            self.assertTrue(stat.S_ISREG(metadata.st_mode))
+            self.assertEqual(0o600, stat.S_IMODE(metadata.st_mode))
+            self.assertEqual(1, metadata.st_nlink)
+
+        bundle_link = self.root / "bundle-hardlink.zip"
+        os.link(built.bundle_path, bundle_link)
+        try:
+            with self.assertRaisesRegex(RuntimeError, "exactly one hard link"):
+                self.verify(built.bundle_path, built.receipt_path)
+        finally:
+            bundle_link.unlink()
+
+        receipt_link = self.root / "receipt-hardlink.json"
+        os.link(built.receipt_path, receipt_link)
+        try:
+            with self.assertRaisesRegex(RuntimeError, "exactly one hard link"):
+                self.verify(built.bundle_path, built.receipt_path)
+        finally:
+            receipt_link.unlink()
+
+    @unittest.skipUnless(hasattr(os, "mkfifo"), "FIFOs are unavailable")
+    def test_rejects_static_special_file_in_staging(self) -> None:
+        special = (
+            self.repository
+            / GROUP_PATH
+            / ARTIFACT_ID
+            / VERSION
+            / "unexpected.pipe"
+        )
+        os.mkfifo(special, mode=0o600)
+        with self.assertRaisesRegex(RuntimeError, "special file"):
+            self.build()
+        self.assertFalse(self.output.exists())
+
+    @unittest.skipUnless(hasattr(os, "symlink"), "symbolic links are unavailable")
+    def test_rejects_secret_material_name_aliases_and_dangling_links(self) -> None:
+        alias_home = self.root / "alias-public-gnupg"
+        shutil.copytree(
+            self.public_home,
+            alias_home,
+            ignore=shutil.ignore_patterns("S.*"),
+        )
+        private_keys = alias_home / "private-keys-v1.d"
+        if private_keys.exists():
+            private_keys.rmdir()
+        empty = self.root / "empty-private-keys"
+        empty.mkdir()
+        private_keys.symlink_to(empty, target_is_directory=True)
+        with self.assertRaisesRegex(RuntimeError, "secret-key material"):
+            self.module.build_bundle(
+                repository=self.repository,
+                reviewed_manifest_path=self.manifest,
+                public_gpg_home=alias_home,
+                expected_primary_fingerprint=self.fingerprint,
+                output_directory=self.output,
+            )
+
+        dangling_home = self.root / "dangling-public-gnupg"
+        shutil.copytree(
+            self.public_home,
+            dangling_home,
+            ignore=shutil.ignore_patterns("S.*"),
+        )
+        (dangling_home / "secring.gpg").symlink_to(
+            dangling_home / "does-not-exist"
+        )
+        with self.assertRaisesRegex(RuntimeError, "secret-key material"):
+            self.module.build_bundle(
+                repository=self.repository,
+                reviewed_manifest_path=self.manifest,
+                public_gpg_home=dangling_home,
+                expected_primary_fingerprint=self.fingerprint,
+                output_directory=self.output,
+            )
+        self.assertFalse(self.output.exists())
+
+    def test_repository_directory_swap_fails_identity_snapshot(self) -> None:
+        original_open = os.open
+        swapped = False
+
+        def open_then_swap(path, flags, mode=0o777, *, dir_fd=None):
+            nonlocal swapped
+            descriptor = original_open(path, flags, mode, dir_fd=dir_fd)
+            if path == "github" and dir_fd is not None and not swapped:
+                swapped = True
+                os.rename(
+                    "github",
+                    "github-displaced",
+                    src_dir_fd=dir_fd,
+                    dst_dir_fd=dir_fd,
+                )
+                os.mkdir("github", mode=0o755, dir_fd=dir_fd)
+            return descriptor
+
+        with mock.patch.object(self.module.os, "open", side_effect=open_then_swap):
+            with self.assertRaisesRegex(RuntimeError, "directory identity changed"):
+                self.build()
+        self.assertTrue(swapped)
+        self.assertFalse(self.output.exists())
+
+    def test_output_close_failures_fail_and_preserve_the_transaction(self) -> None:
+        original_close = os.close
+        parent_identity = (
+            os.lstat(self.root).st_dev,
+            os.lstat(self.root).st_ino,
+        )
+        for target in ("file", "output", "parent"):
+            with self.subTest(target=target):
+                output = self.root / f"close-failure-{target}"
+                failed = False
+
+                def close_then_fail(descriptor):
+                    nonlocal failed
+                    metadata = os.fstat(descriptor)
+                    identity = (metadata.st_dev, metadata.st_ino)
+                    matches = (
+                        target == "file" and stat.S_ISREG(metadata.st_mode)
+                    ) or (
+                        target == "output"
+                        and stat.S_ISDIR(metadata.st_mode)
+                        and output.exists()
+                        and identity
+                        == (
+                            os.lstat(output).st_dev,
+                            os.lstat(output).st_ino,
+                        )
+                    ) or (target == "parent" and identity == parent_identity)
+                    original_close(descriptor)
+                    if matches and not failed:
+                        failed = True
+                        raise OSError(f"injected {target} close failure")
+
+                with mock.patch.object(
+                    self.module.os, "close", side_effect=close_then_fail
+                ), mock.patch.object(
+                    self.module.os,
+                    "unlink",
+                    side_effect=AssertionError("failure handling must not unlink"),
+                ), mock.patch.object(
+                    self.module.os,
+                    "rmdir",
+                    side_effect=AssertionError("failure handling must not remove"),
+                ), mock.patch.object(
+                    self.module.os,
+                    "rename",
+                    side_effect=AssertionError("failure handling must not rename"),
+                ):
+                    with self.assertRaisesRegex(RuntimeError, "could not close output"):
+                        self.module._write_outputs(
+                            output,
+                            "bundle.zip",
+                            b"bundle-bytes",
+                            "receipt.json",
+                            b"receipt-bytes",
+                        )
+                self.assertTrue(failed)
+                self.assertTrue(output.is_dir())
+
+    def test_initial_output_fstat_failure_closes_and_preserves_partial_output(self) -> None:
+        original_fstat = os.fstat
+        original_close = os.close
+        failed_descriptor = None
+        closed_failed_descriptor = False
+
+        def fail_initial_regular_fstat(descriptor):
+            nonlocal failed_descriptor
+            metadata = original_fstat(descriptor)
+            if failed_descriptor is None and stat.S_ISREG(metadata.st_mode):
+                failed_descriptor = descriptor
+                raise OSError("injected initial output fstat failure")
+            return metadata
+
+        def record_close(descriptor):
+            nonlocal closed_failed_descriptor
+            if descriptor == failed_descriptor:
+                closed_failed_descriptor = True
+            return original_close(descriptor)
+
+        with mock.patch.object(
+            self.module.os, "fstat", side_effect=fail_initial_regular_fstat
+        ), mock.patch.object(
+            self.module.os, "close", side_effect=record_close
+        ):
+            with self.assertRaisesRegex(RuntimeError, "output transaction failed"):
+                self.module._write_outputs(
+                    self.output,
+                    "bundle.zip",
+                    b"verified-bundle",
+                    "receipt.json",
+                    b"verified-receipt",
+                )
+
+        self.assertIsNotNone(failed_descriptor)
+        self.assertTrue(closed_failed_descriptor)
+        self.assertTrue(self.output.is_dir())
+        self.assertTrue((self.output / "bundle.zip").is_file())
+
+    def test_failure_preserves_replacement_file_and_directory_identities(self) -> None:
+        original_write_file = self.module._write_file
+        replacement_payload = b"replacement-must-survive"
+        displaced_bundle = "bundle.zip.displaced"
+
+        def replace_created_bundle_then_fail(directory_fd, name, payload):
+            if name == "bundle.zip":
+                return original_write_file(directory_fd, name, payload)
+            os.rename(
+                "bundle.zip",
+                displaced_bundle,
+                src_dir_fd=directory_fd,
+                dst_dir_fd=directory_fd,
+            )
+            replacement_fd = os.open(
+                "bundle.zip",
+                os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+                0o600,
+                dir_fd=directory_fd,
+            )
+            try:
+                os.write(replacement_fd, replacement_payload)
+            finally:
+                os.close(replacement_fd)
+            raise self.module.BundleError("injected output failure")
+
+        with mock.patch.object(
+            self.module,
+            "_write_file",
+            side_effect=replace_created_bundle_then_fail,
+        ), mock.patch.object(
+            self.module.os,
+            "unlink",
+            side_effect=AssertionError("failure cleanup must not unlink"),
+        ), mock.patch.object(
+            self.module.os,
+            "rmdir",
+            side_effect=AssertionError("failure cleanup must not remove directories"),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "injected output failure"):
+                self.module._write_outputs(
+                    self.output,
+                    "bundle.zip",
+                    b"verified-bundle",
+                    "receipt.json",
+                    b"verified-receipt",
+                )
+        self.assertEqual(
+            replacement_payload, (self.output / "bundle.zip").read_bytes()
+        )
+        self.assertEqual(
+            b"verified-bundle", (self.output / displaced_bundle).read_bytes()
+        )
+
+        directory_output = self.root / "directory-identity-output"
+        displaced_directory = self.root / "directory-identity-displaced"
+        replacement_directory = self.root / "directory-identity-replacement"
+        replacement_directory.mkdir()
+        replacement_identity = (
+            os.lstat(replacement_directory).st_dev,
+            os.lstat(replacement_directory).st_ino,
+        )
+
+        def replace_created_directory_then_fail(*_args, **_kwargs):
+            os.rename(directory_output, displaced_directory)
+            os.rename(replacement_directory, directory_output)
+            raise self.module.BundleError("injected directory replacement")
+
+        with mock.patch.object(
+            self.module,
+            "_write_file",
+            side_effect=replace_created_directory_then_fail,
+        ):
+            with self.assertRaisesRegex(RuntimeError, "injected directory replacement"):
+                self.module._write_outputs(
+                    directory_output,
+                    "bundle.zip",
+                    b"verified-bundle",
+                    "receipt.json",
+                    b"verified-receipt",
+                )
+        current = os.lstat(directory_output)
+        self.assertEqual(replacement_identity, (current.st_dev, current.st_ino))
+        self.assertTrue(displaced_directory.is_dir())
+
+    def test_failed_transaction_performs_no_cleanup_mutation(self) -> None:
+        with mock.patch.object(
+            self.module,
+            "_write_file",
+            side_effect=self.module.BundleError("injected pre-write failure"),
+        ), mock.patch.object(
+            self.module.os,
+            "unlink",
+            side_effect=AssertionError("failure handling must not unlink"),
+        ), mock.patch.object(
+            self.module.os,
+            "rmdir",
+            side_effect=AssertionError("failure handling must not remove"),
+        ), mock.patch.object(
+            self.module.os,
+            "rename",
+            side_effect=AssertionError("failure handling must not rename"),
+        ):
+            with self.assertRaisesRegex(
+                RuntimeError, "failure handling performed no rename or deletion"
+            ):
+                self.module._write_outputs(
+                    self.output,
+                    "bundle.zip",
+                    b"verified-bundle",
+                    "receipt.json",
+                    b"verified-receipt",
+                )
+
+        self.assertTrue(self.output.is_dir())
+        self.assertEqual([], list(self.output.iterdir()))
+
+    def test_rechecks_output_parent_privacy_at_write_time(self) -> None:
+        original_write_outputs = self.module._write_outputs
+
+        def widen_parent_then_write(*arguments, **keywords):
+            self.root.chmod(0o777)
+            return original_write_outputs(*arguments, **keywords)
+
+        try:
+            with mock.patch.object(
+                self.module,
+                "_write_outputs",
+                side_effect=widen_parent_then_write,
+            ):
+                with self.assertRaisesRegex(RuntimeError, "output parent must be owned"):
+                    self.build()
+        finally:
+            self.root.chmod(0o700)
+        self.assertFalse(self.output.exists())
+
+    def test_signatures_use_verified_public_only_snapshot_after_input_swap(self) -> None:
+        input_home = self.root / "input-public-gnupg"
+        secret_replacement = self.root / "same-fingerprint-secret-gnupg"
+        displaced_input = self.root / "displaced-public-gnupg"
+        shutil.copytree(
+            self.public_home,
+            input_home,
+            ignore=shutil.ignore_patterns("S.*"),
+        )
+        shutil.copytree(
+            self.secret_home,
+            secret_replacement,
+            ignore=shutil.ignore_patterns("S.*"),
+        )
+        original_verify_home = self.module._verify_public_gpg_home
+        original_verify_signature = self.module._verify_signature
+        swapped = False
+        signature_homes: list[Path] = []
+
+        def verify_home_then_swap(home, fingerprint):
+            nonlocal swapped
+            public_key = original_verify_home(home, fingerprint)
+            if Path(home) == input_home and not swapped:
+                swapped = True
+                input_home.rename(displaced_input)
+                secret_replacement.rename(input_home)
+            return public_key
+
+        def record_signature_home(
+            signature,
+            payload,
+            public_gpg_home,
+            expected_fingerprint,
+            label,
+        ):
+            signature_home = Path(public_gpg_home)
+            signature_homes.append(signature_home)
+            self.assertNotEqual(input_home, signature_home)
+            self.assertFalse((signature_home / "secring.gpg").exists())
+            return original_verify_signature(
+                signature,
+                payload,
+                public_gpg_home,
+                expected_fingerprint,
+                label,
+            )
+
+        with mock.patch.object(
+            self.module,
+            "_verify_public_gpg_home",
+            side_effect=verify_home_then_swap,
+        ), mock.patch.object(
+            self.module,
+            "_verify_signature",
+            side_effect=record_signature_home,
+        ):
+            result = self.module.build_bundle(
+                repository=self.repository,
+                reviewed_manifest_path=self.manifest,
+                public_gpg_home=input_home,
+                expected_primary_fingerprint=self.fingerprint,
+                output_directory=self.output,
+            )
+
+        self.assertTrue(swapped)
+        self.assertEqual(VERSION, result.version)
+        self.assertEqual(5, len(signature_homes))
+        self.assertTrue((input_home / "private-keys-v1.d").is_dir())
+
     def test_verifier_rejects_tampered_bundle_or_receipt(self) -> None:
-        bundle, receipt = self.build()
+        built = self.build()
+        bundle, receipt = built.bundle_path, built.receipt_path
         bundle_bytes = bytearray(bundle.read_bytes())
         bundle_bytes[-8] ^= 1
         bundle.write_bytes(bundle_bytes)
@@ -484,7 +937,8 @@ class CentralUploadBundleTest(unittest.TestCase):
             self.verify(bundle, receipt)
 
         shutil.rmtree(self.output)
-        bundle, receipt = self.build()
+        built = self.build()
+        bundle, receipt = built.bundle_path, built.receipt_path
         receipt_value = json.loads(receipt.read_text(encoding="utf-8"))
         receipt_value["claims"]["portalUpload"] = True
         receipt.write_text(
@@ -493,6 +947,99 @@ class CentralUploadBundleTest(unittest.TestCase):
         )
         with self.assertRaisesRegex(RuntimeError, "claims.portalUpload"):
             self.verify(bundle, receipt)
+
+    def test_cli_markers_use_same_verified_result_after_path_swap(self) -> None:
+        original_build = self.module.build_bundle
+        build_result = None
+
+        def build_then_swap(**arguments):
+            nonlocal build_result
+            build_result = original_build(**arguments)._replace(version="9.8.7")
+            build_result.bundle_path.write_bytes(b"swapped-after-build\n")
+            build_result.receipt_path.write_bytes(b"swapped-after-build\n")
+            return build_result
+
+        build_stdout = io.StringIO()
+        with mock.patch.object(
+            self.module, "build_bundle", side_effect=build_then_swap
+        ), contextlib.redirect_stdout(build_stdout):
+            build_status = self.module.main(
+                [
+                    "build",
+                    "--repository",
+                    str(self.repository),
+                    "--reviewed-payload-manifest",
+                    str(self.manifest),
+                    "--public-gpg-home",
+                    str(self.public_home),
+                    "--expected-primary-fingerprint",
+                    self.fingerprint,
+                    "--output-directory",
+                    str(self.output),
+                ]
+            )
+        self.assertEqual(0, build_status)
+        self.assertIsNotNone(build_result)
+        self.assertIn(
+            f"coordinate={GROUP_ID}:{ARTIFACT_ID}:9.8.7",
+            build_stdout.getvalue(),
+        )
+        self.assertIn(
+            f"bundleSha256={build_result.bundle_sha256}",
+            build_stdout.getvalue(),
+        )
+        self.assertIn(
+            f"receiptSha256={build_result.receipt_sha256}",
+            build_stdout.getvalue(),
+        )
+
+        shutil.rmtree(self.output)
+        built = self.build()
+        original_verify = self.module.verify_bundle
+        verify_result = None
+
+        def verify_then_swap(**arguments):
+            nonlocal verify_result
+            verify_result = original_verify(**arguments)._replace(version="9.8.7")
+            built.bundle_path.write_bytes(b"swapped-after-verify\n")
+            built.receipt_path.write_bytes(b"swapped-after-verify\n")
+            return verify_result
+
+        verify_stdout = io.StringIO()
+        with mock.patch.object(
+            self.module, "verify_bundle", side_effect=verify_then_swap
+        ), contextlib.redirect_stdout(verify_stdout):
+            verify_status = self.module.main(
+                [
+                    "verify",
+                    "--repository",
+                    str(self.repository),
+                    "--bundle",
+                    str(built.bundle_path),
+                    "--receipt",
+                    str(built.receipt_path),
+                    "--reviewed-payload-manifest",
+                    str(self.manifest),
+                    "--public-gpg-home",
+                    str(self.public_home),
+                    "--expected-primary-fingerprint",
+                    self.fingerprint,
+                ]
+            )
+        self.assertEqual(0, verify_status)
+        self.assertIsNotNone(verify_result)
+        self.assertIn(
+            f"coordinate={GROUP_ID}:{ARTIFACT_ID}:9.8.7",
+            verify_stdout.getvalue(),
+        )
+        self.assertIn(
+            f"bundleSha256={verify_result.bundle_sha256}",
+            verify_stdout.getvalue(),
+        )
+        self.assertIn(
+            f"receiptSha256={verify_result.receipt_sha256}",
+            verify_stdout.getvalue(),
+        )
 
     def test_cli_build_and_verify_use_stable_value_free_markers(self) -> None:
         build = subprocess.run(
