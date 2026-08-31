@@ -1,0 +1,6 @@
+.gradle/
+build/
+gradle-user-home/
+project-cache/
+test-results/
+*.log
