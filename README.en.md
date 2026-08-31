@@ -4,24 +4,29 @@
 
 [![CI](https://github.com/ym0506/routecontract/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ym0506/routecontract/actions/workflows/ci.yml?query=branch%3Amain)
 
-> **Start an assisted pilot with a 30-minute fit check — no setup before opting in**
+> **Repository owners or authorized maintainers: request a 30-minute scoping session — no setup first**
 >
-> If you maintain a public Java 17 repository with exactly ShardingSphere-JDBC 5.5.3 and one
-> existing synchronous non-batch `PreparedStatement` test, [leave the three-line `interested`
-> reply in Discussion #34](https://github.com/ym0506/routecontract/discussions/34). I will inspect
-> the public code first and return a fit/not-fit answer; if it fits, I will prepare a private
-> first-pass patch for one representative operation. Nothing is published, baseline-approved,
-> or described as adoption without your separate confirmation.
+> Only an authorized owner or maintainer of the target public repository should post; this is not a third-party repository nomination channel.
+> The repository must use Java 17, exactly ShardingSphere-JDBC 5.5.3, and have an existing synchronous
+> non-batch `PreparedStatement` test. Reply in [Discussion #34](https://github.com/ym0506/routecontract/discussions/34) using this format.
 >
-> Copy these three lines and replace only the repository and existing-test path:
+> Copy these three lines, replace `OWNER/REPOSITORY`, and select Gradle or Maven:
 >
 > ```text
 > interested
-> repository: https://github.com/OWNER/REPOSITORY
-> test: path/to/ExistingShardingSphereIntegrationTest.java
+> Repository: https://github.com/OWNER/REPOSITORY
+> Build: Gradle or Maven
 > ```
 >
-> Do not put raw SQL, bind values, JDBC URLs or credentials, real topology, or full logs in the public reply.
+> Do not send credentials, raw SQL, binds, JDBC URLs, customer data, private topology, hostnames,
+> absolute paths, logs, screenshots, or personal info in Discussion #34 or through a private channel.
+>
+> RouteContract maintainers inspect public code only. If the target repository's license, contribution rules, and AI policy
+> permit it, I may prepare an optional unpublished, review-only first-pass patch for you to review.
+> Separate confirmation from an authorized owner or maintainer of the target repository is required before any public PR.
+> Any baseline must be separately reviewed and approved by an authorized maintainer of the target external repository.
+> `30 minutes` covers only the initial scoping/session; it is not a response, patch, or completion-time guarantee,
+> and no turnaround is promised.
 
 [Apache ShardingSphere-JDBC](https://github.com/apache/shardingsphere) is JDBC middleware that can split one logical SQL operation across multiple data sources inside a Java application. RouteContract is a Java testing library that compares execution-structure changes missed by business-result tests with a human-reviewed baseline and fails a manifest assertion. Configuring that assertion as a required CI check can stop an unapproved change from merging.
 
