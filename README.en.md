@@ -91,7 +91,45 @@ required, so no completion time is
 promised. `v0.1.2` is not published to Maven Central; the guide installs
 verified GitHub Release assets into a separate local Maven repository.
 
-The shortest public installation path is below. Replace `install_root` with a new normalized
+### Fastest Maven path to a first candidate
+
+For a qualifying Maven repository, start with the
+[review-only starter bundle](examples/maven-pilot/README.md#review-only-starter-bundle) instead of
+hand-writing the pilot profile and test. Bind a copy of
+[`starter.example.json`](examples/maven-pilot/starter.example.json) to the target's clean commit,
+owning-POM SHA-256, existing Surefire test, operation identity, aliases, and budgets, then render the
+five-file review bundle from this RouteContract checkout:
+
+```bash
+python3 -I scripts/render-maven-pilot-starter.py \
+  --config /absolute/path/to/routecontract-maven-starter.json \
+  --output /absolute/path/to/new-routecontract-review-bundle
+```
+
+An authorized target maintainer must review the generated patch and apply it on a disposable
+branch, then replace only the fail-closed `fail(...)` statement containing
+`ROUTECONTRACT_STARTER_REVIEW_REQUIRED` with the existing representative operation while preserving
+its business assertion. Follow the generated `NEXT-STEPS.md` and run:
+
+```bash
+bundle_root="/absolute/path/to/new-routecontract-review-bundle"
+python3 -I scripts/run-assisted-maven-pilot.py \
+  --config "${bundle_root}/assisted-pilot.json" \
+  --expected-outcome review
+```
+
+The runner downloads Maven 3.9.14 and installs the exact `v0.1.2` assets into a private repository;
+Maven starter users do not need to run the separate installer below first. The review run must leave
+a candidate present and the approved baseline absent. It is first-candidate evidence only—not
+baseline approval, an actual external integration, adoption, or endorsement. Separate exact-byte
+approval by an authorized maintainer must copy the exact reviewed candidate bytes to the approved
+path through the repository's normal review process; a successful matched check in upstream public
+CI is also required.
+
+### Gradle and manual-audit installation path
+
+For either Gradle lane, or when separately auditing the Maven repository transport, use the public
+installer below. Replace `install_root` with a new normalized
 absolute directory under a trusted existing canonical parent; its `maven` child must not be
 `~/.m2/repository` or a path below it. It needs public HTTPS network access, Bash and POSIX tools,
 `curl`, and Python 3.10 or newer, but no GitHub login, token, API call, or GitHub CLI.
@@ -167,22 +205,22 @@ consuming `v0.1.2` assets; they do not make `v0.1.2` a self-contained immutable 
 Each helper and verifier added after the tag is pinned to its own exact bridge-commit permalink for
 that implementation and the SHA-256 recorded in the guide.
 
-Do not read the long guide linearly. Use this shortest supported path:
+Do not read the long guide linearly. Choose one shortest supported path:
 
-1. [Install the pinned Release assets](docs/first-integration.md#2-install-the-exact-v012-release-assets).
-2. Choose exactly one build lane: [Gradle Groovy](docs/first-integration.md#gradle-groovy-dsl-opt-in-lane),
-   [Gradle Kotlin DSL](docs/first-integration.md#gradle-kotlin-dsl-opt-in-lane), or
-   [Maven 3.9.14](docs/first-integration.md#maven-3914-opt-in-profile-lane).
-3. Continue through the shared [representative operation](docs/first-integration.md#3-add-one-representative-operation)
+- **Maven 3.9.14:** use the [review-only starter bundle](examples/maven-pilot/README.md#review-only-starter-bundle),
+  have an authorized maintainer review and apply its inactive patch, replace the fail-closed marker
+  statement with one existing operation and business assertion, then run the generated `review`
+  command.
+- **Gradle Groovy or Kotlin DSL:** [install the pinned Release assets](docs/first-integration.md#2-install-the-exact-v012-release-assets),
+  then choose [Gradle Groovy](docs/first-integration.md#gradle-groovy-dsl-opt-in-lane) or
+  [Gradle Kotlin DSL](docs/first-integration.md#gradle-kotlin-dsl-opt-in-lane).
+- Continue through the shared [representative operation](docs/first-integration.md#3-add-one-representative-operation)
    → [human baseline review](docs/first-integration.md#4-review-and-approve-the-first-baseline)
    → [CI candidate check](docs/first-integration.md#5-run-the-candidate-check-in-ci).
 
-Maven users can run the checked-in [two-module reference fixture](examples/maven-pilot/README.md)
-first and compare its boundaries with their own repository. If none of the lanes matches exactly, stop
-there instead of forcing a generic fragment into the build.
-After preparing the two Maven pilot tests, copy the [six-field example JSON](examples/maven-pilot/assisted-pilot.example.json)
-and use the [one-command runner](examples/maven-pilot/README.md#one-command-runner-for-an-adapted-external-maven-pilot)
-instead of assembling the existing verifier's twelve inputs by hand for `review` and `matched`.
+Maven users can still run the checked-in [two-module reference fixture](examples/maven-pilot/README.md)
+and use the manual material as an audit reference. If none of the lanes matches exactly, stop there
+instead of forcing a generic fragment into the build.
 
 After a first run—or after deciding that the current scope is not a fit—use the
 [stable v0.1.2 feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)

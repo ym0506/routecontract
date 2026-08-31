@@ -256,6 +256,58 @@ class OnboardingConversionDocsTest(unittest.TestCase):
         ):
             self.assertIn(required, detailed_compact)
 
+    def test_maven_starter_is_the_preferred_first_candidate_path(self) -> None:
+        readme_starter = "### Fastest Maven path to a first candidate"
+        readme_installer = "### Gradle and manual-audit installation path"
+        self.assertEqual(1, self.english.count(readme_starter))
+        self.assertEqual(1, self.english.count(readme_installer))
+        self.assertLess(
+            self.english.index(readme_starter),
+            self.english.index(readme_installer),
+        )
+        readme_section = self.english[
+            self.english.index(readme_starter) : self.english.index(readme_installer)
+        ]
+        readme_compact = " ".join(readme_section.split())
+        for required in (
+            "review-only starter bundle",
+            "scripts/render-maven-pilot-starter.py",
+            "ROUTECONTRACT_STARTER_REVIEW_REQUIRED",
+            "scripts/run-assisted-maven-pilot.py",
+            "--expected-outcome review",
+            "candidate present",
+            "approved baseline absent",
+            "copy the exact reviewed candidate bytes to the approved path",
+            "successful matched check in upstream public CI",
+        ):
+            self.assertIn(required, readme_compact)
+        self.assertNotIn(
+            "After preparing the two Maven pilot tests",
+            self.english,
+        )
+
+        guide_starter = "#### Preferred Maven first-candidate path"
+        guide_manual = "#### Manual and audit reference"
+        self.assertEqual(1, self.guide.count(guide_starter))
+        self.assertEqual(1, self.guide.count(guide_manual))
+        self.assertLess(
+            self.guide.index(guide_starter),
+            self.guide.index(guide_manual),
+        )
+        guide_section = self.guide[
+            self.guide.index(guide_starter) : self.guide.index(guide_manual)
+        ]
+        guide_compact = " ".join(guide_section.split())
+        for required in (
+            "review-only starter bundle",
+            "scripts/render-maven-pilot-starter.py",
+            "ROUTECONTRACT_STARTER_REVIEW_REQUIRED",
+            "approved baseline remains absent",
+            "copy the exact reviewed candidate bytes to the approved path",
+            "successful matched check in upstream public CI",
+        ):
+            self.assertIn(required, guide_compact)
+
     def test_stable_feedback_separates_local_evidence_from_an_actual_user(self) -> None:
         stable_compact = " ".join(self.stable_feedback.split())
         required = (
