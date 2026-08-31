@@ -27,13 +27,16 @@ substitute for it.
 1. **Check fit and choose one operation.** Use only Java 17, exactly ShardingSphere-JDBC 5.5.3,
    and an existing business assertion around a normal-returning, non-interrupted, synchronous
    non-batch `PreparedStatement` operation. Stop for any unsupported boundary listed above.
-2. **Install and isolate one build lane.** Verify the published demo, install the pinned `v0.1.2`
-   assets in a separate local repository, and select exactly one lane: [Gradle Groovy](#gradle-groovy-dsl-opt-in-lane),
-   [Gradle Kotlin DSL](#gradle-kotlin-dsl-opt-in-lane), or [Maven 3.9.14](#maven-3914-opt-in-profile-lane).
-   Keep the default build and IDE sync independent of the pilot.
+2. **Install and isolate one build lane.** Verify the published demo. For Gradle, install the pinned
+   `v0.1.2` assets in a separate local repository and choose [Gradle Groovy](#gradle-groovy-dsl-opt-in-lane)
+   or [Gradle Kotlin DSL](#gradle-kotlin-dsl-opt-in-lane). For Maven 3.9.14, prefer the
+   [review-only starter bundle](#preferred-maven-first-candidate-path); its runner performs the exact
+   private asset installation. Keep the default build and IDE sync independent of the pilot.
 3. **Capture one candidate without approving it.** Adapt only the selected test, retain its existing
-   business assertion, and run the isolated pilot. The pilot writes review evidence under `build`
-   or `target` and never creates or replaces an approved baseline; stop on an origin, graph, provider,
+   business assertion, and run the isolated pilot. For Maven, render the starter, have an authorized
+   maintainer review and apply its inactive patch, replace the fail-closed `fail(...)` statement with
+   that operation, and run the generated `review` command. The pilot writes review evidence under `build` or `target`
+   and never creates or replaces an approved baseline; stop on an origin, graph, provider,
    source-binding, or evidence mismatch.
 4. **Review, approve, and gate separately.** An authorized owner or maintainer of the external
    repository reviews the minimized candidate, explicit budgets, operation identity, and build diff,
@@ -660,6 +663,32 @@ including H2 `MODE=MySQL`, still has only `verified - H2` evidence;
 that mode does not satisfy the published MySQL 8.4.11 boundary.
 
 ### Maven 3.9.14 opt-in profile lane
+
+#### Preferred Maven first-candidate path
+
+Use the [review-only starter bundle](../examples/maven-pilot/README.md#review-only-starter-bundle)
+before the manual material below. Bind its strict config to the clean target commit, tracked owning
+POM SHA-256, one ordinary existing Surefire business test, operation identity, aliases, and budgets;
+then render the five-file bundle without modifying the target:
+
+```bash
+python3 -I scripts/render-maven-pilot-starter.py \
+  --config /absolute/path/to/routecontract-maven-starter.json \
+  --output /absolute/path/to/new-routecontract-review-bundle
+```
+
+An authorized maintainer reviews and applies `routecontract-pilot.patch` on a disposable branch,
+replaces only the fail-closed `fail(...)` statement containing
+`ROUTECONTRACT_STARTER_REVIEW_REQUIRED` with the representative operation while preserving its
+existing business assertion, and follows the generated `NEXT-STEPS.md`. The generated
+`review` command invokes `scripts/run-assisted-maven-pilot.py`, privately installs exact `v0.1.2`
+assets and Maven 3.9.14, and must finish with a candidate present while the approved baseline remains
+absent. That is first-candidate evidence only. It is not baseline approval, adoption, endorsement,
+or an actual external integration; an authorized maintainer must separately copy the exact reviewed
+candidate bytes to the approved path through the repository's normal review process, followed by a
+successful matched check in upstream public CI.
+
+#### Manual and audit reference
 
 The repository includes a runnable [two-module Maven pilot](../examples/maven-pilot/README.md) for
 the Maven path. It verifies the profile-off build and an opt-in test profile with Apache Maven
