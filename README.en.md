@@ -219,8 +219,9 @@ Do not read the long guide linearly. Choose one shortest supported path:
    → [CI candidate check](docs/first-integration.md#5-run-the-candidate-check-in-ci).
 
 Maven users can still run the checked-in [two-module reference fixture](examples/maven-pilot/README.md)
-and use the manual material as an audit reference. If none of the lanes matches exactly, stop there
-instead of forcing a generic fragment into the build.
+and inspect the [manual Maven 3.9.14 opt-in profile lane](docs/first-integration.md#maven-3914-opt-in-profile-lane)
+as an audit reference. If none of the lanes matches exactly, stop there instead of forcing a generic
+fragment into the build.
 
 After a first run—or after deciding that the current scope is not a fit—use the
 [stable v0.1.2 feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)
