@@ -12,6 +12,33 @@ another ShardingSphere version, or automatic topology discovery.
 Published end-to-end database verification uses MySQL 8.4.11; behavior with other databases is
 unverified.
 
+## Four-step supported path for Gradle or Maven
+
+Use this path first; the long reference below supplies the exact commands and fail-closed checks for
+each step.
+
+1. **Check fit and choose one operation.** Use only Java 17, exactly ShardingSphere-JDBC 5.5.3,
+   and an existing business assertion around a normal-returning, non-interrupted, synchronous
+   non-batch `PreparedStatement` operation. Stop for any unsupported boundary listed above.
+2. **Install and isolate one build lane.** Verify the published demo, install the pinned `v0.1.2`
+   assets in a separate local repository, and select exactly one lane: [Gradle Groovy](#gradle-groovy-dsl-opt-in-lane),
+   [Gradle Kotlin DSL](#gradle-kotlin-dsl-opt-in-lane), or [Maven 3.9.14](#maven-3914-opt-in-profile-lane).
+   Keep the default build and IDE sync independent of the pilot.
+3. **Capture one candidate without approving it.** Adapt only the selected test, retain its existing
+   business assertion, and run the isolated pilot. The pilot writes review evidence under `build`
+   or `target` and never creates or replaces an approved baseline; stop on an origin, graph, provider,
+   source-binding, or evidence mismatch.
+4. **Review, approve, and gate separately.** A person reviews the minimized candidate, explicit budgets,
+   operation identity, and build diff before separately approving a baseline. Then run the matched
+   candidate assertion as a required CI check; never approve or update the baseline in CI.
+
+An external-user result exists only when an external team or developer applies the RouteContract
+dependency, a human-approved exact baseline, and the candidate check to a representative operation
+in their own repository, and that check succeeds in the repository's upstream public CI. Assisted
+help or a private first-pass patch is allowed; an owner-run, same-checkout, local-only, or draft
+result is insufficient and does not establish adoption, endorsement, production use, performance,
+or security.
+
 ## 1. Verify the published demo first
 
 Run the exact-tag Quick Start before changing your repository. The checkout destination below must

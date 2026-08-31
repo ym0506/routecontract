@@ -12,6 +12,16 @@
 > the public code first and return a fit/not-fit answer; if it fits, I will prepare a private
 > first-pass patch for one representative operation. Nothing is published, baseline-approved,
 > or described as adoption without your separate confirmation.
+>
+> Copy these three lines and replace only the repository and existing-test path:
+>
+> ```text
+> interested
+> repository: https://github.com/OWNER/REPOSITORY
+> test: path/to/ExistingShardingSphereIntegrationTest.java
+> ```
+>
+> Do not put raw SQL, bind values, JDBC URLs or credentials, real topology, or full logs in the public reply.
 
 [Apache ShardingSphere-JDBC](https://github.com/apache/shardingsphere) is JDBC middleware that can split one logical SQL operation across multiple data sources inside a Java application. RouteContract is a Java testing library that compares execution-structure changes missed by business-result tests with a human-reviewed baseline and fails a manifest assertion. Configuring that assertion as a required CI check can stop an unapproved change from merging.
 

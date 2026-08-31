@@ -15,6 +15,16 @@
 > fit/not-fit을 답하고, 맞으면 대표 operation 하나의 private first-pass patch를 준비합니다.
 > 별도 확인 전에는 공개 PR을 열거나 baseline을 승인하지 않으며, 이를 채택으로 표현하지
 > 않습니다.
+>
+> 아래 세 줄을 그대로 복사해 저장소와 기존 테스트 경로만 바꾸세요.
+>
+> ```text
+> interested
+> repository: https://github.com/OWNER/REPOSITORY
+> test: path/to/ExistingShardingSphereIntegrationTest.java
+> ```
+>
+> 공개 답글에는 원문 SQL, bind 값, JDBC URL·credentials, 실제 topology, full log를 넣지 마세요.
 
 [Apache ShardingSphere-JDBC](https://github.com/apache/shardingsphere)는 Java 애플리케이션 안에서 하나의 논리 SQL을 여러 data source로 나눠 실행할 수 있는 JDBC middleware입니다. RouteContract는 기능 결과만 보는 테스트가 놓칠 수 있는 실행 구조 변화를 사람이 검토한 승인본과 비교해 manifest assertion을 실패시키는 Java 테스트 라이브러리입니다. 이 assertion을 required CI check로 설정하면 승인되지 않은 변화가 merge되는 것을 막을 수 있습니다.
 
