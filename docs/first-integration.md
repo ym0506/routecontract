@@ -1,8 +1,11 @@
 # First real integration
 
-This guide moves from the RouteContract Quick Start to one representative operation in your own
-repository. It keeps the operation's existing business assertion, records a separate candidate,
-requires a person to approve the first baseline, and checks later candidates in tests or CI.
+This is a maintainer-authorized workflow: use it only for a public repository you own or maintain,
+or after an authorized maintainer of the target repository requests the review. It is not a
+third-party nomination workflow. The guide moves from the RouteContract Quick Start to one
+representative operation in that repository, keeps its existing business assertion, records a
+separate candidate, requires an authorized maintainer of that external repository to review and
+approve the exact first baseline, and checks later candidates in tests or CI.
 
 This is a narrow test integration, not production instrumentation. The supported boundary is Java
 17 with exactly Apache ShardingSphere-JDBC 5.5.3 and a normal-returning, non-interrupted,
@@ -11,6 +14,41 @@ ShardingSphere-Proxy, batch execution, reactive or application-async propagation
 another ShardingSphere version, or automatic topology discovery.
 Published end-to-end database verification uses MySQL 8.4.11; behavior with other databases is
 unverified.
+
+## Four-step supported path for Gradle or Maven
+
+Use this path first; the long reference below supplies the exact commands and fail-closed checks for
+each step.
+
+Throughout this guide, human approval means separate approval by an authorized owner or maintainer
+of the external repository; the RouteContract maintainer, an assistant, a tool, or CI cannot
+substitute for it.
+
+1. **Check fit and choose one operation.** Use only Java 17, exactly ShardingSphere-JDBC 5.5.3,
+   and an existing business assertion around a normal-returning, non-interrupted, synchronous
+   non-batch `PreparedStatement` operation. Stop for any unsupported boundary listed above.
+2. **Install and isolate one build lane.** Verify the published demo, install the pinned `v0.1.2`
+   assets in a separate local repository, and select exactly one lane: [Gradle Groovy](#gradle-groovy-dsl-opt-in-lane),
+   [Gradle Kotlin DSL](#gradle-kotlin-dsl-opt-in-lane), or [Maven 3.9.14](#maven-3914-opt-in-profile-lane).
+   Keep the default build and IDE sync independent of the pilot.
+3. **Capture one candidate without approving it.** Adapt only the selected test, retain its existing
+   business assertion, and run the isolated pilot. The pilot writes review evidence under `build`
+   or `target` and never creates or replaces an approved baseline; stop on an origin, graph, provider,
+   source-binding, or evidence mismatch.
+4. **Review, approve, and gate separately.** An authorized owner or maintainer of the external
+   repository reviews the minimized candidate, explicit budgets, operation identity, and build diff,
+   then separately approves those exact candidate bytes as the baseline through the repository's
+   normal review process. Then run the matched candidate assertion as a required CI check; never
+   approve or update the baseline in CI.
+
+An external-user result exists only when an external team or developer applies the RouteContract
+dependency, an exact baseline approved by an authorized owner or maintainer of that external
+repository, and the candidate check to a representative operation in their own repository, and that
+check succeeds in the repository's upstream public CI. Assisted help or an unpublished review-only
+first-pass patch is allowed only when the target repository's license, contribution rules, and AI
+policy permit it; a RouteContract-maintainer-only, same-checkout, local-only, or draft result is
+insufficient and does not establish adoption, endorsement, production use, performance, or
+security.
 
 ## 1. Verify the published demo first
 
@@ -1516,19 +1554,21 @@ assertion is the explicit missing-baseline message.
 A first supported, business-green, contract-eligible run that reaches the manifest phase creates no
 approved file; it writes the candidate under the pilot build directory described in step 3. If the
 explicit policy assertions pass and no approved file exists, the test then deliberately fails.
-Before approving it, review at least:
+Before approving it, an authorized owner or maintainer of the target external repository must review
+at least:
 
 - the operation ID and `strict` budgets;
 - the observed attempt count and callback outcomes;
 - every actual data-source name to stable, non-sensitive alias mapping;
 - the parameter-type shape and rewritten-SQL fingerprint as structural evidence, not SQL meaning.
 
-If and only if the candidate describes the intended operation and the explicit policy assertions
-passed, create
+If and only if the candidate describes the intended operation, the explicit policy assertions
+passed, and that authorized maintainer reviewed the candidate, test, alias mapping, budgets, and
+pilot build diff together, create
 `src/routeContractPilot/resources/route-contracts/orders.find-by-user-id.json` from those exact
-reviewed candidate bytes in a separate human action. Review the baseline, test, alias mapping,
-budgets, and pilot build diff together, then commit them through the repository's normal review
-process. Record that the baseline was human-reviewed; a tool or CI result cannot make that decision.
+reviewed candidate bytes in a separate human action. The authorized external-repository maintainer
+must explicitly approve the baseline through the repository's normal review process. Record that
+approval; a RouteContract maintainer, an assistant, a tool, or CI cannot substitute for it.
 RouteContract provides no approval API. `writeCandidate` refuses to write to the approved path, and
 neither the test nor CI should copy, replace, or auto-approve the baseline.
 

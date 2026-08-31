@@ -1544,7 +1544,8 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             "Path.of(jarConnection.getJarFileURL().toURI()).toRealPath()",
             "Stale candidate exists before capture",
             "RouteContract provides no approval API",
-            "Record that the baseline was human-reviewed",
+            "The authorized external-repository maintainer\nmust explicitly approve the baseline",
+            "Record that\napproval; a RouteContract maintainer, an assistant, a tool, or CI cannot substitute",
             "every fresh CI job must repeat the exact Release download",
             'printf \'ROUTECONTRACT_REPOSITORY=%s\\n\'',
             "candidate file is an undeclared test side effect",
@@ -2093,8 +2094,9 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             "Stage 1 — also ran the exact v0.1.2 Quick Start",
             "Stage 2 — also verified and installed the exact v0.1.2 Release assets",
             "Stage 3 — also captured one representative operation in a repository I own, maintain, or am authorized to modify",
-            "Stage 4 — also human-reviewed and committed an approved baseline there",
-            "Stage 5 — also ran a candidate check against that baseline locally or in CI",
+            "Stage 4 — an authorized owner or maintainer there also reviewed and approved the exact baseline",
+            "Stage 5 — also ran a candidate check locally or in non-upstream CI",
+            "Stage 6 — also ran the candidate check in the repository's upstream public CI",
         )
         self.assertEqual(
             list(stage_options),
@@ -2137,14 +2139,24 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             set(re.findall(r"^    id: (.+)$", form, flags=re.MULTILINE)),
         )
         public_evidence_block = field_block("public_evidence")
+        public_evidence_compact = " ".join(public_evidence_block.split())
         self.assertIn("Optional; leave blank", public_evidence_block)
         self.assertNotIn("validations:", public_evidence_block)
         self.assertIn(
-            "A maintainer verifies these links before counting an external integration",
-            public_evidence_block,
+            "Only a verified Stage 6 result can establish an actual external integration",
+            public_evidence_compact,
         )
-        self.assertIn("link the immutable source commit", public_evidence_block)
-        self.assertIn("a PR may provide additional review context", public_evidence_block)
+        self.assertIn(
+            "approved by an authorized owner or maintainer of that external repository",
+            public_evidence_compact,
+        )
+        self.assertIn("upstream public CI run for that commit", public_evidence_compact)
+        self.assertIn(
+            "A private, local-only, draft, or self-reported result is feedback only",
+            public_evidence_compact,
+        )
+        self.assertIn("link the immutable source commit", public_evidence_compact)
+        self.assertIn("A PR may provide additional review context", public_evidence_compact)
         for evidence_label in (
             "Source commit or PR:",
             "Dependency/build:",

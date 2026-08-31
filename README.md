@@ -4,17 +4,29 @@
 
 [![CI](https://github.com/ym0506/routecontract/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ym0506/routecontract/actions/workflows/ci.yml?query=branch%3Amain)
 
-> **Maintainers: start with a 30-minute fit check — no setup required.**
+> **저장소 owner 또는 권한 있는 maintainer: 30분 scoping session 요청 — 신청 전 설치 불필요**
 > [English pilot details](README.en.md) · [Reply `interested` in Discussion #34](https://github.com/ym0506/routecontract/discussions/34)
 >
-> **30분 fit check로 assisted pilot 시작 — 신청 전 설치 불필요**
+> 공개 저장소의 권한 있는 owner 또는 maintainer만 신청할 수 있으며, 제3자 저장소 추천 채널이 아닙니다.
+> 저장소는 Java 17, 정확히 ShardingSphere-JDBC 5.5.3, 기존 동기식 non-batch
+> `PreparedStatement` 테스트를 갖춰야 합니다. [Discussion #34](https://github.com/ym0506/routecontract/discussions/34)에 아래 형식으로 답하세요.
 >
-> 공개 Java 17 저장소에서 정확히 ShardingSphere-JDBC 5.5.3과 기존 동기식 non-batch
-> `PreparedStatement` 테스트 하나를 유지한다면 [Discussion #34에 `interested` 3줄 답글을
-> 남기세요](https://github.com/ym0506/routecontract/discussions/34). 먼저 공개 코드만 보고
-> fit/not-fit을 답하고, 맞으면 대표 operation 하나의 private first-pass patch를 준비합니다.
-> 별도 확인 전에는 공개 PR을 열거나 baseline을 승인하지 않으며, 이를 채택으로 표현하지
-> 않습니다.
+> 아래 세 줄을 그대로 복사해 `OWNER/REPOSITORY`를 바꾸고 Gradle 또는 Maven을 고르세요.
+>
+> ```text
+> interested
+> Repository: https://github.com/OWNER/REPOSITORY
+> Build: Gradle or Maven
+> ```
+>
+> Discussion #34나 비공개 채널로 credentials, raw SQL, binds, JDBC URLs, customer data,
+> private topology, hostnames, absolute paths, logs, screenshots, personal info를 보내지 마세요.
+>
+> RouteContract maintainer는 공개 코드만 검토합니다. 대상 저장소의 license, contribution rules, AI policy가
+> 허용할 때만 unpublished review-only first-pass patch를 준비할 수 있으며 이는 선택 사항입니다.
+> 공개 PR 전에는 대상 저장소의 권한 있는 owner 또는 maintainer가 별도로 확인해야 합니다.
+> baseline은 외부 저장소의 권한 있는 maintainer가 별도로 검토·승인해야 합니다.
+> 30분은 초기 scoping/session 범위일 뿐, 답변·patch·완료 시간 약속이 아닙니다.
 
 [Apache ShardingSphere-JDBC](https://github.com/apache/shardingsphere)는 Java 애플리케이션 안에서 하나의 논리 SQL을 여러 data source로 나눠 실행할 수 있는 JDBC middleware입니다. RouteContract는 기능 결과만 보는 테스트가 놓칠 수 있는 실행 구조 변화를 사람이 검토한 승인본과 비교해 manifest assertion을 실패시키는 Java 테스트 라이브러리입니다. 이 assertion을 required CI check로 설정하면 승인되지 않은 변화가 merge되는 것을 막을 수 있습니다.
 
