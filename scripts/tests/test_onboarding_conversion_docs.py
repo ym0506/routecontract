@@ -12,6 +12,9 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 KOREAN_README = REPOSITORY_ROOT / "README.md"
 ENGLISH_README = REPOSITORY_ROOT / "README.en.md"
 INTEGRATION_GUIDE = REPOSITORY_ROOT / "docs" / "first-integration.md"
+STABLE_FEEDBACK = (
+    REPOSITORY_ROOT / ".github" / "ISSUE_TEMPLATE" / "stable-feedback.yml"
+)
 
 DISCUSSION_REPLY = """\
 > ```text
@@ -29,6 +32,7 @@ class OnboardingConversionDocsTest(unittest.TestCase):
         cls.korean = KOREAN_README.read_text(encoding="utf-8")
         cls.english = ENGLISH_README.read_text(encoding="utf-8")
         cls.guide = INTEGRATION_GUIDE.read_text(encoding="utf-8")
+        cls.stable_feedback = STABLE_FEEDBACK.read_text(encoding="utf-8")
 
     def test_bilingual_first_screen_has_exact_three_line_reply(self) -> None:
         for name, text in (
@@ -251,6 +255,40 @@ class OnboardingConversionDocsTest(unittest.TestCase):
             "RouteContract maintainer, an assistant, a tool, or CI cannot substitute",
         ):
             self.assertIn(required, detailed_compact)
+
+    def test_stable_feedback_separates_local_evidence_from_an_actual_user(self) -> None:
+        stable_compact = " ".join(self.stable_feedback.split())
+        required = (
+            "Stage 5 — also ran a candidate check locally or in non-upstream CI",
+            "Stage 6 — also ran the candidate check in the repository's upstream public CI",
+            "Only a verified Stage 6 result can establish an actual external integration",
+            "approved by an authorized owner or maintainer of that external repository",
+            "A private, local-only, draft, or self-reported result is feedback only",
+        )
+        for fragment in required:
+            self.assertIn(fragment, stable_compact)
+
+        self.assertNotIn(
+            "Stage 5 — also ran a candidate check against that baseline locally or in CI",
+            self.stable_feedback,
+        )
+        privacy = self.stable_feedback[
+            self.stable_feedback.index("id: privacy") :
+        ]
+        for fragment in (
+            "credentials",
+            "raw SQL",
+            "bind values",
+            "JDBC URLs",
+            "customer data",
+            "private topology",
+            "hostnames",
+            "absolute paths",
+            "logs",
+            "screenshots",
+            "personal information",
+        ):
+            self.assertIn(fragment, privacy)
 
 
 if __name__ == "__main__":

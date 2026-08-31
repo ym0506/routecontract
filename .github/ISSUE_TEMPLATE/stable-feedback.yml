@@ -22,8 +22,9 @@ body:
         - Stage 1 — also ran the exact v0.1.2 Quick Start
         - Stage 2 — also verified and installed the exact v0.1.2 Release assets
         - Stage 3 — also captured one representative operation in a repository I own, maintain, or am authorized to modify
-        - Stage 4 — also human-reviewed and committed an approved baseline there
-        - Stage 5 — also ran a candidate check against that baseline locally or in CI
+        - Stage 4 — an authorized owner or maintainer there also reviewed and approved the exact baseline
+        - Stage 5 — also ran a candidate check locally or in non-upstream CI
+        - Stage 6 — also ran the candidate check in the repository's upstream public CI
     validations:
       required: true
 
@@ -61,7 +62,14 @@ body:
     id: public_evidence
     attributes:
       label: Public evidence URL(s), if any
-      description: Optional; leave blank when there is no public evidence or the repository is private. For a Stage 5 integration, link the immutable source commit; a PR may provide additional review context. Include the representative test, approved manifest and human-review record, plus the CI run and tested commit when available. A maintainer verifies these links before counting an external integration; a link or self-report alone does not establish production use, adoption, performance, security, or endorsement.
+      description: >-
+        Optional; leave blank when there is no public evidence or the repository is private.
+        Only a verified Stage 6 result can establish an actual external integration: link the
+        immutable source commit, dependency, representative test, exact baseline approved by an
+        authorized owner or maintainer of that external repository, approval record, and upstream
+        public CI run for that commit. A PR may provide additional review context. A private,
+        local-only, draft, or self-reported result is feedback only and does not establish an actual
+        external integration, production use, adoption, performance, security, or endorsement.
       placeholder: |
         Source commit or PR:
         Dependency/build:
@@ -75,5 +83,5 @@ body:
     attributes:
       label: Public-information check
       options:
-        - label: I did not paste secrets, raw SQL or bind values, customer data, private topology, private paths, full logs, screenshots, or unnecessary personal information, and I checked any linked public evidence for the same risks.
+        - label: I did not paste credentials, raw SQL or bind values, JDBC URLs, customer data, private topology, hostnames, absolute paths, logs, screenshots, or unnecessary personal information, and I checked any linked public evidence for the same risks.
           required: true
