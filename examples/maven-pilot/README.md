@@ -24,12 +24,20 @@ The verifier deliberately exercises two outcomes:
 The second step is test scaffolding, not human approval. This fixture, its synthetic baseline copy,
 and maintainer-run CI are not external-user or adoption evidence.
 
-Run it from the RouteContract repository root with Java 17, exact Apache Maven 3.9.14, Python
-3.10 or newer, Docker, `curl`, and network access:
+Run it from the RouteContract repository root with exact Apache Maven 3.9.14, Python 3.10 or
+newer, Docker, `curl`, and network access. The no-argument command keeps the Java 17 default. The
+explicit second command runs the same complete fixture with Maven on Java 21 and compiles the
+fixture's main and test classes to Java 21 classfile major 65:
 
 ```bash
 ./scripts/verify-maven-pilot.sh
+./scripts/verify-maven-pilot.sh --java 21
 ```
+
+Both cells retain exactly ShardingSphere-JDBC 5.5.3 and the digest-pinned MySQL 8.4.11 image. The
+Java 21 cell is narrow same-checkout compatibility evidence for the immutable v0.1.2 JAR; it does
+not broaden the separate external assisted runner or starter generator below, which remain Java 17
+only. Neither cell is a human-approved external baseline, external adoption, or endorsement.
 
 ## One-command runner for an adapted external Maven pilot
 

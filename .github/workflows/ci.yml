@@ -482,6 +482,117 @@ jobs:
           if-no-files-found: warn
           retention-days: 90
 
+  maven-java21-pilot:
+    name: Maven 3.9.14 / JDK 21 / MySQL assisted pilot
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up exact JDK 21
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: '21.0.12+8.0.LTS'
+          architecture: x64
+          verify-signature: true
+
+      - name: Verify the active JDK 21 runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(java -XshowSettings:properties -version 2>&1 \
+            | sed -n 's/^[[:space:]]*java.specification.version = //p')" = '21'
+
+      - name: Set up exact Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12.14'
+          architecture: x64
+          check-latest: false
+
+      - name: Install exact Apache Maven 3.9.14
+        shell: bash
+        timeout-minutes: 10
+        run: |
+          set -euo pipefail
+          maven_archive="${RUNNER_TEMP}/apache-maven-3.9.14-bin.tar.gz"
+          maven_home="${RUNNER_TEMP}/apache-maven-3.9.14"
+          maven_url="https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.14/apache-maven-3.9.14-bin.tar.gz"
+          expected_sha512="d50af8ab5e6005b46a07f0ce9d3719e67cfdf898da988a84871304cd59fb1af0fef2f99dea709e6e66f21f732f905979b5c2dce6b6860406f60a70e84d9cf0b8"
+
+          test ! -e "${maven_archive}"
+          test ! -L "${maven_archive}"
+          test ! -e "${maven_home}"
+          test ! -L "${maven_home}"
+          curl --disable --proto '=https' --tlsv1.2 --fail --location \
+            --silent --show-error --retry 3 --connect-timeout 15 --max-time 300 \
+            --remove-on-error \
+            --max-filesize 20971520 \
+            --output "${maven_archive}" \
+            "${maven_url}"
+          printf '%s  %s\n' "${expected_sha512}" "${maven_archive}" \
+            | sha512sum --check --strict
+          tar --extract --gzip --file "${maven_archive}" --directory "${RUNNER_TEMP}"
+          test -d "${maven_home}"
+          test ! -L "${maven_home}"
+          test -f "${maven_home}/bin/mvn"
+          test ! -L "${maven_home}/bin/mvn"
+          test -x "${maven_home}/bin/mvn"
+          maven_version="$("${maven_home}/bin/mvn" -version 2>&1)"
+          printf '%s\n' "${maven_version}" | grep -Fqx \
+            'Apache Maven 3.9.14 (996c630dbc656c76214ce58821dcc58be960875b)'
+          printf '%s\n' "${maven_version}" | grep -Eq '^Java version: 21\.'
+          printf 'MAVEN_HOME=%s\n' "${maven_home}" >> "${GITHUB_ENV}"
+          printf '%s\n' "${maven_home}/bin" >> "${GITHUB_PATH}"
+
+      - name: Verify the full Java 21 Maven/MySQL compatibility cell
+        shell: bash
+        timeout-minutes: 20
+        run: |
+          set -euo pipefail
+          docker info >/dev/null
+          mkdir -p build/ci-evidence
+          summary="build/ci-evidence/maven-pilot-java21-summary.txt"
+          partial="${summary}.partial"
+          test ! -e "${summary}"
+          test ! -e "${partial}"
+          ./scripts/verify-maven-pilot.sh --java 21 > "${partial}"
+          mv "${partial}" "${summary}"
+          cat "${summary}"
+          grep -Fxq \
+            'ROUTECONTRACT_MAVEN_FIXTURE graph=PASS shardingsphere=5.5.3 jackson=2.18.9 calcite=1.42.0 minidev=2.4.x forbiddenDependencies=ABSENT' \
+            "${summary}"
+          grep -Fxq \
+            'ROUTECONTRACT_MAVEN_FIXTURE assetSource=anonymous-github-release maven=3.9.14 java=21 compiledClassMajor=65 mysql=8.4.11' \
+            "${summary}"
+          grep -Fxq \
+            'ROUTECONTRACT_MAVEN_FIXTURE evidenceBoundary=SAME_CHECKOUT_NOT_EXTERNAL_ADOPTION humanApprovedBaseline=false' \
+            "${summary}"
+          grep -Fxq '[ROUTECONTRACT MAVEN PILOT VERIFIED]' "${summary}"
+          {
+            echo "revision=${GITHUB_SHA}"
+            java -fullversion
+            java -version
+            mvn -version
+            docker version --format 'docker_client={{.Client.Version}} docker_server={{.Server.Version}}'
+          } > build/ci-evidence/maven-pilot-java21-environment.txt 2>&1
+
+      - name: Upload Java 21 Maven/MySQL evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: routecontract-maven-java21-evidence-${{ github.sha }}
+          path: |
+            build/ci-evidence/maven-pilot-java21-summary.txt
+            build/ci-evidence/maven-pilot-java21-environment.txt
+          if-no-files-found: warn
+          retention-days: 90
+
   gradle-kotlin-pilot:
     name: Gradle Kotlin DSL / MySQL assisted pilot
     runs-on: ubuntu-24.04

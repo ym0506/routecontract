@@ -310,7 +310,7 @@ choice explicit with `ManifestAssertions.assertPassesBlockingChecks(result)`.
 | Concurrently open caller-operation scopes | Across 20 single-attempt/multi-attempt scope pairs, no events were attributed across operations; temporal overlap of physical callbacks was neither forced nor measured |
 | Generic JDBC-tool comparison | With datasource-proxy outside ShardingSphere, callbacks stay `1 → 1`; with wrappers around physical data sources, they become `1 → 2`; RouteContract also observes `1 → 2` |
 | Isolated consumer build | In the same checkout, a standalone consumer using only the generated JAR and POM in a temporary Maven repository passed SPI auto-discovery and a MySQL execution test; this is not evidence of external adoption |
-| Isolated Maven 3.9.14 pilot | In the same checkout, an inactive profile, fresh caches, a SHA-256 negative check, a MySQL candidate, and a mechanical match passed; this is not human approval, an external user, or adoption evidence |
+| Isolated Maven 3.9.14 pilot | In the same checkout, a Java 17 default cell and an explicit Java 21 compatibility cell verify an inactive profile, fresh caches, a SHA-256 negative check, an exact ShardingSphere-JDBC 5.5.3/MySQL 8.4.11 candidate, and a mechanical match; this is not human approval, an external user, or adoption evidence |
 
 Run the full 52-test verification:
 
@@ -318,9 +318,10 @@ Run the full 52-test verification:
 ./gradlew --no-daemon --no-build-cache clean check assemble validateOfficialCycloneDxSbom
 ./scripts/verify-standalone-consumer.sh
 ./scripts/verify-maven-pilot.sh
+./scripts/verify-maven-pilot.sh --java 21
 ```
 
-The first command runs 52 core and MySQL-corpus tests on Java 17, ShardingSphere-JDBC 5.5.3, and a digest-pinned MySQL 8.4.11 Testcontainers image, then generates the JAR, Javadoc, and SBOM. The second command runs one separate consumer test. The third requires exact Apache Maven 3.9.14 and verifies the isolated profile-off, checksum, and candidate paths. All require Docker.
+The first command runs 52 core and MySQL-corpus tests on Java 17, ShardingSphere-JDBC 5.5.3, and a digest-pinned MySQL 8.4.11 Testcontainers image, then generates the JAR, Javadoc, and SBOM. The second command runs one separate consumer test. The third and fourth require exact Apache Maven 3.9.14 and verify the same isolated profile-off, checksum, and candidate paths with the Java 17 default and an explicit Java 21 runtime/classfile-major-65 mode, respectively. The Java 21 cell is same-checkout compatibility evidence for immutable v0.1.2 with exact ShardingSphere-JDBC 5.5.3/MySQL 8.4.11; it does not broaden the Java 17 boundary of the external assisted runner or starter. All require Docker.
 
 ## Precise comparison with existing tools
 

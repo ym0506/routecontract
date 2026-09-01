@@ -434,6 +434,76 @@ class MavenPilotContractTest(unittest.TestCase):
         ):
             self.assertIn(exact_graph_assertion, self.verifier)
 
+    def test_checked_in_fixture_defaults_to_java17_and_has_an_explicit_java21_mode(self) -> None:
+        properties = self.parent.find("m:properties", MAVEN_NAMESPACE)
+        self.assertIsNotNone(properties)
+        assert properties is not None
+        values = {
+            child.tag.rsplit("}", 1)[-1]: (child.text or "").strip()
+            for child in properties
+        }
+        self.assertEqual("17", values["routecontract.maven.java.release"])
+        self.assertEqual(
+            "${routecontract.maven.java.release}", values["maven.compiler.release"]
+        )
+
+        profile = self.integration.find("m:profiles/m:profile", MAVEN_NAMESPACE)
+        self.assertIsNotNone(profile)
+        assert profile is not None
+        compiler_configuration = profile.find(
+            "m:build/m:plugins/m:plugin[m:artifactId='maven-compiler-plugin']/"
+            "m:executions/m:execution[m:id='default-testCompile']/m:configuration",
+            MAVEN_NAMESPACE,
+        )
+        self.assertIsNotNone(compiler_configuration)
+        assert compiler_configuration is not None
+        self.assertEqual("17", required_text(compiler_configuration, "m:release"))
+        self.assertEqual(
+            "17", required_text(compiler_configuration, "m:testRelease")
+        )
+
+        for required in (
+            "[--java 17|21]",
+            'case "$java_major" in',
+            '17) expected_classfile_major="61" ;;',
+            '21) expected_classfile_major="65" ;;',
+            'java_release_property="-Droutecontract.maven.java.release=${java_major}"',
+            'Maven must run on Java $java_major',
+            "compiled class major did not match Java $java_major",
+            "java=$java_major",
+            "compiledClassMajor=$expected_classfile_major",
+            'configure_private_fixture_java_release "$destination"',
+            "source fixture's exact Java 17 compiler boundary changed",
+            'if java_major == "21":',
+            'os.replace(temporary, path)',
+        ):
+            self.assertIn(required, self.verifier)
+        self.assertEqual(
+            7,
+            self.verifier.count('"$java_release_property"'),
+            "every Maven invocation must bind the reviewed compiler release",
+        )
+
+    def test_verifier_rejects_invalid_or_duplicate_java_options_before_execution(self) -> None:
+        invalid_arguments = (
+            ["--java"],
+            ["--java", "22"],
+            ["--java", "17", "--java", "21"],
+            ["--release-assets-dir"],
+            ["--unknown"],
+        )
+        for arguments in invalid_arguments:
+            with self.subTest(arguments=arguments):
+                completed = subprocess.run(
+                    ["bash", VERIFIER, *arguments],
+                    cwd=REPOSITORY_ROOT,
+                    capture_output=True,
+                    check=False,
+                    text=True,
+                )
+                self.assertEqual(64, completed.returncode, completed.stderr)
+                self.assertIn("Usage: ./scripts/verify-maven-pilot.sh", completed.stderr)
+
     def test_first_integration_maven_profile_matches_the_verified_report_contract(self) -> None:
         for required_fragment in (
             "<artifactId>junit-jupiter</artifactId>",
@@ -693,6 +763,26 @@ class MavenPilotContractTest(unittest.TestCase):
         upload_end = self.ci_workflow.index("\n  dependency-review:", upload_start)
         upload = self.ci_workflow[upload_start:upload_end]
         self.assertIn("build/ci-evidence/maven-pilot-summary.txt", upload)
+
+    def test_ci_runs_the_full_maven_mysql_pilot_on_java21(self) -> None:
+        job_start = self.ci_workflow.index("  maven-java21-pilot:")
+        job_end = self.ci_workflow.index("\n  gradle-kotlin-pilot:", job_start)
+        job = self.ci_workflow[job_start:job_end]
+        for required in (
+            "name: Maven 3.9.14 / JDK 21 / MySQL assisted pilot",
+            "runs-on: ubuntu-24.04",
+            "java-version: '21.0.12+8.0.LTS'",
+            "verify-signature: true",
+            "Apache Maven 3.9.14 (996c630dbc656c76214ce58821dcc58be960875b)",
+            'summary="build/ci-evidence/maven-pilot-java21-summary.txt"',
+            './scripts/verify-maven-pilot.sh --java 21 > "${partial}"',
+            "assetSource=anonymous-github-release maven=3.9.14 java=21 "
+            "compiledClassMajor=65 mysql=8.4.11",
+            "evidenceBoundary=SAME_CHECKOUT_NOT_EXTERNAL_ADOPTION",
+            "build/ci-evidence/maven-pilot-java21-summary.txt",
+            "routecontract-maven-java21-evidence-${{ github.sha }}",
+        ):
+            self.assertIn(required, job)
 
     def test_missing_baseline_and_synthetic_match_remain_non_adoption_evidence(self) -> None:
         write_candidate = self.pilot_test.index("store.writeCandidate(")

@@ -956,7 +956,7 @@ class SubmissionClaimTextTest(unittest.TestCase):
         )
         package_tests = "      - name: Test fail-closed contest packaging rules"
         for workflow, quick_start, package_job, python_setup_count, architecture_count in (
-            (ci_workflow, ci_quick_start, ci_package_job, 3, 7),
+            (ci_workflow, ci_quick_start, ci_package_job, 4, 9),
             (release_evidence, release_quick_start, release_package_job, 1, 2),
         ):
             self.assertIn(package_job, workflow)

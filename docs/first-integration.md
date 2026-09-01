@@ -691,12 +691,15 @@ successful matched check in upstream public CI.
 #### Manual and audit reference
 
 The repository includes a runnable [two-module Maven pilot](../examples/maven-pilot/README.md) for
-the Maven path. It verifies the profile-off build and an opt-in test profile with Apache Maven
-3.9.14, Java 17, ShardingSphere-JDBC 5.5.3, and MySQL 8.4.11. It also verifies a fresh private
+the Maven path. Its default cell verifies the profile-off build and an opt-in test profile with
+Apache Maven 3.9.14, Java 17, ShardingSphere-JDBC 5.5.3, and MySQL 8.4.11. An explicit
+`./scripts/verify-maven-pilot.sh --java 21` cell repeats that complete same-checkout path with Maven
+running on Java 21 and the fixture main/test classes compiled to classfile major 65. It also verifies a fresh private
 consumer cache, repository-scoped SHA-256 transfer validation, a corrupted-checksum rejection,
 candidate creation, the explicit missing-baseline failure, and a separate mechanical match run.
 That same-checkout fixture and its synthetic match are CI scaffolding, not human approval or
-external adoption.
+external adoption. This boundary covers both the Java 17 and Java 21 cells. The external assisted
+runner and starter described above remain Java 17 only.
 
 Use this lane only when the representative operation is already a synchronous Surefire integration
 test in one owning module and its resolved graph can preserve the tested

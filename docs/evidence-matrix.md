@@ -99,6 +99,22 @@ qualifying public evidence is inspected.
 This addendum currently has no revision-bound public CI artifact, durable external receipt, or
 independent participant result. Do not associate it with the historical Actions evidence above.
 
+### Java 21 same-checkout Maven compatibility gate — introduced 2026-09-02
+
+The dedicated `Maven 3.9.14 / JDK 21 / MySQL assisted pilot` CI job runs
+`./scripts/verify-maven-pilot.sh --java 21`. It requires Maven to run on Java 21, compiles the
+checked-in fixture's main and test classes to classfile major 65, and repeats the full profile-off,
+corrupted-checksum, exact dependency-graph, missing-baseline, and mechanical-match sequence against
+the immutable v0.1.2 JAR, exactly ShardingSphere-JDBC 5.5.3, and the digest-pinned MySQL 8.4.11
+container. The expected candidate remains 655 bytes with SHA-256
+`796d38c21c599812a4c0e31cae90c7f9377a109e3836beed4a04ff2bf554c818`.
+
+This is a version-pinned Java 21 compatibility cell for the same-checkout Maven fixture. It does not
+change the Java 17 external assisted-runner/starter contract, establish compatibility with another
+ShardingSphere version, or count as an external user, approved baseline, adoption, production use,
+or endorsement. A claim that a particular revision passed must still link that revision's public
+Actions run; this prose alone is not execution evidence.
+
 ## 1차 평가(서면): 30 points
 
 The August 20 judging notice allocates six points to each of five criteria. The table maps what a reviewer must be able to click or reproduce; it does not award points internally.
