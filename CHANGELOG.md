@@ -10,11 +10,16 @@ RouteContract follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) a
 - Add an inactive-by-default Gradle Kotlin DSL assisted-pilot lane with exact `v0.1.2` local
   repository provenance, real MySQL verification, missing-baseline failure, and a separate
   synthetic match check.
+- Add a separate Java 21 Maven compatibility cell that compiles the checked-in fixture to classfile
+  major 65 and runs its full exact ShardingSphere-JDBC 5.5.3/MySQL 8.4.11 candidate workflow.
 
 ### Boundaries
 
 - The fixture, CI result, and synthetic match are maintainer-side verification only. They do not
   establish a human-approved external baseline, adoption, production use, or endorsement.
+- Java 21 evidence is limited to the checked-in same-checkout Maven fixture. The external assisted
+  runner and starter remain Java 17 only. This 5.5.3-specific adapter does not add support for any
+  other ShardingSphere version; the audited 5.5.0/5.5.2 variants require separate adapters.
 
 ## [0.1.2]
 

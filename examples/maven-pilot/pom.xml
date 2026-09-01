@@ -22,7 +22,8 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.release>17</maven.compiler.release>
+    <routecontract.maven.java.release>17</routecontract.maven.java.release>
+    <maven.compiler.release>${routecontract.maven.java.release}</maven.compiler.release>
     <maven.compiler.plugin.version>3.14.1</maven.compiler.plugin.version>
     <maven.surefire.plugin.version>3.5.4</maven.surefire.plugin.version>
     <maven.dependency.plugin.version>3.11.0</maven.dependency.plugin.version>

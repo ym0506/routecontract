@@ -37,6 +37,18 @@ This is same-checkout packaging evidence, not proof of a public Release, registr
 external installation, or adoption. After a Release exists, use
 `scripts/verify-release-assets-consumer.sh` for its downloaded assets.
 
+The checked-in Maven compatibility fixture keeps Java 17 as its default and has one explicit Java
+21/full-MySQL cell:
+
+```bash
+./scripts/verify-maven-pilot.sh
+./scripts/verify-maven-pilot.sh --java 21
+```
+
+Both commands require exact Apache Maven 3.9.14 and Docker. The Java 21 cell is same-checkout
+compatibility evidence only; it does not broaden the Java 17 external assisted-runner/starter
+contract or prove adoption.
+
 A change is not complete until it passes the appropriate real-MySQL test, not only an in-memory
 substitute.
 

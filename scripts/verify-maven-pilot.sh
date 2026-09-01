@@ -39,15 +39,16 @@ assets=(
 
 usage() {
     cat <<'EOF'
-Usage: ./scripts/verify-maven-pilot.sh [--release-assets-dir /absolute/path]
+Usage: ./scripts/verify-maven-pilot.sh [--java 17|21] [--release-assets-dir /absolute/path]
 
 Without an argument, the verifier anonymously downloads the exact immutable
 v0.1.2 GitHub Release assets.  The optional directory is only a download-cache
 shortcut; the exact installer still validates its flat inventory and every
 declared SHA-256 before use.
 
-The verifier requires Java 17, Apache Maven 3.9.14, Python 3.10+, Docker, and
-network access for uncached Maven Central dependencies and container images.
+The verifier defaults to Java 17 and also accepts an explicit Java 21 mode. It
+requires Apache Maven 3.9.14, Python 3.10+, Docker, and network access for
+uncached Maven Central dependencies and container images.
 It runs only in private temporary copies.  Its synthetic candidate-to-baseline
 copy proves a mechanical match path, not human approval or external adoption.
 EOF
@@ -70,6 +71,21 @@ sha256_file() {
 
 file_size() {
     python3 -I -c 'import pathlib,sys; print(pathlib.Path(sys.argv[1]).stat().st_size)' "$1"
+}
+
+classfile_major() {
+    python3 -I - "$1" <<'PY'
+import pathlib
+import sys
+
+path = pathlib.Path(sys.argv[1])
+if path.is_symlink() or not path.is_file():
+    raise SystemExit(f"classfile is not one regular file: {path}")
+header = path.read_bytes()[:8]
+if len(header) != 8 or header[:4] != bytes.fromhex("cafebabe"):
+    raise SystemExit(f"invalid classfile header: {path}")
+print(int.from_bytes(header[6:8], "big"))
+PY
 }
 
 fixture_digest() {
@@ -101,6 +117,65 @@ print(digest.hexdigest())
 PY
 }
 
+configure_private_fixture_java_release() {
+    fixture="$1"
+    python3 -I - "$fixture/integration-tests/pom.xml" "$java_major" <<'PY'
+import os
+import pathlib
+import stat
+import sys
+
+path = pathlib.Path(sys.argv[1])
+java_major = sys.argv[2]
+metadata = path.lstat()
+if not stat.S_ISREG(metadata.st_mode) or stat.S_ISLNK(metadata.st_mode):
+    raise SystemExit(f"private fixture POM must be one regular file: {path}")
+if metadata.st_nlink != 1:
+    raise SystemExit(f"private fixture POM must not be hard-linked: {path}")
+
+data = path.read_bytes()
+if b"\r" in data or not data.endswith(b"\n"):
+    raise SystemExit(f"private fixture POM must use LF and end with one line feed: {path}")
+old_release = b"<release>17</release>"
+old_test_release = b"<testRelease>17</testRelease>"
+if data.count(old_release) != 1 or data.count(old_test_release) != 1:
+    raise SystemExit("source fixture's exact Java 17 compiler boundary changed")
+
+if java_major == "17":
+    updated = data
+elif java_major == "21":
+    updated = data.replace(old_release, b"<release>21</release>", 1)
+    updated = updated.replace(old_test_release, b"<testRelease>21</testRelease>", 1)
+else:
+    raise SystemExit(f"unsupported private fixture Java release: {java_major}")
+
+if java_major == "21":
+    temporary = path.with_name(f".{path.name}.java-release.tmp")
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    descriptor = os.open(temporary, flags, stat.S_IMODE(metadata.st_mode))
+    try:
+        with os.fdopen(descriptor, "wb", closefd=True) as output:
+            output.write(updated)
+            output.flush()
+            os.fsync(output.fileno())
+        os.replace(temporary, path)
+    finally:
+        if temporary.exists():
+            temporary.unlink()
+
+verified = path.read_bytes()
+expected_release = f"<release>{java_major}</release>".encode("ascii")
+expected_test_release = f"<testRelease>{java_major}</testRelease>".encode("ascii")
+if verified.count(expected_release) != 1 \
+        or verified.count(expected_test_release) != 1:
+    raise SystemExit("private fixture Java compiler boundary was not configured exactly")
+if java_major == "21" and (old_release in verified or old_test_release in verified):
+    raise SystemExit("private Java 21 fixture retained the Java 17 compiler boundary")
+PY
+}
+
 copy_fixture() {
     destination="$1"
     test ! -e "$destination" || die "fixture destination already exists: $destination"
@@ -110,6 +185,7 @@ copy_fixture() {
     if find "$destination" -type d -name target -print -quit | grep -q .; then
         die "fixture copy unexpectedly contains a target directory"
     fi
+    configure_private_fixture_java_release "$destination"
 }
 
 seed_profile_off_cache() {
@@ -120,6 +196,7 @@ seed_profile_off_cache() {
     mvn -B -ntp -Dstyle.color=never \
         -f "$fixture/pom.xml" \
         "-Dmaven.repo.local=$cache" \
+        "$java_release_property" \
         -P=-routecontract-pilot \
         -pl support -am -DskipTests clean install >"$log" 2>&1
     assert_no_integrity_warning "$log"
@@ -195,14 +272,46 @@ else:
 PY
 }
 
-if [[ "$#" -eq 0 ]]; then
-    provided_assets=""
-elif [[ "$#" -eq 2 && "$1" == "--release-assets-dir" ]]; then
-    provided_assets="$2"
-else
-    usage >&2
-    exit 64
-fi
+provided_assets=""
+java_major="17"
+seen_java="false"
+seen_release_assets="false"
+while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+        --java)
+            [[ "$seen_java" == "false" && "$#" -ge 2 ]] || {
+                usage >&2
+                exit 64
+            }
+            java_major="$2"
+            seen_java="true"
+            shift 2
+            ;;
+        --release-assets-dir)
+            [[ "$seen_release_assets" == "false" && "$#" -ge 2 ]] || {
+                usage >&2
+                exit 64
+            }
+            provided_assets="$2"
+            seen_release_assets="true"
+            shift 2
+            ;;
+        *)
+            usage >&2
+            exit 64
+            ;;
+    esac
+done
+
+case "$java_major" in
+    17) expected_classfile_major="61" ;;
+    21) expected_classfile_major="65" ;;
+    *)
+        usage >&2
+        exit 64
+        ;;
+esac
+java_release_property="-Droutecontract.maven.java.release=${java_major}"
 
 for required in curl docker java mvn python3 tar; do
     require_command "$required"
@@ -222,8 +331,8 @@ maven_version="$(mvn -version 2>&1)"
 printf '%s\n' "$maven_version" | grep -Fqx \
     'Apache Maven 3.9.14 (996c630dbc656c76214ce58821dcc58be960875b)' \
     || die "Apache Maven must be exact version 3.9.14"
-printf '%s\n' "$maven_version" | grep -Eq '^Java version: 17\.' \
-    || die "Maven must run on Java 17"
+printf '%s\n' "$maven_version" | grep -Eq "^Java version: ${java_major}\\." \
+    || die "Maven must run on Java $java_major"
 
 test "$(sha256_file "$installer")" = "$expected_installer_sha256" \
     || die "release installer does not match the reviewed hash"
@@ -305,6 +414,7 @@ profile_off_log="$temporary_root/profile-off.log"
 mvn -B -ntp -Dstyle.color=never \
     -f "$profile_off_fixture/pom.xml" \
     "-Dmaven.repo.local=$temporary_root/cache-profile-off" \
+    "$java_release_property" \
     -P=-routecontract-pilot \
     clean verify >"$profile_off_log" 2>&1
 assert_one_fixed_line \
@@ -317,12 +427,19 @@ test ! -e "$profile_off_fixture/integration-tests/target/test-classes/io/github/
     || die "profile-off build compiled the pilot source"
 test ! -e "$profile_off_fixture/integration-tests/target/routecontract/orders.find-by-user-id.candidate.json" \
     || die "profile-off build created a candidate"
+profile_off_business_class="$profile_off_fixture/integration-tests/target/test-classes/io/github/ym0506/routecontract/examples/maven/MavenBusinessMySqlTest.class"
+test "$(classfile_major "$profile_off_business_class")" = "$expected_classfile_major" \
+    || die "compiled class major did not match Java $java_major"
+profile_off_support_class="$profile_off_fixture/support/target/classes/io/github/ym0506/routecontract/examples/maven/OrderQueryService.class"
+test "$(classfile_major "$profile_off_support_class")" = "$expected_classfile_major" \
+    || die "compiled class major did not match Java $java_major"
 
 profile_off_effective_pom="$temporary_root/profile-off-effective-pom.xml"
 profile_off_effective_log="$temporary_root/profile-off-effective-pom.log"
 mvn -B -ntp -Dstyle.color=never \
     -f "$profile_off_fixture/integration-tests/pom.xml" \
     "-Dmaven.repo.local=$temporary_root/cache-profile-off" \
+    "$java_release_property" \
     -P=-routecontract-pilot \
     -DskipTests=true \
     -Dmaven.test.skip=true \
@@ -447,6 +564,7 @@ set +e
 mvn -B -ntp -Dstyle.color=never \
     -f "$bad_checksum_fixture/integration-tests/pom.xml" \
     "-Dmaven.repo.local=$temporary_root/cache-bad-checksum" \
+    "$java_release_property" \
     -DroutecontractPilot=true \
     "-DroutecontractRepositoryUrl=$bad_repository_uri" \
     "-Droutecontract.artifactJarPath=$temporary_root/cache-bad-checksum/$group_path/$artifact_id/$version/$artifact_id-$version.jar" \
@@ -471,6 +589,7 @@ graph_log="$temporary_root/dependency-tree.log"
 mvn -B -ntp -Dstyle.color=never \
     -f "$graph_fixture/integration-tests/pom.xml" \
     "-Dmaven.repo.local=$temporary_root/cache-graph" \
+    "$java_release_property" \
     -DroutecontractPilot=true \
     "-DroutecontractRepositoryUrl=$repository_uri" \
     "-Droutecontract.artifactJarPath=$temporary_root/cache-graph/$group_path/$artifact_id/$version/$artifact_id-$version.jar" \
@@ -622,6 +741,7 @@ set +e
 mvn -B -ntp -Dstyle.color=never \
     -f "$missing_fixture/integration-tests/pom.xml" \
     "-Dmaven.repo.local=$temporary_root/cache-missing-baseline" \
+    "$java_release_property" \
     -DroutecontractPilot=true \
     "-DroutecontractRepositoryUrl=$repository_uri" \
     "-Droutecontract.artifactJarPath=$temporary_root/cache-missing-baseline/$group_path/$artifact_id/$version/$artifact_id-$version.jar" \
@@ -645,6 +765,9 @@ test "$(sha256_file "$candidate")" = "$expected_candidate_sha256" \
     || die "missing-baseline candidate SHA-256 is not deterministic"
 test "$(file_size "$candidate")" = "$expected_candidate_bytes" \
     || die "missing-baseline candidate byte count changed"
+missing_pilot_class="$missing_fixture/integration-tests/target/test-classes/io/github/ym0506/routecontract/examples/maven/MavenRouteContractPilotTest.class"
+test "$(classfile_major "$missing_pilot_class")" = "$expected_classfile_major" \
+    || die "compiled class major did not match Java $java_major"
 parse_surefire \
     missing \
     "$missing_fixture/integration-tests/target/surefire-reports" \
@@ -686,6 +809,7 @@ matched_log="$temporary_root/mechanical-match.log"
 mvn -B -ntp -Dstyle.color=never \
     -f "$matched_fixture/integration-tests/pom.xml" \
     "-Dmaven.repo.local=$temporary_root/cache-mechanical-match" \
+    "$java_release_property" \
     -DroutecontractPilot=true \
     "-DroutecontractRepositoryUrl=$repository_uri" \
     "-Droutecontract.artifactJarPath=$temporary_root/cache-mechanical-match/$group_path/$artifact_id/$version/$artifact_id-$version.jar" \
@@ -745,6 +869,6 @@ printf '%s\n' \
     'ROUTECONTRACT_MAVEN_FIXTURE graph=PASS shardingsphere=5.5.3 jackson=2.18.9 calcite=1.42.0 minidev=2.4.x forbiddenDependencies=ABSENT' \
     "ROUTECONTRACT_MAVEN_FIXTURE missingBaseline=EXPECTED_FAILURE candidateSha256=$expected_candidate_sha256 candidateBytes=$expected_candidate_bytes" \
     "ROUTECONTRACT_MAVEN_FIXTURE mechanicalMatch=PASS candidateSha256=$expected_candidate_sha256" \
-    "ROUTECONTRACT_MAVEN_FIXTURE assetSource=$asset_source maven=3.9.14 java=17 mysql=8.4.11" \
+    "ROUTECONTRACT_MAVEN_FIXTURE assetSource=$asset_source maven=3.9.14 java=$java_major compiledClassMajor=$expected_classfile_major mysql=8.4.11" \
     'ROUTECONTRACT_MAVEN_FIXTURE evidenceBoundary=SAME_CHECKOUT_NOT_EXTERNAL_ADOPTION humanApprovedBaseline=false' \
     '[ROUTECONTRACT MAVEN PILOT VERIFIED]'

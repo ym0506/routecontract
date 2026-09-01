@@ -265,7 +265,7 @@ MySQL fixture에서는 fingerprint와 parameter type 순서만 달라졌습니�
 | 동시에 열린 caller-operation scope | single-attempt/multi-attempt scope 20쌍에서 교차 귀속 0건; 물리 callback의 시간상 중첩은 강제하거나 측정하지 않음 |
 | 범용 JDBC 도구 비교 | datasource-proxy 외부 배치는 callback `1 → 1`, 물리 DS별 배치는 `1 → 2`, RouteContract도 `1 → 2` |
 | 격리된 소비자 빌드 | 같은 checkout에서 임시 Maven 저장소에 생성한 JAR와 POM만 사용하는 standalone consumer에서 SPI 자동 발견과 MySQL 실행 통과. 외부 채택 증거는 아님 |
-| 격리된 Maven 3.9.14 pilot | inactive profile, fresh cache, SHA-256 음성 검증, MySQL candidate와 mechanical match를 같은 checkout에서 검증. 사람 승인·외부 사용자·adoption 증거는 아님 |
+| 격리된 Maven 3.9.14 pilot | Java 17 기본 셀과 명시적 Java 21 호환성 셀에서 inactive profile, fresh cache, SHA-256 음성 검증, exact ShardingSphere-JDBC 5.5.3/MySQL 8.4.11 candidate와 mechanical match를 같은 checkout에서 검증. 사람 승인·외부 사용자·adoption 증거는 아님 |
 
 전체 52-test 검증:
 
@@ -273,9 +273,10 @@ MySQL fixture에서는 fingerprint와 parameter type 순서만 달라졌습니�
 ./gradlew --no-daemon --no-build-cache clean check assemble validateOfficialCycloneDxSbom
 ./scripts/verify-standalone-consumer.sh
 ./scripts/verify-maven-pilot.sh
+./scripts/verify-maven-pilot.sh --java 21
 ```
 
-첫 명령은 Java 17, ShardingSphere-JDBC 5.5.3, digest로 고정한 MySQL 8.4.11 Testcontainers 환경에서 core 및 MySQL corpus 52개 테스트를 실행하고 JAR·Javadoc·SBOM을 생성합니다. 두 번째 명령은 별도 소비자 테스트 1개를 실행합니다. 세 번째 명령은 exact Apache Maven 3.9.14가 필요하며 격리된 profile-off/checksum/candidate 경로를 검증합니다. 모두 Docker가 필요합니다.
+첫 명령은 Java 17, ShardingSphere-JDBC 5.5.3, digest로 고정한 MySQL 8.4.11 Testcontainers 환경에서 core 및 MySQL corpus 52개 테스트를 실행하고 JAR·Javadoc·SBOM을 생성합니다. 두 번째 명령은 별도 소비자 테스트 1개를 실행합니다. 세 번째와 네 번째 명령은 exact Apache Maven 3.9.14가 필요하며 동일한 격리 profile-off/checksum/candidate 경로를 각각 Java 17 기본값과 Java 21 runtime·classfile-major-65 모드로 검증합니다. Java 21 셀은 immutable v0.1.2와 exact ShardingSphere-JDBC 5.5.3/MySQL 8.4.11의 same-checkout 호환성 증거이며 외부 assisted runner·starter의 Java 17 경계를 넓히지 않습니다. 모두 Docker가 필요합니다.
 
 ## 기존 도구와의 정확한 차이
 
