@@ -1,6 +1,7 @@
 # This is a Gradle generated file for dependency locking.
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
+# To regenerate this file, run: ./gradlew :routecontract-shardingsphere-5.5:dependencies --write-locks
 com.alibaba:transmittable-thread-local:2.14.2=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 com.cedarsoftware:java-util:4.90.0=compileClasspath,testCompileClasspath,testRuntimeClasspath
 com.fasterxml.jackson.core:jackson-annotations:2.21=compileClasspath,testCompileClasspath,testRuntimeClasspath
