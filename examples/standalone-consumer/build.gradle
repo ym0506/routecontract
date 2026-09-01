@@ -52,7 +52,7 @@ dependencyLocking {
 
 dependencies {
     testImplementation "${routeContractGroup}:routecontract-shardingsphere-5.5:${routeContractVersion}"
-    testImplementation platform('com.fasterxml.jackson:jackson-bom:2.18.9')
+    testImplementation platform('com.fasterxml.jackson:jackson-bom:2.22.2')
     testImplementation('org.apache.shardingsphere:shardingsphere-jdbc:5.5.3') {
         exclude group: 'org.locationtech.jts.io', module: 'jts-io-common'
     }
