@@ -733,20 +733,40 @@ class InstallReleaseAssetsTest(unittest.TestCase):
             for element in metadata.getroot().iter()
             if element.tag.rsplit("}", 1)[-1] == "trust"
         ]
-        self.assertEqual(1, len(rules))
-        rule = rules[0]
-        self.assertEqual("true", rule.attrib.get("regex"))
+        expected_reasons = {
+            "^routecontract-core$": (
+                "the same-checkout verifier publishes this reviewed first-party core "
+                "beside the exact adapter into an isolated repository; public "
+                "consumption still requires a verified immutable release or Maven "
+                "Central publication"
+            ),
+            "^routecontract-shardingsphere-5[.]5$": (
+                "the same-checkout verifier publishes this reviewed exact adapter "
+                "beside core into an isolated repository; legacy public asset "
+                "consumption separately requires install-release-assets.py "
+                "verification, and future public split consumption requires a "
+                "verified immutable release or Maven Central publication"
+            ),
+        }
+        self.assertEqual(2, len(rules))
         self.assertEqual(
-            "^io[.]github[.]ym0506[.]routecontract$", rule.attrib.get("group")
+            set(expected_reasons), {rule.attrib.get("name") for rule in rules}
         )
-        self.assertEqual(
-            "^routecontract-shardingsphere-5[.]5$", rule.attrib.get("name")
-        )
-        version_pattern = rule.attrib["version"]
-        self.assertIsNotNone(re.fullmatch(version_pattern, "1.2.3"))
-        self.assertIsNotNone(re.fullmatch(version_pattern, "1.2.3-rc1"))
-        for rejected in ("1.2.3-SNAPSHOT", "1.2.3-rc0", "1.2.3-beta1"):
-            self.assertIsNone(re.fullmatch(version_pattern, rejected))
+        for rule in rules:
+            with self.subTest(name=rule.attrib.get("name")):
+                self.assertEqual("true", rule.attrib.get("regex"))
+                self.assertEqual(
+                    "^io[.]github[.]ym0506[.]routecontract$",
+                    rule.attrib.get("group"),
+                )
+                self.assertEqual(
+                    expected_reasons[rule.attrib["name"]], rule.attrib.get("reason")
+                )
+                version_pattern = rule.attrib["version"]
+                self.assertIsNotNone(re.fullmatch(version_pattern, "1.2.3"))
+                self.assertIsNotNone(re.fullmatch(version_pattern, "1.2.3-rc1"))
+                for rejected in ("1.2.3-SNAPSHOT", "1.2.3-rc0", "1.2.3-beta1"):
+                    self.assertIsNone(re.fullmatch(version_pattern, rejected))
 
     def test_rejects_unreleased_split_git_archive_in_legacy_installer(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
