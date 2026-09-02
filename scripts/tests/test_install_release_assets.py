@@ -748,7 +748,7 @@ class InstallReleaseAssetsTest(unittest.TestCase):
         for rejected in ("1.2.3-SNAPSHOT", "1.2.3-rc0", "1.2.3-beta1"):
             self.assertIsNone(re.fullmatch(version_pattern, rejected))
 
-    def test_accepts_current_git_archive_source_shape(self) -> None:
+    def test_rejects_unreleased_split_git_archive_in_legacy_installer(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
             assets = root / "release"
@@ -775,8 +775,9 @@ class InstallReleaseAssetsTest(unittest.TestCase):
 
             result = self.run_installer(assets, repository, home=root / "home")
 
-            self.assertEqual(0, result.returncode, result.stderr)
-            self.assertIn(f"{GROUP_ID}:{ARTIFACT_ID}:{VERSION}", result.stdout)
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("missing canonical source paths", result.stderr)
+            self.assertFalse(repository.exists())
 
     def test_accepts_reviewed_routecontract_pilot_source_set_shape(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
