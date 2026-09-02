@@ -35,11 +35,22 @@
 - **CI 판단:** 검증한 `1 → 2` fixture에서는 시도 수·data-source 예산 초과가 `RCM201`·`RCM202` manifest assertion 실패가 됨; 이를 required check로 설정하면 merge를 막을 수 있지만, `1 → 2` 자체를 성능 결함으로 단정하지 않고 의도한 변경인지 사람의 검토를 요구함
 - **검증 경계:** Java 17, 정확히 ShardingSphere-JDBC 5.5.3, 정상 반환·비-interrupt 동기식 non-batch `PreparedStatement`; SQL 의미 동치나 complete route plan·commit·비즈니스 성공은 판정하지 않음
 
+> **Release와 현재 source-tree 경계:** 아래 `v0.1.2` Quick Start·설치 명령은 exact annotated
+> tag checkout과 그 tag의 단일 all-in-one
+> `routecontract-shardingsphere-5.5:0.1.2` Release JAR(API·collector·manifest·5.5.3 provider 포함)에
+> 만 적용됩니다. 현재 source tree는 project version `0.2.0`을 선언한 미출시 작업입니다.
+> public API·collector·manifest를 `routecontract-core`로 옮기고 exact 5.5.3 thin adapter 및
+> exact 5.5.2 adapter를 분리하는 중이지만, 로컬 module·fixture·test가 존재한다는 사실은
+> `0.2.0` Release나 5.5.2 지원을 뜻하지 않습니다.
+
 [2분 54초 시연 영상 보기](https://www.youtube.com/watch?v=pcgvNNxd1mM)
 
 ![같은 업무 결과에서 승인본과 candidate의 관측 실행 시도 및 data-source alias가 1에서 2로 달라져 RCM201과 RCM202가 발생한 실제 MySQL 검증](submission/assets/baseline-candidate.png)
 
 ## Quick Start
+
+아래 block은 현재 source tree에서 build하지 않고 새 디렉터리에 exact `v0.1.2` tag를 clone해
+그 tag의 공개 제품을 실행합니다. `source_dir`를 현재 `0.2.0` 작업 checkout으로 바꾸지 마세요.
 
 필수 조건은 Git, Java 17, 실행 중인 Docker daemon, Bash/POSIX 도구와 실행 가능한 Gradle
 Wrapper입니다. 최초 실행은 공개 tag, Gradle·Maven Central 의존성과 로컬에 없는
@@ -159,8 +170,9 @@ coordinate에 payload 4개와 SHA-1·SHA-256 sidecar 8개가 생깁니다. commi
 삭제하거나 재사용하지 마세요.
 
 중요: 불변 `v0.1.2` Release 본문과 해당 tag에 포함된 README는 아직 `v0.1.0` 온보딩
-경로를 가리킵니다. 지금 보고 있는 `main` 문서와 가이드는 `v0.1.2` 자산을 소비하기 위한
-release 이후 bridge이며, `v0.1.2` 자체가 완결된 불변 온보딩 Release라는 뜻이 아닙니다.
+경로를 가리킵니다. 이 README의 `v0.1.2` 온보딩 section과 가이드는 그 자산을 소비하기 위한
+release 이후 bridge이며, 현재 source tree의 미출시 `0.2.0` artifact를 소비하는 경로가
+아닙니다. 또한 `v0.1.2` 자체가 완결된 불변 온보딩 Release라는 뜻도 아닙니다.
 tag 이후에 추가된 각 helper와 verifier는 해당 구현의 exact bridge-commit permalink와 문서에
 적힌 SHA-256에 함께 고정되어 있습니다.
 
@@ -226,9 +238,10 @@ ManifestAssertions.assertMatched(result); // mismatch이면 stable RCM code와 �
 candidate 기록은 approved 파일을 자동으로 덮어쓰지 않습니다. 변경이 의도된 경우 사람이 diff를 검토한 뒤 명시적으로 승인본을 교체해야 합니다.
 
 실제 MySQL equality 기준과 같은 결과를 반환하는 `BETWEEN` candidate의 canonical JSON 및
-검증기 출력은 [examples/manifests](examples/manifests/README.md)에 있습니다. 통합 테스트가
-매번 이 파일들을 다시 생성해 byte-for-byte 일치와 stable RCM code를 동반한 결정적
-structural manifest diff를 확인합니다.
+검증기 출력은 [examples/manifests](examples/manifests/README.md)에 있습니다. 통합 테스트는
+exact ShardingSphere 5.5.3 runtime identity를 포함한 schema 2 파일을 다시 생성해 byte-for-byte
+일치와 stable RCM code를 동반한 결정적 structural manifest diff를 확인합니다. 이름에 버전이
+없는 schema 1 파일은 v0.1 역사 증거로 그대로 보존하며 decode/encode 호환성도 함께 검증합니다.
 
 <details>
 <summary>alias 신뢰 경계와 strict/budgetOnly 정책 상세</summary>
@@ -267,7 +280,7 @@ MySQL fixture에서는 fingerprint와 parameter type 순서만 달라졌습니�
 | 격리된 소비자 빌드 | 같은 checkout에서 임시 Maven 저장소에 생성한 JAR와 POM만 사용하는 standalone consumer에서 SPI 자동 발견과 MySQL 실행 통과. 외부 채택 증거는 아님 |
 | 격리된 Maven 3.9.14 pilot | Java 17 기본 셀과 명시적 Java 21 호환성 셀에서 inactive profile, fresh cache, SHA-256 음성 검증, exact ShardingSphere-JDBC 5.5.3/MySQL 8.4.11 candidate와 mechanical match를 같은 checkout에서 검증. 사람 승인·외부 사용자·adoption 증거는 아님 |
 
-전체 52-test 검증:
+현재 source-tree 검증 명령:
 
 ```bash
 ./gradlew --no-daemon --no-build-cache clean check assemble validateOfficialCycloneDxSbom
@@ -276,7 +289,16 @@ MySQL fixture에서는 fingerprint와 parameter type 순서만 달라졌습니�
 ./scripts/verify-maven-pilot.sh --java 21
 ```
 
-첫 명령은 Java 17, ShardingSphere-JDBC 5.5.3, digest로 고정한 MySQL 8.4.11 Testcontainers 환경에서 core 및 MySQL corpus 52개 테스트를 실행하고 JAR·Javadoc·SBOM을 생성합니다. 두 번째 명령은 별도 소비자 테스트 1개를 실행합니다. 세 번째와 네 번째 명령은 exact Apache Maven 3.9.14가 필요하며 동일한 격리 profile-off/checksum/candidate 경로를 각각 Java 17 기본값과 Java 21 runtime·classfile-major-65 모드로 검증합니다. Java 21 셀은 immutable v0.1.2와 exact ShardingSphere-JDBC 5.5.3/MySQL 8.4.11의 same-checkout 호환성 증거이며 외부 assisted runner·starter의 Java 17 경계를 넓히지 않습니다. 모두 Docker가 필요합니다.
+첫 명령은 현재 checkout에 구성된 unit·real-MySQL·구조 test와 SBOM validation을 실행하고
+JAR·Javadoc·SBOM을 생성합니다. `0.2.0` 분리 작업 중에는 suite가 바뀌므로 README가 현재
+test count를 고정하지 않습니다. immutable `v0.1.2` tag의 release-evidence
+`test-summary.txt`가 기록한 결과는 그 tag에서 52개 정상 테스트이며, 현재 checkout이나
+`0.2.0` 지원 증거로 재사용하지 않습니다. 두 번째 명령은 현재 checkout의 별도 소비자
+검증입니다. 세 번째와 네 번째 명령은 exact Apache Maven 3.9.14가 필요하며 현재 tree의
+post-release pilot/bridge가 immutable `v0.1.2` 자산을 Java 17 기본값과 Java 21
+runtime·classfile-major-65 모드에서 소비하는 경로를 검증합니다. 이는 미출시 `0.2.0`
+artifact, 외부 사용자 또는 adoption 증거가 아니며 외부 assisted runner·starter의 Java 17
+경계를 넓히지 않습니다. 모두 Docker가 필요합니다.
 
 ## 기존 도구와의 정확한 차이
 
@@ -293,20 +315,23 @@ datasource-proxy도 충분히 신뢰할 수 있는 직접 구현 대안입니다
 
 ## 코드·공개 증거 경계
 
-코드 지도(대표 경계이며, 디렉터리 전체를 한 역할로 분류하지 않습니다):
+현재 미출시 `0.2.0` source-tree 코드 지도(대표 경계이며, 디렉터리 전체를 한 역할로
+분류하지 않습니다):
 
 | 경계 | 대표 경로 | 역할 |
 |---|---|---|
-| 배포 라이브러리 | `routecontract-shardingsphere-5.5/src/main` | Release JAR에 들어가는 consumer API와 5.5.3 SPI provider이다. |
-| 공개 검증·예제 | `routecontract-shardingsphere-5.5/src/test`, `examples/` | unit·real-MySQL·standalone-consumer fixture이며 배포 JAR에 포함되지 않는다. |
+| 공통 core 작업 | `routecontract-core/src/main` | public API·capture/collector·manifest와 내부 adapter bridge를 분리하는 미출시 `0.2.0` 코드이다. |
+| exact 5.5.3 adapter 작업 | `routecontract-shardingsphere-5.5/src/main` | core를 사용하는 5.5.3 SPI provider를 분리하는 미출시 thin adapter이다. |
+| exact 5.5.2 adapter 작업 | `routecontract-shardingsphere-5.5.2/src/main` | version-specific 검증 gate가 모두 끝나기 전에는 지원되지 않는 미출시 thin adapter이다. |
+| 공개 검증·예제 | `routecontract-core/src/test`, `routecontract-shardingsphere-5.5/src/test`, `routecontract-shardingsphere-5.5.2/src/test`, `examples/` | unit·구조·real-MySQL·consumer fixture이며 존재 자체가 Release나 지원 증거는 아니다. |
 | 혼합 자동화 | `scripts/`, `.github/workflows/`, `security/`, `gradle/` | `scripts/`에는 사용자용 Quick Start·Release-asset 설치 도구와 maintainer용 release·공급망·시연 검증 도구가 함께 있다. 모두 consumer runtime API는 아니다. |
 | 검증·제출 보조 | `submission/`, `scripts/video-demo-session.sh`, `docs/evidence-matrix.md` | 증거 추적·결과보고서·재현 패키징 자료이며 배포 제품이 아니다. |
 
-이 소스는 안정판 대상 project version `0.1.2`과 대응 tag 이름 `v0.1.2`을 선언합니다.
-이 버전 문자열이나 checkout만으로 annotated tag, 공개·불변 non-prerelease
-Release, 동일 revision의 release-evidence run 또는 외부 사용자 결과를 증명하지는 않습니다.
-공개 자산은 [릴리스 절차](RELEASING.md)에 따라 tag·Release·evidence run의 revision 일치와
-게시 후 검증을 모두 확인한 뒤 사용합니다.
+현재 source tree는 미출시 project version `0.2.0`을 선언합니다. 이 version 문자열, module,
+fixture 또는 checkout만으로 `v0.2.0` tag, 공개·불변 Release, same-revision release-evidence,
+5.5.2 지원 또는 외부 사용자 결과를 증명하지 않습니다. 공개 안정판 `v0.1.2`는 이 분리 전
+all-in-one layout이며 불변입니다. 공개 자산은 [릴리스 절차](RELEASING.md)에 따라
+tag·Release·evidence-run revision 일치와 게시 후 검증을 모두 확인한 뒤 사용합니다.
 
 <details>
 <summary>역사적 RC와 공개 CI의 정확한 증거 경계</summary>
@@ -404,7 +429,8 @@ MySQL 시나리오를 실행합니다. 이 명령은 예상된 위반을 검증�
 
 실제 MySQL에서 canonical 파일을 재생성·대조한 다음 같은 승인본으로 build가 실패하는 전체
 흐름을 한 명령에서 보려면 아래 스크립트를 사용합니다. 앞 단계가 모두 정상이어도 마지막
-계약 assertion 때문에 의도적으로 종료 코드 `1`을 반환합니다.
+계약 assertion 때문에 의도적으로 종료 코드 `1`을 반환합니다. 마지막 non-zero fixture는
+보존된 schema 1 pair를 읽어 이전 승인본 호환성까지 확인합니다.
 
 ```bash
 ./scripts/demo-end-to-end-ci-failure.sh
@@ -465,11 +491,13 @@ manifest match를 통과시키지 않습니다.
 게시를 주장하지 않습니다. 이 좌표를 기본 dependency graph에 바로 붙이지 말고
 [첫 실제 통합 가이드](docs/first-integration.md)의 격리된 pilot에서만 사용하세요. 그 pilot은
 기존 ShardingSphere-JDBC 5.5.3 fixture의 실제 graph를 재사용하고 전체 runtime classpath를
-검토하게 합니다.
+검토하게 합니다. 이 `0.1.2` JAR은 public API·collector·manifest·5.5.3 provider를 함께
+담은 all-in-one artifact입니다. 현재 source tree의 `routecontract-core` + exact adapter
+구조를 tagged `v0.1.2` 설치나 POM에 투영하지 마세요.
 
-RouteContract build는 dependency embedding을 구성하지 않으며, 모듈의 `compileOnly`
+tagged `v0.1.2` build는 dependency embedding을 구성하지 않으며, all-in-one 모듈의 `compileOnly`
 ShardingSphere/BOM 선언은 공개 POM에서 소비자 버전 제약으로 전달되지 않습니다. 검증된
-Gradle test/runtime graph에서는 sealed fixture에 따라 ShardingSphere 5.5.3 호환성 그래프의
+`v0.1.2` Gradle test/runtime graph에서는 sealed fixture에 따라 ShardingSphere 5.5.3 호환성 그래프의
 Jackson 2 core·databind·datatype-jdk8·datatype-jsr310 모듈이 2.18.9로 해석되고,
 Calcite Core·linq4j는 1.42.0으로 해석됩니다. JTS Core 1.19.0은 유지되지만 JTS I/O
 Common은 graph에 없어야 합니다. 단, Jackson
@@ -501,10 +529,14 @@ capability, 최소화한 synthetic fixture를
 [Issue form](https://github.com/ym0506/routecontract/issues/new/choose)에 기록합니다. 구현 변경은
 failing test, 실제 MySQL 검증, 명시적인 지원 한계를 함께 제시해야 합니다.
 
-새 adapter나 reporter는 공개 수요, version-specific fixture, real-MySQL CI를 갖춘 뒤 검토합니다. 현재 v0.1 범위는 정확히 5.5.3으로 유지합니다. 전체 절차는 [기여 가이드](CONTRIBUTING.md)에 있습니다.
+새 adapter나 reporter는 공개 수요, version-specific fixture, real-MySQL CI를 갖춘 뒤
+검토합니다. 공개 v0.1 범위는 정확히 5.5.3으로 유지됩니다. 현재 source tree의 미출시
+5.5.2 adapter 작업은 해당 gate를 통과하기 전까지 지원 범위를 넓히지 않습니다. 전체 절차는
+[기여 가이드](CONTRIBUTING.md)에 있습니다.
 
 ## 문서와 재현 경로
 
+- [실서비스 코드베이스의 CI 도입·운영 runbook](docs/production-readiness.md)
 - [기술 명세](docs/specification.md)
 - [아키텍처와 신뢰 경계](docs/architecture.md)
 - [경쟁 도구 분석](docs/competitive-analysis.md)

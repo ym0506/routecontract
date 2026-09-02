@@ -23,13 +23,34 @@ OFFICIAL_LOCK = REPOSITORY_ROOT / "security" / "cyclonedx-cli.lock.json"
 GENERATED_INPUTS = (
     "build/reports/verified-sbom/aggregate/bom.json",
     "build/reports/verified-sbom/aggregate/bom.xml",
+    "build/reports/verified-sbom/routecontract-core/bom.json",
+    "build/reports/verified-sbom/routecontract-core/bom.xml",
+    "routecontract-core/build/publications/mavenJava/pom-default.xml",
     "build/reports/verified-sbom/routecontract-shardingsphere-5.5/bom.json",
     "build/reports/verified-sbom/routecontract-shardingsphere-5.5/bom.xml",
+    "build/reports/verified-sbom/routecontract-shardingsphere-5.5.2/bom.json",
+    "build/reports/verified-sbom/routecontract-shardingsphere-5.5.2/bom.xml",
     "build/reports/verified-sbom/mysql-example/bom.json",
     "build/reports/verified-sbom/mysql-example/bom.xml",
+    "build/reports/verified-sbom/mysql-5.5.2-example/bom.json",
+    "build/reports/verified-sbom/mysql-5.5.2-example/bom.xml",
     "routecontract-shardingsphere-5.5/build/publications/mavenJava/pom-default.xml",
+    "routecontract-shardingsphere-5.5.2/build/publications/mavenJava/pom-default.xml",
 )
-OFFICIAL_SBOMS = GENERATED_INPUTS[:6]
+OFFICIAL_SBOMS = (
+    "build/reports/verified-sbom/aggregate/bom.json",
+    "build/reports/verified-sbom/aggregate/bom.xml",
+    "build/reports/verified-sbom/routecontract-core/bom.json",
+    "build/reports/verified-sbom/routecontract-core/bom.xml",
+    "build/reports/verified-sbom/routecontract-shardingsphere-5.5/bom.json",
+    "build/reports/verified-sbom/routecontract-shardingsphere-5.5/bom.xml",
+    "build/reports/verified-sbom/routecontract-shardingsphere-5.5.2/bom.json",
+    "build/reports/verified-sbom/routecontract-shardingsphere-5.5.2/bom.xml",
+    "build/reports/verified-sbom/mysql-example/bom.json",
+    "build/reports/verified-sbom/mysql-example/bom.xml",
+    "build/reports/verified-sbom/mysql-5.5.2-example/bom.json",
+    "build/reports/verified-sbom/mysql-5.5.2-example/bom.xml",
+)
 RAW_SCAN = "build/reports/security/osv-raw.json"
 EVIDENCE = "build/reports/security/supply-chain-evidence.json"
 KNOWN_FINDING = "GHSA-TEST-UNSUPPRESSED"
@@ -57,11 +78,19 @@ while IFS= read -r generated_input; do
 done <<'EOF'
 build/reports/verified-sbom/aggregate/bom.json
 build/reports/verified-sbom/aggregate/bom.xml
+build/reports/verified-sbom/routecontract-core/bom.json
+build/reports/verified-sbom/routecontract-core/bom.xml
+routecontract-core/build/publications/mavenJava/pom-default.xml
 build/reports/verified-sbom/routecontract-shardingsphere-5.5/bom.json
 build/reports/verified-sbom/routecontract-shardingsphere-5.5/bom.xml
+build/reports/verified-sbom/routecontract-shardingsphere-5.5.2/bom.json
+build/reports/verified-sbom/routecontract-shardingsphere-5.5.2/bom.xml
 build/reports/verified-sbom/mysql-example/bom.json
 build/reports/verified-sbom/mysql-example/bom.xml
+build/reports/verified-sbom/mysql-5.5.2-example/bom.json
+build/reports/verified-sbom/mysql-5.5.2-example/bom.xml
 routecontract-shardingsphere-5.5/build/publications/mavenJava/pom-default.xml
+routecontract-shardingsphere-5.5.2/build/publications/mavenJava/pom-default.xml
 EOF
 if [[ "${TEST_GRADLE_MUTATE_TRACKED:-0}" == "1" ]]; then
   printf 'mutated by fake Gradle\\n' >> tracked-marker.txt
@@ -77,14 +106,17 @@ import sys
 
 repository_root = Path(__file__).resolve().parents[1]
 arguments = sys.argv[1:]
-if len(arguments) != 14 or arguments[0] != "--input-root":
+if len(arguments) != 26 or arguments[0] != "--input-root":
     raise SystemExit("fake official validator: unexpected arguments")
 input_root = Path(arguments[1])
 expected_arguments = [
     "--input-root", str(input_root),
     "--pair", "aggregate", "aggregate-bom.json", "aggregate-bom.xml",
-    "--pair", "published", "published-bom.json", "published-bom.xml",
-    "--pair", "example", "example-bom.json", "example-bom.xml",
+    "--pair", "core", "core-bom.json", "core-bom.xml",
+    "--pair", "adapter553", "published-bom.json", "published-bom.xml",
+    "--pair", "adapter552", "adapter552-bom.json", "adapter552-bom.xml",
+    "--pair", "mysql553", "example-bom.json", "example-bom.xml",
+    "--pair", "mysql552", "mysql552-bom.json", "mysql552-bom.xml",
 ]
 if arguments != expected_arguments:
     raise SystemExit("fake official validator: pair contract drift")
@@ -95,8 +127,11 @@ if not input_root.name.startswith("audited-inputs."):
 
 audited_names = (
     "aggregate-bom.json", "aggregate-bom.xml",
+    "core-bom.json", "core-bom.xml",
     "published-bom.json", "published-bom.xml",
+    "adapter552-bom.json", "adapter552-bom.xml",
     "example-bom.json", "example-bom.xml",
+    "mysql552-bom.json", "mysql552-bom.xml",
 )
 original_paths = {OFFICIAL_SBOMS!r}
 
@@ -128,7 +163,7 @@ Path(os.environ["TEST_OFFICIAL_LOG"]).write_text(
     json.dumps(list(audited_names)) + "\\n", encoding="utf-8"
 )
 with Path(os.environ["TEST_EVENT_LOG"]).open("a", encoding="utf-8") as stream:
-    stream.write("official-six\\n")
+    stream.write("official-twelve\\n")
 if os.environ.get("TEST_OFFICIAL_FAIL") == "1":
     raise SystemExit(79)
 '''
@@ -158,12 +193,22 @@ elif command == "inventory":
     originals = {{
         "--sbom": "build/reports/verified-sbom/aggregate/bom.json",
         "--sbom-xml": "build/reports/verified-sbom/aggregate/bom.xml",
+        "--core-sbom": "build/reports/verified-sbom/routecontract-core/bom.json",
+        "--core-sbom-xml": "build/reports/verified-sbom/routecontract-core/bom.xml",
+        "--core-pom": "routecontract-core/build/publications/mavenJava/pom-default.xml",
+        "--core-lock": "routecontract-core/gradle.lockfile",
         "--published-sbom": "build/reports/verified-sbom/routecontract-shardingsphere-5.5/bom.json",
         "--published-sbom-xml": "build/reports/verified-sbom/routecontract-shardingsphere-5.5/bom.xml",
+        "--adapter552-sbom": "build/reports/verified-sbom/routecontract-shardingsphere-5.5.2/bom.json",
+        "--adapter552-sbom-xml": "build/reports/verified-sbom/routecontract-shardingsphere-5.5.2/bom.xml",
         "--example-sbom": "build/reports/verified-sbom/mysql-example/bom.json",
         "--example-sbom-xml": "build/reports/verified-sbom/mysql-example/bom.xml",
+        "--mysql552-sbom": "build/reports/verified-sbom/mysql-5.5.2-example/bom.json",
+        "--mysql552-sbom-xml": "build/reports/verified-sbom/mysql-5.5.2-example/bom.xml",
         "--published-pom": "routecontract-shardingsphere-5.5/build/publications/mavenJava/pom-default.xml",
         "--published-lock": "routecontract-shardingsphere-5.5/gradle.lockfile",
+        "--adapter552-pom": "routecontract-shardingsphere-5.5.2/build/publications/mavenJava/pom-default.xml",
+        "--adapter552-lock": "routecontract-shardingsphere-5.5.2/gradle.lockfile",
     }}
     audited_parents = set()
     for flag, original in originals.items():
@@ -301,13 +346,18 @@ class FinalSupplyChainRunnerTest(unittest.TestCase):
         (self.repository / "tracked-marker.txt").write_text(
             "original tracked content\n", encoding="utf-8"
         )
-        published_module = self.repository / "routecontract-shardingsphere-5.5"
-        published_module.mkdir()
-        (published_module / "gradle.lockfile").write_text(
-            "fixture:1.0=compileClasspath,runtimeClasspath\n"
-            "empty=annotationProcessor,testAnnotationProcessor\n",
-            encoding="utf-8",
-        )
+        for module_name in (
+            "routecontract-core",
+            "routecontract-shardingsphere-5.5",
+            "routecontract-shardingsphere-5.5.2",
+        ):
+            module = self.repository / module_name
+            module.mkdir()
+            (module / "gradle.lockfile").write_text(
+                "fixture:1.0=compileClasspath,runtimeClasspath\n"
+                "empty=annotationProcessor,testAnnotationProcessor\n",
+                encoding="utf-8",
+            )
         gradle_wrapper = self.repository / "gradlew"
         gradle_wrapper.write_text(FAKE_GRADLE, encoding="utf-8")
         gradle_wrapper.chmod(0o755)
@@ -581,7 +631,7 @@ class FinalSupplyChainRunnerTest(unittest.TestCase):
                 self.assertFalse(self.gradle_log.exists())
                 path.unlink()
 
-    def test_regenerates_all_seven_inputs_without_cleaning_unrelated_build_files(self) -> None:
+    def test_regenerates_all_fifteen_inputs_without_cleaning_unrelated_build_files(self) -> None:
         self.write_stale_generated_inputs()
         root_sentinel = self.repository / "build/unrelated/root-sentinel.bin"
         module_sentinel = (
@@ -613,7 +663,9 @@ class FinalSupplyChainRunnerTest(unittest.TestCase):
                 "--no-build-cache",
                 "--rerun-tasks",
                 "prepareVerifiedSbom",
+                ":routecontract-core:generatePomFileForMavenJavaPublication",
                 ":routecontract-shardingsphere-5.5:generatePomFileForMavenJavaPublication",
+                ":routecontract-shardingsphere-5.5.2:generatePomFileForMavenJavaPublication",
             ],
             arguments,
         )
@@ -635,7 +687,7 @@ class FinalSupplyChainRunnerTest(unittest.TestCase):
             self.assertFalse(self.generated_path(relative).exists())
         self.assert_no_final_output()
 
-    def test_audited_copies_receive_official_six_before_inventory_and_scanner(self) -> None:
+    def test_audited_copies_receive_official_twelve_before_inventory_and_scanner(self) -> None:
         self.prepare_successful_pipeline()
 
         result = self.run_runner()
@@ -644,13 +696,16 @@ class FinalSupplyChainRunnerTest(unittest.TestCase):
         self.assertEqual(
             [
                 "aggregate-bom.json", "aggregate-bom.xml",
+                "core-bom.json", "core-bom.xml",
                 "published-bom.json", "published-bom.xml",
+                "adapter552-bom.json", "adapter552-bom.xml",
                 "example-bom.json", "example-bom.xml",
+                "mysql552-bom.json", "mysql552-bom.xml",
             ],
             json.loads(self.official_log.read_text(encoding="utf-8")),
         )
         self.assertEqual(
-            ["generation", "official-six", "inventory-from-audited-copies", "scanner"],
+            ["generation", "official-twelve", "inventory-from-audited-copies", "scanner"],
             self.event_log.read_text(encoding="utf-8").splitlines(),
         )
 
@@ -661,13 +716,16 @@ class FinalSupplyChainRunnerTest(unittest.TestCase):
         self.assertEqual(
             [
                 "aggregate-bom.json", "aggregate-bom.xml",
+                "core-bom.json", "core-bom.xml",
                 "published-bom.json", "published-bom.xml",
+                "adapter552-bom.json", "adapter552-bom.xml",
                 "example-bom.json", "example-bom.xml",
+                "mysql552-bom.json", "mysql552-bom.xml",
             ],
             json.loads(self.official_log.read_text(encoding="utf-8")),
         )
         self.assertEqual(
-            ["generation", "official-six"],
+            ["generation", "official-twelve"],
             self.event_log.read_text(encoding="utf-8").splitlines(),
         )
         self.assertFalse(self.scanner_log.exists())
@@ -698,7 +756,7 @@ class FinalSupplyChainRunnerTest(unittest.TestCase):
                     result.stderr,
                 )
                 self.assertEqual(
-                    ["generation", "official-six"],
+                    ["generation", "official-twelve"],
                     self.event_log.read_text(encoding="utf-8").splitlines(),
                 )
                 self.assertFalse(self.scanner_log.exists())

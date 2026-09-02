@@ -1,6 +1,6 @@
 package io.github.ym0506.routecontract;
 
-import io.github.ym0506.routecontract.internal.RouteContractSqlExecutionHook;
+import io.github.ym0506.routecontract.shardingsphere553.internal.RouteContract553SqlExecutionHook;
 import org.junit.jupiter.api.Test;
 
 import java.util.AbstractList;
@@ -19,7 +19,7 @@ class RouteContractTest {
         SensitiveParameter secret = new SensitiveParameter();
 
         RouteSnapshot snapshot = RouteContract.capture("privacy", () -> {
-            RouteContractSqlExecutionHook hook = new RouteContractSqlExecutionHook();
+            RouteContract553SqlExecutionHook hook = new RouteContract553SqlExecutionHook();
             hook.start(
                     "ds_1",
                     "SELECT * FROM t_order_1 WHERE user_id = ? AND status = 'PRIVATE_LITERAL'",
@@ -94,7 +94,7 @@ class RouteContractTest {
     @Test
     void missingTerminalCallbackMakesCaptureIncomplete() throws Exception {
         RouteSnapshot snapshot = RouteContract.capture("incomplete", () -> {
-            RouteContractSqlExecutionHook hook = new RouteContractSqlExecutionHook();
+            RouteContract553SqlExecutionHook hook = new RouteContract553SqlExecutionHook();
             hook.start("ds_0", "SELECT 1", List.of(), null, true);
         });
 
@@ -107,7 +107,7 @@ class RouteContractTest {
     @Test
     void failureStoresOnlyExceptionType() throws Exception {
         RouteSnapshot snapshot = RouteContract.capture("failed", () -> {
-            RouteContractSqlExecutionHook hook = new RouteContractSqlExecutionHook();
+            RouteContract553SqlExecutionHook hook = new RouteContract553SqlExecutionHook();
             hook.start("ds_0", "UPDATE t_order_0 SET status = ?", List.of("PAID"), null, false);
             hook.finishFailure(new IllegalStateException("do-not-store-this-message"));
         });
@@ -166,7 +166,7 @@ class RouteContractTest {
     @Test
     void hookCollectorFailureIsContainedAndVisibleAsIncomplete() throws Exception {
         RouteSnapshot snapshot = RouteContract.capture("collector-failure", () -> {
-            RouteContractSqlExecutionHook hook = new RouteContractSqlExecutionHook();
+            RouteContract553SqlExecutionHook hook = new RouteContract553SqlExecutionHook();
             hook.start("ds_0", "SELECT ?", new ExplodingList(), null, true);
             hook.finishSuccess();
         });
@@ -179,7 +179,7 @@ class RouteContractTest {
     @Test
     void nullHookParametersCannotProduceACompleteCapture() throws Exception {
         RouteSnapshot snapshot = RouteContract.capture("null-parameters", () -> {
-            RouteContractSqlExecutionHook hook = new RouteContractSqlExecutionHook();
+            RouteContract553SqlExecutionHook hook = new RouteContract553SqlExecutionHook();
             hook.start("ds_0", "SELECT 1", null, null, true);
             hook.finishSuccess();
         });
@@ -221,7 +221,7 @@ class RouteContractTest {
     @Test
     void orphanFinishIsContainedAndReported() throws Exception {
         RouteSnapshot snapshot = RouteContract.capture("orphan-finish", () ->
-                new RouteContractSqlExecutionHook().finishSuccess());
+                new RouteContract553SqlExecutionHook().finishSuccess());
 
         assertEquals(CaptureStatus.INCOMPLETE, snapshot.status());
         assertEquals(0, snapshot.observedPhysicalAttemptCount());
@@ -233,7 +233,7 @@ class RouteContractTest {
     @Test
     void duplicateFinishIsContainedAndReportedWithoutCorruptingCounts() throws Exception {
         RouteSnapshot snapshot = RouteContract.capture("duplicate-finish", () -> {
-            RouteContractSqlExecutionHook hook = new RouteContractSqlExecutionHook();
+            RouteContract553SqlExecutionHook hook = new RouteContract553SqlExecutionHook();
             hook.start("ds_0", "SELECT 1", List.of(), null, true);
             hook.finishSuccess();
             hook.finishFailure(new IllegalStateException("ignored"));
@@ -408,7 +408,7 @@ class RouteContractTest {
     }
 
     private static void callbackReturnedHook(final String dataSourceName, final boolean trunk) {
-        RouteContractSqlExecutionHook hook = new RouteContractSqlExecutionHook();
+        RouteContract553SqlExecutionHook hook = new RouteContract553SqlExecutionHook();
         hook.start(dataSourceName, "SELECT * FROM t_order WHERE user_id = ?", List.of(3L), null, trunk);
         hook.finishSuccess();
     }

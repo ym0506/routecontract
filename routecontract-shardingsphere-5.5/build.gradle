@@ -1,68 +1,37 @@
-import java.nio.file.Files
-import java.nio.file.LinkOption
-
 plugins {
     id 'java-library'
     id 'maven-publish'
-    id 'signing'
 }
 
 description = 'Operation-scoped contracts over physical JDBC execution attempts reported by Apache ShardingSphere-JDBC 5.5.3 SQLExecutionHook'
 
-def centralStagingDirectory = providers.gradleProperty('routecontractCentralStagingDirectory')
-def centralSigningValue = providers.gradleProperty('routecontractCentralSigning').orNull
-if (centralSigningValue != null && !(centralSigningValue in ['true', 'false'])) {
-    throw new GradleException('routecontractCentralSigning must be exactly true or false')
-}
-if (centralStagingDirectory.isPresent() != (centralSigningValue != null)) {
-    throw new GradleException('Central staging directory and signing choice must be provided together')
-}
-
-def centralSigningEnabled = centralSigningValue == 'true'
-def centralStagingPath = null
-if (centralStagingDirectory.isPresent()) {
-    centralStagingPath = new File(centralStagingDirectory.get()).toPath()
-    def stagingParent = centralStagingPath.parent
-    if (!centralStagingPath.isAbsolute()) {
-        throw new GradleException('routecontractCentralStagingDirectory must be an absolute local path')
-    }
-    if (stagingParent == null
-            || !Files.isDirectory(stagingParent, LinkOption.NOFOLLOW_LINKS)
-            || Files.isSymbolicLink(stagingParent)) {
-        throw new GradleException('Central staging parent must be an existing non-symlink directory')
-    }
-    if (Files.exists(centralStagingPath, LinkOption.NOFOLLOW_LINKS)
-            || Files.isSymbolicLink(centralStagingPath)) {
-        throw new GradleException('Central staging repository must be a new absent path')
-    }
-}
-
-if (centralSigningEnabled) {
-    def stableVersion = (project.version.toString() =~ /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/)
-    def stableParts = stableVersion.matches()
-            ? [stableVersion.group(1), stableVersion.group(2), stableVersion.group(3)]
-                    .collect { new BigInteger(it) }
-            : null
-    if (stableParts == null || (stableParts[0] == 0
-            && (stableParts[1] == 0 || (stableParts[1] == 1 && stableParts[2] < 1)))) {
-        throw new GradleException('signed Central staging requires a stable SemVer of at least 0.1.1')
-    }
-
-    def selector = providers.gradleProperty('signing.gnupg.keyName').orNull
-    if (selector == null || !(selector ==~ /[0-9A-F]{40}!/)) {
-        throw new GradleException('signed Central staging requires signing.gnupg.keyName as FULL_UPPERCASE_PRIMARY_FINGERPRINT!')
-    }
-}
-
 dependencies {
+    api project(':routecontract-core')
+
     // ShardingSphere 5.5.3 brings the legacy com.fasterxml.jackson 2.x line.
     // Align that compatibility graph to the patched family without changing
     // RouteContract's separate tools.jackson 3.x runtime dependency.
-    compileOnly platform("com.fasterxml.jackson:jackson-bom:${shardingSphereJacksonVersion}")
-    compileOnly "org.apache.shardingsphere:shardingsphere-infra-executor:${shardingSphereVersion}"
-    implementation "com.alibaba:transmittable-thread-local:${transmittableThreadLocalVersion}"
-    implementation "tools.jackson.core:jackson-core:${jacksonVersion}"
-
+    implementation platform("com.fasterxml.jackson:jackson-bom:${shardingSphereJacksonVersion}")
+    implementation('org.apache.shardingsphere:shardingsphere-infra-executor') {
+        version {
+            strictly(shardingSphereVersion)
+        }
+        because 'SQLExecutionHook has an exact 5.5.3 binary descriptor'
+    }
+    constraints {
+        implementation('org.apache.shardingsphere:shardingsphere-infra-spi') {
+            version {
+                strictly(shardingSphereVersion)
+            }
+            because 'the runtime-adapter preflight requires the exact 5.5.3 SPI anchor'
+        }
+        implementation('org.apache.shardingsphere:shardingsphere-database-connector-core') {
+            version {
+                strictly(shardingSphereVersion)
+            }
+            because 'the hook method descriptor requires the exact 5.5.3 connection-properties anchor'
+        }
+    }
     testImplementation platform("com.fasterxml.jackson:jackson-bom:${shardingSphereJacksonVersion}")
     testImplementation "org.apache.shardingsphere:shardingsphere-infra-executor:${shardingSphereVersion}"
     testImplementation platform("org.junit:junit-bom:${junitVersion}")
@@ -70,7 +39,31 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+def exclusiveAdapterCapability =
+        'io.github.ym0506.routecontract:routecontract-shardingsphere-hook-adapter:1'
+['apiElements', 'runtimeElements'].each { configurationName ->
+    configurations.named(configurationName) {
+        outgoing.capability("${project.group}:${project.name}:${project.version}")
+        outgoing.capability(exclusiveAdapterCapability)
+    }
+}
+
+def adapterJarFile = tasks.named('jar', Jar).flatMap { it.archiveFile }
+def coreJarFile = project(':routecontract-core').tasks.named('jar', Jar).flatMap { it.archiveFile }
+def adapterPomFile = layout.buildDirectory.file('publications/mavenJava/pom-default.xml')
+def adapterModuleMetadataFile = layout.buildDirectory.file('publications/mavenJava/module.json')
+
 tasks.named('test') {
+    dependsOn tasks.named('jar')
+    dependsOn project(':routecontract-core').tasks.named('jar')
+    dependsOn 'generatePomFileForMavenJavaPublication'
+    dependsOn 'generateMetadataFileForMavenJavaPublication'
+    doFirst {
+        systemProperty 'routecontract.adapterJar', adapterJarFile.get().asFile
+        systemProperty 'routecontract.coreJar', coreJarFile.get().asFile
+        systemProperty 'routecontract.adapterPom', adapterPomFile.get().asFile
+        systemProperty 'routecontract.adapterModuleMetadata', adapterModuleMetadataFile.get().asFile
+    }
     useJUnitPlatform {
         excludeTags 'manifest-ci-failure-demo'
     }
@@ -109,6 +102,10 @@ publishing {
     publications {
         mavenJava(MavenPublication) {
             from components.java
+            // Maven cannot encode Gradle's exclusive hook-slot capability. The audited
+            // consumer-owned Enforcer policy supplies that boundary for Maven consumers.
+            suppressPomMetadataWarningsFor('apiElements')
+            suppressPomMetadataWarningsFor('runtimeElements')
             pom {
                 name = 'RouteContract for Apache ShardingSphere-JDBC 5.5.3'
                 description = project.description
@@ -135,20 +132,5 @@ publishing {
                 }
             }
         }
-    }
-    if (centralStagingDirectory.isPresent()) {
-        repositories {
-            maven {
-                name = 'centralStaging'
-                url = uri(centralStagingPath.toFile())
-            }
-        }
-    }
-}
-
-if (centralSigningEnabled) {
-    signing {
-        useGpgCmd()
-        sign publishing.publications.mavenJava
     }
 }

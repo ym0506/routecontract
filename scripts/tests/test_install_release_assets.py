@@ -1880,8 +1880,11 @@ class InstallReleaseAssetsTest(unittest.TestCase):
             "./scripts/run-final-supply-chain-scan.sh --revision \"${GITHUB_SHA}\"",
             "'supply-chain-evidence.json'",
             'test ! -e "${evidence_dir}/osv-raw.json"',
-            ")\" = '17'",
+            ")\" = '23'",
+            "routecontract-core-cyclonedx.json",
+            "routecontract-shardingsphere-5.5.2-cyclonedx.json",
             "routecontract-mysql-example-cyclonedx.json",
+            "routecontract-mysql-5.5.2-example-cyclonedx.json",
             "scripts/validate-official-cyclonedx.py",
             "docker image ls --digests --no-trunc --format "
             "'{{.Repository}}|{{.Digest}}|{{.ID}}'",
@@ -1893,6 +1896,7 @@ class InstallReleaseAssetsTest(unittest.TestCase):
             '"\\"(mysql|docker\\\\.io/library/mysql)'
             '@${expected_mysql_digest}\\""',
             "./scripts/verify-release-assets-consumer.sh \\",
+            "0.2 publication is blocked: the legacy single-artifact Release consumer",
         ):
             self.assertIn(required_contract, workflow)
         consumer = RELEASE_CONSUMER.read_text(encoding="utf-8")

@@ -612,8 +612,14 @@ class AssistedMavenPilotWrapperTest(unittest.TestCase):
             ), mock.patch.object(
                 self.module, "PROCESS_SIGNAL_GRACE_SECONDS", 0.1
             ):
+                # A finished process group's numeric PGID can be reused before the
+                # cleanup probe. macOS then reports EPERM if the replacement group
+                # is not controllable; that is a distinct but equally fail-closed
+                # outcome and must never be treated as verifier success.
                 with self.assertRaisesRegex(
-                    self.module.AssistedPilotError, "descendant processes"
+                    self.module.AssistedPilotError,
+                    "(?:descendant processes|unable to control the external "
+                    "verifier process group)",
                 ):
                     self.module._run_verifier(
                         invocation,
@@ -817,6 +823,18 @@ class AssistedMavenPilotWrapperTest(unittest.TestCase):
         with mock.patch.object(self.module.os, "killpg") as killpg:
             state.attach(12345)
         killpg.assert_called_once_with(12345, signal.SIGKILL)
+
+    def test_process_group_permission_error_is_fail_closed(self) -> None:
+        with mock.patch.object(
+            self.module.os, "getpgrp", return_value=54321
+        ), mock.patch.object(
+            self.module.os, "killpg", side_effect=PermissionError
+        ):
+            with self.assertRaisesRegex(
+                self.module.AssistedPilotError,
+                "unable to control the external verifier process group",
+            ):
+                self.module._signal_process_group(12345, 0)
 
     def test_execute_rechecks_replaced_verifier_bundle(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

@@ -1,28 +1,32 @@
-package io.github.ym0506.routecontract.internal;
+package io.github.ym0506.routecontract.shardingsphere552.internal;
 
-import org.apache.shardingsphere.database.connector.core.jdbcurl.parser.ConnectionProperties;
+import io.github.ym0506.routecontract.spi.RouteContractHookBridge;
+import org.apache.shardingsphere.infra.database.core.connector.ConnectionProperties;
 import org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook;
 
 import java.util.List;
 
 /**
- * ShardingSphere 5.5.3 SPI provider that contains RouteContract collector runtime failures.
+ * ShardingSphere 5.5.2 SPI provider that contains RouteContract collector runtime failures.
  *
  * <p>The provider records callback evidence only while a RouteContract scope is active. In the
  * exact supported runtime, {@code finishSuccess} is reported after the wrapped physical
  * {@code executeSQL} call returns. It does not establish completion of the enclosing executor
  * callback or application action, transaction commit, or application-level success.</p>
  */
-public final class RouteContractSqlExecutionHook implements SQLExecutionHook {
+public final class RouteContract552SqlExecutionHook implements SQLExecutionHook {
 
-    // ShardingSphere 5.5.3 creates a fresh non-singleton provider for each physical callback
+    // ShardingSphere 5.5.2 creates a fresh non-singleton provider for each physical callback
     // lifecycle and invokes start/finish on that same instance. Exact-version preflight and
     // integration tests guard this instance-field pairing assumption.
-    private AttemptHandle inFlight = AttemptHandle.noop();
-    private Lifecycle lifecycle = Lifecycle.NEW;
+    private Object inFlight;
+    private Lifecycle lifecycle;
 
-    /** Creates the per-physical-execution SPI provider instance expected by ShardingSphere 5.5.3. */
-    public RouteContractSqlExecutionHook() {
+    /** Creates the per-physical-execution SPI provider instance expected by ShardingSphere 5.5.2. */
+    public RouteContract552SqlExecutionHook() {
+        ShardingSphere552HookConstructionGuard.verify();
+        inFlight = initialNoopAttempt();
+        lifecycle = Lifecycle.NEW;
     }
 
     /** {@inheritDoc} */
@@ -41,10 +45,10 @@ public final class RouteContractSqlExecutionHook implements SQLExecutionHook {
         }
         lifecycle = Lifecycle.STARTED;
         try {
-            inFlight = CaptureRegistry.startAttempt(dataSourceName, sql, parameters, trunkThread);
-        } catch (RuntimeException exception) {
+            inFlight = RouteContractHookBridge.start(dataSourceName, sql, parameters, trunkThread);
+        } catch (RuntimeException | LinkageError exception) {
             recordDiagnostic("RC_HOOK_START_FAILURE");
-            inFlight = AttemptHandle.noop();
+            inFlight = safeNoopAttempt();
         }
     }
 
@@ -55,11 +59,11 @@ public final class RouteContractSqlExecutionHook implements SQLExecutionHook {
             return;
         }
         try {
-            CaptureRegistry.finishCallbackReturned(inFlight);
-        } catch (RuntimeException exception) {
+            RouteContractHookBridge.finishCallbackReturned(inFlight);
+        } catch (RuntimeException | LinkageError exception) {
             recordDiagnostic("RC_HOOK_FINISH_FAILURE");
         } finally {
-            inFlight = AttemptHandle.noop();
+            inFlight = safeNoopAttempt();
         }
     }
 
@@ -70,11 +74,11 @@ public final class RouteContractSqlExecutionHook implements SQLExecutionHook {
             return;
         }
         try {
-            CaptureRegistry.finishFailure(inFlight, cause);
-        } catch (RuntimeException exception) {
+            RouteContractHookBridge.finishFailure(inFlight, cause);
+        } catch (RuntimeException | LinkageError exception) {
             recordDiagnostic("RC_HOOK_FINISH_FAILURE");
         } finally {
-            inFlight = AttemptHandle.noop();
+            inFlight = safeNoopAttempt();
         }
     }
 
@@ -94,9 +98,28 @@ public final class RouteContractSqlExecutionHook implements SQLExecutionHook {
 
     private static void recordDiagnostic(final String errorCode) {
         try {
-            CaptureRegistry.recordCurrentError(errorCode);
-        } catch (RuntimeException ignored) {
+            RouteContractHookBridge.recordDiagnostic(errorCode);
+        } catch (RuntimeException | LinkageError ignored) {
             // A diagnostics-path failure must not alter the JDBC callback result.
+        }
+    }
+
+    private static Object initialNoopAttempt() {
+        try {
+            return RouteContractHookBridge.noopAttempt();
+        } catch (RuntimeException | LinkageError exception) {
+            throw new IllegalStateException(
+                    "RC_ADAPTER_CLASSLOADER_MISMATCH: core bridge initialization failed",
+                    exception);
+        }
+    }
+
+    private static Object safeNoopAttempt() {
+        try {
+            return RouteContractHookBridge.noopAttempt();
+        } catch (RuntimeException | LinkageError exception) {
+            recordDiagnostic("RC_HOOK_NOOP_FAILURE");
+            return null;
         }
     }
 

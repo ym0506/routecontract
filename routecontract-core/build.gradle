@@ -1,0 +1,94 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+
+description = 'Version-neutral RouteContract capture model, collector, and manifest verifier'
+
+dependencies {
+    implementation "com.alibaba:transmittable-thread-local:${transmittableThreadLocalVersion}"
+    implementation "tools.jackson.core:jackson-core:${jacksonVersion}"
+
+    testImplementation platform("org.junit:junit-bom:${junitVersion}")
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+def coreOwnerCapability =
+        'io.github.ym0506.routecontract:routecontract-core-owner:1'
+['apiElements', 'runtimeElements'].each { configurationName ->
+    configurations.named(configurationName) {
+        outgoing.capability("${project.group}:${project.name}:${project.version}")
+        outgoing.capability(coreOwnerCapability)
+    }
+}
+
+def coreJarFile = tasks.named('jar', Jar).flatMap { it.archiveFile }
+def corePomFile = layout.buildDirectory.file('publications/mavenJava/pom-default.xml')
+def coreModuleMetadataFile = layout.buildDirectory.file('publications/mavenJava/module.json')
+
+tasks.named('test') {
+    dependsOn tasks.named('jar')
+    dependsOn 'generatePomFileForMavenJavaPublication'
+    dependsOn 'generateMetadataFileForMavenJavaPublication'
+    doFirst {
+        systemProperty 'routecontract.coreJar', coreJarFile.get().asFile
+        systemProperty 'routecontract.corePom', corePomFile.get().asFile
+        systemProperty 'routecontract.coreModuleMetadata', coreModuleMetadataFile.get().asFile
+    }
+}
+
+jar {
+    manifest {
+        attributes(
+                'Automatic-Module-Name': 'io.github.ym0506.routecontract.core',
+                'Implementation-Title': "${project.group}:${project.name}",
+                'Implementation-Version': project.version.toString())
+    }
+}
+
+tasks.withType(Jar).configureEach {
+    from(rootProject.file('LICENSE')) {
+        into 'META-INF'
+    }
+    from(rootProject.file('NOTICE')) {
+        into 'META-INF'
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            // Maven cannot represent Gradle's exclusive core-owner capability.
+            // Gradle consumers receive that boundary from module metadata.
+            suppressPomMetadataWarningsFor('apiElements')
+            suppressPomMetadataWarningsFor('runtimeElements')
+            pom {
+                name = 'RouteContract core'
+                description = project.description
+                url = 'https://github.com/ym0506/routecontract'
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+                        distribution = 'repo'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:https://github.com/ym0506/routecontract.git'
+                    developerConnection = 'scm:git:ssh://git@github.com/ym0506/routecontract.git'
+                    url = 'https://github.com/ym0506/routecontract'
+                }
+                developers {
+                    developer {
+                        id = 'ym0506'
+                        name = 'ym0506'
+                        email = 'atat9828@naver.com'
+                        url = 'https://github.com/ym0506'
+                    }
+                }
+            }
+        }
+    }
+}

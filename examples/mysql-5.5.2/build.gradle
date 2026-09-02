@@ -1,0 +1,74 @@
+plugins {
+    id 'java'
+}
+
+description = 'Exact ShardingSphere-JDBC 5.5.2 real-MySQL regression fixture for RouteContract'
+
+def exactShardingSphereVersion = '5.5.2'
+
+configurations.configureEach {
+    resolutionStrategy.eachDependency { details ->
+        if (details.requested.group == 'org.apache.shardingsphere'
+                && details.requested.version != exactShardingSphereVersion) {
+            throw new GradleException(
+                    "mysql-5.5.2-example rejects ShardingSphere ${details.requested}; "
+                            + "every requested ShardingSphere module must be exactly "
+                            + exactShardingSphereVersion)
+        }
+    }
+    incoming.afterResolve {
+        Set<String> mismatches = incoming.resolutionResult.allComponents
+                .collect { it.moduleVersion }
+                .findAll { it != null && it.group == 'org.apache.shardingsphere'
+                        && it.version != exactShardingSphereVersion }
+                .collect { "${it.group}:${it.name}:${it.version}" }
+                .toSet()
+        if (!mismatches.isEmpty()) {
+            throw new GradleException(
+                    'mysql-5.5.2-example resolved a mixed ShardingSphere graph: '
+                            + mismatches.toList().sort())
+        }
+    }
+}
+
+dependencies {
+    testImplementation project(':routecontract-shardingsphere-5.5.2')
+    testImplementation platform("com.fasterxml.jackson:jackson-bom:${shardingSphereJacksonVersion}")
+    testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:${exactShardingSphereVersion}") {
+        exclude group: 'org.locationtech.jts.io', module: 'jts-io-common'
+    }
+    testRuntimeOnly "org.apache.shardingsphere:shardingsphere-infra-url-absolutepath:${exactShardingSphereVersion}"
+    testRuntimeOnly "org.apache.shardingsphere:shardingsphere-infra-data-source-pool-hikari:${exactShardingSphereVersion}"
+    testRuntimeOnly "org.apache.shardingsphere:shardingsphere-standalone-mode-repository-jdbc:${exactShardingSphereVersion}"
+    testRuntimeOnly "org.apache.shardingsphere:shardingsphere-sharding-core:${exactShardingSphereVersion}"
+    testRuntimeOnly "org.apache.shardingsphere:shardingsphere-parser-sql-sql92:${exactShardingSphereVersion}"
+    testRuntimeOnly "org.apache.shardingsphere:shardingsphere-parser-sql-mysql:${exactShardingSphereVersion}"
+    testRuntimeOnly "org.apache.shardingsphere:shardingsphere-authority-simple:${exactShardingSphereVersion}"
+
+    testImplementation platform("org.junit:junit-bom:${junitVersion}")
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation "org.testcontainers:junit-jupiter:${testcontainersVersion}"
+    testImplementation "org.testcontainers:mysql:${testcontainersVersion}"
+    testRuntimeOnly "com.mysql:mysql-connector-j:${mysqlConnectorVersion}"
+    testRuntimeOnly "com.zaxxer:HikariCP:${hikariVersion}"
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testRuntimeOnly "org.slf4j:slf4j-simple:${slf4jVersion}"
+
+    constraints {
+        testImplementation("org.apache.commons:commons-compress:${commonsCompressVersion}") {
+            because 'Testcontainers 1.21.4 requests a version with published denial-of-service advisories'
+        }
+    }
+}
+
+tasks.named('test') {
+    maxParallelForks = 1
+    systemProperty 'api.version', '1.44'
+    systemProperty 'routecontract.repositoryRoot', rootProject.projectDir.absolutePath
+    if (project.hasProperty('routecontractGenerate552Evidence')) {
+        systemProperty 'routecontract.generate552Evidence', 'true'
+    }
+    testLogging {
+        showStandardStreams = true
+    }
+}

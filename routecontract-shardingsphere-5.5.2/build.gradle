@@ -1,0 +1,145 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+
+description = 'Operation-scoped contracts over physical JDBC execution attempts reported by Apache ShardingSphere-JDBC 5.5.2 SQLExecutionHook'
+
+def exactShardingSphereVersion = '5.5.2'
+
+configurations {
+    exact552ProbeRuntime {
+        canBeConsumed = false
+        canBeResolved = true
+    }
+    wrong553ProbeRuntime {
+        canBeConsumed = false
+        canBeResolved = true
+    }
+}
+
+dependencies {
+    api project(':routecontract-core')
+
+    implementation platform("com.fasterxml.jackson:jackson-bom:${shardingSphereJacksonVersion}")
+    implementation('org.apache.shardingsphere:shardingsphere-infra-executor') {
+        version {
+            strictly(exactShardingSphereVersion)
+        }
+        because 'SQLExecutionHook has an exact 5.5.2 binary descriptor'
+    }
+    constraints {
+        implementation('org.apache.shardingsphere:shardingsphere-infra-spi') {
+            version {
+                strictly(exactShardingSphereVersion)
+            }
+            because 'the runtime-adapter preflight requires the exact 5.5.2 SPI anchor'
+        }
+        implementation('org.apache.shardingsphere:shardingsphere-infra-database-core') {
+            version {
+                strictly(exactShardingSphereVersion)
+            }
+            because 'the hook method descriptor requires the exact 5.5.2 connection-properties anchor'
+        }
+    }
+
+    testImplementation platform("com.fasterxml.jackson:jackson-bom:${shardingSphereJacksonVersion}")
+    testImplementation "org.apache.shardingsphere:shardingsphere-infra-executor:${exactShardingSphereVersion}"
+    testImplementation platform("org.junit:junit-bom:${junitVersion}")
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    exact552ProbeRuntime "org.apache.shardingsphere:shardingsphere-infra-executor:${exactShardingSphereVersion}"
+    wrong553ProbeRuntime "org.apache.shardingsphere:shardingsphere-infra-executor:5.5.3"
+}
+
+def exclusiveAdapterCapability =
+        'io.github.ym0506.routecontract:routecontract-shardingsphere-hook-adapter:1'
+['apiElements', 'runtimeElements'].each { configurationName ->
+    configurations.named(configurationName) {
+        outgoing.capability("${project.group}:${project.name}:${project.version}")
+        outgoing.capability(exclusiveAdapterCapability)
+        outgoing.capability(
+                "${project.group}:routecontract-shardingsphere-5.5:${project.version}")
+    }
+}
+
+def adapterJarFile = tasks.named('jar', Jar).flatMap { it.archiveFile }
+def adapter553JarFile = project(':routecontract-shardingsphere-5.5')
+        .tasks.named('jar', Jar).flatMap { it.archiveFile }
+def coreJarFile = project(':routecontract-core').tasks.named('jar', Jar).flatMap { it.archiveFile }
+def adapterPomFile = layout.buildDirectory.file('publications/mavenJava/pom-default.xml')
+def adapterModuleMetadataFile = layout.buildDirectory.file('publications/mavenJava/module.json')
+
+tasks.named('test') {
+    dependsOn tasks.named('jar')
+    dependsOn project(':routecontract-core').tasks.named('jar')
+    dependsOn project(':routecontract-shardingsphere-5.5').tasks.named('jar')
+    dependsOn 'generatePomFileForMavenJavaPublication'
+    dependsOn 'generateMetadataFileForMavenJavaPublication'
+    doFirst {
+        systemProperty 'routecontract.adapterJar', adapterJarFile.get().asFile
+        systemProperty 'routecontract.adapter553Jar', adapter553JarFile.get().asFile
+        systemProperty 'routecontract.coreJar', coreJarFile.get().asFile
+        systemProperty 'routecontract.adapterPom', adapterPomFile.get().asFile
+        systemProperty 'routecontract.adapterModuleMetadata', adapterModuleMetadataFile.get().asFile
+        systemProperty 'routecontract.testClasses', sourceSets.test.output.classesDirs.asPath
+        systemProperty 'routecontract.exact552RuntimeClasspath', configurations.exact552ProbeRuntime.asPath
+        systemProperty 'routecontract.wrong553RuntimeClasspath', configurations.wrong553ProbeRuntime.asPath
+    }
+}
+
+jar {
+    manifest {
+        attributes(
+                'Automatic-Module-Name': 'io.github.ym0506.routecontract.shardingsphere552',
+                'Implementation-Title': 'routecontract-shardingsphere-5.5.2',
+                'Implementation-Version': project.version)
+    }
+}
+
+tasks.withType(Jar).configureEach {
+    from(rootProject.file('LICENSE')) {
+        into 'META-INF'
+    }
+    from(rootProject.file('NOTICE')) {
+        into 'META-INF'
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            // Maven cannot encode Gradle's exclusive hook-slot or legacy-GAV capabilities.
+            // The audited consumer-owned Enforcer policy supplies those boundaries.
+            suppressPomMetadataWarningsFor('apiElements')
+            suppressPomMetadataWarningsFor('runtimeElements')
+            pom {
+                name = 'RouteContract for Apache ShardingSphere-JDBC 5.5.2'
+                description = project.description
+                url = 'https://github.com/ym0506/routecontract'
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+                        distribution = 'repo'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:https://github.com/ym0506/routecontract.git'
+                    developerConnection = 'scm:git:ssh://git@github.com/ym0506/routecontract.git'
+                    url = 'https://github.com/ym0506/routecontract'
+                }
+                developers {
+                    developer {
+                        id = 'ym0506'
+                        name = 'ym0506'
+                        email = 'atat9828@naver.com'
+                        url = 'https://github.com/ym0506'
+                    }
+                }
+            }
+        }
+    }
+}

@@ -47,6 +47,8 @@ LICENSE_OVERRIDE_MAVEN_COORDINATES = (
     (MYSQL_CONNECTOR_GROUP, MYSQL_CONNECTOR_NAME, MYSQL_CONNECTOR_VERSION),
 )
 MYSQL_EXAMPLE_NAME = "mysql-example"
+MYSQL_552_EXAMPLE_NAME = "mysql-5.5.2-example"
+MYSQL_EXAMPLE_NAMES = frozenset({MYSQL_EXAMPLE_NAME, MYSQL_552_EXAMPLE_NAME})
 MYSQL_CONTAINER_NAME = "mysql"
 MYSQL_CONTAINER_VERSION = "8.4.11"
 MYSQL_CONTAINER_DIGEST = (
@@ -63,11 +65,18 @@ FORBIDDEN_JTS_IO_NAME = "jts-io-common"
 FORBIDDEN_JTS_IO_PURL_PREFIX = (
     "pkg:maven/org.locationtech.jts.io/jts-io-common@"
 )
-REQUIRED_EXAMPLE_MAVEN_COORDINATES = (
-    ("org.apache.shardingsphere", "shardingsphere-jdbc", "5.5.3"),
-    ("org.apache.calcite", "calcite-core", "1.42.0"),
-    ("org.apache.calcite", "calcite-linq4j", "1.42.0"),
-)
+REQUIRED_EXAMPLE_MAVEN_COORDINATES = {
+    MYSQL_EXAMPLE_NAME: (
+        ("org.apache.shardingsphere", "shardingsphere-jdbc", "5.5.3"),
+        ("org.apache.calcite", "calcite-core", "1.42.0"),
+        ("org.apache.calcite", "calcite-linq4j", "1.42.0"),
+    ),
+    MYSQL_552_EXAMPLE_NAME: (
+        ("org.apache.shardingsphere", "shardingsphere-jdbc", "5.5.2"),
+        ("org.apache.calcite", "calcite-core", "1.38.0"),
+        ("org.apache.calcite", "calcite-linq4j", "1.38.0"),
+    ),
+}
 MYSQL_CONTAINER_DOCUMENTATION_URL = (
     "https://dev.mysql.com/doc/refman/8.4/en/preface.html"
 )
@@ -141,11 +150,61 @@ XML_DECLARATION = re.compile(
     re.IGNORECASE,
 )
 AGGREGATE_ROOT_NAME = "routecontract"
+CORE_ROOT_NAME = "routecontract-core"
 PUBLISHED_ROOT_NAME = "routecontract-shardingsphere-5.5"
+ADAPTER_552_ROOT_NAME = "routecontract-shardingsphere-5.5.2"
 EXPECTED_FIRST_PARTY_CHILDREN = {
-    AGGREGATE_ROOT_NAME: {PUBLISHED_ROOT_NAME, MYSQL_EXAMPLE_NAME},
-    PUBLISHED_ROOT_NAME: set(),
-    MYSQL_EXAMPLE_NAME: {PUBLISHED_ROOT_NAME},
+    AGGREGATE_ROOT_NAME: {
+        CORE_ROOT_NAME,
+        PUBLISHED_ROOT_NAME,
+        ADAPTER_552_ROOT_NAME,
+        MYSQL_EXAMPLE_NAME,
+        MYSQL_552_EXAMPLE_NAME,
+    },
+    CORE_ROOT_NAME: set(),
+    PUBLISHED_ROOT_NAME: {CORE_ROOT_NAME},
+    ADAPTER_552_ROOT_NAME: {CORE_ROOT_NAME},
+    MYSQL_EXAMPLE_NAME: {CORE_ROOT_NAME, PUBLISHED_ROOT_NAME},
+    MYSQL_552_EXAMPLE_NAME: {CORE_ROOT_NAME, ADAPTER_552_ROOT_NAME},
+}
+# Exact first-party edges emitted by the pinned direct-BOM producer. The MySQL
+# example owns the adapter directly and reaches core transitively through it.
+# The aggregate producer also preserves the included projects' transitive
+# first-party ownership edges.
+EXPECTED_FIRST_PARTY_DEPENDENCIES = {
+    AGGREGATE_ROOT_NAME: {
+        AGGREGATE_ROOT_NAME: {
+            CORE_ROOT_NAME,
+            PUBLISHED_ROOT_NAME,
+            ADAPTER_552_ROOT_NAME,
+            MYSQL_EXAMPLE_NAME,
+            MYSQL_552_EXAMPLE_NAME,
+        },
+        CORE_ROOT_NAME: set(),
+        PUBLISHED_ROOT_NAME: {CORE_ROOT_NAME},
+        ADAPTER_552_ROOT_NAME: {CORE_ROOT_NAME},
+        MYSQL_EXAMPLE_NAME: {PUBLISHED_ROOT_NAME},
+        MYSQL_552_EXAMPLE_NAME: {ADAPTER_552_ROOT_NAME},
+    },
+    CORE_ROOT_NAME: {CORE_ROOT_NAME: set()},
+    PUBLISHED_ROOT_NAME: {
+        PUBLISHED_ROOT_NAME: {CORE_ROOT_NAME},
+        CORE_ROOT_NAME: set(),
+    },
+    ADAPTER_552_ROOT_NAME: {
+        ADAPTER_552_ROOT_NAME: {CORE_ROOT_NAME},
+        CORE_ROOT_NAME: set(),
+    },
+    MYSQL_EXAMPLE_NAME: {
+        MYSQL_EXAMPLE_NAME: {PUBLISHED_ROOT_NAME},
+        PUBLISHED_ROOT_NAME: {CORE_ROOT_NAME},
+        CORE_ROOT_NAME: set(),
+    },
+    MYSQL_552_EXAMPLE_NAME: {
+        MYSQL_552_EXAMPLE_NAME: {ADAPTER_552_ROOT_NAME},
+        ADAPTER_552_ROOT_NAME: {CORE_ROOT_NAME},
+        CORE_ROOT_NAME: set(),
+    },
 }
 
 
@@ -515,11 +574,16 @@ def _json_component_license_map(
     return result
 
 
-def _json_has_mysql_example(document: dict[str, object]) -> bool:
-    return any(
-        component.get("name") == MYSQL_EXAMPLE_NAME
+def _json_mysql_example_names(document: dict[str, object]) -> set[str]:
+    return {
+        str(component.get("name"))
         for component in _json_first_party_components(document)
-    )
+        if component.get("name") in MYSQL_EXAMPLE_NAMES
+    }
+
+
+def _json_has_mysql_example(document: dict[str, object]) -> bool:
+    return bool(_json_mysql_example_names(document))
 
 
 def _maven_jar_purl(group: str, name: str, version: str) -> str:
@@ -555,6 +619,47 @@ def _json_exact_maven_components(
                 f"{actual}"
             )
     return candidates
+
+
+def _validate_json_maven_coordinate_versions(
+    document: dict[str, object], group: str, name: str, versions: set[str]
+) -> None:
+    expected_purls = {_maven_jar_purl(group, name, version) for version in versions}
+    candidates = [
+        component
+        for component in _json_components(document)
+        if (component.get("group") == group and component.get("name") == name)
+        or component.get("bom-ref") in expected_purls
+        or component.get("purl") in expected_purls
+    ]
+    actual_versions: list[str] = []
+    for component in candidates:
+        version = component.get("version")
+        if not isinstance(version, str) or version not in versions:
+            raise SbomError(
+                f"Unexpected Maven component version for {group}:{name}: {version}"
+            )
+        expected_purl = _maven_jar_purl(group, name, version)
+        expected = {
+            "type": "library",
+            "bom-ref": expected_purl,
+            "group": group,
+            "name": name,
+            "version": version,
+            "purl": expected_purl,
+        }
+        actual = {field: component.get(field) for field in expected}
+        if actual != expected:
+            raise SbomError(
+                f"Reviewed Maven component identity differs for "
+                f"{group}:{name}:{version}: {actual}"
+            )
+        actual_versions.append(version)
+    if sorted(actual_versions) != sorted(versions):
+        raise SbomError(
+            "Example SBOM must contain exactly the pinned Maven versions: "
+            f"{group}:{name}:{sorted(versions)}"
+        )
 
 
 def _is_forbidden_jts_io_identity(
@@ -600,15 +705,15 @@ def _validate_json_pinned_example_dependency_contract(
         ):
             raise SbomError("JTS I/O Common is forbidden by the pinned dependency contract")
 
-    if not _json_has_mysql_example(document):
+    example_names = _json_mysql_example_names(document)
+    if not example_names:
         return
-    for group, name, version in REQUIRED_EXAMPLE_MAVEN_COORDINATES:
-        components = _json_exact_maven_components(document, group, name, version)
-        if len(components) != 1:
-            raise SbomError(
-                "Example SBOM must contain exactly one pinned Maven component: "
-                f"{group}:{name}:{version}"
-            )
+    expected_versions: dict[tuple[str, str], set[str]] = {}
+    for example_name in sorted(example_names):
+        for group, name, version in REQUIRED_EXAMPLE_MAVEN_COORDINATES[example_name]:
+            expected_versions.setdefault((group, name), set()).add(version)
+    for (group, name), versions in sorted(expected_versions.items()):
+        _validate_json_maven_coordinate_versions(document, group, name, versions)
 
 
 def _json_mysql_connectors(document: dict[str, object]) -> list[dict[str, object]]:
@@ -735,26 +840,33 @@ def _set_json_mysql_supply_chain(document: dict[str, object]) -> None:
     else:
         raise SbomError("Multiple MySQL container components are ambiguous")
 
-    mysql_example = next(
-        component
-        for component in _json_first_party_components(document)
-        if component.get("name") == MYSQL_EXAMPLE_NAME
-    )
-    mysql_example_ref = mysql_example.get("bom-ref")
-    if not isinstance(mysql_example_ref, str):
-        raise SbomError("MySQL example component has no bom-ref")
     dependencies = document.get("dependencies")
     if not isinstance(dependencies, list):
         raise SbomError("JSON dependencies must be an array")
-    dependency_entries = [entry for entry in dependencies if isinstance(entry, dict) and entry.get("ref") == mysql_example_ref]
-    if len(dependency_entries) != 1:
-        raise SbomError("MySQL example must have exactly one dependency entry")
-    depends_on = dependency_entries[0].setdefault("dependsOn", [])
-    if not isinstance(depends_on, list) or any(not isinstance(value, str) for value in depends_on):
-        raise SbomError("MySQL example dependsOn must be an array of references")
-    if MYSQL_CONTAINER_PURL not in depends_on:
-        depends_on.append(MYSQL_CONTAINER_PURL)
-        depends_on.sort()
+    mysql_examples = [
+        component
+        for component in _json_first_party_components(document)
+        if component.get("name") in MYSQL_EXAMPLE_NAMES
+    ]
+    for mysql_example in mysql_examples:
+        mysql_example_ref = mysql_example.get("bom-ref")
+        if not isinstance(mysql_example_ref, str):
+            raise SbomError("MySQL example component has no bom-ref")
+        dependency_entries = [
+            entry
+            for entry in dependencies
+            if isinstance(entry, dict) and entry.get("ref") == mysql_example_ref
+        ]
+        if len(dependency_entries) != 1:
+            raise SbomError("MySQL example must have exactly one dependency entry")
+        depends_on = dependency_entries[0].setdefault("dependsOn", [])
+        if not isinstance(depends_on, list) or any(
+            not isinstance(value, str) for value in depends_on
+        ):
+            raise SbomError("MySQL example dependsOn must be an array of references")
+        if MYSQL_CONTAINER_PURL not in depends_on:
+            depends_on.append(MYSQL_CONTAINER_PURL)
+            depends_on.sort()
     container_entries = [
         entry
         for entry in dependencies
@@ -785,24 +897,27 @@ def _verify_json_mysql_supply_chain(document: dict[str, object]) -> None:
     if containers != [_json_mysql_container()]:
         raise SbomError("Pinned MySQL container component is missing or incorrect in JSON")
 
-    mysql_example_ref = next(
-        component.get("bom-ref")
-        for component in _json_first_party_components(document)
-        if component.get("name") == MYSQL_EXAMPLE_NAME
-    )
     dependencies = document.get("dependencies", [])
-    matching = [
-        entry
-        for entry in dependencies
-        if isinstance(entry, dict) and entry.get("ref") == mysql_example_ref
-    ]
-    depends_on = matching[0].get("dependsOn") if len(matching) == 1 else None
-    if (
-        len(matching) != 1
-        or not isinstance(depends_on, list)
-        or MYSQL_CONTAINER_PURL not in depends_on
+    for mysql_example in (
+        component
+        for component in _json_first_party_components(document)
+        if component.get("name") in MYSQL_EXAMPLE_NAMES
     ):
-        raise SbomError("MySQL example dependency graph does not reference the pinned container")
+        mysql_example_ref = mysql_example.get("bom-ref")
+        matching = [
+            entry
+            for entry in dependencies
+            if isinstance(entry, dict) and entry.get("ref") == mysql_example_ref
+        ]
+        depends_on = matching[0].get("dependsOn") if len(matching) == 1 else None
+        if (
+            len(matching) != 1
+            or not isinstance(depends_on, list)
+            or MYSQL_CONTAINER_PURL not in depends_on
+        ):
+            raise SbomError(
+                "MySQL example dependency graph does not reference the pinned container"
+            )
     container_entries = [
         entry
         for entry in dependencies
@@ -1518,6 +1633,51 @@ def _validate_role_and_graph(
         raise SbomError(f"{label} dependency graph must contain exactly one record per node")
     if any(not targets <= nodes for targets in graph.values()):
         raise SbomError(f"{label} dependency graph contains a dangling edge")
+
+    first_party_refs = {
+        str(root_name): root_ref,
+        **{
+            name: str(record["purl"])
+            for name, record in first_party_children.items()
+        },
+    }
+    first_party_names_by_ref = {
+        ref: name for name, ref in first_party_refs.items()
+    }
+    observed_first_party_dependencies = {
+        name: {
+            first_party_names_by_ref[target]
+            for target in graph[ref]
+            if target in first_party_names_by_ref
+        }
+        for name, ref in first_party_refs.items()
+    }
+    expected_first_party_dependencies = EXPECTED_FIRST_PARTY_DEPENDENCIES[
+        str(root_name)
+    ]
+    if observed_first_party_dependencies != expected_first_party_dependencies:
+        raise SbomError(
+            f"{label} first-party dependency ownership differs: "
+            f"{observed_first_party_dependencies} != "
+            f"{expected_first_party_dependencies}"
+        )
+
+    first_party_reachable: set[str] = set()
+    first_party_pending = [root_ref]
+    while first_party_pending:
+        ref = first_party_pending.pop()
+        if ref in first_party_reachable:
+            continue
+        first_party_reachable.add(ref)
+        first_party_pending.extend(
+            target for target in graph[ref] if target in first_party_names_by_ref
+        )
+    if first_party_reachable != set(first_party_refs.values()):
+        raise SbomError(
+            f"{label} first-party component is not reachable through "
+            "first-party dependency edges"
+        )
+
     reachable: set[str] = set()
     pending = [root_ref]
     while pending:
@@ -1556,11 +1716,16 @@ def _verify_semantic_pair(
     return _validate_role_and_graph(json_root, json_records, json_graph, label)
 
 
-def _xml_has_mysql_example(root: ET.Element) -> bool:
-    return any(
-        component.findtext(_qname("name")) == MYSQL_EXAMPLE_NAME
+def _xml_mysql_example_names(root: ET.Element) -> set[str]:
+    return {
+        str(component.findtext(_qname("name")))
         for component in _xml_first_party_components(root)
-    )
+        if component.findtext(_qname("name")) in MYSQL_EXAMPLE_NAMES
+    }
+
+
+def _xml_has_mysql_example(root: ET.Element) -> bool:
+    return bool(_xml_mysql_example_names(root))
 
 
 def _xml_single_component_text(
@@ -1611,6 +1776,57 @@ def _xml_exact_maven_components(
     return candidates
 
 
+def _validate_xml_maven_coordinate_versions(
+    root: ET.Element, group: str, name: str, versions: set[str]
+) -> None:
+    expected_purls = {_maven_jar_purl(group, name, version) for version in versions}
+    candidates = [
+        component
+        for component in _xml_components(root)
+        if (
+            component.findtext(_qname("group")) == group
+            and component.findtext(_qname("name")) == name
+        )
+        or component.get("bom-ref") in expected_purls
+        or component.findtext(_qname("purl")) in expected_purls
+    ]
+    actual_versions: list[str] = []
+    for component in candidates:
+        version = component.findtext(_qname("version"))
+        if version not in versions:
+            raise SbomError(
+                f"Unexpected Maven component version for {group}:{name}: {version}"
+            )
+        expected_purl = _maven_jar_purl(group, name, str(version))
+        coordinate = f"{group}:{name}:{version}"
+        actual = {
+            "type": component.get("type"),
+            "bom-ref": component.get("bom-ref"),
+            "group": _xml_single_component_text(component, "group", coordinate),
+            "name": _xml_single_component_text(component, "name", coordinate),
+            "version": _xml_single_component_text(component, "version", coordinate),
+            "purl": _xml_single_component_text(component, "purl", coordinate),
+        }
+        expected = {
+            "type": "library",
+            "bom-ref": expected_purl,
+            "group": group,
+            "name": name,
+            "version": version,
+            "purl": expected_purl,
+        }
+        if actual != expected:
+            raise SbomError(
+                f"Reviewed Maven component identity differs for {coordinate}: {actual}"
+            )
+        actual_versions.append(str(version))
+    if sorted(actual_versions) != sorted(versions):
+        raise SbomError(
+            "Example SBOM must contain exactly the pinned Maven versions: "
+            f"{group}:{name}:{sorted(versions)}"
+        )
+
+
 def _validate_xml_pinned_example_dependency_contract(root: ET.Element) -> None:
     metadata_component = root.find(f"{_qname('metadata')}/{_qname('component')}")
     if metadata_component is None:
@@ -1624,15 +1840,15 @@ def _validate_xml_pinned_example_dependency_contract(root: ET.Element) -> None:
         ):
             raise SbomError("JTS I/O Common is forbidden by the pinned dependency contract")
 
-    if not _xml_has_mysql_example(root):
+    example_names = _xml_mysql_example_names(root)
+    if not example_names:
         return
-    for group, name, version in REQUIRED_EXAMPLE_MAVEN_COORDINATES:
-        components = _xml_exact_maven_components(root, group, name, version)
-        if len(components) != 1:
-            raise SbomError(
-                "Example SBOM must contain exactly one pinned Maven component: "
-                f"{group}:{name}:{version}"
-            )
+    expected_versions: dict[tuple[str, str], set[str]] = {}
+    for example_name in sorted(example_names):
+        for group, name, version in REQUIRED_EXAMPLE_MAVEN_COORDINATES[example_name]:
+            expected_versions.setdefault((group, name), set()).add(version)
+    for (group, name), versions in sorted(expected_versions.items()):
+        _validate_xml_maven_coordinate_versions(root, group, name, versions)
 
 
 def _xml_mysql_connectors(root: ET.Element) -> list[ET.Element]:
@@ -1879,29 +2095,35 @@ def _set_xml_mysql_supply_chain(root: ET.Element) -> None:
     else:
         raise SbomError("Multiple MySQL container components are ambiguous")
 
-    mysql_example = next(
-        component
-        for component in _xml_first_party_components(root)
-        if component.findtext(_qname("name")) == MYSQL_EXAMPLE_NAME
-    )
-    mysql_example_ref = mysql_example.get("bom-ref")
-    if mysql_example_ref is None:
-        raise SbomError("MySQL example component has no bom-ref")
     dependencies = root.find(_qname("dependencies"))
     if dependencies is None:
         raise SbomError("XML dependencies element is missing")
-    dependency_entries = [
-        entry
-        for entry in dependencies.findall(_qname("dependency"))
-        if entry.get("ref") == mysql_example_ref
+    mysql_examples = [
+        component
+        for component in _xml_first_party_components(root)
+        if component.findtext(_qname("name")) in MYSQL_EXAMPLE_NAMES
     ]
-    if len(dependency_entries) != 1:
-        raise SbomError("MySQL example must have exactly one dependency entry")
-    references = {entry.get("ref") for entry in dependency_entries[0].findall(_qname("dependency"))}
-    if MYSQL_CONTAINER_PURL not in references:
-        ET.SubElement(
-            dependency_entries[0], _qname("dependency"), {"ref": MYSQL_CONTAINER_PURL}
-        )
+    for mysql_example in mysql_examples:
+        mysql_example_ref = mysql_example.get("bom-ref")
+        if mysql_example_ref is None:
+            raise SbomError("MySQL example component has no bom-ref")
+        dependency_entries = [
+            entry
+            for entry in dependencies.findall(_qname("dependency"))
+            if entry.get("ref") == mysql_example_ref
+        ]
+        if len(dependency_entries) != 1:
+            raise SbomError("MySQL example must have exactly one dependency entry")
+        references = {
+            entry.get("ref")
+            for entry in dependency_entries[0].findall(_qname("dependency"))
+        }
+        if MYSQL_CONTAINER_PURL not in references:
+            ET.SubElement(
+                dependency_entries[0],
+                _qname("dependency"),
+                {"ref": MYSQL_CONTAINER_PURL},
+            )
     container_entries = [
         entry
         for entry in dependencies.findall(_qname("dependency"))
@@ -1940,23 +2162,26 @@ def _verify_xml_mysql_supply_chain(root: ET.Element) -> None:
     if len(containers) != 1 or not _xml_mysql_container_is_exact(containers[0]):
         raise SbomError("Pinned MySQL container component is missing or incorrect in XML")
 
-    mysql_example_ref = next(
-        component.get("bom-ref")
-        for component in _xml_first_party_components(root)
-        if component.findtext(_qname("name")) == MYSQL_EXAMPLE_NAME
-    )
     dependencies = root.find(_qname("dependencies"))
     if dependencies is None:
         raise SbomError("XML dependencies element is missing")
-    matching = [
-        entry
-        for entry in dependencies.findall(_qname("dependency"))
-        if entry.get("ref") == mysql_example_ref
-    ]
-    if len(matching) != 1 or MYSQL_CONTAINER_PURL not in {
-        entry.get("ref") for entry in matching[0].findall(_qname("dependency"))
-    }:
-        raise SbomError("MySQL example dependency graph does not reference the pinned container")
+    for mysql_example in (
+        component
+        for component in _xml_first_party_components(root)
+        if component.findtext(_qname("name")) in MYSQL_EXAMPLE_NAMES
+    ):
+        mysql_example_ref = mysql_example.get("bom-ref")
+        matching = [
+            entry
+            for entry in dependencies.findall(_qname("dependency"))
+            if entry.get("ref") == mysql_example_ref
+        ]
+        if len(matching) != 1 or MYSQL_CONTAINER_PURL not in {
+            entry.get("ref") for entry in matching[0].findall(_qname("dependency"))
+        }:
+            raise SbomError(
+                "MySQL example dependency graph does not reference the pinned container"
+            )
     container_entries = [
         entry
         for entry in dependencies.findall(_qname("dependency"))
@@ -2157,10 +2382,10 @@ def _finalize_pair(source_json: Path, source_xml: Path, output_json: Path, outpu
 def _validate_pair_collection(pairs: list[tuple[Path, Path]]) -> None:
     if len(pairs) == 1:
         return
-    if len(pairs) != 3:
+    if len(pairs) != 6:
         raise SbomError(
             "A multi-pair release verification must contain exactly aggregate, "
-            "published-module, and MySQL-example pairs"
+            "core, adapter553, adapter552, mysql553, and mysql552 pairs"
         )
     documents: dict[str, dict[str, object]] = {}
     versions: set[object] = set()
@@ -2182,12 +2407,14 @@ def _validate_pair_collection(pairs: list[tuple[Path, Path]]) -> None:
     if len(versions) != 1:
         raise SbomError("Release pairs must share one project version")
 
-    def records(role: str) -> dict[str, dict[str, object]]:
-        return _json_all_component_records(documents[role], role)[1]
-
-    aggregate = records(AGGREGATE_ROOT_NAME)
-    published = records(PUBLISHED_ROOT_NAME)
-    example = records(MYSQL_EXAMPLE_NAME)
+    roots_and_records = {
+        role: _json_all_component_records(document, role)
+        for role, document in documents.items()
+    }
+    graphs = {
+        role: _json_dependency_graph(document, role)
+        for role, document in documents.items()
+    }
     version = next(iter(versions))
 
     def purl(name: str) -> str:
@@ -2198,7 +2425,13 @@ def _validate_pair_collection(pairs: list[tuple[Path, Path]]) -> None:
         )
 
     def module_fingerprint(record: dict[str, object]) -> tuple[object, ...]:
+        # ``externalReferences`` and the producer's cdx:maven:package:test
+        # property are role-context metadata: roots carry the VCS URL while
+        # child records carry the dependency scope. Every release-identity and
+        # content-bearing field must otherwise agree across all occurrences.
         return (
+            record.get("bom-ref"),
+            record.get("description"),
             record.get("type"),
             record.get("group"),
             record.get("name"),
@@ -2206,15 +2439,76 @@ def _validate_pair_collection(pairs: list[tuple[Path, Path]]) -> None:
             record.get("purl"),
             record.get("hashes"),
             record.get("licenses"),
+            record.get("modified"),
+            record.get("publisher"),
+            record.get("scope"),
         )
 
-    comparisons = (
-        (aggregate[purl(PUBLISHED_ROOT_NAME)], published[purl(PUBLISHED_ROOT_NAME)]),
-        (example[purl(PUBLISHED_ROOT_NAME)], published[purl(PUBLISHED_ROOT_NAME)]),
-        (aggregate[purl(MYSQL_EXAMPLE_NAME)], example[purl(MYSQL_EXAMPLE_NAME)]),
-    )
-    if any(module_fingerprint(left) != module_fingerprint(right) for left, right in comparisons):
-        raise SbomError("Release pair first-party module records differ across roles")
+    for module_name in EXPECTED_FIRST_PARTY_CHILDREN:
+        module_purl = purl(module_name)
+        expected_roles = {
+            role
+            for role, children in EXPECTED_FIRST_PARTY_CHILDREN.items()
+            if module_name == role or module_name in children
+        }
+        observed_records = {
+            role: records[module_purl]
+            for role, (_, records) in roots_and_records.items()
+            if module_purl in records
+        }
+        if set(observed_records) != expected_roles:
+            raise SbomError(
+                f"Release pair occurrences for {module_name} differ: "
+                f"{set(observed_records)} != {expected_roles}"
+            )
+        fingerprints = {
+            module_fingerprint(record) for record in observed_records.values()
+        }
+        if len(fingerprints) != 1:
+            raise SbomError(
+                "Release pair first-party module records differ across roles: "
+                f"{module_name}"
+            )
+
+    all_first_party_purls = {
+        name: purl(name) for name in EXPECTED_FIRST_PARTY_CHILDREN
+    }
+    first_party_name_by_purl = {
+        module_purl: name for name, module_purl in all_first_party_purls.items()
+    }
+    for role, (root_ref, records) in roots_and_records.items():
+        graph = graphs[role]
+        reachable: set[str] = set()
+        pending = [root_ref]
+        while pending:
+            ref = pending.pop()
+            if ref in reachable:
+                continue
+            reachable.add(ref)
+            pending.extend(
+                target
+                for target in graph[ref]
+                if target in first_party_name_by_purl
+            )
+        observed_names = {
+            first_party_name_by_purl[ref]
+            for ref in reachable
+            if ref in first_party_name_by_purl
+        }
+        expected_names = {role, *EXPECTED_FIRST_PARTY_CHILDREN[role]}
+        if observed_names != expected_names:
+            raise SbomError(
+                f"Release pair first-party reachability for {role} differs: "
+                f"{observed_names} != {expected_names}"
+            )
+        if any(
+            ref in first_party_name_by_purl
+            and first_party_name_by_purl[ref] not in expected_names
+            for ref in records
+        ):
+            raise SbomError(
+                f"Release pair first-party record coverage for {role} is ambiguous"
+            )
 
 
 def _parse_args() -> argparse.Namespace:

@@ -301,12 +301,18 @@ do not accept a signing subkey. Therefore the command below selects the exact
 reviewed 40-hex primary fingerprint with `!`. If that official rule changes,
 review the new rule before changing the release procedure.
 
+For signed staging, the build also requires the options file to be an exact
+single-link mode-0600 file in the private staging parent containing only the two
+lines shown below. Its identity and the SHA-384 policy bytes are rechecked before
+every publication signature and before final exposure.
+
 CI may generate an ephemeral throwaway key only to test signing configuration.
 That key and its signatures are test data, are never uploaded or retained as
 artifacts, and are not release evidence.
 
 From a fresh detached checkout of the reviewed tag, use a new private staging
-parent and the checked-in Wrapper:
+parent and the checked-in Wrapper. The supplied repository path and its entire
+existing parent chain must be canonical, normalized and free of symbolic links:
 
 ```bash
 (
@@ -323,7 +329,7 @@ printf '%s\n' \
 chmod 600 "${gpg_options}"
 GNUPGHOME=/absolute/path/to/protected-gnupg-home ./gradlew \
   --no-daemon --no-build-cache --no-configuration-cache \
-  :routecontract-shardingsphere-5.5:publishMavenJavaPublicationToCentralStagingRepository \
+  :publishRouteContractCentralStaging \
   -ProutecontractCentralStagingDirectory="${staging_parent}/repository" \
   -ProutecontractCentralSigning=true \
   -Psigning.gnupg.executable=gpg \
@@ -332,6 +338,20 @@ GNUPGHOME=/absolute/path/to/protected-gnupg-home ./gradlew \
 )
 ```
 
+The aggregate task is mandatory; invoking any per-project publication task
+directly fails before staging begins. It writes only to the absent hidden
+`.repository.routecontract-work` sibling, verifies the complete core, exact
+5.5.3 adapter, and exact 5.5.2 adapter payload/signature sets, and uses a
+descriptor-anchored, same-parent, no-replace atomic rename to expose the final
+`repository` path. Finalization requires `/usr/bin/python3` and the platform's
+descriptor-anchored no-replace rename primitive; an unsupported or unavailable
+primitive fails closed as a HOLD. If any publication, verification, move or
+post-move check fails or is interrupted,
+preserve the observed work and final paths as a HOLD. Do not retry with the same
+path and do not automatically delete, rename or complete either path; record
+their read-only state first and prepare a new candidate only after explicit
+reconciliation.
+
 Before upload, recheck the official list of Central-supported keyservers and
 distribute the exact public primary key to one currently supported server. In a
 fresh empty private `GNUPGHOME`, receive/import it from that same server using
@@ -339,14 +359,15 @@ only read-only retrieval, then require the exact reviewed uppercase 40-hex
 primary fingerprint and a signing-capable, current, nonexpired and nonrevoked
 primary key. Stop if any condition or retrieval fails.
 
-Confirm the staged version equals `${release_version}`. Reject symlinks,
-special files, nested surprises, unexpected names and files outside the one
-coordinate. Recompute every checksum over its named staged file and compare the
-result, then use only the fresh keyring above to verify every detached signature
-against the reviewed primary fingerprint. Compare the POM, Gradle Module
-Metadata and three JAR bytes with the approval-bound evidence. Gradle
-repository-level `maven-metadata.xml` is local bookkeeping and is not part of
-the version upload bundle.
+Confirm all three staged coordinates use `${release_version}`. Reject symlinks,
+special files, nested surprises, unexpected names and files outside the
+coordinated `routecontract-core`, exact 5.5.3 adapter, and exact 5.5.2 adapter
+coordinates. Recompute every checksum over its named staged file and compare
+the result, then use only the fresh keyring above to verify every detached
+signature against the reviewed primary fingerprint. Compare all three POMs,
+all three Gradle Module Metadata documents and all nine JAR bytes with the
+approval-bound evidence. Gradle artifact-level `maven-metadata.xml` files are
+local bookkeeping and are not part of the version upload bundle.
 
 The direct and aggregate SBOMs and supply-chain policy result remain
 evidence-only files: bind their exact names, sizes and bytes to the private
@@ -359,9 +380,9 @@ that change first and include them in the upload allowlist and public readback.
 After the signed staging tree and public-key-only verification home pass the
 checks above, use `scripts/prepare-central-upload-bundle.py`. The script has no
 HTTP client, Portal credential input, signing operation or publication mode. It
-only reads one local Gradle Maven staging repository, a separately reviewed
-payload manifest and a public-key-only GnuPG home, then creates a deterministic
-ZIP plus a path-free receipt in a new absent output directory.
+only reads one coordinated local Gradle Maven staging repository, a separately
+reviewed payload manifest and a public-key-only GnuPG home, then creates a
+deterministic ZIP plus a path-free receipt in a new absent output directory.
 All file and directory arguments must be absolute normalized canonical paths;
 the tool rejects a symlink in any argument's existing path.
 Manifest, staging, tool, bundle, receipt and created output files must each be
@@ -381,37 +402,55 @@ public-only temporary GnuPG home and uses that snapshot for every signature
 check, so signature verification does not reopen the caller's keyring.
 
 The reviewed payload manifest is a strict canonical JSON document with schema
-version `1`, the exact `io.github.ym0506.routecontract` group,
-`routecontract-shardingsphere-5.5` artifact, one stable SemVer strictly greater
-than `0.1.2`, and exactly five lexicographically ordered payload records. Each
-record has only `name`, `size` and `sha256`. The five records are the POM,
+version `2`. Its `coordinateSet` contains only the exact
+`io.github.ym0506.routecontract` group, the exact ordered artifact IDs
+`routecontract-core`, `routecontract-shardingsphere-5.5`, and
+`routecontract-shardingsphere-5.5.2`, and one shared stable `0.2.x` SemVer. Its
+`payloads` array contains exactly fifteen records ordered first by that artifact
+order and then lexicographically by filename. Each record has only
+`artifactId`, `name`, `size` and `sha256`. Every artifact contributes its POM,
 Gradle Module Metadata, main JAR, sources JAR and Javadoc JAR. The manifest must
 be produced and approved as part of the approval-bound candidate; the bundle
 tool never creates or edits it and does not turn computed staging hashes into
-approval. A later release-evidence design must therefore retain and review the
-exact Gradle Module Metadata bytes; the current `v0.1.2` release evidence does
-not do that and cannot be substituted.
+approval. The release-evidence design must retain and review the exact Gradle
+Module Metadata bytes; the current `v0.1.2` release evidence cannot be
+substituted.
 
-The upload ZIP contains exactly 30 regular files under the one Maven version
-path:
+Before checking signatures, the tool verifies the dependency boundary in both
+metadata formats. Core must contain no RouteContract or ShardingSphere
+dependency. Each adapter must depend directly on the same-version core and use
+the exact runtime anchor set for its ShardingSphere line. The 5.5.3 adapter
+requires the 5.5.3 executor, SPI and database-connector-core anchors; the 5.5.2
+adapter requires the 5.5.2 executor, SPI and infra-database-core anchors. Their
+POM direct/managed roles and Module Metadata dependency/strict-constraint roles
+must match exactly. Gradle `apiElements` and
+`runtimeElements` must publish the reviewed core-owner or exclusive hook-slot
+capability; the 5.5.2 adapter must also retain its legacy 5.5 artifact
+capability. Module Metadata must bind each of its four variants to the staged
+main, sources or Javadoc JAR by exact size and four digests. A missing artifact,
+mixed version, extra edge, wrong ShardingSphere version, capability change or
+metadata/JAR mismatch fails closed.
 
-- the five reviewed payloads;
+The upload ZIP contains exactly 90 regular files under the three Maven version
+paths:
+
+- the fifteen reviewed payloads;
 - one detached ASCII-armored primary-key signature for each payload; and
 - `.md5`, `.sha1`, `.sha256` and `.sha512` sidecars for each payload.
 
 The local Gradle staging tree also contains four checksum sidecars for each
-`.asc` file and artifact-level `maven-metadata.xml` plus four checksums. The tool
-requires that exact local-only inventory, verifies every checksum and detached
-signature, and excludes those 25 files from the upload ZIP. Signature sidecars
-do not need checksums, and repository-level metadata is local publication
-bookkeeping rather than version payload. Any other file, directory, symlink or
-special file fails closed.
+`.asc` file and one artifact-level `maven-metadata.xml` plus four checksums for
+each coordinate. The tool requires that exact local-only inventory, verifies
+every checksum and detached signature, and excludes those 75 files from the
+upload ZIP. Signature sidecars do not need checksums, and artifact-level
+metadata is local publication bookkeeping rather than version payload. Any
+other file, directory, symlink or special file fails closed.
 
 The ZIP uses lexicographic entry order, stored entries, the fixed ZIP epoch,
 regular mode `0644`, no directory entries, no archive comment and no extra
 fields. For identical signed staging bytes and reviewed manifest, its bytes and
 SHA-256 are identical. The receipt is canonical sorted JSON and binds the exact
-manifest bytes, tool bytes, coordinate, primary fingerprint, ZIP name, byte
+manifest bytes, tool bytes, coordinate set, primary fingerprint, ZIP name, byte
 count, SHA-256 and every entry name, size and SHA-256. It explicitly records
 that credentials, upload, validation, Publish, public readback and availability
 are outside its scope.
@@ -431,8 +470,8 @@ python3 -I scripts/prepare-central-upload-bundle.py build \
 
 python3 -I scripts/prepare-central-upload-bundle.py verify \
   --repository /absolute/path/to/new-private-central-staging/repository \
-  --bundle /absolute/path/to/new-private-central-bundle/routecontract-shardingsphere-5.5-VERSION-central-upload.zip \
-  --receipt /absolute/path/to/new-private-central-bundle/routecontract-shardingsphere-5.5-VERSION-central-upload-receipt.json \
+  --bundle /absolute/path/to/new-private-central-bundle/routecontract-VERSION-central-upload.zip \
+  --receipt /absolute/path/to/new-private-central-bundle/routecontract-VERSION-central-upload-receipt.json \
   --reviewed-payload-manifest /absolute/path/to/reviewed-payloads.json \
   --public-gpg-home /absolute/path/to/fresh-public-only-gnupg-home \
   --expected-primary-fingerprint REPLACE_WITH_40_UPPERCASE_HEX
@@ -448,10 +487,10 @@ construct a later attestation.
 
 ### Portal upload, validation and publication
 
-1. Create one exact upload bundle containing only the reviewed Maven version
-   payload, each payload's detached signature and required payload checksum
-   sidecars. Record its SHA-256 and filename allowlist in a private receipt that
-   contains no credential.
+1. Create one exact upload bundle containing only the reviewed payloads for all
+   three same-version Maven coordinates, each payload's detached signature and
+   required payload checksum sidecars. Record its SHA-256 and filename allowlist
+   in a private receipt that contains no credential.
 2. Upload once as `USER_MANAGED`, never automatic publication. Record an
    upload-intent entry before the request and then the returned deployment ID
    and observed result without editing earlier receipt entries.
@@ -473,35 +512,29 @@ Remove the credential from the environment immediately after the action.
 
 ### Public readback and availability claim
 
-After Portal reports publication, wait for the coordinate to appear through
-the official public Maven Central repository. Fetch the exact POM, Gradle
-metadata, main/sources/Javadoc JARs and other published version files without
-authentication and compare them byte-for-byte with the reviewed staged
-payload. A Portal success response alone is not public-availability evidence.
+After Portal reports publication, wait for all three coordinates to appear
+through the official public Maven Central repository. For each coordinate,
+fetch the exact POM, Gradle metadata, main/sources/Javadoc JARs and other
+published version files without authentication and compare them byte-for-byte
+with the reviewed staged payloads. A Portal success response alone is not
+public-availability evidence.
 
-Then run the standalone consumer from a clean reviewed source checkout with a
-new empty Gradle cache and only the public Maven Central endpoint for the
-RouteContract group:
+The post-publication `0.2.x` fresh-consumer gate is currently **not
+implemented**. This is a release-blocking gap: the existing standalone consumer
+belongs to the pre-split `0.1.x` artifact and must not be used as evidence for
+the three-coordinate publication. Before any `0.2.x` Central publication, add
+and review an independent clean-cache consumer that resolves
+`routecontract-core` plus exactly one exact-version adapter at the same
+candidate version, enforces the whole-graph adapter exclusivity policy, and
+runs its compile and representative candidate check using only the public
+unauthenticated Maven Central endpoint. It must also prove that selecting both
+adapters, or the wrong adapter for the ShardingSphere runtime, fails closed.
 
-```bash
-(
-set -e
-fresh_gradle_home=/absolute/path/to/new-empty-gradle-home
-test ! -e "${fresh_gradle_home}"
-mkdir -m 700 "${fresh_gradle_home}"
-ROUTECONTRACT_REPOSITORY=https://repo.maven.apache.org/maven2 \
-ROUTECONTRACT_GROUP=io.github.ym0506.routecontract \
-ROUTECONTRACT_VERSION=0.1.1 \
-GRADLE_USER_HOME="${fresh_gradle_home}" ./gradlew \
-  --no-daemon --no-build-cache --no-configuration-cache \
-  --refresh-dependencies -p examples/standalone-consumer clean test
-)
-```
-
-The consumer must not use `mavenLocal()`, a file repository, a project
+That consumer must not use `mavenLocal()`, a file repository, a project
 dependency, a composite build, an authenticated deployment endpoint or an old
-cache. Claim Maven Central availability only after both unauthenticated byte
-readback and this fresh-cache consumer pass.
+cache. Do not claim Maven Central availability until both unauthenticated byte
+readback and the still-to-be-implemented split-artifact fresh-consumer gate
+pass.
 
 Published Central coordinates are immutable. If any published byte, metadata,
 signature or verification result is wrong, preserve the evidence, stop using

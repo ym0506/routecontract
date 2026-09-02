@@ -30,6 +30,11 @@ REQUIRED_EXAMPLE_COORDINATES = (
     ("org.apache.calcite", "calcite-core", "1.42.0"),
     ("org.apache.calcite", "calcite-linq4j", "1.42.0"),
 )
+REQUIRED_552_EXAMPLE_COORDINATES = (
+    ("org.apache.shardingsphere", "shardingsphere-jdbc", "5.5.2"),
+    ("org.apache.calcite", "calcite-core", "1.38.0"),
+    ("org.apache.calcite", "calcite-linq4j", "1.38.0"),
+)
 MYSQL_DOCUMENTATION_URL = "https://dev.mysql.com/doc/refman/8.4/en/preface.html"
 
 
@@ -105,6 +110,18 @@ class FinalizeSbomTest(unittest.TestCase):
             "version": "0.1.0",
             "purl": library_purl,
         }
+        core_purl = (
+            f"pkg:maven/{GROUP}/routecontract-core@0.1.0"
+            "?project_path=%3Aroutecontract-core"
+        )
+        self.core_component = {
+            "type": "library",
+            "bom-ref": core_purl,
+            "group": GROUP,
+            "name": "routecontract-core",
+            "version": "0.1.0",
+            "purl": core_purl,
+        }
         self.components = [
             self.library_component,
             maven_component(
@@ -168,6 +185,7 @@ class FinalizeSbomTest(unittest.TestCase):
                 "1.42.0",
                 [{"license": {"id": "Apache-2.0"}}],
             ),
+            self.core_component,
         ]
         self.write_sources()
 
@@ -207,10 +225,25 @@ class FinalizeSbomTest(unittest.TestCase):
             "dependencies": [
                 {
                     "ref": self.root_component["purl"],
-                    "dependsOn": [component["purl"] for component in self.components],
+                    "dependsOn": [
+                        component["purl"]
+                        for component in self.components
+                        if component["purl"] != self.core_component["purl"]
+                    ],
                 },
                 *[
-                    {"ref": component["purl"], "dependsOn": []}
+                    {
+                        "ref": component["purl"],
+                        "dependsOn": (
+                            [self.core_component["purl"]]
+                            if component["purl"] == self.library_component["purl"]
+                            and any(
+                                candidate["purl"] == self.core_component["purl"]
+                                for candidate in self.components
+                            )
+                            else []
+                        ),
+                    }
                     for component in self.components
                 ],
             ],
@@ -243,12 +276,27 @@ class FinalizeSbomTest(unittest.TestCase):
             dependencies, qname("dependency"), {"ref": str(self.root_component["purl"])}
         )
         for component in self.components:
-            ET.SubElement(
-                root_dependency, qname("dependency"), {"ref": str(component["purl"])}
-            )
-            ET.SubElement(
+            if component["purl"] != self.core_component["purl"]:
+                ET.SubElement(
+                    root_dependency,
+                    qname("dependency"),
+                    {"ref": str(component["purl"])},
+                )
+            dependency = ET.SubElement(
                 dependencies, qname("dependency"), {"ref": str(component["purl"])}
             )
+            if (
+                component["purl"] == self.library_component["purl"]
+                and any(
+                    candidate["purl"] == self.core_component["purl"]
+                    for candidate in self.components
+                )
+            ):
+                ET.SubElement(
+                    dependency,
+                    qname("dependency"),
+                    {"ref": str(self.core_component["purl"])},
+                )
         ET.ElementTree(root).write(
             self.source_xml, encoding="utf-8", xml_declaration=True
         )
@@ -335,117 +383,386 @@ class FinalizeSbomTest(unittest.TestCase):
             ),
         )
 
-    def test_accepts_distinct_valid_timestamps_across_three_roles(self) -> None:
+    def role_pair(
+        self, role: str, timestamp: str
+    ) -> tuple[Path, Path, Path, Path]:
         qname = lambda name: f"{{{NAMESPACE}}}{name}"
-        published_purl = str(self.library_component["purl"])
-        example_purl = str(self.root_component["purl"])
+        role_names = {
+            "aggregate": "routecontract",
+            "core": "routecontract-core",
+            "adapter553": "routecontract-shardingsphere-5.5",
+            "adapter552": "routecontract-shardingsphere-5.5.2",
+            "mysql553": "mysql-example",
+            "mysql552": "mysql-5.5.2-example",
+        }
+        if role not in role_names:
+            self.fail(f"unexpected role fixture: {role}")
 
-        def role_pair(
-            role: str, timestamp: str
-        ) -> tuple[Path, Path, Path, Path]:
-            self.write_sources()
-            document = json.loads(self.source_json.read_text(encoding="utf-8"))
-            tree = ET.parse(self.source_xml)
-            root = tree.getroot()
-            metadata = root.find(qname("metadata"))
-            components = root.find(qname("components"))
-            dependencies = root.find(qname("dependencies"))
-            self.assertIsNotNone(metadata)
-            self.assertIsNotNone(components)
-            self.assertIsNotNone(dependencies)
-            metadata_component = metadata.find(qname("component"))
-            self.assertIsNotNone(metadata_component)
-            root_dependency = list(dependencies)[0]
+        root_name = role_names[role]
 
-            def set_root(name: str, purl: str) -> None:
-                document["metadata"]["component"] = {
-                    "type": "library",
-                    "bom-ref": purl,
-                    "group": GROUP,
-                    "name": name,
-                    "version": "0.1.0",
-                    "purl": purl,
-                }
-                metadata_component.set("bom-ref", purl)
-                metadata_component.find(qname("group")).text = GROUP
-                metadata_component.find(qname("name")).text = name
-                metadata_component.find(qname("version")).text = "0.1.0"
-                metadata_component.find(qname("purl")).text = purl
-                root_dependency.set("ref", purl)
+        def first_party_purl(name: str) -> str:
+            project_path = "" if name == "routecontract" else name
+            return (
+                f"pkg:maven/{GROUP}/{name}@0.1.0"
+                f"?project_path=%3A{project_path}"
+            )
 
-            if role == "aggregate":
-                aggregate_purl = (
-                    f"pkg:maven/{GROUP}/routecontract@0.1.0?project_path=%3A"
-                )
-                set_root("routecontract", aggregate_purl)
-                example_component = dict(self.root_component)
-                document["components"].append(example_component)
-                document["dependencies"][0]["ref"] = aggregate_purl
-                document["dependencies"][0]["dependsOn"].append(example_purl)
-                document["dependencies"].append(
-                    {"ref": example_purl, "dependsOn": []}
-                )
-                append_xml_component(components, example_component)
-                ET.SubElement(
-                    root_dependency, qname("dependency"), {"ref": example_purl}
-                )
-                ET.SubElement(
-                    dependencies, qname("dependency"), {"ref": example_purl}
-                )
-            elif role == "published":
-                set_root("routecontract-shardingsphere-5.5", published_purl)
-                document["components"] = [
-                    component
-                    for component in document["components"]
-                    if component["purl"] != published_purl
-                ]
-                root_record = document["dependencies"][0]
-                root_record["ref"] = published_purl
-                root_record["dependsOn"] = [
-                    ref for ref in root_record["dependsOn"] if ref != published_purl
-                ]
-                document["dependencies"] = [
-                    root_record,
-                    *[
-                        entry
-                        for entry in document["dependencies"][1:]
-                        if entry["ref"] != published_purl
-                    ],
-                ]
-                for component in list(components):
-                    if component.findtext(qname("purl")) == published_purl:
-                        components.remove(component)
-                for target in list(root_dependency):
-                    if target.get("ref") == published_purl:
-                        root_dependency.remove(target)
-                for entry in list(dependencies)[1:]:
-                    if entry.get("ref") == published_purl:
-                        dependencies.remove(entry)
-            elif role != "example":
-                self.fail(f"unexpected role fixture: {role}")
+        first_party_components = {
+            name: {
+                "type": "library",
+                "bom-ref": first_party_purl(name),
+                "group": GROUP,
+                "name": name,
+                "version": "0.1.0",
+                "purl": first_party_purl(name),
+            }
+            for name in role_names.values()
+        }
+        first_party_children = {
+            "aggregate": (
+                "routecontract-core",
+                "routecontract-shardingsphere-5.5",
+                "routecontract-shardingsphere-5.5.2",
+                "mysql-example",
+                "mysql-5.5.2-example",
+            ),
+            "core": (),
+            "adapter553": ("routecontract-core",),
+            "adapter552": ("routecontract-core",),
+            "mysql553": (
+                "routecontract-core",
+                "routecontract-shardingsphere-5.5",
+            ),
+            "mysql552": (
+                "routecontract-core",
+                "routecontract-shardingsphere-5.5.2",
+            ),
+        }
+        first_party_edges = {
+            "aggregate": {
+                "routecontract": set(first_party_children["aggregate"]),
+                "routecontract-core": set(),
+                "routecontract-shardingsphere-5.5": {"routecontract-core"},
+                "routecontract-shardingsphere-5.5.2": {"routecontract-core"},
+                "mysql-example": {"routecontract-shardingsphere-5.5"},
+                "mysql-5.5.2-example": {
+                    "routecontract-shardingsphere-5.5.2"
+                },
+            },
+            "core": {"routecontract-core": set()},
+            "adapter553": {
+                "routecontract-shardingsphere-5.5": {"routecontract-core"},
+                "routecontract-core": set(),
+            },
+            "adapter552": {
+                "routecontract-shardingsphere-5.5.2": {"routecontract-core"},
+                "routecontract-core": set(),
+            },
+            "mysql553": {
+                "mysql-example": {"routecontract-shardingsphere-5.5"},
+                "routecontract-shardingsphere-5.5": {"routecontract-core"},
+                "routecontract-core": set(),
+            },
+            "mysql552": {
+                "mysql-5.5.2-example": {
+                    "routecontract-shardingsphere-5.5.2"
+                },
+                "routecontract-shardingsphere-5.5.2": {"routecontract-core"},
+                "routecontract-core": set(),
+            },
+        }
 
-            document["metadata"]["timestamp"] = timestamp
-            metadata.find(qname("timestamp")).text = timestamp
-            source_json = self.root / f"{role}-source.json"
-            source_xml = self.root / f"{role}-source.xml"
-            output_json = self.root / f"{role}-output.json"
-            output_xml = self.root / f"{role}-output.xml"
-            source_json.write_text(json.dumps(document) + "\n", encoding="utf-8")
-            tree.write(source_xml, encoding="utf-8", xml_declaration=True)
-            return source_json, source_xml, output_json, output_xml
-
-        pairs = (
-            role_pair("aggregate", "2026-08-14T00:00:00Z"),
-            role_pair("published", "2026-08-14T00:00:01Z"),
-            role_pair("example", "2026-08-14T00:00:02.123Z"),
+        # Keep reviewed/common dependencies identical, then add only the pinned
+        # ShardingSphere/Calcite versions implied by the MySQL profile(s).
+        pinned_groups = {"org.apache.shardingsphere", "org.apache.calcite"}
+        third_party_components = [
+            copy.deepcopy(component)
+            for component in self.components
+            if component.get("group") != GROUP
+            and component.get("group") not in pinned_groups
+        ]
+        coordinates: tuple[tuple[str, str, str], ...] = ()
+        if role in {"aggregate", "mysql553"}:
+            coordinates += REQUIRED_EXAMPLE_COORDINATES
+        if role in {"aggregate", "mysql552"}:
+            coordinates += REQUIRED_552_EXAMPLE_COORDINATES
+        third_party_components.extend(
+            maven_component(
+                group,
+                name,
+                version,
+                [{"license": {"id": "Apache-2.0"}}],
+            )
+            for group, name, version in coordinates
         )
+
+        root_component = first_party_components[root_name]
+        child_components = [
+            first_party_components[name] for name in first_party_children[role]
+        ]
+        all_components = [*child_components, *third_party_components]
+        dependency_records: list[dict[str, object]] = []
+        for name in (root_name, *first_party_children[role]):
+            targets = [
+                first_party_purl(target)
+                for target in sorted(first_party_edges[role][name])
+            ]
+            if name == root_name:
+                targets.extend(str(component["purl"]) for component in third_party_components)
+            dependency_records.append(
+                {"ref": first_party_purl(name), "dependsOn": targets}
+            )
+        dependency_records.extend(
+            {"ref": str(component["purl"]), "dependsOn": []}
+            for component in third_party_components
+        )
+
+        serial = "urn:uuid:00000000-0000-0000-0000-000000000001"
+        document = {
+            "bomFormat": "CycloneDX",
+            "specVersion": "1.6",
+            "serialNumber": serial,
+            "version": 1,
+            "metadata": {
+                "timestamp": timestamp,
+                "tools": {
+                    "components": [
+                        {
+                            "type": "application",
+                            "author": "CycloneDX",
+                            "name": "cyclonedx-gradle-plugin",
+                            "version": "3.4.0",
+                        }
+                    ]
+                },
+                "licenses": [
+                    {
+                        "license": {
+                            "id": "Apache-2.0",
+                            "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+                        }
+                    }
+                ],
+                "component": root_component,
+            },
+            "components": all_components,
+            "dependencies": dependency_records,
+        }
+
+        ET.register_namespace("", NAMESPACE)
+        xml_root = ET.Element(
+            qname("bom"), {"serialNumber": serial, "version": "1"}
+        )
+        metadata = ET.SubElement(xml_root, qname("metadata"))
+        ET.SubElement(metadata, qname("timestamp")).text = timestamp
+        tools = ET.SubElement(metadata, qname("tools"))
+        tool_components = ET.SubElement(tools, qname("components"))
+        tool = ET.SubElement(
+            tool_components, qname("component"), {"type": "application"}
+        )
+        ET.SubElement(tool, qname("author")).text = "CycloneDX"
+        ET.SubElement(tool, qname("name")).text = "cyclonedx-gradle-plugin"
+        ET.SubElement(tool, qname("version")).text = "3.4.0"
+        append_xml_component(metadata, root_component)
+        document_licenses = ET.SubElement(metadata, qname("licenses"))
+        document_license = ET.SubElement(document_licenses, qname("license"))
+        ET.SubElement(document_license, qname("id")).text = "Apache-2.0"
+        ET.SubElement(document_license, qname("url")).text = (
+            "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        )
+        components = ET.SubElement(xml_root, qname("components"))
+        for component in all_components:
+            append_xml_component(components, component)
+        dependencies = ET.SubElement(xml_root, qname("dependencies"))
+        for entry in dependency_records:
+            dependency = ET.SubElement(
+                dependencies, qname("dependency"), {"ref": str(entry["ref"])}
+            )
+            for target in entry["dependsOn"]:
+                ET.SubElement(
+                    dependency, qname("dependency"), {"ref": str(target)}
+                )
+        tree = ET.ElementTree(xml_root)
+
+        source_json = self.root / f"{role}-source.json"
+        source_xml = self.root / f"{role}-source.xml"
+        output_json = self.root / f"{role}-output.json"
+        output_xml = self.root / f"{role}-output.xml"
+        source_json.write_text(json.dumps(document) + "\n", encoding="utf-8")
+        tree.write(source_xml, encoding="utf-8", xml_declaration=True)
+        return source_json, source_xml, output_json, output_xml
+
+    def six_role_pairs(self) -> tuple[tuple[Path, Path, Path, Path], ...]:
+        return (
+            self.role_pair("aggregate", "2026-08-14T00:00:00Z"),
+            self.role_pair("core", "2026-08-14T00:00:00.500Z"),
+            self.role_pair("adapter553", "2026-08-14T00:00:01Z"),
+            self.role_pair("adapter552", "2026-08-14T00:00:01.500Z"),
+            self.role_pair("mysql553", "2026-08-14T00:00:02.123Z"),
+            self.role_pair("mysql552", "2026-08-14T00:00:03.456Z"),
+        )
+
+    def run_role_pairs(
+        self, pairs: tuple[tuple[Path, Path, Path, Path], ...]
+    ) -> subprocess.CompletedProcess[str]:
         arguments: list[str] = []
         for pair in pairs:
             arguments.extend(("--pair", *(str(path) for path in pair)))
+        return self.run_finalizer(*arguments)
 
-        result = self.run_finalizer(*arguments)
+    def test_accepts_distinct_valid_timestamps_across_six_roles(self) -> None:
+        pairs = self.six_role_pairs()
+        result = self.run_role_pairs(pairs)
 
         self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual(12, sum(path.exists() for pair in pairs for path in pair[2:]))
+
+    def test_aggregate_links_both_mysql_profiles_to_one_container_leaf(self) -> None:
+        pairs = self.six_role_pairs()
+        result = self.run_role_pairs(pairs)
+        self.assertEqual(0, result.returncode, result.stderr)
+
+        document = json.loads(pairs[0][2].read_text(encoding="utf-8"))
+        containers = [
+            component
+            for component in document["components"]
+            if component.get("type") == "container"
+            and component.get("name") == "mysql"
+        ]
+        self.assertEqual(1, len(containers))
+        container_purl = containers[0]["purl"]
+        graph = {
+            entry["ref"]: entry["dependsOn"] for entry in document["dependencies"]
+        }
+        for example_name in ("mysql-example", "mysql-5.5.2-example"):
+            self.assertIn(container_purl, graph[first_party_purl := (
+                f"pkg:maven/{GROUP}/{example_name}@0.1.0"
+                f"?project_path=%3A{example_name}"
+            )], first_party_purl)
+        self.assertEqual([], graph[container_purl])
+
+    def test_mysql552_profile_requires_all_pinned_coordinates(self) -> None:
+        qname = lambda name: f"{{{NAMESPACE}}}{name}"
+        for group, name, version in REQUIRED_552_EXAMPLE_COORDINATES:
+            with self.subTest(coordinate=f"{group}:{name}:{version}"):
+                source_json, source_xml, output_json, output_xml = self.role_pair(
+                    "mysql552", "2026-08-14T00:00:03.456Z"
+                )
+                target_purl = f"pkg:maven/{group}/{name}@{version}?type=jar"
+                document = json.loads(source_json.read_text(encoding="utf-8"))
+                document["components"] = [
+                    component
+                    for component in document["components"]
+                    if component["purl"] != target_purl
+                ]
+                for entry in document["dependencies"]:
+                    entry["dependsOn"] = [
+                        ref for ref in entry["dependsOn"] if ref != target_purl
+                    ]
+                document["dependencies"] = [
+                    entry
+                    for entry in document["dependencies"]
+                    if entry["ref"] != target_purl
+                ]
+                source_json.write_text(json.dumps(document) + "\n", encoding="utf-8")
+
+                tree = ET.parse(source_xml)
+                components = tree.getroot().find(qname("components"))
+                dependencies = tree.getroot().find(qname("dependencies"))
+                self.assertIsNotNone(components)
+                self.assertIsNotNone(dependencies)
+                for component in list(components):
+                    if component.findtext(qname("purl")) == target_purl:
+                        components.remove(component)
+                for entry in list(dependencies):
+                    if entry.get("ref") == target_purl:
+                        dependencies.remove(entry)
+                        continue
+                    for target in list(entry):
+                        if target.get("ref") == target_purl:
+                            entry.remove(target)
+                tree.write(source_xml, encoding="utf-8", xml_declaration=True)
+
+                result = self.run_finalizer(
+                    "--pair",
+                    str(source_json),
+                    str(source_xml),
+                    str(output_json),
+                    str(output_xml),
+                )
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn(
+                    "Example SBOM must contain exactly the pinned Maven versions",
+                    result.stderr,
+                )
+
+    def test_release_collection_rejects_cross_role_fingerprint_drift(self) -> None:
+        pairs = self.six_role_pairs()
+        aggregate_json, aggregate_xml, _, _ = pairs[0]
+        document = json.loads(aggregate_json.read_text(encoding="utf-8"))
+        core_json = next(
+            component
+            for component in document["components"]
+            if component["name"] == "routecontract-core"
+        )
+        core_json["description"] = "context-specific drift"
+        aggregate_json.write_text(json.dumps(document) + "\n", encoding="utf-8")
+
+        qname = lambda name: f"{{{NAMESPACE}}}{name}"
+        tree = ET.parse(aggregate_xml)
+        core_xml = next(
+            component
+            for component in tree.getroot().findall(
+                f"{qname('components')}/{qname('component')}"
+            )
+            if component.findtext(qname("name")) == "routecontract-core"
+        )
+        purl_index = list(core_xml).index(core_xml.find(qname("purl")))
+        description = ET.Element(qname("description"))
+        description.text = "context-specific drift"
+        core_xml.insert(purl_index, description)
+        tree.write(aggregate_xml, encoding="utf-8", xml_declaration=True)
+
+        result = self.run_role_pairs(pairs)
+
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn(
+            "first-party module records differ across roles: routecontract-core",
+            result.stderr,
+        )
+
+    def test_release_pair_rejects_wrong_first_party_dependency_ownership(self) -> None:
+        pairs = self.six_role_pairs()
+        example_json, example_xml, _, _ = pairs[-1]
+        core_purl = str(self.core_component["purl"])
+        document = json.loads(example_json.read_text(encoding="utf-8"))
+        document["dependencies"][0]["dependsOn"].append(core_purl)
+        example_json.write_text(json.dumps(document) + "\n", encoding="utf-8")
+
+        qname = lambda name: f"{{{NAMESPACE}}}{name}"
+        tree = ET.parse(example_xml)
+        dependencies = tree.getroot().find(qname("dependencies"))
+        self.assertIsNotNone(dependencies)
+        ET.SubElement(
+            list(dependencies)[0], qname("dependency"), {"ref": core_purl}
+        )
+        tree.write(example_xml, encoding="utf-8", xml_declaration=True)
+
+        result = self.run_role_pairs(pairs)
+
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("first-party dependency ownership differs", result.stderr)
+
+    def test_release_collection_requires_all_six_roles(self) -> None:
+        pairs = self.six_role_pairs()
+
+        result = self.run_role_pairs(pairs[:-1])
+
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn(
+            "exactly aggregate, core, adapter553, adapter552, mysql553, and mysql552 pairs",
+            result.stderr,
+        )
 
     @unittest.skipUnless(
         os.environ.get("ROUTECONTRACT_CYCLONEDX_CLI"),
@@ -551,7 +868,7 @@ class FinalizeSbomTest(unittest.TestCase):
 
                 self.assertNotEqual(0, result.returncode)
                 self.assertIn(
-                    "Example SBOM must contain exactly one pinned Maven component",
+                    "Example SBOM must contain exactly the pinned Maven versions",
                     result.stderr,
                 )
         self.components = original
@@ -574,7 +891,7 @@ class FinalizeSbomTest(unittest.TestCase):
                 result = self.finalize()
 
                 self.assertNotEqual(0, result.returncode)
-                self.assertIn("Reviewed Maven component identity differs", result.stderr)
+                self.assertIn("Unexpected Maven component version", result.stderr)
         self.components = original
 
     def test_rejects_percent_encoded_required_coordinate_alias_duplicates(self) -> None:

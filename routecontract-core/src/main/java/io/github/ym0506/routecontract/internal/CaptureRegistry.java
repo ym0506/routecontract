@@ -43,7 +43,7 @@ public final class CaptureRegistry {
      */
     public static CaptureScope open(final String operationId) {
         validateOperationId(operationId);
-        ShardingSphereRuntimeIdentity runtimeIdentity = ShardingSphere553Preflight.verify();
+        ShardingSphereRuntimeIdentity runtimeIdentity = RuntimeAdapterRegistry.verify();
         if (CURRENT_CAPTURE.get() != null) {
             throw new IllegalStateException("Nested RouteContract captures are not supported");
         }
@@ -74,7 +74,16 @@ public final class CaptureRegistry {
         }
     }
 
-    static AttemptHandle startAttempt(
+    /**
+     * Starts one adapter-reported physical attempt for the public-at-the-JVM-boundary SPI bridge.
+     *
+     * @param dataSourceName physical data-source name reported by the adapter, or {@code null}
+     * @param sql physical SQL reported by the adapter, or {@code null}
+     * @param parameters parameter values used only to retain minimized runtime type names
+     * @param trunkThread whether the adapter reported a trunk-thread callback
+     * @return an opaque core-owned handle; callers must pass it back unchanged
+     */
+    public static Object startAttemptFromAdapter(
             final String dataSourceName,
             final String sql,
             final List<Object> parameters,
@@ -111,7 +120,22 @@ public final class CaptureRegistry {
         }
     }
 
-    static void finishCallbackReturned(final AttemptHandle handle) {
+    /**
+     * Returns the core-owned inactive handle used before an adapter start callback.
+     *
+     * @return opaque inactive handle
+     */
+    public static Object noopAttemptFromAdapter() {
+        return AttemptHandle.noop();
+    }
+
+    /**
+     * Finishes an opaque adapter attempt as callback-returned.
+     *
+     * @param opaqueHandle core-owned handle returned by the start bridge
+     */
+    public static void finishCallbackReturnedFromAdapter(final Object opaqueHandle) {
+        AttemptHandle handle = requireAttemptHandle(opaqueHandle);
         if (!handle.isActive()) {
             return;
         }
@@ -122,7 +146,14 @@ public final class CaptureRegistry {
         }
     }
 
-    static void finishFailure(final AttemptHandle handle, final Exception cause) {
+    /**
+     * Finishes an opaque adapter attempt as callback-failure.
+     *
+     * @param opaqueHandle core-owned handle returned by the start bridge
+     * @param cause failure reported by the adapter
+     */
+    public static void finishFailureFromAdapter(final Object opaqueHandle, final Exception cause) {
+        AttemptHandle handle = requireAttemptHandle(opaqueHandle);
         if (!handle.isActive()) {
             return;
         }
@@ -133,7 +164,12 @@ public final class CaptureRegistry {
         }
     }
 
-    static void recordCurrentError(final String errorCode) {
+    /**
+     * Records a stable adapter diagnostic on the current capture, when one exists.
+     *
+     * @param errorCode stable minimized diagnostic code
+     */
+    public static void recordCurrentErrorFromAdapter(final String errorCode) {
         CaptureToken token = CURRENT_CAPTURE.get();
         if (token == null) {
             return;
@@ -142,6 +178,14 @@ public final class CaptureRegistry {
         if (capture != null) {
             capture.recordError(errorCode);
         }
+    }
+
+    private static AttemptHandle requireAttemptHandle(final Object opaqueHandle) {
+        if (opaqueHandle instanceof AttemptHandle handle) {
+            return handle;
+        }
+        throw new IllegalArgumentException(
+                "RC_ADAPTER_CLASSLOADER_MISMATCH: adapter attempt handle is not owned by this core copy");
     }
 
     private static List<String> parameterTypes(final List<Object> parameters) {

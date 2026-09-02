@@ -7,7 +7,7 @@ plugins {
 }
 
 group = 'io.github.ym0506.routecontract'
-version = '0.1.2'
+version = '0.2.0'
 
 def apacheLicenseChoice = {
     License license = new License()
@@ -20,9 +20,15 @@ def apacheLicenseChoice = {
 
 def verifiedSbomDirectory = layout.buildDirectory.dir('reports/verified-sbom').get().asFile
 def aggregateSbomSourceDirectory = layout.buildDirectory.dir('reports/cyclonedx').get().asFile
+def coreSbomSourceDirectory = project(':routecontract-core')
+        .layout.buildDirectory.dir('reports/cyclonedx-direct').get().asFile
 def librarySbomSourceDirectory = project(':routecontract-shardingsphere-5.5')
         .layout.buildDirectory.dir('reports/cyclonedx-direct').get().asFile
+def adapter552SbomSourceDirectory = project(':routecontract-shardingsphere-5.5.2')
+        .layout.buildDirectory.dir('reports/cyclonedx-direct').get().asFile
 def mysqlSbomSourceDirectory = project(':mysql-example')
+        .layout.buildDirectory.dir('reports/cyclonedx-direct').get().asFile
+def mysql552SbomSourceDirectory = project(':mysql-5.5.2-example')
         .layout.buildDirectory.dir('reports/cyclonedx-direct').get().asFile
 
 allprojects {
@@ -89,7 +95,29 @@ project(':routecontract-shardingsphere-5.5') {
     }
 }
 
+project(':routecontract-shardingsphere-5.5.2') {
+    tasks.named('cyclonedxDirectBom') {
+        includeConfigs = ['compileClasspath', 'runtimeClasspath']
+        skipConfigs = ['(?i).*test.*', 'exact552ProbeRuntime', 'wrong553ProbeRuntime']
+        licenseChoice = apacheLicenseChoice()
+    }
+}
+
+project(':routecontract-core') {
+    tasks.named('cyclonedxDirectBom') {
+        includeConfigs = ['compileClasspath', 'runtimeClasspath']
+        skipConfigs = ['(?i).*test.*']
+        licenseChoice = apacheLicenseChoice()
+    }
+}
+
 project(':mysql-example') {
+    tasks.named('cyclonedxDirectBom') {
+        licenseChoice = apacheLicenseChoice()
+    }
+}
+
+project(':mysql-5.5.2-example') {
     tasks.named('cyclonedxDirectBom') {
         licenseChoice = apacheLicenseChoice()
     }
@@ -104,10 +132,16 @@ tasks.register('prepareVerifiedSbom', Exec) {
     inputs.files(
             new File(aggregateSbomSourceDirectory, 'bom.json'),
             new File(aggregateSbomSourceDirectory, 'bom.xml'),
+            new File(coreSbomSourceDirectory, 'bom.json'),
+            new File(coreSbomSourceDirectory, 'bom.xml'),
             new File(librarySbomSourceDirectory, 'bom.json'),
             new File(librarySbomSourceDirectory, 'bom.xml'),
+            new File(adapter552SbomSourceDirectory, 'bom.json'),
+            new File(adapter552SbomSourceDirectory, 'bom.xml'),
             new File(mysqlSbomSourceDirectory, 'bom.json'),
-            new File(mysqlSbomSourceDirectory, 'bom.xml'))
+            new File(mysqlSbomSourceDirectory, 'bom.xml'),
+            new File(mysql552SbomSourceDirectory, 'bom.json'),
+            new File(mysql552SbomSourceDirectory, 'bom.xml'))
     outputs.dir(verifiedSbomDirectory)
 
     commandLine(
@@ -119,20 +153,35 @@ tasks.register('prepareVerifiedSbom', Exec) {
             new File(verifiedSbomDirectory, 'aggregate/bom.json'),
             new File(verifiedSbomDirectory, 'aggregate/bom.xml'),
             '--pair',
+            new File(coreSbomSourceDirectory, 'bom.json'),
+            new File(coreSbomSourceDirectory, 'bom.xml'),
+            new File(verifiedSbomDirectory, 'routecontract-core/bom.json'),
+            new File(verifiedSbomDirectory, 'routecontract-core/bom.xml'),
+            '--pair',
             new File(librarySbomSourceDirectory, 'bom.json'),
             new File(librarySbomSourceDirectory, 'bom.xml'),
             new File(verifiedSbomDirectory, 'routecontract-shardingsphere-5.5/bom.json'),
             new File(verifiedSbomDirectory, 'routecontract-shardingsphere-5.5/bom.xml'),
             '--pair',
+            new File(adapter552SbomSourceDirectory, 'bom.json'),
+            new File(adapter552SbomSourceDirectory, 'bom.xml'),
+            new File(verifiedSbomDirectory, 'routecontract-shardingsphere-5.5.2/bom.json'),
+            new File(verifiedSbomDirectory, 'routecontract-shardingsphere-5.5.2/bom.xml'),
+            '--pair',
             new File(mysqlSbomSourceDirectory, 'bom.json'),
             new File(mysqlSbomSourceDirectory, 'bom.xml'),
             new File(verifiedSbomDirectory, 'mysql-example/bom.json'),
-            new File(verifiedSbomDirectory, 'mysql-example/bom.xml'))
+            new File(verifiedSbomDirectory, 'mysql-example/bom.xml'),
+            '--pair',
+            new File(mysql552SbomSourceDirectory, 'bom.json'),
+            new File(mysql552SbomSourceDirectory, 'bom.xml'),
+            new File(verifiedSbomDirectory, 'mysql-5.5.2-example/bom.json'),
+            new File(verifiedSbomDirectory, 'mysql-5.5.2-example/bom.xml'))
 }
 
 tasks.register('validateOfficialCycloneDxSbom', Exec) {
     group = 'verification'
-    description = 'Validate all three finalized JSON/XML SBOM pairs with the checksum-pinned official CycloneDX CLI.'
+    description = 'Validate all six finalized JSON/XML SBOM pairs with the checksum-pinned official CycloneDX CLI.'
     dependsOn tasks.named('prepareVerifiedSbom')
 
     inputs.files(
@@ -140,10 +189,16 @@ tasks.register('validateOfficialCycloneDxSbom', Exec) {
             layout.projectDirectory.file('security/cyclonedx-cli.lock.json'),
             new File(verifiedSbomDirectory, 'aggregate/bom.json'),
             new File(verifiedSbomDirectory, 'aggregate/bom.xml'),
+            new File(verifiedSbomDirectory, 'routecontract-core/bom.json'),
+            new File(verifiedSbomDirectory, 'routecontract-core/bom.xml'),
             new File(verifiedSbomDirectory, 'routecontract-shardingsphere-5.5/bom.json'),
             new File(verifiedSbomDirectory, 'routecontract-shardingsphere-5.5/bom.xml'),
+            new File(verifiedSbomDirectory, 'routecontract-shardingsphere-5.5.2/bom.json'),
+            new File(verifiedSbomDirectory, 'routecontract-shardingsphere-5.5.2/bom.xml'),
             new File(verifiedSbomDirectory, 'mysql-example/bom.json'),
-            new File(verifiedSbomDirectory, 'mysql-example/bom.xml'))
+            new File(verifiedSbomDirectory, 'mysql-example/bom.xml'),
+            new File(verifiedSbomDirectory, 'mysql-5.5.2-example/bom.json'),
+            new File(verifiedSbomDirectory, 'mysql-5.5.2-example/bom.xml'))
 
     commandLine(
             'python3',
