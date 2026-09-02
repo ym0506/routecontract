@@ -1,8 +1,11 @@
 # Architecture and trust boundaries
 
-RouteContract is a test-library adapter around Apache ShardingSphere-JDBC 5.5.3's public
-`SQLExecutionHook`. It observes callback events after routing and rewriting; it does not intercept
-the internal route plan.
+The released RouteContract v0.1 line is a test-library adapter around Apache
+ShardingSphere-JDBC 5.5.3's public `SQLExecutionHook`. The unreleased 0.2 source candidate moves
+the public API and capture model into a version-neutral core and supplies separate exact 5.5.3 and
+5.5.2 adapters. Both observe callback events after routing and rewriting; neither intercepts the
+internal route plan. See `docs/versioned-shardingsphere-adapters.md` for the pre-release split and
+its release gates.
 
 ```mermaid
 flowchart LR
