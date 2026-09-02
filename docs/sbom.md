@@ -55,8 +55,12 @@ inventory of every classifier. For example, Javadoc classifiers produced by the
 pinned Temurin/OpenJDK standard doclet contain generated CSS, JavaScript and
 image files, including jQuery 3.7.1 and jQuery UI 1.14.1. Those classifier-only
 files and their embedded `legal/` texts are disclosed in `THIRD_PARTY.md` and
-bound by classifier checksums. They are not runtime or direct dependency
-components in these machine SBOMs.
+bound by classifier checksums. The SBOM-generation rules do not add them as
+runtime or direct dependency components in these machine SBOMs.
+The non-bundled distribution boundary remains a separate defense-in-depth
+check. These profiles do not determine the semantic origin of renamed or copied
+source/class bytes. The related provenance review reopens if those payload
+invariants change or a JTS/Mahout published dependency enters the release.
 
 ## Generate and locate the SBOMs
 
