@@ -1,11 +1,13 @@
 package io.github.ym0506.routecontract.internal;
 
+import io.github.ym0506.routecontract.ShardingSphereRuntimeIdentity;
 import org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -13,7 +15,9 @@ class ShardingSphere553PreflightTest {
 
     @Test
     void actualTestRuntimeAndProviderDiscoveryPassPreflight() {
-        assertDoesNotThrow(ShardingSphere553Preflight::verify);
+        assertEquals(
+                ShardingSphereRuntimeIdentity.SHARDINGSPHERE_5_5_3,
+                assertDoesNotThrow(ShardingSphere553Preflight::verify));
     }
 
     @Test

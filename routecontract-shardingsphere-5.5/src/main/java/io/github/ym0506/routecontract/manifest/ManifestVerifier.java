@@ -2,6 +2,7 @@ package io.github.ym0506.routecontract.manifest;
 
 import io.github.ym0506.routecontract.CaptureStatus;
 import io.github.ym0506.routecontract.RouteSnapshot;
+import io.github.ym0506.routecontract.ShardingSphereRuntimeIdentity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -96,15 +97,15 @@ public final class ManifestVerifier {
             final ObservedExecutionManifest approved,
             final ObservedExecutionManifest candidate) {
         List<ManifestDiff> findings = new ArrayList<>();
-        if (approved.schemaVersion() != ObservedExecutionManifest.CURRENT_SCHEMA_VERSION
-                || candidate.schemaVersion() != ObservedExecutionManifest.CURRENT_SCHEMA_VERSION) {
+        if (!isSupportedSchema(approved.schemaVersion()) || !isSupportedSchema(candidate.schemaVersion())) {
             findings.add(new ManifestDiff(
                     ManifestDiffCode.UNSUPPORTED_SCHEMA,
                     ManifestDiffSeverity.BLOCKING,
-                    "supported=" + ObservedExecutionManifest.CURRENT_SCHEMA_VERSION
+                    "supported=[1, " + ObservedExecutionManifest.CURRENT_SCHEMA_VERSION + "]"
                             + ", approved=" + approved.schemaVersion()
                             + ", candidate=" + candidate.schemaVersion()));
         }
+        addRuntimeIdentityFindings(findings, approved.runtimeIdentity(), candidate.runtimeIdentity());
         if (!approved.operationId().equals(candidate.operationId())) {
             findings.add(new ManifestDiff(
                     ManifestDiffCode.OPERATION_ID_MISMATCH,
@@ -126,13 +127,15 @@ public final class ManifestVerifier {
             final ObservedExecutionManifest approved,
             final RouteSnapshot snapshot) {
         List<ManifestDiff> findings = new ArrayList<>();
-        if (approved.schemaVersion() != ObservedExecutionManifest.CURRENT_SCHEMA_VERSION) {
+        if (!isSupportedSchema(approved.schemaVersion()) || !isSupportedSnapshotSchema(snapshot.schemaVersion())) {
             findings.add(new ManifestDiff(
                     ManifestDiffCode.UNSUPPORTED_SCHEMA,
                     ManifestDiffSeverity.BLOCKING,
-                    "supported=" + ObservedExecutionManifest.CURRENT_SCHEMA_VERSION
-                            + ", approved=" + approved.schemaVersion()));
+                    "supported=[1, " + ObservedExecutionManifest.CURRENT_SCHEMA_VERSION + "]"
+                            + ", approved=" + approved.schemaVersion()
+                            + ", candidateSnapshot=" + snapshot.schemaVersion()));
         }
+        addRuntimeIdentityFindings(findings, approved.runtimeIdentity(), snapshot.runtimeIdentity());
         if (!approved.operationId().equals(snapshot.operationId())) {
             findings.add(new ManifestDiff(
                     ManifestDiffCode.OPERATION_ID_MISMATCH,
@@ -148,6 +151,33 @@ public final class ManifestVerifier {
                             + ", unknownOutcomeCount=" + approved.counts().unknownOutcomeCount()));
         }
         return List.copyOf(findings);
+    }
+
+    private static void addRuntimeIdentityFindings(
+            final List<ManifestDiff> findings,
+            final ShardingSphereRuntimeIdentity approved,
+            final ShardingSphereRuntimeIdentity candidate) {
+        boolean approvedSupported = approved.isSupported();
+        boolean candidateSupported = candidate.isSupported();
+        if (!approvedSupported || !candidateSupported) {
+            findings.add(new ManifestDiff(
+                    ManifestDiffCode.UNSUPPORTED_RUNTIME_IDENTITY,
+                    ManifestDiffSeverity.BLOCKING,
+                    "approved=" + approved + ", candidate=" + candidate));
+        } else if (!approved.equals(candidate)) {
+            findings.add(new ManifestDiff(
+                    ManifestDiffCode.RUNTIME_IDENTITY_MISMATCH,
+                    ManifestDiffSeverity.BLOCKING,
+                    "approved=" + approved + ", candidate=" + candidate));
+        }
+    }
+
+    private static boolean isSupportedSchema(final int schemaVersion) {
+        return schemaVersion == 1 || schemaVersion == ObservedExecutionManifest.CURRENT_SCHEMA_VERSION;
+    }
+
+    private static boolean isSupportedSnapshotSchema(final int schemaVersion) {
+        return schemaVersion == 1 || schemaVersion == RouteSnapshot.CURRENT_SCHEMA_VERSION;
     }
 
     private static boolean isContractEligible(final ObservedExecutionManifest manifest) {

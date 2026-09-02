@@ -1,5 +1,6 @@
 package io.github.ym0506.routecontract.internal;
 
+import io.github.ym0506.routecontract.ShardingSphereRuntimeIdentity;
 import org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook;
 import org.apache.shardingsphere.infra.spi.ShardingSphereServiceLoader;
 
@@ -11,23 +12,27 @@ final class ShardingSphere553Preflight {
 
     static final String SUPPORTED_VERSION = "5.5.3";
 
-    private static volatile boolean verified;
+    private static volatile ShardingSphereRuntimeIdentity verifiedIdentity;
 
     private ShardingSphere553Preflight() {
     }
 
-    static void verify() {
-        if (verified) {
-            return;
+    static ShardingSphereRuntimeIdentity verify() {
+        ShardingSphereRuntimeIdentity result = verifiedIdentity;
+        if (result != null) {
+            return result;
         }
         synchronized (ShardingSphere553Preflight.class) {
-            if (verified) {
-                return;
+            result = verifiedIdentity;
+            if (result != null) {
+                return result;
             }
             verifyExactVersion("shardingsphere-infra-executor", implementationVersion(SQLExecutionHook.class));
             verifyExactVersion("shardingsphere-infra-spi", implementationVersion(ShardingSphereServiceLoader.class));
             verifyProviderDiscovery(discoverProviders());
-            verified = true;
+            result = ShardingSphereRuntimeIdentity.SHARDINGSPHERE_5_5_3;
+            verifiedIdentity = result;
+            return result;
         }
     }
 

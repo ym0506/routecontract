@@ -14,6 +14,12 @@ public enum ManifestDiffCode {
     /** The approved manifest is not eligible to serve as an enforceable contract. */
     APPROVED_MANIFEST_NOT_ELIGIBLE("RCM003"),
 
+    /** At least one runtime identity is outside the exact supported adapter/runtime set. */
+    UNSUPPORTED_RUNTIME_IDENTITY("RCM004"),
+
+    /** Approved and candidate runtime identities are supported but differ. */
+    RUNTIME_IDENTITY_MISMATCH("RCM005"),
+
     /** Collector diagnostics or an unknown callback outcome make the capture incomplete. */
     CAPTURE_INCOMPLETE("RCM100"),
 

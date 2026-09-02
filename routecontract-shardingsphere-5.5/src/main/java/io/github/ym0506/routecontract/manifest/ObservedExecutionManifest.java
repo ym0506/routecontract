@@ -3,6 +3,7 @@ package io.github.ym0506.routecontract.manifest;
 import io.github.ym0506.routecontract.PhysicalExecutionAttempt;
 import io.github.ym0506.routecontract.RouteContract;
 import io.github.ym0506.routecontract.RouteSnapshot;
+import io.github.ym0506.routecontract.ShardingSphereRuntimeIdentity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +26,7 @@ import java.util.TreeSet;
  * no callback failures or unknown outcomes is eligible for contract matching.</p>
  *
  * @param schemaVersion manifest schema version
+ * @param runtimeIdentity exact adapter and observed ShardingSphere component identity
  * @param operationId non-blank caller identifier, at most 200 Java UTF-16 code units
  * @param captureStatus completeness classification copied from the source snapshot
  * @param policy explicit budgets and structural enforcement policy
@@ -33,19 +35,23 @@ import java.util.TreeSet;
  */
 public record ObservedExecutionManifest(
         int schemaVersion,
+        ShardingSphereRuntimeIdentity runtimeIdentity,
         String operationId,
         io.github.ym0506.routecontract.CaptureStatus captureStatus,
         ManifestPolicy policy,
         ManifestCounts counts,
         List<ManifestAttempt> attempts) {
 
-    /** Manifest schema version produced and supported by this release. */
-    public static final int CURRENT_SCHEMA_VERSION = 1;
+    /** Manifest schema version produced by this release. */
+    public static final int CURRENT_SCHEMA_VERSION = 2;
+
+    private static final int LEGACY_SCHEMA_VERSION = 1;
 
     /**
      * Creates and validates a canonical observed-execution manifest.
      *
      * @param schemaVersion positive manifest schema version
+     * @param runtimeIdentity exact adapter and observed ShardingSphere component identity
      * @param operationId non-blank opaque identifier, at most 200 Java UTF-16 code units
      * @param captureStatus source capture completeness classification
      * @param policy explicit verification policy
@@ -55,6 +61,12 @@ public record ObservedExecutionManifest(
     public ObservedExecutionManifest {
         if (schemaVersion <= 0) {
             throw new IllegalArgumentException("schemaVersion must be positive");
+        }
+        runtimeIdentity = Objects.requireNonNull(runtimeIdentity, "runtimeIdentity");
+        if (schemaVersion == LEGACY_SCHEMA_VERSION
+                && !ShardingSphereRuntimeIdentity.SHARDINGSPHERE_5_5_3.equals(runtimeIdentity)) {
+            throw new IllegalArgumentException(
+                    "Manifest schema 1 implicitly identifies Apache ShardingSphere 5.5.3");
         }
         operationId = requireOperationId(operationId);
         captureStatus = Objects.requireNonNull(captureStatus, "captureStatus");
@@ -77,6 +89,45 @@ public record ObservedExecutionManifest(
             throw new IllegalArgumentException("Manifest attempt count exceeds the capture safety ceiling");
         }
         validateCaptureStatus(captureStatus, counts);
+    }
+
+    /**
+     * Preserves the original constructor descriptor for v0.1 callers.
+     *
+     * <p>Schema 1 was emitted only by the exact ShardingSphere 5.5.3 adapter. The omitted identity
+     * is therefore interpreted as that exact runtime. Schema 2 requires the canonical constructor
+     * with an explicit identity.</p>
+     *
+     * @param schemaVersion must be legacy manifest schema 1
+     * @param operationId non-blank caller identifier
+     * @param captureStatus source capture completeness classification
+     * @param policy explicit verification policy
+     * @param counts redundant counts validated against canonical attempts
+     * @param attempts immutable canonical structural multiset entries
+     */
+    public ObservedExecutionManifest(
+            final int schemaVersion,
+            final String operationId,
+            final io.github.ym0506.routecontract.CaptureStatus captureStatus,
+            final ManifestPolicy policy,
+            final ManifestCounts counts,
+            final List<ManifestAttempt> attempts) {
+        this(
+                requireLegacySchemaVersion(schemaVersion),
+                ShardingSphereRuntimeIdentity.SHARDINGSPHERE_5_5_3,
+                operationId,
+                captureStatus,
+                policy,
+                counts,
+                attempts);
+    }
+
+    private static int requireLegacySchemaVersion(final int schemaVersion) {
+        if (schemaVersion != LEGACY_SCHEMA_VERSION) {
+            throw new IllegalArgumentException(
+                    "The legacy ObservedExecutionManifest constructor accepts only manifest schema 1");
+        }
+        return schemaVersion;
     }
 
     /**
@@ -119,6 +170,7 @@ public record ObservedExecutionManifest(
         validateSnapshotCounts(snapshot, recomputedObservedNames, recomputedCounts);
         return new ObservedExecutionManifest(
                 CURRENT_SCHEMA_VERSION,
+                snapshot.runtimeIdentity(),
                 snapshot.operationId(),
                 snapshot.status(),
                 policy,

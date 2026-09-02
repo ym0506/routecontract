@@ -2,6 +2,7 @@ package io.github.ym0506.routecontract.manifest;
 
 import io.github.ym0506.routecontract.AttemptOutcome;
 import io.github.ym0506.routecontract.CaptureStatus;
+import io.github.ym0506.routecontract.ShardingSphereRuntimeIdentity;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.JsonEncoding;
 import tools.jackson.core.JsonGenerator;
@@ -99,6 +100,9 @@ public final class ManifestCodec {
             final ObservedExecutionManifest manifest) {
         generator.writeStartObject();
         generator.writeNumberProperty("schemaVersion", manifest.schemaVersion());
+        if (manifest.schemaVersion() != 1) {
+            writeRuntimeIdentity(generator, manifest.runtimeIdentity());
+        }
         generator.writeStringProperty("operationId", manifest.operationId());
         generator.writeStringProperty("captureStatus", manifest.captureStatus().name());
         generator.writeObjectPropertyStart("policy");
@@ -142,10 +146,24 @@ public final class ManifestCodec {
         generator.writeEndObject();
     }
 
+    private static void writeRuntimeIdentity(
+            final JsonGenerator generator,
+            final ShardingSphereRuntimeIdentity identity) {
+        generator.writeObjectPropertyStart("runtimeIdentity");
+        generator.writeStringProperty("adapterId", identity.adapterId());
+        generator.writeNumberProperty("adapterContractVersion", identity.adapterContractVersion());
+        generator.writeStringProperty(
+                "infraExecutorImplementationVersion", identity.infraExecutorImplementationVersion());
+        generator.writeStringProperty(
+                "infraSpiImplementationVersion", identity.infraSpiImplementationVersion());
+        generator.writeEndObject();
+    }
+
     private static ObservedExecutionManifest readManifest(final JsonParser parser)
             throws ManifestFormatException {
         expect(parser.nextToken(), JsonToken.START_OBJECT, "manifest object");
         Integer schemaVersion = null;
+        ShardingSphereRuntimeIdentity runtimeIdentity = null;
         String operationId = null;
         CaptureStatus captureStatus = null;
         ManifestPolicy policy = null;
@@ -157,6 +175,7 @@ public final class ManifestCodec {
             JsonToken valueToken = parser.nextToken();
             switch (property) {
                 case "schemaVersion" -> schemaVersion = readInt(parser, valueToken, property);
+                case "runtimeIdentity" -> runtimeIdentity = readRuntimeIdentity(parser, valueToken);
                 case "operationId" -> operationId = readString(parser, valueToken, property);
                 case "captureStatus" -> captureStatus = parseEnum(
                         CaptureStatus.class, readString(parser, valueToken, property), property);
@@ -166,13 +185,51 @@ public final class ManifestCodec {
                 default -> throw format("Unknown manifest property: " + property);
             }
         }
+        int requiredSchemaVersion = required(schemaVersion, "schemaVersion");
+        if (requiredSchemaVersion == 1 && runtimeIdentity != null) {
+            throw format("Manifest schema 1 must not contain runtimeIdentity");
+        }
+        ShardingSphereRuntimeIdentity requiredRuntimeIdentity = requiredSchemaVersion == 1
+                ? ShardingSphereRuntimeIdentity.SHARDINGSPHERE_5_5_3
+                : required(runtimeIdentity, "runtimeIdentity");
         return new ObservedExecutionManifest(
-                required(schemaVersion, "schemaVersion"),
+                requiredSchemaVersion,
+                requiredRuntimeIdentity,
                 required(operationId, "operationId"),
                 required(captureStatus, "captureStatus"),
                 required(policy, "policy"),
                 required(counts, "counts"),
                 required(attempts, "attempts"));
+    }
+
+    private static ShardingSphereRuntimeIdentity readRuntimeIdentity(
+            final JsonParser parser,
+            final JsonToken token) throws ManifestFormatException {
+        expect(token, JsonToken.START_OBJECT, "runtimeIdentity object");
+        String adapterId = null;
+        Integer adapterContractVersion = null;
+        String infraExecutorImplementationVersion = null;
+        String infraSpiImplementationVersion = null;
+        while (parser.nextToken() != JsonToken.END_OBJECT) {
+            expect(parser.currentToken(), JsonToken.PROPERTY_NAME, "runtimeIdentity property name");
+            String property = parser.currentName();
+            JsonToken valueToken = parser.nextToken();
+            switch (property) {
+                case "adapterId" -> adapterId = readString(parser, valueToken, property);
+                case "adapterContractVersion" ->
+                        adapterContractVersion = readInt(parser, valueToken, property);
+                case "infraExecutorImplementationVersion" ->
+                        infraExecutorImplementationVersion = readString(parser, valueToken, property);
+                case "infraSpiImplementationVersion" ->
+                        infraSpiImplementationVersion = readString(parser, valueToken, property);
+                default -> throw format("Unknown runtimeIdentity property: " + property);
+            }
+        }
+        return new ShardingSphereRuntimeIdentity(
+                required(adapterId, "adapterId"),
+                required(adapterContractVersion, "adapterContractVersion"),
+                required(infraExecutorImplementationVersion, "infraExecutorImplementationVersion"),
+                required(infraSpiImplementationVersion, "infraSpiImplementationVersion"));
     }
 
     private static ManifestPolicy readPolicy(final JsonParser parser, final JsonToken token)

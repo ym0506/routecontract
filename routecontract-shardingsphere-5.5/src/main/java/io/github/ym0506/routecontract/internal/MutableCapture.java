@@ -5,11 +5,13 @@ import io.github.ym0506.routecontract.CaptureStatus;
 import io.github.ym0506.routecontract.PhysicalExecutionAttempt;
 import io.github.ym0506.routecontract.RouteContract;
 import io.github.ym0506.routecontract.RouteSnapshot;
+import io.github.ym0506.routecontract.ShardingSphereRuntimeIdentity;
 import io.github.ym0506.routecontract.ThreadRole;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -28,6 +30,7 @@ final class MutableCapture {
             .thenComparing(PhysicalExecutionAttempt::reportedFailureType, Comparator.nullsFirst(String::compareTo));
 
     private final String operationId;
+    private final ShardingSphereRuntimeIdentity runtimeIdentity;
     private final ConcurrentLinkedQueue<MutableAttempt> attempts = new ConcurrentLinkedQueue<>();
     private final ConcurrentLinkedQueue<String> collectorDiagnostics = new ConcurrentLinkedQueue<>();
     private final AtomicBoolean startCallbackObserved = new AtomicBoolean();
@@ -35,8 +38,9 @@ final class MutableCapture {
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicInteger retainedAttemptCount = new AtomicInteger();
 
-    MutableCapture(final String operationId) {
+    MutableCapture(final String operationId, final ShardingSphereRuntimeIdentity runtimeIdentity) {
         this.operationId = operationId;
+        this.runtimeIdentity = Objects.requireNonNull(runtimeIdentity, "runtimeIdentity");
     }
 
     void recordStartCallbackObserved() {
@@ -120,6 +124,7 @@ final class MutableCapture {
 
         return new RouteSnapshot(
                 RouteSnapshot.CURRENT_SCHEMA_VERSION,
+                runtimeIdentity,
                 operationId,
                 status,
                 frozenAttempts.size(),

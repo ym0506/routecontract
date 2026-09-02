@@ -2,7 +2,7 @@ package io.github.ym0506.routecontract.manifest;
 
 /** Mutually exclusive verification result, evaluated in declaration order. */
 public enum VerificationStatus {
-    /** Schema, operation identity, or approved-baseline eligibility prevents comparison. */
+    /** Schema, runtime identity, operation identity, or approved-baseline eligibility prevents comparison. */
     INCOMPATIBLE,
 
     /** Candidate evidence is diagnostic-only and not eligible for contract comparison. */

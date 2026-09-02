@@ -13,6 +13,7 @@ import java.util.TreeSet;
  * transaction commit or business success.</p>
  *
  * @param schemaVersion snapshot schema version
+ * @param runtimeIdentity immutable ShardingSphere callback runtime identity frozen at capture open
  * @param operationId non-blank caller-supplied identifier, at most 200 Java UTF-16 code units
  * @param status completeness classification derived from outcomes and collector diagnostics
  * @param observedPhysicalAttemptCount total observed physical JDBC execution attempts
@@ -27,6 +28,7 @@ import java.util.TreeSet;
  */
 public record RouteSnapshot(
         int schemaVersion,
+        ShardingSphereRuntimeIdentity runtimeIdentity,
         String operationId,
         CaptureStatus status,
         int observedPhysicalAttemptCount,
@@ -39,13 +41,16 @@ public record RouteSnapshot(
         List<PhysicalExecutionAttempt> attempts,
         List<String> collectorDiagnostics) {
 
-    /** Schema version produced and accepted by this release. */
-    public static final int CURRENT_SCHEMA_VERSION = 1;
+    /** Schema version produced by this release. */
+    public static final int CURRENT_SCHEMA_VERSION = 2;
+
+    private static final int LEGACY_SCHEMA_VERSION = 1;
 
     /**
      * Creates an immutable snapshot after validating all redundant counts, sets, and status.
      *
-     * @param schemaVersion must equal {@link #CURRENT_SCHEMA_VERSION}
+     * @param schemaVersion supported snapshot schema version
+     * @param runtimeIdentity exact callback runtime identity frozen before the action ran
      * @param operationId non-blank opaque identifier, at most 200 Java UTF-16 code units
      * @param status classification derived from outcomes and diagnostics
      * @param observedPhysicalAttemptCount count that must equal {@code attempts.size()}
@@ -59,8 +64,14 @@ public record RouteSnapshot(
      * @param collectorDiagnostics stable collector diagnostics
      */
     public RouteSnapshot {
-        if (schemaVersion != CURRENT_SCHEMA_VERSION) {
+        if (schemaVersion != LEGACY_SCHEMA_VERSION && schemaVersion != CURRENT_SCHEMA_VERSION) {
             throw new IllegalArgumentException("Unsupported snapshot schema: " + schemaVersion);
+        }
+        runtimeIdentity = Objects.requireNonNull(runtimeIdentity, "runtimeIdentity");
+        if (schemaVersion == LEGACY_SCHEMA_VERSION
+                && !ShardingSphereRuntimeIdentity.SHARDINGSPHERE_5_5_3.equals(runtimeIdentity)) {
+            throw new IllegalArgumentException(
+                    "Snapshot schema 1 implicitly identifies Apache ShardingSphere 5.5.3");
         }
         operationId = requireOperationId(operationId);
         status = Objects.requireNonNull(status, "status");
@@ -112,6 +123,63 @@ public record RouteSnapshot(
         if (status == CaptureStatus.COMPLETE && observedPhysicalAttemptCount == 0) {
             throw new IllegalArgumentException("COMPLETE status requires at least one observed attempt");
         }
+    }
+
+    /**
+     * Preserves the original constructor descriptor for v0.1 callers.
+     *
+     * <p>Snapshot schema 1 was produced only after the exact ShardingSphere 5.5.3 preflight, so
+     * the missing component is interpreted as that identity. Schema 2 requires the canonical
+     * constructor with an explicit identity.</p>
+     *
+     * @param schemaVersion must be legacy snapshot schema 1
+     * @param operationId non-blank opaque identifier
+     * @param status classification derived from outcomes and diagnostics
+     * @param observedPhysicalAttemptCount count that must equal {@code attempts.size()}
+     * @param callbackReturnedCount count of normal-return outcomes
+     * @param callbackFailureCount count of callback-failure outcomes
+     * @param unknownOutcomeCount count of start-only outcomes
+     * @param trunkThreadFlagCount count of trunk-thread flags
+     * @param workerThreadFlagCount count of worker-thread flags
+     * @param observedDataSourceNames unique names that must exactly match the attempts
+     * @param attempts physical-attempt evidence
+     * @param collectorDiagnostics stable collector diagnostics
+     */
+    public RouteSnapshot(
+            final int schemaVersion,
+            final String operationId,
+            final CaptureStatus status,
+            final int observedPhysicalAttemptCount,
+            final int callbackReturnedCount,
+            final int callbackFailureCount,
+            final int unknownOutcomeCount,
+            final int trunkThreadFlagCount,
+            final int workerThreadFlagCount,
+            final List<String> observedDataSourceNames,
+            final List<PhysicalExecutionAttempt> attempts,
+            final List<String> collectorDiagnostics) {
+        this(
+                requireLegacySchemaVersion(schemaVersion),
+                ShardingSphereRuntimeIdentity.SHARDINGSPHERE_5_5_3,
+                operationId,
+                status,
+                observedPhysicalAttemptCount,
+                callbackReturnedCount,
+                callbackFailureCount,
+                unknownOutcomeCount,
+                trunkThreadFlagCount,
+                workerThreadFlagCount,
+                observedDataSourceNames,
+                attempts,
+                collectorDiagnostics);
+    }
+
+    private static int requireLegacySchemaVersion(final int schemaVersion) {
+        if (schemaVersion != LEGACY_SCHEMA_VERSION) {
+            throw new IllegalArgumentException(
+                    "The legacy RouteSnapshot constructor accepts only snapshot schema 1");
+        }
+        return schemaVersion;
     }
 
     private static String requireOperationId(final String value) {

@@ -3,6 +3,7 @@ package io.github.ym0506.routecontract.internal;
 import com.alibaba.ttl.TransmittableThreadLocal;
 import io.github.ym0506.routecontract.RouteContract;
 import io.github.ym0506.routecontract.RouteSnapshot;
+import io.github.ym0506.routecontract.ShardingSphereRuntimeIdentity;
 import io.github.ym0506.routecontract.ThreadRole;
 
 import java.util.ArrayList;
@@ -42,12 +43,12 @@ public final class CaptureRegistry {
      */
     public static CaptureScope open(final String operationId) {
         validateOperationId(operationId);
-        ShardingSphere553Preflight.verify();
+        ShardingSphereRuntimeIdentity runtimeIdentity = ShardingSphere553Preflight.verify();
         if (CURRENT_CAPTURE.get() != null) {
             throw new IllegalStateException("Nested RouteContract captures are not supported");
         }
         CaptureToken token = CaptureToken.create();
-        MutableCapture capture = new MutableCapture(operationId);
+        MutableCapture capture = new MutableCapture(operationId, runtimeIdentity);
         MutableCapture previous = CAPTURES.putIfAbsent(token, capture);
         if (previous != null) {
             throw new IllegalStateException("Capture identifier collision");

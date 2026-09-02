@@ -30,6 +30,8 @@ class RouteContractTest {
         });
 
         assertEquals(CaptureStatus.COMPLETE, snapshot.status());
+        assertEquals(2, snapshot.schemaVersion());
+        assertEquals(ShardingSphereRuntimeIdentity.SHARDINGSPHERE_5_5_3, snapshot.runtimeIdentity());
         assertEquals(1, snapshot.observedPhysicalAttemptCount());
         assertEquals(List.of("ds_1"), snapshot.observedDataSourceNames());
         PhysicalExecutionAttempt attempt = snapshot.attempts().get(0);
@@ -38,6 +40,55 @@ class RouteContractTest {
         assertFalse(snapshot.toString().contains("PRIVATE_LITERAL"));
         assertFalse(snapshot.toString().contains("secret-value"));
         assertFalse(snapshot.toString().contains("SELECT"));
+    }
+
+    @Test
+    void legacySnapshotConstructorDescriptorRemainsAvailableAndImplicitlyUses553() throws Exception {
+        assertEquals(12, RouteSnapshot.class.getConstructor(
+                int.class,
+                String.class,
+                CaptureStatus.class,
+                int.class,
+                int.class,
+                int.class,
+                int.class,
+                int.class,
+                int.class,
+                List.class,
+                List.class,
+                List.class).getParameterCount());
+        RouteSnapshot source = RouteContract.capture("legacy-source", () ->
+                callbackReturnedHook("ds_0", true));
+
+        RouteSnapshot legacy = new RouteSnapshot(
+                1,
+                source.operationId(),
+                source.status(),
+                source.observedPhysicalAttemptCount(),
+                source.callbackReturnedCount(),
+                source.callbackFailureCount(),
+                source.unknownOutcomeCount(),
+                source.trunkThreadFlagCount(),
+                source.workerThreadFlagCount(),
+                source.observedDataSourceNames(),
+                source.attempts(),
+                source.collectorDiagnostics());
+
+        assertEquals(1, legacy.schemaVersion());
+        assertEquals(ShardingSphereRuntimeIdentity.SHARDINGSPHERE_5_5_3, legacy.runtimeIdentity());
+        assertThrows(IllegalArgumentException.class, () -> new RouteSnapshot(
+                RouteSnapshot.CURRENT_SCHEMA_VERSION,
+                source.operationId(),
+                source.status(),
+                source.observedPhysicalAttemptCount(),
+                source.callbackReturnedCount(),
+                source.callbackFailureCount(),
+                source.unknownOutcomeCount(),
+                source.trunkThreadFlagCount(),
+                source.workerThreadFlagCount(),
+                source.observedDataSourceNames(),
+                source.attempts(),
+                source.collectorDiagnostics()));
     }
 
     @Test
@@ -203,6 +254,7 @@ class RouteContractTest {
 
         assertThrows(IllegalArgumentException.class, () -> new RouteSnapshot(
                 source.schemaVersion(),
+                source.runtimeIdentity(),
                 source.operationId(),
                 CaptureStatus.REPORTED_EXECUTION_FAILURE,
                 source.observedPhysicalAttemptCount(),
@@ -222,6 +274,7 @@ class RouteContractTest {
 
         assertThrows(IllegalArgumentException.class, () -> new RouteSnapshot(
                 source.schemaVersion(),
+                source.runtimeIdentity(),
                 source.operationId(),
                 CaptureStatus.COMPLETE,
                 source.observedPhysicalAttemptCount(),
@@ -239,6 +292,7 @@ class RouteContractTest {
     void zeroAttemptAndInvalidOperationIdsCannotForgeCapturesOrSnapshots() throws Exception {
         assertThrows(IllegalArgumentException.class, () -> new RouteSnapshot(
                 RouteSnapshot.CURRENT_SCHEMA_VERSION,
+                ShardingSphereRuntimeIdentity.SHARDINGSPHERE_5_5_3,
                 "forged-zero",
                 CaptureStatus.COMPLETE,
                 0,
@@ -261,6 +315,7 @@ class RouteContractTest {
                     () -> RouteContract.capture(invalidOperationId, () -> { }));
             assertThrows(IllegalArgumentException.class, () -> new RouteSnapshot(
                     RouteSnapshot.CURRENT_SCHEMA_VERSION,
+                    ShardingSphereRuntimeIdentity.SHARDINGSPHERE_5_5_3,
                     invalidOperationId,
                     CaptureStatus.INCOMPLETE,
                     0,
@@ -290,6 +345,7 @@ class RouteContractTest {
 
         assertThrows(IllegalArgumentException.class, () -> new RouteSnapshot(
                 RouteSnapshot.CURRENT_SCHEMA_VERSION,
+                ShardingSphereRuntimeIdentity.SHARDINGSPHERE_5_5_3,
                 "forged-over-limit",
                 CaptureStatus.COMPLETE,
                 forgedCount,
