@@ -5,7 +5,7 @@ This nested build is a local development fixture for the unpublished `0.2.0` spl
 does not publish snapshots to Maven Local, create a Central staging tree, or alter the immutable
 `v0.1.2` example.
 
-Run both supported resolution lanes with the repository's wrapper and JDK 17:
+Run both configured exact-version resolution lanes with the repository's wrapper and JDK 17:
 
 ```bash
 ./gradlew -p examples/gradle-split-artifact-consumer \

@@ -1,7 +1,7 @@
 # Maven split-artifact consumer fixture
 
 This local release-gate fixture resolves `routecontract-core:0.2.0` through exactly one exact-version
-adapter from a separately staged Maven repository. It verifies both supported lanes:
+adapter from a separately staged Maven repository. It verifies both configured exact-version lanes:
 
 - `routecontract-shardingsphere-5.5` with an all-`5.5.3` ShardingSphere graph; and
 - `routecontract-shardingsphere-5.5.2` with an all-`5.5.2` ShardingSphere graph.
