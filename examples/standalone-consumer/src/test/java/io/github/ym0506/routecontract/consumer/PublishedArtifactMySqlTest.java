@@ -35,9 +35,12 @@ class PublishedArtifactMySqlTest {
     private static final String SERVICE_DESCRIPTOR =
             "META-INF/services/org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook";
     private static final String PROVIDER_CLASS =
-            "io.github.ym0506.routecontract.internal.RouteContractSqlExecutionHook";
-    private static final String ARTIFACT_JAR_NAME =
-            System.getProperty("routecontract.artifactJarName");
+            "io.github.ym0506.routecontract.shardingsphere553.internal."
+                    + "RouteContract553SqlExecutionHook";
+    private static final String CORE_JAR_NAME =
+            System.getProperty("routecontract.coreJarName");
+    private static final String ADAPTER_JAR_NAME =
+            System.getProperty("routecontract.adapterJarName");
     private static final DockerImageName MYSQL_IMAGE = DockerImageName.parse(
             "mysql:8.4.11@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb")
             .asCompatibleSubstituteFor("mysql");
@@ -105,16 +108,24 @@ class PublishedArtifactMySqlTest {
     @Test
     void publishedJarAutoDiscoversSpiAndCapturesOneRealMySqlExecution() throws Exception {
         URL routeContractOrigin = RouteContract.class.getProtectionDomain().getCodeSource().getLocation();
-        assertTrue(routeContractOrigin.toExternalForm().endsWith("/" + ARTIFACT_JAR_NAME),
-                () -> "RouteContract must be loaded from the published JAR, but was " + routeContractOrigin);
+        assertTrue(routeContractOrigin.toExternalForm().endsWith("/" + CORE_JAR_NAME),
+                () -> "RouteContract must be loaded from the published core JAR, but was "
+                        + routeContractOrigin);
+
+        Class<?> providerClass = Class.forName(
+                PROVIDER_CLASS, false, Thread.currentThread().getContextClassLoader());
+        URL providerOrigin = providerClass.getProtectionDomain().getCodeSource().getLocation();
+        assertTrue(providerOrigin.toExternalForm().endsWith("/" + ADAPTER_JAR_NAME),
+                () -> "the hook provider must be loaded from the published adapter JAR, but was "
+                        + providerOrigin);
 
         List<URL> matchingDescriptors = matchingServiceDescriptors();
         assertEquals(1, matchingDescriptors.size(),
                 "the published JAR must contribute exactly one RouteContract SPI descriptor");
         assertTrue(matchingDescriptors.get(0).toExternalForm().startsWith("jar:"),
                 "the SPI descriptor must come from a JAR resource");
-        assertTrue(matchingDescriptors.get(0).toExternalForm().contains(ARTIFACT_JAR_NAME),
-                "the SPI descriptor must come from the published RouteContract JAR");
+        assertTrue(matchingDescriptors.get(0).toExternalForm().contains(ADAPTER_JAR_NAME),
+                "the SPI descriptor must come from the published RouteContract adapter JAR");
 
         CapturedResult<Long> capture = RouteContract.captureResult(
                 "standalone-consumer-find-order",

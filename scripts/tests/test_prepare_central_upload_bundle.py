@@ -25,8 +25,22 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 PREPARER = REPOSITORY_ROOT / "scripts" / "prepare-central-upload-bundle.py"
 GROUP_ID = "io.github.ym0506.routecontract"
 GROUP_PATH = Path("io/github/ym0506/routecontract")
+ARTIFACT_IDS = (
+    "routecontract-core",
+    "routecontract-shardingsphere-5.5",
+    "routecontract-shardingsphere-5.5.2",
+)
 ARTIFACT_ID = "routecontract-shardingsphere-5.5"
-VERSION = "0.1.3"
+CORE_ARTIFACT_ID = "routecontract-core"
+SHARDINGSPHERE_VERSIONS = {
+    "routecontract-shardingsphere-5.5": "5.5.3",
+    "routecontract-shardingsphere-5.5.2": "5.5.2",
+}
+SHARDINGSPHERE_DATABASE_ANCHORS = {
+    "routecontract-shardingsphere-5.5": "shardingsphere-database-connector-core",
+    "routecontract-shardingsphere-5.5.2": "shardingsphere-infra-database-core",
+}
+VERSION = "0.2.1"
 CHECKSUMS = ("md5", "sha1", "sha256", "sha512")
 
 
@@ -59,6 +73,178 @@ def run_checked(command: list[str], **kwargs) -> subprocess.CompletedProcess:
         stderr=subprocess.PIPE,
         **kwargs,
     )
+
+
+def pom_bytes(artifact_id: str) -> bytes:
+    dependency_management = ""
+    dependencies = ""
+    if artifact_id == CORE_ARTIFACT_ID:
+        dependencies = (
+            "  <dependencies>\n"
+            "    <dependency><groupId>com.alibaba</groupId>"
+            "<artifactId>transmittable-thread-local</artifactId>"
+            "<version>2.14.2</version><scope>runtime</scope></dependency>\n"
+            "    <dependency><groupId>tools.jackson.core</groupId>"
+            "<artifactId>jackson-core</artifactId>"
+            "<version>3.1.5</version><scope>runtime</scope></dependency>\n"
+            "  </dependencies>\n"
+        )
+    else:
+        sharding_version = SHARDINGSPHERE_VERSIONS[artifact_id]
+        dependency_management = (
+            "  <dependencyManagement><dependencies>\n"
+            "    <dependency><groupId>org.apache.shardingsphere</groupId>"
+            "<artifactId>shardingsphere-infra-spi</artifactId>"
+            f"<version>{sharding_version}</version></dependency>\n"
+            "    <dependency><groupId>org.apache.shardingsphere</groupId>"
+            f"<artifactId>{SHARDINGSPHERE_DATABASE_ANCHORS[artifact_id]}</artifactId>"
+            f"<version>{sharding_version}</version></dependency>\n"
+            "  </dependencies></dependencyManagement>\n"
+        )
+        dependencies = (
+            "  <dependencies>\n"
+            f"    <dependency><groupId>{GROUP_ID}</groupId>"
+            f"<artifactId>{CORE_ARTIFACT_ID}</artifactId>"
+            f"<version>{VERSION}</version><scope>compile</scope></dependency>\n"
+            "    <dependency><groupId>org.apache.shardingsphere</groupId>"
+            "<artifactId>shardingsphere-infra-executor</artifactId>"
+            f"<version>{sharding_version}</version><scope>runtime</scope></dependency>\n"
+            "  </dependencies>\n"
+        )
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<project xmlns="http://maven.apache.org/POM/4.0.0">\n'
+        "  <modelVersion>4.0.0</modelVersion>\n"
+        f"  <groupId>{GROUP_ID}</groupId>\n"
+        f"  <artifactId>{artifact_id}</artifactId>\n"
+        f"  <version>{VERSION}</version>\n"
+        f"{dependency_management}{dependencies}"
+        "</project>\n"
+    ).encode("utf-8")
+
+
+def module_bytes(artifact_id: str, payloads: dict[str, bytes]) -> bytes:
+    def file_record(name: str) -> dict[str, object]:
+        data = payloads[name]
+        return {
+            "name": name,
+            "url": name,
+            "size": len(data),
+            "md5": digest(data, "md5"),
+            "sha1": digest(data, "sha1"),
+            "sha256": digest(data, "sha256"),
+            "sha512": digest(data, "sha512"),
+        }
+
+    self_capability = {
+        "group": GROUP_ID,
+        "name": artifact_id,
+        "version": VERSION,
+    }
+    boundary_capability = {
+        "group": GROUP_ID,
+        "name": (
+            "routecontract-core-owner"
+            if artifact_id == CORE_ARTIFACT_ID
+            else "routecontract-shardingsphere-hook-adapter"
+        ),
+        "version": "1",
+    }
+    capabilities = [self_capability, boundary_capability]
+    if artifact_id == "routecontract-shardingsphere-5.5.2":
+        capabilities.append(
+            {
+                "group": GROUP_ID,
+                "name": "routecontract-shardingsphere-5.5",
+                "version": VERSION,
+            }
+        )
+    core_dependency = {
+        "group": GROUP_ID,
+        "module": CORE_ARTIFACT_ID,
+        "version": {"requires": VERSION},
+    }
+    runtime_dependencies: list[dict[str, object]] = []
+    api_dependencies: list[dict[str, object]] = []
+    runtime_constraints: list[dict[str, object]] = []
+    if artifact_id == CORE_ARTIFACT_ID:
+        runtime_dependencies = [
+            {
+                "group": "com.alibaba",
+                "module": "transmittable-thread-local",
+                "version": {"requires": "2.14.2"},
+            },
+            {
+                "group": "tools.jackson.core",
+                "module": "jackson-core",
+                "version": {"requires": "3.1.5"},
+            },
+        ]
+    else:
+        exact = SHARDINGSPHERE_VERSIONS[artifact_id]
+        api_dependencies = [core_dependency]
+        runtime_dependencies = [
+            {
+                "group": "org.apache.shardingsphere",
+                "module": "shardingsphere-infra-executor",
+                "version": {"requires": exact, "strictly": exact},
+            },
+            core_dependency,
+        ]
+        runtime_constraints = [
+            {
+                "group": "org.apache.shardingsphere",
+                "module": "shardingsphere-infra-spi",
+                "version": {"requires": exact, "strictly": exact},
+            },
+            {
+                "group": "org.apache.shardingsphere",
+                "module": SHARDINGSPHERE_DATABASE_ANCHORS[artifact_id],
+                "version": {"requires": exact, "strictly": exact},
+            },
+        ]
+
+    base = f"{artifact_id}-{VERSION}"
+    variants = [
+        {
+            "name": "apiElements",
+            "dependencies": api_dependencies,
+            "files": [file_record(f"{base}.jar")],
+            "capabilities": capabilities,
+        },
+        {
+            "name": "runtimeElements",
+            "dependencies": runtime_dependencies,
+            "dependencyConstraints": runtime_constraints,
+            "files": [file_record(f"{base}.jar")],
+            "capabilities": capabilities,
+        },
+        {
+            "name": "sourcesElements",
+            "files": [file_record(f"{base}-sources.jar")],
+        },
+        {
+            "name": "javadocElements",
+            "files": [file_record(f"{base}-javadoc.jar")],
+        },
+    ]
+    return (
+        json.dumps(
+            {
+                "formatVersion": "1.1",
+                "component": {
+                    "group": GROUP_ID,
+                    "module": artifact_id,
+                    "version": VERSION,
+                },
+                "createdBy": {"gradle": {"version": "8.14.4"}},
+                "variants": variants,
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n"
+    ).encode("utf-8")
 
 
 @unittest.skipUnless(shutil.which("gpg"), "GnuPG is required")
@@ -137,109 +323,93 @@ class CentralUploadBundleTest(unittest.TestCase):
         )
 
         cls.fixture_repository = cls.class_root / "fixture-repository"
+        cls.payloads_by_artifact: dict[str, dict[str, bytes]] = {}
+        for artifact_id in ARTIFACT_IDS:
+            fixture_version = cls.fixture_repository / GROUP_PATH / artifact_id / VERSION
+            fixture_version.mkdir(parents=True)
+            base = f"{artifact_id}-{VERSION}"
+            payloads = {
+                f"{base}-javadoc.jar": f"fixture-{artifact_id}-javadoc-jar\n".encode(),
+                f"{base}-sources.jar": f"fixture-{artifact_id}-sources-jar\n".encode(),
+                f"{base}.jar": f"fixture-{artifact_id}-main-jar\n".encode(),
+                f"{base}.pom": pom_bytes(artifact_id),
+            }
+            payloads[f"{base}.module"] = module_bytes(artifact_id, payloads)
+            cls.payloads_by_artifact[artifact_id] = payloads
+
+            for name, data in payloads.items():
+                payload = fixture_version / name
+                payload.write_bytes(data)
+                signature = fixture_version / f"{name}.asc"
+                run_checked(
+                    [
+                        "gpg",
+                        "--no-options",
+                        "--homedir",
+                        str(cls.secret_home),
+                        "--batch",
+                        "--pinentry-mode",
+                        "loopback",
+                        "--passphrase",
+                        "",
+                        "--digest-algo",
+                        "SHA384",
+                        "--local-user",
+                        f"{cls.fingerprint}!",
+                        "--armor",
+                        "--detach-sign",
+                        "--output",
+                        str(signature),
+                        str(payload),
+                    ]
+                )
+                for source in (payload, signature):
+                    source_bytes = source.read_bytes()
+                    for algorithm in CHECKSUMS:
+                        (source.parent / f"{source.name}.{algorithm}").write_text(
+                            digest(source_bytes, algorithm), encoding="ascii"
+                        )
+
+            metadata = (
+                '<?xml version="1.0" encoding="UTF-8"?>\n'
+                "<metadata>\n"
+                f"  <groupId>{GROUP_ID}</groupId>\n"
+                f"  <artifactId>{artifact_id}</artifactId>\n"
+                "  <versioning>\n"
+                f"    <latest>{VERSION}</latest>\n"
+                f"    <release>{VERSION}</release>\n"
+                f"    <versions><version>{VERSION}</version></versions>\n"
+                "    <lastUpdated>20260101000000</lastUpdated>\n"
+                "  </versioning>\n"
+                "</metadata>\n"
+            ).encode("utf-8")
+            metadata_path = fixture_version.parent / "maven-metadata.xml"
+            metadata_path.write_bytes(metadata)
+            for algorithm in CHECKSUMS:
+                (metadata_path.parent / f"{metadata_path.name}.{algorithm}").write_text(
+                    digest(metadata, algorithm), encoding="ascii"
+                )
+
         cls.fixture_version = (
             cls.fixture_repository / GROUP_PATH / ARTIFACT_ID / VERSION
         )
-        cls.fixture_version.mkdir(parents=True)
-        base = f"{ARTIFACT_ID}-{VERSION}"
-        cls.payloads = {
-            f"{base}-javadoc.jar": b"fixture-javadoc-jar\n",
-            f"{base}-sources.jar": b"fixture-sources-jar\n",
-            f"{base}.jar": b"fixture-main-jar\n",
-            f"{base}.module": (
-                json.dumps(
-                    {
-                        "formatVersion": "1.1",
-                        "component": {
-                            "group": GROUP_ID,
-                            "module": ARTIFACT_ID,
-                            "version": VERSION,
-                        },
-                        "createdBy": {"gradle": {"version": "8.14.4"}},
-                        "variants": [],
-                    },
-                    indent=2,
-                    sort_keys=True,
-                )
-                + "\n"
-            ).encode("utf-8"),
-            f"{base}.pom": (
-                '<?xml version="1.0" encoding="UTF-8"?>\n'
-                '<project xmlns="http://maven.apache.org/POM/4.0.0">\n'
-                "  <modelVersion>4.0.0</modelVersion>\n"
-                f"  <groupId>{GROUP_ID}</groupId>\n"
-                f"  <artifactId>{ARTIFACT_ID}</artifactId>\n"
-                f"  <version>{VERSION}</version>\n"
-                "</project>\n"
-            ).encode("utf-8"),
-        }
-        for name, data in cls.payloads.items():
-            payload = cls.fixture_version / name
-            payload.write_bytes(data)
-            signature = cls.fixture_version / f"{name}.asc"
-            run_checked(
-                [
-                    "gpg",
-                    "--no-options",
-                    "--homedir",
-                    str(cls.secret_home),
-                    "--batch",
-                    "--pinentry-mode",
-                    "loopback",
-                    "--passphrase",
-                    "",
-                    "--digest-algo",
-                    "SHA384",
-                    "--local-user",
-                    f"{cls.fingerprint}!",
-                    "--armor",
-                    "--detach-sign",
-                    "--output",
-                    str(signature),
-                    str(payload),
-                ]
-            )
-            for source in (payload, signature):
-                source_bytes = source.read_bytes()
-                for algorithm in CHECKSUMS:
-                    (source.parent / f"{source.name}.{algorithm}").write_text(
-                        digest(source_bytes, algorithm), encoding="ascii"
-                    )
-
-        metadata = (
-            '<?xml version="1.0" encoding="UTF-8"?>\n'
-            "<metadata>\n"
-            f"  <groupId>{GROUP_ID}</groupId>\n"
-            f"  <artifactId>{ARTIFACT_ID}</artifactId>\n"
-            "  <versioning>\n"
-            f"    <latest>{VERSION}</latest>\n"
-            f"    <release>{VERSION}</release>\n"
-            f"    <versions><version>{VERSION}</version></versions>\n"
-            "    <lastUpdated>20260101000000</lastUpdated>\n"
-            "  </versioning>\n"
-            "</metadata>\n"
-        ).encode("utf-8")
-        metadata_path = cls.fixture_version.parent / "maven-metadata.xml"
-        metadata_path.write_bytes(metadata)
-        for algorithm in CHECKSUMS:
-            (metadata_path.parent / f"{metadata_path.name}.{algorithm}").write_text(
-                digest(metadata, algorithm), encoding="ascii"
-            )
-
+        cls.payloads = cls.payloads_by_artifact[ARTIFACT_ID]
         cls.manifest_value = {
-            "schemaVersion": 1,
-            "coordinate": {
+            "schemaVersion": 2,
+            "coordinateSet": {
                 "groupId": GROUP_ID,
-                "artifactId": ARTIFACT_ID,
+                "artifactIds": list(ARTIFACT_IDS),
                 "version": VERSION,
             },
             "payloads": [
                 {
+                    "artifactId": artifact_id,
                     "name": name,
                     "size": len(data),
                     "sha256": hashlib.sha256(data).hexdigest(),
                 }
-                for name, data in sorted(cls.payloads.items())
+                for artifact_id in ARTIFACT_IDS
+                for name, data in sorted(cls.payloads_by_artifact[artifact_id].items())
             ],
         }
 
@@ -265,6 +435,52 @@ class CentralUploadBundleTest(unittest.TestCase):
             json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8"
         )
 
+    def replace_reviewed_payload(
+        self, artifact_id: str, name: str, payload_bytes: bytes
+    ) -> None:
+        version_path = self.repository / GROUP_PATH / artifact_id / VERSION
+        payload = version_path / name
+        payload.write_bytes(payload_bytes)
+        signature = version_path / f"{name}.asc"
+        run_checked(
+            [
+                "gpg",
+                "--no-options",
+                "--homedir",
+                str(self.secret_home),
+                "--batch",
+                "--yes",
+                "--pinentry-mode",
+                "loopback",
+                "--passphrase",
+                "",
+                "--digest-algo",
+                "SHA384",
+                "--local-user",
+                f"{self.fingerprint}!",
+                "--armor",
+                "--detach-sign",
+                "--output",
+                str(signature),
+                str(payload),
+            ]
+        )
+        for source in (payload, signature):
+            source_bytes = source.read_bytes()
+            for algorithm in CHECKSUMS:
+                (version_path / f"{source.name}.{algorithm}").write_text(
+                    digest(source_bytes, algorithm), encoding="ascii"
+                )
+        value = json.loads(self.manifest.read_text(encoding="utf-8"))
+        record = next(
+            item
+            for item in value["payloads"]
+            if item["artifactId"] == artifact_id and item["name"] == name
+        )
+        record["size"] = len(payload_bytes)
+        record["sha256"] = hashlib.sha256(payload_bytes).hexdigest()
+        self.write_manifest(value)
+
     def build(self, output: Path | None = None):
         return self.module.build_bundle(
             repository=self.repository,
@@ -284,7 +500,7 @@ class CentralUploadBundleTest(unittest.TestCase):
             expected_primary_fingerprint=self.fingerprint,
         )
 
-    def test_builds_and_verifies_exact_deterministic_thirty_entry_bundle(self) -> None:
+    def test_builds_and_verifies_exact_deterministic_ninety_entry_bundle(self) -> None:
         first = self.build()
         verified = self.verify(first.bundle_path, first.receipt_path)
         second = self.build(self.root / "second-output")
@@ -302,7 +518,7 @@ class CentralUploadBundleTest(unittest.TestCase):
         self.assertEqual(first.bundle_path.read_bytes(), second.bundle_path.read_bytes())
         self.assertEqual(first.receipt_path.read_bytes(), second.receipt_path.read_bytes())
         with zipfile.ZipFile(first.bundle_path) as archive:
-            self.assertEqual(30, len(archive.infolist()))
+            self.assertEqual(90, len(archive.infolist()))
             self.assertEqual(
                 sorted(info.filename for info in archive.infolist()),
                 [info.filename for info in archive.infolist()],
@@ -315,8 +531,22 @@ class CentralUploadBundleTest(unittest.TestCase):
                 self.assertEqual(b"", info.comment)
 
         receipt = json.loads(first.receipt_path.read_text(encoding="utf-8"))
-        self.assertEqual(30, receipt["bundle"]["entryCount"])
-        self.assertEqual(25, len(receipt["excludedStagingEntries"]))
+        self.assertEqual(2, receipt["schemaVersion"])
+        self.assertEqual(90, receipt["bundle"]["entryCount"])
+        self.assertEqual(75, len(receipt["excludedStagingEntries"]))
+        self.assertEqual(15, receipt["signaturePolicy"]["detachedSignatures"])
+        self.assertEqual(
+            {
+                "groupId": GROUP_ID,
+                "artifactIds": list(ARTIFACT_IDS),
+                "version": VERSION,
+                "paths": [
+                    str(GROUP_PATH / artifact_id / VERSION)
+                    for artifact_id in ARTIFACT_IDS
+                ],
+            },
+            receipt["coordinateSet"],
+        )
         self.assertEqual(
             {
                 "availabilityClaim": False,
@@ -333,14 +563,162 @@ class CentralUploadBundleTest(unittest.TestCase):
         self.assertNotIn(str(self.root), receipt_text)
         self.assertNotIn(str(self.public_home), receipt_text)
 
-    def test_rejects_versions_that_are_not_later_than_v012(self) -> None:
+    def test_rejects_versions_outside_stable_v02_line(self) -> None:
         value = json.loads(json.dumps(self.manifest_value))
-        value["coordinate"]["version"] = "0.1.2"
+        for invalid in ("0.1.3", "0.3.0", "0.2.1-rc1"):
+            with self.subTest(invalid=invalid):
+                value["coordinateSet"]["version"] = invalid
+                self.write_manifest(value)
+                with self.assertRaisesRegex(RuntimeError, "stable 0.2.x"):
+                    self.build()
+                self.assertFalse(self.output.exists())
+
+    def test_rejects_incomplete_reordered_or_mixed_version_coordinate_set(self) -> None:
+        value = json.loads(json.dumps(self.manifest_value))
+        value["coordinateSet"]["artifactIds"] = list(reversed(ARTIFACT_IDS))
         self.write_manifest(value)
-
-        with self.assertRaisesRegex(RuntimeError, "greater than 0.1.2"):
+        with self.assertRaisesRegex(RuntimeError, "exact ordered artifact set"):
             self.build()
+        self.assertFalse(self.output.exists())
 
+        self.write_manifest(self.manifest_value)
+        missing = self.repository / GROUP_PATH / ARTIFACT_IDS[-1]
+        shutil.rmtree(missing)
+        with self.assertRaisesRegex(RuntimeError, "staging inventory mismatch"):
+            self.build()
+        self.assertFalse(self.output.exists())
+
+        shutil.rmtree(self.repository)
+        shutil.copytree(self.fixture_repository, self.repository)
+        version_path = self.repository / GROUP_PATH / ARTIFACT_IDS[-1] / VERSION
+        version_path.rename(version_path.with_name("0.2.2"))
+        with self.assertRaisesRegex(RuntimeError, "staging inventory mismatch"):
+            self.build()
+        self.assertFalse(self.output.exists())
+
+    def test_rejects_pom_that_breaks_exact_core_adapter_dependency_graph(self) -> None:
+        artifact_id = "routecontract-shardingsphere-5.5"
+        name = f"{artifact_id}-{VERSION}.pom"
+        broken = self.payloads_by_artifact[artifact_id][name].replace(
+            f"<version>{VERSION}</version><scope>compile</scope>".encode(),
+            b"<version>0.2.2</version><scope>compile</scope>",
+            1,
+        )
+        self.replace_reviewed_payload(artifact_id, name, broken)
+        with self.assertRaisesRegex(RuntimeError, "same-version core"):
+            self.build()
+        self.assertFalse(self.output.exists())
+
+    def test_rejects_incomplete_or_extra_pom_shardingsphere_anchor_set(self) -> None:
+        artifact_id = "routecontract-shardingsphere-5.5.2"
+        name = f"{artifact_id}-{VERSION}.pom"
+        database_anchor = SHARDINGSPHERE_DATABASE_ANCHORS[artifact_id]
+        anchor = (
+            "    <dependency><groupId>org.apache.shardingsphere</groupId>"
+            f"<artifactId>{database_anchor}</artifactId>"
+            f"<version>{SHARDINGSPHERE_VERSIONS[artifact_id]}</version></dependency>\n"
+        ).encode()
+        broken = self.payloads_by_artifact[artifact_id][name].replace(anchor, b"")
+        self.replace_reviewed_payload(artifact_id, name, broken)
+        with self.assertRaisesRegex(RuntimeError, "exact direct/managed.*anchor set"):
+            self.build()
+        self.assertFalse(self.output.exists())
+
+        shutil.rmtree(self.repository)
+        shutil.copytree(self.fixture_repository, self.repository)
+        self.write_manifest(self.manifest_value)
+        extra = (
+            "    <dependency><groupId>org.apache.shardingsphere</groupId>"
+            "<artifactId>shardingsphere-unreviewed-anchor</artifactId>"
+            f"<version>{SHARDINGSPHERE_VERSIONS[artifact_id]}</version></dependency>\n"
+        ).encode()
+        broken = self.payloads_by_artifact[artifact_id][name].replace(
+            b"  </dependencies></dependencyManagement>\n",
+            extra + b"  </dependencies></dependencyManagement>\n",
+        )
+        self.replace_reviewed_payload(artifact_id, name, broken)
+        with self.assertRaisesRegex(RuntimeError, "exact direct/managed.*anchor set"):
+            self.build()
+        self.assertFalse(self.output.exists())
+
+    def test_rejects_core_pom_with_shardingsphere_dependency(self) -> None:
+        artifact_id = CORE_ARTIFACT_ID
+        name = f"{artifact_id}-{VERSION}.pom"
+        extra = (
+            "    <dependency><groupId>org.apache.shardingsphere</groupId>"
+            "<artifactId>shardingsphere-infra-executor</artifactId>"
+            "<version>5.5.3</version><scope>runtime</scope></dependency>\n"
+        ).encode()
+        broken = self.payloads_by_artifact[artifact_id][name].replace(
+            b"  </dependencies>\n", extra + b"  </dependencies>\n"
+        )
+        self.replace_reviewed_payload(artifact_id, name, broken)
+        with self.assertRaisesRegex(RuntimeError, "core POM must be ShardingSphere-neutral"):
+            self.build()
+        self.assertFalse(self.output.exists())
+
+    def test_rejects_module_metadata_that_no_longer_binds_reviewed_jar(self) -> None:
+        artifact_id = CORE_ARTIFACT_ID
+        name = f"{artifact_id}-{VERSION}.jar"
+        self.replace_reviewed_payload(
+            artifact_id,
+            name,
+            self.payloads_by_artifact[artifact_id][name] + b"changed\n",
+        )
+        with self.assertRaisesRegex(RuntimeError, r"file\.(size|sha256) mismatch"):
+            self.build()
+        self.assertFalse(self.output.exists())
+
+    def test_rejects_module_metadata_wrong_target_or_capability(self) -> None:
+        artifact_id = "routecontract-shardingsphere-5.5.2"
+        name = f"{artifact_id}-{VERSION}.module"
+        value = json.loads(self.payloads_by_artifact[artifact_id][name])
+        runtime = next(
+            variant for variant in value["variants"] if variant["name"] == "runtimeElements"
+        )
+        target = next(
+            item
+            for item in runtime["dependencies"]
+            if item["group"] == "org.apache.shardingsphere"
+        )
+        target["version"] = {"requires": "5.5.3", "strictly": "5.5.3"}
+        broken = (json.dumps(value, indent=2, sort_keys=True) + "\n").encode()
+        self.replace_reviewed_payload(artifact_id, name, broken)
+        with self.assertRaisesRegex(RuntimeError, "strict ShardingSphere 5.5.2 anchor set"):
+            self.build()
+        self.assertFalse(self.output.exists())
+
+        shutil.rmtree(self.repository)
+        shutil.copytree(self.fixture_repository, self.repository)
+        self.write_manifest(self.manifest_value)
+        value = json.loads(self.payloads_by_artifact[artifact_id][name])
+        api = next(
+            variant for variant in value["variants"] if variant["name"] == "apiElements"
+        )
+        hook_capability = next(
+            item
+            for item in api["capabilities"]
+            if item["name"] == "routecontract-shardingsphere-hook-adapter"
+        )
+        hook_capability["version"] = "2"
+        broken = (json.dumps(value, indent=2, sort_keys=True) + "\n").encode()
+        self.replace_reviewed_payload(artifact_id, name, broken)
+        with self.assertRaisesRegex(RuntimeError, "capability set mismatch"):
+            self.build()
+        self.assertFalse(self.output.exists())
+
+    def test_rejects_incomplete_module_metadata_shardingsphere_anchor_set(self) -> None:
+        artifact_id = "routecontract-shardingsphere-5.5"
+        name = f"{artifact_id}-{VERSION}.module"
+        value = json.loads(self.payloads_by_artifact[artifact_id][name])
+        runtime = next(
+            variant for variant in value["variants"] if variant["name"] == "runtimeElements"
+        )
+        runtime["dependencyConstraints"] = runtime["dependencyConstraints"][:-1]
+        broken = (json.dumps(value, indent=2, sort_keys=True) + "\n").encode()
+        self.replace_reviewed_payload(artifact_id, name, broken)
+        with self.assertRaisesRegex(RuntimeError, "strict ShardingSphere 5.5.3 anchor set"):
+            self.build()
         self.assertFalse(self.output.exists())
 
     def test_rejects_payload_that_differs_from_reviewed_manifest(self) -> None:
@@ -486,7 +864,7 @@ class CentralUploadBundleTest(unittest.TestCase):
                 self.build()
 
         self.assertEqual([], list(attacker.iterdir()))
-        self.assertFalse((attacker / f"{ARTIFACT_ID}-{VERSION}-central-upload.zip").exists())
+        self.assertFalse((attacker / f"routecontract-{VERSION}-central-upload.zip").exists())
 
     @unittest.skipUnless(hasattr(os, "link"), "hard links are unavailable")
     def test_rejects_hardlinked_inputs_and_creates_private_single_link_outputs(self) -> None:
@@ -924,7 +1302,7 @@ class CentralUploadBundleTest(unittest.TestCase):
 
         self.assertTrue(swapped)
         self.assertEqual(VERSION, result.version)
-        self.assertEqual(5, len(signature_homes))
+        self.assertEqual(15, len(signature_homes))
         self.assertTrue((input_home / "private-keys-v1.d").is_dir())
 
     def test_verifier_rejects_tampered_bundle_or_receipt(self) -> None:
@@ -981,7 +1359,7 @@ class CentralUploadBundleTest(unittest.TestCase):
         self.assertEqual(0, build_status)
         self.assertIsNotNone(build_result)
         self.assertIn(
-            f"coordinate={GROUP_ID}:{ARTIFACT_ID}:9.8.7",
+            f"group={GROUP_ID} artifacts={','.join(ARTIFACT_IDS)} version=9.8.7 entries=90",
             build_stdout.getvalue(),
         )
         self.assertIn(
@@ -1029,7 +1407,7 @@ class CentralUploadBundleTest(unittest.TestCase):
         self.assertEqual(0, verify_status)
         self.assertIsNotNone(verify_result)
         self.assertIn(
-            f"coordinate={GROUP_ID}:{ARTIFACT_ID}:9.8.7",
+            f"group={GROUP_ID} artifacts={','.join(ARTIFACT_IDS)} version=9.8.7 entries=90",
             verify_stdout.getvalue(),
         )
         self.assertIn(
@@ -1069,14 +1447,15 @@ class CentralUploadBundleTest(unittest.TestCase):
         self.assertRegex(
             build.stdout,
             r"^ROUTECONTRACT_CENTRAL_BUNDLE_BUILT "
-            r"coordinate=io\.github\.ym0506\.routecontract:"
-            r"routecontract-shardingsphere-5\.5:0\.1\.3 entries=30 "
+            r"group=io\.github\.ym0506\.routecontract "
+            r"artifacts=routecontract-core,routecontract-shardingsphere-5\.5,"
+            r"routecontract-shardingsphere-5\.5\.2 version=0\.2\.1 entries=90 "
             r"bundleSha256=[0-9a-f]{64} receiptSha256=[0-9a-f]{64} VERIFIED\n$",
         )
         self.assertEqual("", build.stderr)
 
-        bundle = self.output / f"{ARTIFACT_ID}-{VERSION}-central-upload.zip"
-        receipt = self.output / f"{ARTIFACT_ID}-{VERSION}-central-upload-receipt.json"
+        bundle = self.output / f"routecontract-{VERSION}-central-upload.zip"
+        receipt = self.output / f"routecontract-{VERSION}-central-upload-receipt.json"
         verify = subprocess.run(
             [
                 sys.executable,

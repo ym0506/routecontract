@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and verify one credential-free deterministic Central upload bundle.
+"""Build and verify one coordinated credential-free Central upload bundle.
 
 This program deliberately has no HTTP client, credential input, signing mode,
 or publication mode.  It accepts only an already signed Gradle Maven staging
@@ -26,10 +26,42 @@ import xml.etree.ElementTree as ET
 import zipfile
 
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 GROUP_ID = "io.github.ym0506.routecontract"
 GROUP_PATH = PurePosixPath("io/github/ym0506/routecontract")
-ARTIFACT_ID = "routecontract-shardingsphere-5.5"
+CORE_ARTIFACT_ID = "routecontract-core"
+ADAPTER_ARTIFACT_VERSIONS = {
+    "routecontract-shardingsphere-5.5": "5.5.3",
+    "routecontract-shardingsphere-5.5.2": "5.5.2",
+}
+ADAPTER_SHARDINGSPHERE_ANCHORS = {
+    "routecontract-shardingsphere-5.5": (
+        "shardingsphere-infra-executor",
+        "shardingsphere-infra-spi",
+        "shardingsphere-database-connector-core",
+    ),
+    "routecontract-shardingsphere-5.5.2": (
+        "shardingsphere-infra-executor",
+        "shardingsphere-infra-spi",
+        "shardingsphere-infra-database-core",
+    ),
+}
+ARTIFACT_IDS = (
+    CORE_ARTIFACT_ID,
+    "routecontract-shardingsphere-5.5",
+    "routecontract-shardingsphere-5.5.2",
+)
+CORE_OWNER_CAPABILITY = (GROUP_ID, "routecontract-core-owner", "1")
+HOOK_ADAPTER_CAPABILITY = (
+    GROUP_ID,
+    "routecontract-shardingsphere-hook-adapter",
+    "1",
+)
+PAYLOADS_PER_ARTIFACT = 5
+UPLOAD_ENTRIES_PER_ARTIFACT = 30
+EXCLUDED_ENTRIES_PER_ARTIFACT = 25
+UPLOAD_ENTRY_COUNT = len(ARTIFACT_IDS) * UPLOAD_ENTRIES_PER_ARTIFACT
+EXCLUDED_ENTRY_COUNT = len(ARTIFACT_IDS) * EXCLUDED_ENTRIES_PER_ARTIFACT
 CHECKSUMS = ("md5", "sha1", "sha256", "sha512")
 CHECKSUM_LENGTHS = {"md5": 32, "sha1": 40, "sha256": 64, "sha512": 128}
 ZIP_DATE_TIME = (1980, 1, 1, 0, 0, 0)
@@ -59,8 +91,8 @@ class BundleError(RuntimeError):
 
 class PreparedStaging(NamedTuple):
     version: str
-    coordinate: dict[str, str]
-    coordinate_path: str
+    artifacts: tuple[str, ...]
+    coordinate_paths: dict[str, str]
     manifest_bytes: bytes
     manifest_sha256: str
     files: dict[str, bytes]
@@ -291,33 +323,9 @@ def _read_stable_regular(path: Path, label: str, maximum: int) -> bytes:
     return payload
 
 
-def _manifest(path: Path) -> tuple[dict[str, object], bytes, str, list[str]]:
-    payload = _read_stable_regular(path, "reviewed payload manifest", MAX_MANIFEST_BYTES)
-    value = _expect_object(
-        _load_json(payload, "reviewed payload manifest", require_canonical=True),
-        "reviewed payload manifest",
-        {"schemaVersion", "coordinate", "payloads"},
-    )
-    if type(value["schemaVersion"]) is not int or value["schemaVersion"] != SCHEMA_VERSION:
-        raise BundleError("reviewed payload manifest schemaVersion must be 1")
-    coordinate = _expect_object(
-        value["coordinate"],
-        "reviewed payload manifest coordinate",
-        {"groupId", "artifactId", "version"},
-    )
-    if coordinate["groupId"] != GROUP_ID or coordinate["artifactId"] != ARTIFACT_ID:
-        raise BundleError("reviewed payload manifest has the wrong Maven coordinate")
-    version = coordinate["version"]
-    if not isinstance(version, str) or len(version) > 64:
-        raise BundleError("reviewed payload manifest version must be a stable SemVer")
-    match = _SEMVER.fullmatch(version)
-    if match is None:
-        raise BundleError("reviewed payload manifest version must be a stable SemVer")
-    if tuple(int(part) for part in match.groups()) <= (0, 1, 2):
-        raise BundleError("reviewed payload manifest version must be greater than 0.1.2")
-
-    base = f"{ARTIFACT_ID}-{version}"
-    names = sorted(
+def _payload_names(artifact_id: str, version: str) -> list[str]:
+    base = f"{artifact_id}-{version}"
+    return sorted(
         (
             f"{base}.jar",
             f"{base}-sources.jar",
@@ -326,51 +334,98 @@ def _manifest(path: Path) -> tuple[dict[str, object], bytes, str, list[str]]:
             f"{base}.module",
         )
     )
+
+
+def _manifest(
+    path: Path,
+) -> tuple[dict[str, object], bytes, str, dict[str, list[str]]]:
+    payload = _read_stable_regular(path, "reviewed payload manifest", MAX_MANIFEST_BYTES)
+    value = _expect_object(
+        _load_json(payload, "reviewed payload manifest", require_canonical=True),
+        "reviewed payload manifest",
+        {"schemaVersion", "coordinateSet", "payloads"},
+    )
+    if type(value["schemaVersion"]) is not int or value["schemaVersion"] != SCHEMA_VERSION:
+        raise BundleError("reviewed payload manifest schemaVersion must be 2")
+    coordinate_set = _expect_object(
+        value["coordinateSet"],
+        "reviewed payload manifest coordinateSet",
+        {"groupId", "artifactIds", "version"},
+    )
+    if coordinate_set["groupId"] != GROUP_ID:
+        raise BundleError("reviewed payload manifest has the wrong Maven group")
+    artifact_ids = coordinate_set["artifactIds"]
+    if artifact_ids != list(ARTIFACT_IDS):
+        raise BundleError(
+            "reviewed payload manifest must name the exact ordered artifact set"
+        )
+    version = coordinate_set["version"]
+    if not isinstance(version, str) or len(version) > 64:
+        raise BundleError("reviewed payload manifest version must be a stable 0.2.x SemVer")
+    match = _SEMVER.fullmatch(version)
+    if match is None or tuple(int(part) for part in match.groups()[:2]) != (0, 2):
+        raise BundleError("reviewed payload manifest version must be a stable 0.2.x SemVer")
+
+    names_by_artifact = {
+        artifact_id: _payload_names(artifact_id, version)
+        for artifact_id in ARTIFACT_IDS
+    }
+    expected_pairs = [
+        (artifact_id, name)
+        for artifact_id in ARTIFACT_IDS
+        for name in names_by_artifact[artifact_id]
+    ]
     records = value["payloads"]
-    if not isinstance(records, list) or len(records) != len(names):
-        raise BundleError("reviewed payload manifest must contain exactly five payloads")
-    actual_names: list[str] = []
+    if not isinstance(records, list) or len(records) != len(expected_pairs):
+        raise BundleError("reviewed payload manifest must contain exactly fifteen payloads")
+    actual_pairs: list[tuple[object, object]] = []
     for index, record_value in enumerate(records):
         record = _expect_object(
             record_value,
             f"reviewed payload manifest payload {index}",
-            {"name", "size", "sha256"},
+            {"artifactId", "name", "size", "sha256"},
         )
+        artifact_id = record["artifactId"]
         name = record["name"]
         size = record["size"]
         digest = record["sha256"]
-        if not isinstance(name, str):
-            raise BundleError("reviewed payload manifest payload name must be text")
+        if not isinstance(artifact_id, str) or not isinstance(name, str):
+            raise BundleError(
+                "reviewed payload manifest artifactId and payload name must be text"
+            )
         if type(size) is not int or size <= 0:
             raise BundleError("reviewed payload manifest payload size must be positive")
         if not isinstance(digest, str) or _LOWER_SHA256.fullmatch(digest) is None:
             raise BundleError("reviewed payload manifest payload sha256 must be lowercase hex")
-        actual_names.append(name)
-    if actual_names != names:
+        actual_pairs.append((artifact_id, name))
+    if actual_pairs != expected_pairs:
         raise BundleError(
-            "reviewed payload manifest payloads must be the exact lexicographic allowlist"
+            "reviewed payload manifest payloads must be the exact artifact/name allowlist"
         )
-    return value, payload, version, names
+    return value, payload, version, names_by_artifact
 
 
-def _expected_inventory(version: str, payload_names: list[str]) -> tuple[set[str], set[str]]:
-    coordinate_path = GROUP_PATH / ARTIFACT_ID / version
-    artifact_path = GROUP_PATH / ARTIFACT_ID
+def _expected_inventory(
+    version: str, payload_names_by_artifact: dict[str, list[str]]
+) -> tuple[set[str], set[str]]:
     files: set[str] = set()
-    for name in payload_names:
-        files.add(str(coordinate_path / name))
-        files.add(str(coordinate_path / f"{name}.asc"))
-        for algorithm in CHECKSUMS:
-            files.add(str(coordinate_path / f"{name}.{algorithm}"))
-            files.add(str(coordinate_path / f"{name}.asc.{algorithm}"))
-    files.add(str(artifact_path / "maven-metadata.xml"))
-    for algorithm in CHECKSUMS:
-        files.add(str(artifact_path / f"maven-metadata.xml.{algorithm}"))
-
-    parts = [*GROUP_PATH.parts, ARTIFACT_ID, version]
     directories: set[str] = set()
-    for length in range(1, len(parts) + 1):
-        directories.add(str(PurePosixPath(*parts[:length])))
+    for artifact_id in ARTIFACT_IDS:
+        coordinate_path = GROUP_PATH / artifact_id / version
+        artifact_path = GROUP_PATH / artifact_id
+        for name in payload_names_by_artifact[artifact_id]:
+            files.add(str(coordinate_path / name))
+            files.add(str(coordinate_path / f"{name}.asc"))
+            for algorithm in CHECKSUMS:
+                files.add(str(coordinate_path / f"{name}.{algorithm}"))
+                files.add(str(coordinate_path / f"{name}.asc.{algorithm}"))
+        files.add(str(artifact_path / "maven-metadata.xml"))
+        for algorithm in CHECKSUMS:
+            files.add(str(artifact_path / f"maven-metadata.xml.{algorithm}"))
+
+        parts = [*GROUP_PATH.parts, artifact_id, version]
+        for length in range(1, len(parts) + 1):
+            directories.add(str(PurePosixPath(*parts[:length])))
     return files, directories
 
 
@@ -534,7 +589,7 @@ def _read_repository(
         )
         if set(first_files) != expected_files or set(first_directories) != expected_directories:
             raise BundleError(
-                "staging inventory mismatch: expected one exact Maven coordinate"
+                "staging inventory mismatch: expected the exact coordinated Maven artifact set"
             )
         if sum(metadata[6] for metadata in first_files.values()) > MAX_STAGING_BYTES:
             raise BundleError("staging repository exceeds its total size limit")
@@ -575,70 +630,390 @@ def _verify_checksum(contents: dict[str, bytes], source: str, sidecar: str, algo
         raise BundleError(f"checksum mismatch for staged file: {source}")
 
 
-def _verify_xml_coordinates(contents: dict[str, bytes], version: str) -> None:
-    coordinate_path = GROUP_PATH / ARTIFACT_ID / version
-    base = f"{ARTIFACT_ID}-{version}"
-    pom_name = str(coordinate_path / f"{base}.pom")
-    pom = contents[pom_name]
-    if b"<!DOCTYPE" in pom.upper() or b"<!ENTITY" in pom.upper():
-        raise BundleError("staged POM must not contain a document type or entity")
-    try:
-        root = ET.fromstring(pom)
-    except ET.ParseError as error:
-        raise BundleError("staged POM is not well-formed XML") from error
+def _xml_dependency(
+    node: ET.Element, prefix: str
+) -> tuple[str | None, str | None, str | None, str | None]:
+    def text(name: str) -> str | None:
+        children = node.findall(f"{prefix}{name}")
+        if len(children) > 1:
+            raise BundleError(f"staged POM dependency has duplicate {name}")
+        return children[0].text if children else None
+
+    return text("groupId"), text("artifactId"), text("version"), text("scope")
+
+
+def _verify_xml_coordinates_and_graph(contents: dict[str, bytes], version: str) -> None:
     prefix = f"{{{MAVEN_NAMESPACE}}}"
-    if root.tag != f"{prefix}project":
-        raise BundleError("staged POM has the wrong Maven namespace")
-    expected = {
-        "groupId": GROUP_ID,
-        "artifactId": ARTIFACT_ID,
-        "version": version,
-    }
-    for name, wanted in expected.items():
-        nodes = root.findall(f"{prefix}{name}")
-        if len(nodes) != 1 or nodes[0].text != wanted:
-            raise BundleError(f"staged POM {name} does not match the coordinate")
+    observed_edges: set[tuple[str, str]] = set()
+    for artifact_id in ARTIFACT_IDS:
+        coordinate_path = GROUP_PATH / artifact_id / version
+        base = f"{artifact_id}-{version}"
+        pom_name = str(coordinate_path / f"{base}.pom")
+        pom = contents[pom_name]
+        if b"<!DOCTYPE" in pom.upper() or b"<!ENTITY" in pom.upper():
+            raise BundleError(f"staged POM must not contain a document type or entity: {artifact_id}")
+        try:
+            root = ET.fromstring(pom)
+        except ET.ParseError as error:
+            raise BundleError(f"staged POM is not well-formed XML: {artifact_id}") from error
+        if root.tag != f"{prefix}project":
+            raise BundleError(f"staged POM has the wrong Maven namespace: {artifact_id}")
+        expected = {
+            "groupId": GROUP_ID,
+            "artifactId": artifact_id,
+            "version": version,
+        }
+        for name, wanted in expected.items():
+            nodes = root.findall(f"{prefix}{name}")
+            if len(nodes) != 1 or nodes[0].text != wanted:
+                raise BundleError(
+                    f"staged POM {name} does not match the coordinate: {artifact_id}"
+                )
 
-    metadata_name = str(GROUP_PATH / ARTIFACT_ID / "maven-metadata.xml")
-    metadata = contents[metadata_name]
-    if b"<!DOCTYPE" in metadata.upper() or b"<!ENTITY" in metadata.upper():
-        raise BundleError("staged Maven metadata must not contain a document type or entity")
-    try:
-        metadata_root = ET.fromstring(metadata)
-    except ET.ParseError as error:
-        raise BundleError("staged Maven metadata is not well-formed XML") from error
-    if metadata_root.tag != "metadata":
-        raise BundleError("staged Maven metadata has the wrong root element")
-    checks = {
-        "groupId": GROUP_ID,
-        "artifactId": ARTIFACT_ID,
-        "versioning/latest": version,
-        "versioning/release": version,
-    }
-    for xpath, wanted in checks.items():
-        nodes = metadata_root.findall(xpath)
-        if len(nodes) != 1 or nodes[0].text != wanted:
-            raise BundleError(f"staged Maven metadata {xpath} does not match the coordinate")
-    versions = metadata_root.findall("versioning/versions/version")
-    if len(versions) != 1 or versions[0].text != version:
-        raise BundleError("staged Maven metadata must contain only the reviewed version")
-
-
-def _verify_module_metadata(contents: dict[str, bytes], version: str) -> None:
-    coordinate_path = GROUP_PATH / ARTIFACT_ID / version
-    name = str(coordinate_path / f"{ARTIFACT_ID}-{version}.module")
-    value = _load_json(contents[name], "staged Gradle Module Metadata", require_canonical=False)
-    if not isinstance(value, dict):
-        raise BundleError("staged Gradle Module Metadata must be a JSON object")
-    component = value.get("component")
-    if not isinstance(component, dict):
-        raise BundleError("staged Gradle Module Metadata lacks a component object")
-    expected = {"group": GROUP_ID, "module": ARTIFACT_ID, "version": version}
-    for key, wanted in expected.items():
-        if component.get(key) != wanted:
-            raise BundleError(
-                f"staged Gradle Module Metadata component.{key} does not match"
+        direct = [
+            _xml_dependency(node, prefix)
+            for node in root.findall(f"{prefix}dependencies/{prefix}dependency")
+        ]
+        managed = [
+            _xml_dependency(node, prefix)
+            for node in root.findall(
+                f"{prefix}dependencyManagement/{prefix}dependencies/{prefix}dependency"
             )
+        ]
+        all_dependencies = direct + managed
+        project_dependencies = [item for item in all_dependencies if item[0] == GROUP_ID]
+        direct_project_dependencies = [item for item in direct if item[0] == GROUP_ID]
+        if artifact_id == CORE_ARTIFACT_ID:
+            if project_dependencies:
+                raise BundleError("staged core POM must not depend on another RouteContract artifact")
+        else:
+            wanted = [(GROUP_ID, CORE_ARTIFACT_ID, version, "compile")]
+            if direct_project_dependencies != wanted or project_dependencies != wanted:
+                raise BundleError(
+                    f"staged adapter POM must depend exactly on same-version core: {artifact_id}"
+                )
+            observed_edges.add((artifact_id, CORE_ARTIFACT_ID))
+
+        shardingsphere_direct = [
+            item for item in direct if item[0] == "org.apache.shardingsphere"
+        ]
+        shardingsphere_managed = [
+            item for item in managed if item[0] == "org.apache.shardingsphere"
+        ]
+        if artifact_id == CORE_ARTIFACT_ID:
+            if shardingsphere_direct or shardingsphere_managed:
+                raise BundleError("staged core POM must be ShardingSphere-neutral")
+        else:
+            exact_shardingsphere = ADAPTER_ARTIFACT_VERSIONS[artifact_id]
+            executor, *managed_anchors = ADAPTER_SHARDINGSPHERE_ANCHORS[artifact_id]
+            expected_direct = [
+                (
+                    "org.apache.shardingsphere",
+                    executor,
+                    exact_shardingsphere,
+                    "runtime",
+                )
+            ]
+            expected_managed = [
+                (
+                    "org.apache.shardingsphere",
+                    module,
+                    exact_shardingsphere,
+                    None,
+                )
+                for module in managed_anchors
+            ]
+            if (
+                shardingsphere_direct != expected_direct
+                or shardingsphere_managed != expected_managed
+            ):
+                raise BundleError(
+                    "staged adapter POM must contain the exact direct/managed "
+                    f"ShardingSphere {exact_shardingsphere} anchor set: {artifact_id}"
+                )
+
+        metadata_name = str(GROUP_PATH / artifact_id / "maven-metadata.xml")
+        metadata = contents[metadata_name]
+        if b"<!DOCTYPE" in metadata.upper() or b"<!ENTITY" in metadata.upper():
+            raise BundleError(
+                f"staged Maven metadata must not contain a document type or entity: {artifact_id}"
+            )
+        try:
+            metadata_root = ET.fromstring(metadata)
+        except ET.ParseError as error:
+            raise BundleError(
+                f"staged Maven metadata is not well-formed XML: {artifact_id}"
+            ) from error
+        if metadata_root.tag != "metadata":
+            raise BundleError(f"staged Maven metadata has the wrong root element: {artifact_id}")
+        checks = {
+            "groupId": GROUP_ID,
+            "artifactId": artifact_id,
+            "versioning/latest": version,
+            "versioning/release": version,
+        }
+        for xpath, wanted in checks.items():
+            nodes = metadata_root.findall(xpath)
+            if len(nodes) != 1 or nodes[0].text != wanted:
+                raise BundleError(
+                    f"staged Maven metadata {xpath} does not match the coordinate: {artifact_id}"
+                )
+        versions = metadata_root.findall("versioning/versions/version")
+        if len(versions) != 1 or versions[0].text != version:
+            raise BundleError(
+                f"staged Maven metadata must contain only the reviewed version: {artifact_id}"
+            )
+
+    expected_edges = {
+        (artifact_id, CORE_ARTIFACT_ID) for artifact_id in ADAPTER_ARTIFACT_VERSIONS
+    }
+    if observed_edges != expected_edges:
+        raise BundleError("staged POM dependency graph is not the exact core/adapter graph")
+
+
+def _module_version(value: object, label: str) -> tuple[str | None, str | None]:
+    if not isinstance(value, dict):
+        raise BundleError(f"{label} version must be an object")
+    requires = value.get("requires")
+    strictly = value.get("strictly")
+    if requires is not None and not isinstance(requires, str):
+        raise BundleError(f"{label} version.requires must be text")
+    if strictly is not None and not isinstance(strictly, str):
+        raise BundleError(f"{label} version.strictly must be text")
+    return requires, strictly
+
+
+def _module_reference(value: object, label: str) -> tuple[str, str, str | None, str | None]:
+    if not isinstance(value, dict):
+        raise BundleError(f"{label} must be an object")
+    group = value.get("group")
+    module = value.get("module")
+    if not isinstance(group, str) or not isinstance(module, str):
+        raise BundleError(f"{label} group and module must be text")
+    requires, strictly = _module_version(value.get("version"), label)
+    return group, module, requires, strictly
+
+
+def _capability_set(value: object, label: str) -> set[tuple[str, str, str]]:
+    if not isinstance(value, list):
+        raise BundleError(f"{label} capabilities must be a list")
+    result: set[tuple[str, str, str]] = set()
+    for index, item in enumerate(value):
+        if not isinstance(item, dict):
+            raise BundleError(f"{label} capability {index} must be an object")
+        record = (item.get("group"), item.get("name"), item.get("version"))
+        if not all(isinstance(part, str) for part in record) or record in result:
+            raise BundleError(f"{label} contains an invalid or duplicate capability")
+        result.add(record)  # type: ignore[arg-type]
+    return result
+
+
+def _verify_module_metadata_and_graph(contents: dict[str, bytes], version: str) -> None:
+    expected_variant_files = {
+        "apiElements": lambda artifact_id: f"{artifact_id}-{version}.jar",
+        "runtimeElements": lambda artifact_id: f"{artifact_id}-{version}.jar",
+        "sourcesElements": lambda artifact_id: f"{artifact_id}-{version}-sources.jar",
+        "javadocElements": lambda artifact_id: f"{artifact_id}-{version}-javadoc.jar",
+    }
+    observed_edges: set[tuple[str, str]] = set()
+    for artifact_id in ARTIFACT_IDS:
+        coordinate_path = GROUP_PATH / artifact_id / version
+        name = str(coordinate_path / f"{artifact_id}-{version}.module")
+        value = _load_json(
+            contents[name],
+            f"staged Gradle Module Metadata for {artifact_id}",
+            require_canonical=False,
+        )
+        if not isinstance(value, dict) or value.get("formatVersion") != "1.1":
+            raise BundleError(
+                f"staged Gradle Module Metadata must use formatVersion 1.1: {artifact_id}"
+            )
+        component = value.get("component")
+        if not isinstance(component, dict):
+            raise BundleError(
+                f"staged Gradle Module Metadata lacks a component object: {artifact_id}"
+            )
+        expected = {"group": GROUP_ID, "module": artifact_id, "version": version}
+        for key, wanted in expected.items():
+            if component.get(key) != wanted:
+                raise BundleError(
+                    f"staged Gradle Module Metadata component.{key} does not match: {artifact_id}"
+                )
+
+        variants_value = value.get("variants")
+        if not isinstance(variants_value, list):
+            raise BundleError(f"staged Gradle Module Metadata variants must be a list: {artifact_id}")
+        variants: dict[str, dict[str, object]] = {}
+        for index, variant_value in enumerate(variants_value):
+            if not isinstance(variant_value, dict) or not isinstance(
+                variant_value.get("name"), str
+            ):
+                raise BundleError(f"staged Gradle Module Metadata variant {index} is invalid")
+            variant_name = variant_value["name"]
+            assert isinstance(variant_name, str)
+            if variant_name in variants:
+                raise BundleError(f"staged Gradle Module Metadata has duplicate variant: {variant_name}")
+            variants[variant_name] = variant_value
+        if set(variants) != set(expected_variant_files):
+            raise BundleError(
+                f"staged Gradle Module Metadata has an unexpected variant set: {artifact_id}"
+            )
+
+        for variant_name, expected_file in expected_variant_files.items():
+            variant = variants[variant_name]
+            files = variant.get("files")
+            filename = expected_file(artifact_id)
+            if not isinstance(files, list) or len(files) != 1 or not isinstance(files[0], dict):
+                raise BundleError(
+                    f"staged Gradle Module Metadata {variant_name} must bind one file: {artifact_id}"
+                )
+            file_record = files[0]
+            payload_path = str(coordinate_path / filename)
+            payload = contents[payload_path]
+            expected_file_record = {
+                "name": filename,
+                "url": filename,
+                "size": len(payload),
+                "md5": _digest(payload, "md5"),
+                "sha1": _digest(payload, "sha1"),
+                "sha256": _digest(payload, "sha256"),
+                "sha512": _digest(payload, "sha512"),
+            }
+            for key, wanted in expected_file_record.items():
+                if file_record.get(key) != wanted:
+                    raise BundleError(
+                        f"staged Gradle Module Metadata {variant_name} file.{key} mismatch: {artifact_id}"
+                    )
+
+        self_capability = (GROUP_ID, artifact_id, version)
+        for variant_name in ("apiElements", "runtimeElements"):
+            variant = variants[variant_name]
+            wanted_capabilities = {
+                self_capability,
+                CORE_OWNER_CAPABILITY
+                if artifact_id == CORE_ARTIFACT_ID
+                else HOOK_ADAPTER_CAPABILITY,
+            }
+            if artifact_id == "routecontract-shardingsphere-5.5.2":
+                wanted_capabilities.add(
+                    (GROUP_ID, "routecontract-shardingsphere-5.5", version)
+                )
+            if _capability_set(
+                variant.get("capabilities"), f"{artifact_id} {variant_name}"
+            ) != wanted_capabilities:
+                raise BundleError(
+                    f"staged Gradle Module Metadata capability set mismatch: {artifact_id} {variant_name}"
+                )
+
+            dependencies_value = variant.get("dependencies")
+            constraints_value = variant.get("dependencyConstraints")
+            dependencies = [] if dependencies_value is None else dependencies_value
+            constraints = [] if constraints_value is None else constraints_value
+            if not isinstance(dependencies, list) or not isinstance(constraints, list):
+                raise BundleError(
+                    f"staged Gradle Module Metadata dependency lists are invalid: {artifact_id}"
+                )
+            references = [
+                _module_reference(item, f"{artifact_id} {variant_name} dependency")
+                for item in dependencies
+            ]
+            references.extend(
+                _module_reference(item, f"{artifact_id} {variant_name} constraint")
+                for item in constraints
+            )
+            project_references = [item for item in references if item[0] == GROUP_ID]
+            if artifact_id == CORE_ARTIFACT_ID:
+                if project_references:
+                    raise BundleError(
+                        "staged core Gradle Module Metadata must not depend on another RouteContract artifact"
+                    )
+            else:
+                wanted_project_reference = [(GROUP_ID, CORE_ARTIFACT_ID, version, None)]
+                if project_references != wanted_project_reference:
+                    raise BundleError(
+                        f"staged adapter Gradle Module Metadata must depend exactly on same-version core: {artifact_id} {variant_name}"
+                    )
+                observed_edges.add((artifact_id, CORE_ARTIFACT_ID))
+
+            shardingsphere_dependencies = [
+                item
+                for item in (
+                    _module_reference(
+                        dependency,
+                        f"{artifact_id} {variant_name} ShardingSphere dependency",
+                    )
+                    for dependency in dependencies
+                )
+                if item[0] == "org.apache.shardingsphere"
+            ]
+            shardingsphere_constraints = [
+                item
+                for item in (
+                    _module_reference(
+                        constraint,
+                        f"{artifact_id} {variant_name} ShardingSphere constraint",
+                    )
+                    for constraint in constraints
+                )
+                if item[0] == "org.apache.shardingsphere"
+            ]
+            if artifact_id == CORE_ARTIFACT_ID:
+                if shardingsphere_dependencies or shardingsphere_constraints:
+                    raise BundleError(
+                        "staged core Gradle Module Metadata must be ShardingSphere-neutral"
+                    )
+            elif variant_name == "runtimeElements":
+                exact_shardingsphere = ADAPTER_ARTIFACT_VERSIONS[artifact_id]
+                executor, *managed_anchors = ADAPTER_SHARDINGSPHERE_ANCHORS[artifact_id]
+                expected_dependency = [
+                    (
+                        "org.apache.shardingsphere",
+                        executor,
+                        exact_shardingsphere,
+                        exact_shardingsphere,
+                    )
+                ]
+                expected_constraints = [
+                    (
+                        "org.apache.shardingsphere",
+                        module,
+                        exact_shardingsphere,
+                        exact_shardingsphere,
+                    )
+                    for module in managed_anchors
+                ]
+                if (
+                    shardingsphere_dependencies != expected_dependency
+                    or shardingsphere_constraints != expected_constraints
+                ):
+                    raise BundleError(
+                        "staged adapter Gradle Module Metadata must contain the exact "
+                        f"strict ShardingSphere {exact_shardingsphere} anchor set: {artifact_id}"
+                    )
+            elif shardingsphere_dependencies or shardingsphere_constraints:
+                raise BundleError(
+                    f"staged adapter apiElements must expose no ShardingSphere dependency: {artifact_id}"
+                )
+
+        for variant_name in ("sourcesElements", "javadocElements"):
+            variant = variants[variant_name]
+            if (
+                variant.get("dependencies") not in (None, [])
+                or variant.get("dependencyConstraints") not in (None, [])
+                or variant.get("capabilities") not in (None, [])
+            ):
+                raise BundleError(
+                    "staged Gradle documentation/source variants must not carry "
+                    f"dependencies, constraints, or capabilities: {artifact_id} {variant_name}"
+                )
+
+    expected_edges = {
+        (artifact_id, CORE_ARTIFACT_ID) for artifact_id in ADAPTER_ARTIFACT_VERSIONS
+    }
+    if observed_edges != expected_edges:
+        raise BundleError(
+            "staged Gradle Module Metadata dependency graph is not the exact core/adapter graph"
+        )
 
 
 def _gpg_command(
@@ -876,38 +1251,43 @@ def _prepare_staging(
     _canonical_existing_path(repository, "staging repository", directory=True)
     if _UPPER_FINGERPRINT.fullmatch(expected_primary_fingerprint) is None:
         raise BundleError("expected primary fingerprint must be 40 uppercase hex characters")
-    manifest_value, manifest_bytes, version, payload_names = _manifest(
+    manifest_value, manifest_bytes, version, payload_names_by_artifact = _manifest(
         reviewed_manifest_path
     )
-    expected_files, expected_directories = _expected_inventory(version, payload_names)
+    expected_files, expected_directories = _expected_inventory(
+        version, payload_names_by_artifact
+    )
     contents = _read_repository(repository, expected_files, expected_directories)
     verified_public_key = _verify_public_gpg_home(
         public_gpg_home, expected_primary_fingerprint
     )
 
-    coordinate_path = GROUP_PATH / ARTIFACT_ID / version
     reviewed_records = manifest_value["payloads"]
     assert isinstance(reviewed_records, list)
     for record_value in reviewed_records:
         assert isinstance(record_value, dict)
+        artifact_id = record_value["artifactId"]
         name = record_value["name"]
-        assert isinstance(name, str)
+        assert isinstance(artifact_id, str) and isinstance(name, str)
+        coordinate_path = GROUP_PATH / artifact_id / version
         staged = contents[str(coordinate_path / name)]
         if record_value["size"] != len(staged) or record_value["sha256"] != _sha256(staged):
             raise BundleError(f"reviewed payload mismatch for staged file: {name}")
 
-    for name in payload_names:
-        payload_path = str(coordinate_path / name)
-        signature_path = f"{payload_path}.asc"
-        for source in (payload_path, signature_path):
-            for algorithm in CHECKSUMS:
-                _verify_checksum(contents, source, f"{source}.{algorithm}", algorithm)
-    metadata_path = str(GROUP_PATH / ARTIFACT_ID / "maven-metadata.xml")
-    for algorithm in CHECKSUMS:
-        _verify_checksum(contents, metadata_path, f"{metadata_path}.{algorithm}", algorithm)
+    for artifact_id in ARTIFACT_IDS:
+        coordinate_path = GROUP_PATH / artifact_id / version
+        for name in payload_names_by_artifact[artifact_id]:
+            payload_path = str(coordinate_path / name)
+            signature_path = f"{payload_path}.asc"
+            for source in (payload_path, signature_path):
+                for algorithm in CHECKSUMS:
+                    _verify_checksum(contents, source, f"{source}.{algorithm}", algorithm)
+        metadata_path = str(GROUP_PATH / artifact_id / "maven-metadata.xml")
+        for algorithm in CHECKSUMS:
+            _verify_checksum(contents, metadata_path, f"{metadata_path}.{algorithm}", algorithm)
 
-    _verify_xml_coordinates(contents, version)
-    _verify_module_metadata(contents, version)
+    _verify_xml_coordinates_and_graph(contents, version)
+    _verify_module_metadata_and_graph(contents, version)
     with tempfile.TemporaryDirectory(
         prefix="rc-central-key-", dir="/tmp"
     ) as temporary_public_home:
@@ -925,34 +1305,39 @@ def _prepare_staging(
         )
         if snapshot_public_key != verified_public_key:
             raise BundleError("public-key verification snapshot changed key bytes")
-        for name in payload_names:
-            payload_path = str(coordinate_path / name)
-            _verify_signature(
-                contents[f"{payload_path}.asc"],
-                contents[payload_path],
-                snapshot_home,
-                expected_primary_fingerprint,
-                name,
-            )
+        for artifact_id in ARTIFACT_IDS:
+            coordinate_path = GROUP_PATH / artifact_id / version
+            for name in payload_names_by_artifact[artifact_id]:
+                payload_path = str(coordinate_path / name)
+                _verify_signature(
+                    contents[f"{payload_path}.asc"],
+                    contents[payload_path],
+                    snapshot_home,
+                    expected_primary_fingerprint,
+                    f"{artifact_id}/{name}",
+                )
 
     upload_entries: dict[str, bytes] = {}
     entry_kinds: dict[str, str] = {}
     excluded_paths: set[str] = set()
-    for name in payload_names:
-        payload_path = str(coordinate_path / name)
-        signature_path = f"{payload_path}.asc"
-        upload_entries[payload_path] = contents[payload_path]
-        entry_kinds[payload_path] = "payload"
-        upload_entries[signature_path] = contents[signature_path]
-        entry_kinds[signature_path] = "signature"
+    for artifact_id in ARTIFACT_IDS:
+        coordinate_path = GROUP_PATH / artifact_id / version
+        for name in payload_names_by_artifact[artifact_id]:
+            payload_path = str(coordinate_path / name)
+            signature_path = f"{payload_path}.asc"
+            upload_entries[payload_path] = contents[payload_path]
+            entry_kinds[payload_path] = "payload"
+            upload_entries[signature_path] = contents[signature_path]
+            entry_kinds[signature_path] = "signature"
+            for algorithm in CHECKSUMS:
+                checksum_path = f"{payload_path}.{algorithm}"
+                upload_entries[checksum_path] = contents[checksum_path]
+                entry_kinds[checksum_path] = "payloadChecksum"
+                excluded_paths.add(f"{signature_path}.{algorithm}")
+        metadata_path = str(GROUP_PATH / artifact_id / "maven-metadata.xml")
+        excluded_paths.add(metadata_path)
         for algorithm in CHECKSUMS:
-            checksum_path = f"{payload_path}.{algorithm}"
-            upload_entries[checksum_path] = contents[checksum_path]
-            entry_kinds[checksum_path] = "payloadChecksum"
-            excluded_paths.add(f"{signature_path}.{algorithm}")
-    excluded_paths.add(metadata_path)
-    for algorithm in CHECKSUMS:
-        excluded_paths.add(f"{metadata_path}.{algorithm}")
+            excluded_paths.add(f"{metadata_path}.{algorithm}")
     excluded_entries = [
         {
             "path": path,
@@ -961,16 +1346,20 @@ def _prepare_staging(
         }
         for path in sorted(excluded_paths)
     ]
-    if len(upload_entries) != 30 or len(excluded_entries) != 25:
-        raise BundleError("internal staging partition did not produce 30 upload and 25 excluded files")
+    if (
+        len(upload_entries) != UPLOAD_ENTRY_COUNT
+        or len(excluded_entries) != EXCLUDED_ENTRY_COUNT
+    ):
+        raise BundleError(
+            "internal staging partition did not produce the exact coordinated upload/exclusion inventory"
+        )
     return PreparedStaging(
         version=version,
-        coordinate={
-            "groupId": GROUP_ID,
-            "artifactId": ARTIFACT_ID,
-            "version": version,
+        artifacts=ARTIFACT_IDS,
+        coordinate_paths={
+            artifact_id: str(GROUP_PATH / artifact_id / version)
+            for artifact_id in ARTIFACT_IDS
         },
-        coordinate_path=str(coordinate_path),
         manifest_bytes=manifest_bytes,
         manifest_sha256=_sha256(manifest_bytes),
         files=contents,
@@ -1020,9 +1409,14 @@ def _receipt(
         "kind": "routecontract-central-upload-bundle-receipt",
         "result": "VERIFIED",
         "scope": "credential-free-local-bundle-only",
-        "coordinate": {
-            **prepared.coordinate,
-            "path": prepared.coordinate_path,
+        "coordinateSet": {
+            "groupId": GROUP_ID,
+            "artifactIds": list(prepared.artifacts),
+            "version": prepared.version,
+            "paths": [
+                prepared.coordinate_paths[artifact_id]
+                for artifact_id in prepared.artifacts
+            ],
         },
         "reviewedPayloadManifest": {
             "byteCount": len(prepared.manifest_bytes),
@@ -1030,7 +1424,7 @@ def _receipt(
         },
         "tool": _tool_binding(),
         "signaturePolicy": {
-            "detachedSignatures": 5,
+            "detachedSignatures": len(prepared.artifacts) * PAYLOADS_PER_ARTIFACT,
             "digest": "SHA384",
             "primaryFingerprint": expected_primary_fingerprint,
         },
@@ -1079,7 +1473,10 @@ def _verify_zip(bundle: bytes, prepared: PreparedStaging) -> None:
                 raise BundleError("bundle ZIP has an archive comment")
             infos = archive.infolist()
             expected_names = sorted(prepared.upload_entries)
-            if [info.filename for info in infos] != expected_names or len(infos) != 30:
+            if (
+                [info.filename for info in infos] != expected_names
+                or len(infos) != UPLOAD_ENTRY_COUNT
+            ):
                 raise BundleError("bundle ZIP inventory or ordering mismatch")
             for info in infos:
                 if info.is_dir() or PurePosixPath(info.filename).is_absolute():
@@ -1394,8 +1791,8 @@ def build_bundle(
         public_gpg_home,
         expected_primary_fingerprint,
     )
-    bundle_name = f"{ARTIFACT_ID}-{prepared.version}-central-upload.zip"
-    receipt_name = f"{ARTIFACT_ID}-{prepared.version}-central-upload-receipt.json"
+    bundle_name = f"routecontract-{prepared.version}-central-upload.zip"
+    receipt_name = f"routecontract-{prepared.version}-central-upload-receipt.json"
     bundle = _zip_bytes(prepared.upload_entries)
     receipt_value = _receipt(
         prepared, bundle_name, bundle, expected_primary_fingerprint
@@ -1461,7 +1858,7 @@ def verify_bundle(
             "kind",
             "result",
             "scope",
-            "coordinate",
+            "coordinateSet",
             "reviewedPayloadManifest",
             "tool",
             "signaturePolicy",
@@ -1483,11 +1880,11 @@ def verify_bundle(
         raise BundleError("bundle SHA-256 mismatch against the receipt")
     if bundle_record.get("byteCount") != len(bundle):
         raise BundleError("bundle byte count mismatch against the receipt")
-    expected_name = f"{ARTIFACT_ID}-{prepared.version}-central-upload.zip"
+    expected_name = f"routecontract-{prepared.version}-central-upload.zip"
     if bundle_path.name != expected_name or bundle_record.get("name") != expected_name:
         raise BundleError("bundle filename mismatch")
     expected_receipt_name = (
-        f"{ARTIFACT_ID}-{prepared.version}-central-upload-receipt.json"
+        f"routecontract-{prepared.version}-central-upload-receipt.json"
     )
     if receipt_path.name != expected_receipt_name:
         raise BundleError("bundle receipt filename mismatch")
@@ -1508,7 +1905,7 @@ def verify_bundle(
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Build or verify one credential-free RouteContract Central upload bundle",
+        description="Build or verify one coordinated credential-free RouteContract Central upload bundle",
         allow_abbrev=False,
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -1555,7 +1952,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"routecontract Central bundle error: {error}", file=sys.stderr)
         return 2
     print(
-        f"{marker} coordinate={GROUP_ID}:{ARTIFACT_ID}:{result.version} entries=30 "
+        f"{marker} group={GROUP_ID} artifacts={','.join(ARTIFACT_IDS)} "
+        f"version={result.version} entries={UPLOAD_ENTRY_COUNT} "
         f"bundleSha256={result.bundle_sha256} "
         f"receiptSha256={result.receipt_sha256} VERIFIED"
     )

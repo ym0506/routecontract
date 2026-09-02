@@ -7,8 +7,9 @@ import io.github.ym0506.routecontract.RouteAssertions;
 import io.github.ym0506.routecontract.RouteContract;
 import io.github.ym0506.routecontract.RouteContractViolationException;
 import io.github.ym0506.routecontract.RouteSnapshot;
+import io.github.ym0506.routecontract.ShardingSphereRuntimeIdentity;
 import io.github.ym0506.routecontract.ThreadRole;
-import io.github.ym0506.routecontract.internal.RouteContractSqlExecutionHook;
+import io.github.ym0506.routecontract.shardingsphere553.internal.RouteContract553SqlExecutionHook;
 import io.github.ym0506.routecontract.manifest.DataSourceAliases;
 import io.github.ym0506.routecontract.manifest.ManifestAssertions;
 import io.github.ym0506.routecontract.manifest.ManifestCodec;
@@ -34,12 +35,14 @@ import javax.sql.DataSource;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.HashSet;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -148,7 +151,7 @@ class OperationCorrelationMySqlTest {
     void firstWorkerReceivesSubmissionContextButRawChildDoesNotInheritIt() throws Exception {
         RouteSnapshot first = RouteContract.capture("first-operation", () -> {
             Thread rawChild = new Thread(() -> {
-                RouteContractSqlExecutionHook hook = new RouteContractSqlExecutionHook();
+                RouteContract553SqlExecutionHook hook = new RouteContract553SqlExecutionHook();
                 hook.start("raw-child-must-not-be-captured", "SELECT 1", List.of(), null, false);
                 hook.finishSuccess();
             }, "raw-child-without-ttl-wrapper");
@@ -264,18 +267,34 @@ class OperationCorrelationMySqlTest {
         Files.write(demoEvidenceDirectory.resolve("find-paid-orders-by-user.candidate.json"), candidateBytes);
         Path committedExampleDirectory = Path.of(
                 System.getProperty("routecontract.repositoryRoot"), "examples", "manifests");
+        assertLegacySchemaOneBytesRemainStable(
+                codec,
+                committedExampleDirectory.resolve("find-paid-orders-by-user.approved.json"),
+                660,
+                "a082ca797ebe40be5b8c9409893de7d9a861086d8d4b760cbc00e925b2436a60");
+        assertLegacySchemaOneBytesRemainStable(
+                codec,
+                committedExampleDirectory.resolve("find-paid-orders-by-user.candidate.json"),
+                1047,
+                "be65fe9b0c6469aaabcb4aefebb95ce7790c74ac0c0b3b229df1b228da9f4738");
         assertArrayEquals(
                 Files.readAllBytes(committedExampleDirectory.resolve(
-                        "find-paid-orders-by-user.approved.json")),
+                        "find-paid-orders-by-user.shardingsphere-5.5.3.schema2.approved.json")),
                 approvedBytes,
                 "the checked-in approved example must be the exact canonical MySQL evidence");
         assertArrayEquals(
                 Files.readAllBytes(committedExampleDirectory.resolve(
-                        "find-paid-orders-by-user.candidate.json")),
+                        "find-paid-orders-by-user.shardingsphere-5.5.3.schema2.candidate.json")),
                 candidateBytes,
                 "the checked-in candidate example must be the exact canonical MySQL evidence");
         ManifestVerificationResult verification = new ManifestVerifier().verify(
                 approvedRoundTrip, candidate);
+        ObservedExecutionManifest legacyApproved = codec.decode(Files.readAllBytes(
+                committedExampleDirectory.resolve("find-paid-orders-by-user.approved.json")));
+        assertEquals(
+                verification,
+                new ManifestVerifier().verify(legacyApproved, candidate),
+                "the immutable schema-1 approval must produce the same schema-2 candidate decision");
 
         assertEquals(VerificationStatus.POLICY_VIOLATION, verification.status());
         assertEquals(
@@ -424,6 +443,23 @@ class OperationCorrelationMySqlTest {
                 + "|" + attempt.parameterCount()
                 + "|" + attempt.parameterTypes()
                 + "|" + attempt.outcome();
+    }
+
+    private static void assertLegacySchemaOneBytesRemainStable(
+            final ManifestCodec codec,
+            final Path legacyManifest,
+            final int expectedSize,
+            final String expectedSha256) throws Exception {
+        byte[] bytes = Files.readAllBytes(legacyManifest);
+        assertEquals(expectedSize, bytes.length, "historical schema-1 byte size changed");
+        assertEquals(
+                expectedSha256,
+                HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes)),
+                "historical schema-1 SHA-256 changed");
+        ObservedExecutionManifest decoded = codec.decode(bytes);
+        assertEquals(1, decoded.schemaVersion());
+        assertEquals(ShardingSphereRuntimeIdentity.SHARDINGSPHERE_5_5_3, decoded.runtimeIdentity());
+        assertArrayEquals(bytes, codec.encode(decoded));
     }
 
     private static MySQLContainer<?> mysql() {

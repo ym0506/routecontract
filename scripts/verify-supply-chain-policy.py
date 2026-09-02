@@ -52,6 +52,11 @@ MAVEN_NAMESPACE = "http://maven.apache.org/POM/4.0.0"
 CYCLONEDX_XML_NAMESPACE = "http://cyclonedx.org/schema/bom/1.6"
 FIRST_PARTY_GROUP = "io.github.ym0506.routecontract"
 AGGREGATE_ROOT_NAME = "routecontract"
+CORE_ROOT_NAME = "routecontract-core"
+CORE_PROJECT_NAME = "RouteContract core"
+CORE_PROJECT_DESCRIPTION = (
+    "Version-neutral RouteContract capture model, collector, and manifest verifier"
+)
 PUBLISHED_ROOT_NAME = "routecontract-shardingsphere-5.5"
 PUBLISHED_PROJECT_NAME = "RouteContract for Apache ShardingSphere-JDBC 5.5.3"
 PUBLISHED_PROJECT_DESCRIPTION = (
@@ -65,6 +70,15 @@ PUBLISHED_SCM_VALUES = (
     PUBLISHED_PROJECT_URL,
 )
 EXAMPLE_ROOT_NAME = "mysql-example"
+ADAPTER_552_ROOT_NAME = "routecontract-shardingsphere-5.5.2"
+ADAPTER_552_PROJECT_NAME = (
+    "RouteContract for Apache ShardingSphere-JDBC 5.5.2"
+)
+ADAPTER_552_PROJECT_DESCRIPTION = (
+    "Operation-scoped contracts over physical JDBC execution attempts reported "
+    "by Apache ShardingSphere-JDBC 5.5.2 SQLExecutionHook"
+)
+MYSQL_552_ROOT_NAME = "mysql-5.5.2-example"
 MYSQL_CONTAINER_NAME = "mysql"
 MYSQL_CONTAINER_VERSION = "8.4.11"
 MYSQL_CONTAINER_DIGEST = (
@@ -100,6 +114,48 @@ REQUIRED_EXAMPLE_MAVEN_COORDINATES = (
     ("org.apache.shardingsphere", "shardingsphere-jdbc", "5.5.3"),
     ("org.apache.calcite", "calcite-core", "1.42.0"),
     ("org.apache.calcite", "calcite-linq4j", "1.42.0"),
+)
+REQUIRED_EXAMPLE_MAVEN_COORDINATES_BY_ROOT = {
+    EXAMPLE_ROOT_NAME: REQUIRED_EXAMPLE_MAVEN_COORDINATES,
+    MYSQL_552_ROOT_NAME: (
+        ("org.apache.shardingsphere", "shardingsphere-jdbc", "5.5.2"),
+        ("org.apache.calcite", "calcite-core", "1.38.0"),
+        ("org.apache.calcite", "calcite-linq4j", "1.38.0"),
+    ),
+}
+EXPECTED_PUBLISHED_DEPENDENCY_MANAGEMENT = (
+    (
+        "org.apache.shardingsphere",
+        "shardingsphere-infra-spi",
+        "5.5.3",
+        None,
+        None,
+    ),
+    (
+        "org.apache.shardingsphere",
+        "shardingsphere-database-connector-core",
+        "5.5.3",
+        None,
+        None,
+    ),
+    ("com.fasterxml.jackson", "jackson-bom", "2.18.9", "pom", "import"),
+)
+EXPECTED_ADAPTER_552_DEPENDENCY_MANAGEMENT = (
+    (
+        "org.apache.shardingsphere",
+        "shardingsphere-infra-spi",
+        "5.5.2",
+        None,
+        None,
+    ),
+    (
+        "org.apache.shardingsphere",
+        "shardingsphere-infra-database-core",
+        "5.5.2",
+        None,
+        None,
+    ),
+    ("com.fasterxml.jackson", "jackson-bom", "2.18.9", "pom", "import"),
 )
 MYSQL_LICENSE_REVIEW_EXCEPTION = {
     "action": (
@@ -2024,50 +2080,85 @@ def _validate_sbom_roles(
     aggregate_sbom: dict[str, Any],
     published_sbom: dict[str, Any],
     example_sbom: dict[str, Any],
-) -> tuple[str, str, str]:
+    core_sbom: dict[str, Any] | None = None,
+) -> tuple[str, str | None, str, str]:
     aggregate_root, aggregate_version = _sbom_root_identity(
         aggregate_sbom, AGGREGATE_ROOT_NAME, "aggregate SBOM"
     )
+    core_root: str | None = None
+    versions = {aggregate_version}
+    if core_sbom is not None:
+        core_root, core_version = _sbom_root_identity(
+            core_sbom, CORE_ROOT_NAME, "core SBOM"
+        )
+        versions.add(core_version)
     published_root, published_version = _sbom_root_identity(
         published_sbom, PUBLISHED_ROOT_NAME, "published SBOM"
     )
     example_root, example_version = _sbom_root_identity(
         example_sbom, EXAMPLE_ROOT_NAME, "example SBOM"
     )
-    if len({aggregate_version, published_version, example_version}) != 1:
-        raise PolicyError("aggregate/published/example SBOM versions differ")
+    versions.update({published_version, example_version})
+    if len(versions) != 1:
+        raise PolicyError("aggregate/core/published/example SBOM versions differ")
     aggregate_components = _maven_inventory(aggregate_sbom)
+    core_components = _maven_inventory(core_sbom) if core_sbom is not None else {}
     published_components = _maven_inventory(published_sbom)
     example_components = _maven_inventory(example_sbom)
-    aggregate_first_party = {
-        purl: component
-        for purl, component in aggregate_components.items()
-        if _parse_maven_purl(purl)[1] == FIRST_PARTY_GROUP
-    }
-    published_first_party = {
-        purl: component
-        for purl, component in published_components.items()
-        if _parse_maven_purl(purl)[1] == FIRST_PARTY_GROUP
-    }
-    example_first_party = {
-        purl: component
-        for purl, component in example_components.items()
-        if _parse_maven_purl(purl)[1] == FIRST_PARTY_GROUP
-    }
-    if set(aggregate_first_party) != {published_root, example_root}:
+
+    def first_party(
+        components: dict[str, dict[str, Any]],
+    ) -> dict[str, dict[str, Any]]:
+        return {
+            purl: component
+            for purl, component in components.items()
+            if _parse_maven_purl(purl)[1] == FIRST_PARTY_GROUP
+        }
+
+    aggregate_first_party = first_party(aggregate_components)
+    core_first_party = first_party(core_components)
+    published_first_party = first_party(published_components)
+    example_first_party = first_party(example_components)
+    expected_aggregate = {published_root, example_root}
+    expected_published: set[str] = set()
+    expected_example = {published_root}
+    if core_root is not None:
+        expected_aggregate.add(core_root)
+        expected_published.add(core_root)
+        expected_example.add(core_root)
+    if set(aggregate_first_party) != expected_aggregate:
         raise PolicyError(
-            "aggregate SBOM must contain exactly the published and example project components"
+            (
+                "aggregate SBOM must contain exactly the published and example "
+                "project components"
+                if core_root is None
+                else "aggregate SBOM contains an unexpected first-party project set"
+            )
         )
-    if published_first_party:
-        raise PolicyError("published SBOM must not contain another first-party project")
-    if set(example_first_party) != {published_root}:
+    if core_first_party:
+        raise PolicyError("core SBOM must not contain another first-party project")
+    if set(published_first_party) != expected_published:
         raise PolicyError(
-            "example SBOM must contain exactly the published first-party project component"
+            "published SBOM must not contain another first-party project"
+            if core_root is None
+            else "published SBOM contains an unexpected first-party project set"
         )
-    for root, name, label in (
+    if set(example_first_party) != expected_example:
+        raise PolicyError(
+            (
+                "example SBOM must contain exactly the published first-party "
+                "project component"
+                if core_root is None
+                else "example SBOM contains an unexpected first-party project set"
+            )
+        )
+    aggregate_projects = [
         (published_root, PUBLISHED_ROOT_NAME, "published"),
         (example_root, EXAMPLE_ROOT_NAME, "example"),
-    ):
+    ]
+    if core_root is not None:
+        aggregate_projects.insert(0, (core_root, CORE_ROOT_NAME, "core"))
+    for root, name, label in aggregate_projects:
         if root not in aggregate_components:
             raise PolicyError(f"aggregate SBOM is missing its {label} project component")
         aggregate_project = aggregate_components[root]
@@ -2090,12 +2181,18 @@ def _validate_sbom_roles(
                 f"aggregate {label} project component has an unexpected role property"
             )
 
+    aggregate_core = (
+        aggregate_first_party[core_root] if core_root is not None else None
+    )
     aggregate_published = aggregate_first_party[published_root]
     aggregate_example = aggregate_first_party[example_root]
+    direct_core_root = core_sbom["metadata"]["component"] if core_sbom is not None else None
     direct_published_root = published_sbom["metadata"]["component"]
     direct_example_root = example_sbom["metadata"]["component"]
+    published_core = published_first_party.get(core_root) if core_root is not None else None
+    example_core = example_first_party.get(core_root) if core_root is not None else None
     example_published = example_first_party[published_root]
-    for left, right, label in (
+    comparisons: list[tuple[dict[str, Any], dict[str, Any], str]] = [
         (
             aggregate_published,
             direct_published_root,
@@ -2103,7 +2200,26 @@ def _validate_sbom_roles(
         ),
         (aggregate_example, direct_example_root, "aggregate/example project"),
         (example_published, direct_published_root, "example/published project"),
-    ):
+    ]
+    if core_root is not None:
+        if any(
+            component is None
+            for component in (
+                aggregate_core,
+                direct_core_root,
+                published_core,
+                example_core,
+            )
+        ):
+            raise PolicyError("core project component is missing from a required role")
+        comparisons.extend(
+            [
+                (aggregate_core, direct_core_root, "aggregate/core project"),
+                (published_core, direct_core_root, "published/core project"),
+                (example_core, direct_core_root, "example/core project"),
+            ]
+        )
+    for left, right, label in comparisons:
         if _component_artifact_fingerprint(left, label) != (
             _component_artifact_fingerprint(right, label)
         ):
@@ -2114,6 +2230,17 @@ def _validate_sbom_roles(
         raise PolicyError(
             "example published project component is not exactly test-scoped"
         )
+    if core_root is not None:
+        if _component_properties(
+            published_first_party[core_root], "published core project component"
+        ) != [{"name": "cdx:maven:package:test", "value": "false"}]:
+            raise PolicyError(
+                "published core project component is not exactly production-scoped"
+            )
+        if _component_properties(
+            example_first_party[core_root], "example core project component"
+        ) != [{"name": "cdx:maven:package:test", "value": "true"}]:
+            raise PolicyError("example core project component is not exactly test-scoped")
 
     def root_targets(sbom: dict[str, Any], root: str, label: str) -> set[str]:
         records = sbom.get("dependencies")
@@ -2124,11 +2251,11 @@ def _validate_sbom_roles(
             raise PolicyError(f"{label} dependency graph lacks one exact root record")
         return set(matching[0]["dependsOn"])
 
-    if not {published_root, example_root} <= root_targets(
+    if not expected_aggregate <= root_targets(
         aggregate_sbom, aggregate_root, "aggregate SBOM"
     ):
         raise PolicyError(
-            "aggregate SBOM root must directly reach both first-party project components"
+            "aggregate SBOM root must directly reach every first-party project component"
         )
     if published_root not in root_targets(
         example_sbom, example_root, "example SBOM"
@@ -2136,7 +2263,231 @@ def _validate_sbom_roles(
         raise PolicyError(
             "example SBOM root must directly reach the published project component"
         )
-    return aggregate_root, published_root, example_root
+    if core_root is not None and core_root not in root_targets(
+        published_sbom, published_root, "published SBOM"
+    ):
+        raise PolicyError(
+            "published SBOM root must directly reach the core project component"
+        )
+    return aggregate_root, core_root, published_root, example_root
+
+
+def _validate_six_sbom_roles(
+    aggregate_sbom: dict[str, Any],
+    core_sbom: dict[str, Any],
+    adapter553_sbom: dict[str, Any],
+    adapter552_sbom: dict[str, Any],
+    mysql553_sbom: dict[str, Any],
+    mysql552_sbom: dict[str, Any],
+) -> dict[str, str]:
+    role_documents = {
+        AGGREGATE_ROOT_NAME: aggregate_sbom,
+        CORE_ROOT_NAME: core_sbom,
+        PUBLISHED_ROOT_NAME: adapter553_sbom,
+        ADAPTER_552_ROOT_NAME: adapter552_sbom,
+        EXAMPLE_ROOT_NAME: mysql553_sbom,
+        MYSQL_552_ROOT_NAME: mysql552_sbom,
+    }
+    roots: dict[str, str] = {}
+    versions: set[str] = set()
+    for role, document in role_documents.items():
+        root, version = _sbom_root_identity(document, role, f"{role} SBOM")
+        roots[role] = root
+        versions.add(version)
+    if len(versions) != 1:
+        raise PolicyError("six release SBOM roles do not share one project version")
+
+    expected_children = {
+        AGGREGATE_ROOT_NAME: {
+            CORE_ROOT_NAME,
+            PUBLISHED_ROOT_NAME,
+            ADAPTER_552_ROOT_NAME,
+            EXAMPLE_ROOT_NAME,
+            MYSQL_552_ROOT_NAME,
+        },
+        CORE_ROOT_NAME: set(),
+        PUBLISHED_ROOT_NAME: {CORE_ROOT_NAME},
+        ADAPTER_552_ROOT_NAME: {CORE_ROOT_NAME},
+        EXAMPLE_ROOT_NAME: {CORE_ROOT_NAME, PUBLISHED_ROOT_NAME},
+        MYSQL_552_ROOT_NAME: {CORE_ROOT_NAME, ADAPTER_552_ROOT_NAME},
+    }
+    component_maps = {
+        role: _maven_inventory(document)
+        for role, document in role_documents.items()
+    }
+    first_party_maps = {
+        role: {
+            purl: component
+            for purl, component in component_map.items()
+            if _parse_maven_purl(purl)[1] == FIRST_PARTY_GROUP
+        }
+        for role, component_map in component_maps.items()
+    }
+    for role, expected_names in expected_children.items():
+        expected_purls = {roots[name] for name in expected_names}
+        if set(first_party_maps[role]) != expected_purls:
+            raise PolicyError(
+                f"{role} SBOM first-party project set differs: "
+                f"{set(first_party_maps[role])} != {expected_purls}"
+            )
+
+    direct_roots = {
+        role: document["metadata"]["component"]
+        for role, document in role_documents.items()
+    }
+    for module_name, module_root in roots.items():
+        expected_occurrences = {
+            role
+            for role, children in expected_children.items()
+            if module_name in children
+        }
+        direct_fingerprint = _component_artifact_fingerprint(
+            direct_roots[module_name], f"direct {module_name} root"
+        )
+        for role in expected_occurrences:
+            component = first_party_maps[role][module_root]
+            if _component_artifact_fingerprint(
+                component, f"{role}/{module_name} project component"
+            ) != direct_fingerprint:
+                raise PolicyError(
+                    f"{module_name} first-party identity differs in {role} SBOM"
+                )
+            expected_test_value = (
+                "true"
+                if role in {EXAMPLE_ROOT_NAME, MYSQL_552_ROOT_NAME}
+                else "false"
+            )
+            if _component_properties(
+                component, f"{role}/{module_name} project component"
+            ) != [
+                {
+                    "name": "cdx:maven:package:test",
+                    "value": expected_test_value,
+                }
+            ]:
+                raise PolicyError(
+                    f"{role}/{module_name} project component has an unexpected role property"
+                )
+
+    def graph(document: dict[str, Any], label: str) -> dict[str, set[str]]:
+        records = document.get("dependencies")
+        if not isinstance(records, list):
+            raise PolicyError(f"{label} dependency graph is missing")
+        result: dict[str, set[str]] = {}
+        for record in records:
+            if not isinstance(record, dict) or set(record) != {"ref", "dependsOn"}:
+                raise PolicyError(f"{label} dependency graph is ambiguous")
+            ref = _nonempty_string(record["ref"], f"{label} dependency ref")
+            targets = record["dependsOn"]
+            if (
+                ref in result
+                or not isinstance(targets, list)
+                or any(not isinstance(target, str) for target in targets)
+                or len(targets) != len(set(targets))
+            ):
+                raise PolicyError(f"{label} dependency graph is ambiguous")
+            result[ref] = set(targets)
+        return result
+
+    expected_first_party_edges = {
+        AGGREGATE_ROOT_NAME: {
+            AGGREGATE_ROOT_NAME: expected_children[AGGREGATE_ROOT_NAME],
+            CORE_ROOT_NAME: set(),
+            PUBLISHED_ROOT_NAME: {CORE_ROOT_NAME},
+            ADAPTER_552_ROOT_NAME: {CORE_ROOT_NAME},
+            EXAMPLE_ROOT_NAME: {PUBLISHED_ROOT_NAME},
+            MYSQL_552_ROOT_NAME: {ADAPTER_552_ROOT_NAME},
+        },
+        CORE_ROOT_NAME: {CORE_ROOT_NAME: set()},
+        PUBLISHED_ROOT_NAME: {
+            PUBLISHED_ROOT_NAME: {CORE_ROOT_NAME},
+            CORE_ROOT_NAME: set(),
+        },
+        ADAPTER_552_ROOT_NAME: {
+            ADAPTER_552_ROOT_NAME: {CORE_ROOT_NAME},
+            CORE_ROOT_NAME: set(),
+        },
+        EXAMPLE_ROOT_NAME: {
+            EXAMPLE_ROOT_NAME: {PUBLISHED_ROOT_NAME},
+            PUBLISHED_ROOT_NAME: {CORE_ROOT_NAME},
+            CORE_ROOT_NAME: set(),
+        },
+        MYSQL_552_ROOT_NAME: {
+            MYSQL_552_ROOT_NAME: {ADAPTER_552_ROOT_NAME},
+            ADAPTER_552_ROOT_NAME: {CORE_ROOT_NAME},
+            CORE_ROOT_NAME: set(),
+        },
+    }
+    all_root_purls = set(roots.values())
+    for role, document in role_documents.items():
+        role_graph = graph(document, f"{role} SBOM")
+        for source_name, target_names in expected_first_party_edges[role].items():
+            source_ref = roots[source_name]
+            if source_ref not in role_graph:
+                raise PolicyError(f"{role} SBOM is missing the {source_name} graph node")
+            actual_targets = role_graph[source_ref] & all_root_purls
+            expected_targets = {roots[name] for name in target_names}
+            if actual_targets != expected_targets:
+                raise PolicyError(
+                    f"{role} SBOM first-party edges for {source_name} differ: "
+                    f"{actual_targets} != {expected_targets}"
+                )
+    return roots
+
+
+def _validate_six_pinned_example_dependency_contract(
+    aggregate_sbom: dict[str, Any],
+    mysql553_sbom: dict[str, Any],
+    mysql552_sbom: dict[str, Any],
+) -> None:
+    profile_documents = {
+        EXAMPLE_ROOT_NAME: mysql553_sbom,
+        MYSQL_552_ROOT_NAME: mysql552_sbom,
+    }
+
+    def expected_by_ga(roles: set[str]) -> dict[tuple[str, str], set[str]]:
+        result: dict[tuple[str, str], set[str]] = {}
+        for role in sorted(roles):
+            for group, name, version in REQUIRED_EXAMPLE_MAVEN_COORDINATES_BY_ROOT[role]:
+                result.setdefault((group, name), set()).add(version)
+        return result
+
+    def validate(
+        sbom: dict[str, Any], roles: set[str], label: str
+    ) -> None:
+        inventory = _maven_inventory(sbom)
+        for (group, name), versions in expected_by_ga(roles).items():
+            prefix = f"pkg:maven/{group}/{name}@"
+            expected = {f"{prefix}{version}?type=jar" for version in versions}
+            matches = {purl for purl in inventory if purl.startswith(prefix)}
+            if matches != expected:
+                raise PolicyError(
+                    f"{label} pinned versions differ for {group}:{name}; "
+                    f"expected={sorted(expected)}, found={sorted(matches)}"
+                )
+
+    validate(
+        aggregate_sbom,
+        {EXAMPLE_ROOT_NAME, MYSQL_552_ROOT_NAME},
+        "aggregate SBOM",
+    )
+    for role, document in profile_documents.items():
+        validate(document, {role}, f"{role} SBOM")
+
+
+def _validate_shardingsphere_profile_version(
+    sbom: dict[str, Any], expected_version: str | None, label: str
+) -> None:
+    observed = {
+        _parse_maven_purl(purl)[3]
+        for purl in _maven_inventory(sbom)
+        if _parse_maven_purl(purl)[1] == "org.apache.shardingsphere"
+    }
+    expected = set() if expected_version is None else {expected_version}
+    if observed != expected:
+        raise PolicyError(
+            f"{label} ShardingSphere version set differs: {observed} != {expected}"
+        )
 
 
 def _inventory_content(inventory: dict[str, dict[str, Any]]) -> str:
@@ -2157,7 +2508,14 @@ def _purl_set_sha256(purls: set[str]) -> str:
 
 
 def _published_pom_inventory(
-    path: Path, published_sbom: dict[str, Any]
+    path: Path,
+    published_sbom: dict[str, Any],
+    *,
+    expected_project_name: str = PUBLISHED_PROJECT_NAME,
+    expected_project_description: str = PUBLISHED_PROJECT_DESCRIPTION,
+    expected_dependency_management: tuple[
+        tuple[str, str, str, str | None, str | None], ...
+    ] | None = None,
 ) -> dict[str, str]:
     content = _read_regular_bytes(path, "generated published POM")
     root = _parse_canonical_xml(
@@ -2194,6 +2552,7 @@ def _published_pom_inventory(
             "licenses",
             "developers",
             "scm",
+            "dependencyManagement",
             "dependencies",
         )
     }
@@ -2218,8 +2577,8 @@ def _published_pom_inventory(
         return element.text
 
     expected_project_metadata = {
-        "name": PUBLISHED_PROJECT_NAME,
-        "description": PUBLISHED_PROJECT_DESCRIPTION,
+        "name": expected_project_name,
+        "description": expected_project_description,
         "url": PUBLISHED_PROJECT_URL,
     }
     for leaf_name, expected_value in expected_project_metadata.items():
@@ -2361,6 +2720,122 @@ def _published_pom_inventory(
     )[0]
     if pom_project != sbom_project:
         raise PolicyError("generated published POM identity differs from published SBOM")
+
+    management_parents = root.findall("m:dependencyManagement", namespace)
+    managed_dependencies: list[
+        tuple[str, str, str, str | None, str | None]
+    ] = []
+    if management_parents:
+        if (
+            len(management_parents) != 1
+            or expected_dependency_management == ()
+        ):
+            raise PolicyError(
+                "generated published POM dependencyManagement is unexpected"
+            )
+        management_parent = management_parents[0]
+        managed_dependency_parents = management_parent.findall(
+            "m:dependencies", namespace
+        )
+        if (
+            management_parent.attrib
+            or (management_parent.text or "").strip()
+            or (management_parent.tail or "").strip()
+            or len(managed_dependency_parents) != 1
+            or len(management_parent) != 1
+        ):
+            raise PolicyError(
+                "generated published POM dependencyManagement is ambiguous"
+            )
+        managed_dependency_parent = managed_dependency_parents[0]
+        if (
+            managed_dependency_parent.attrib
+            or (managed_dependency_parent.text or "").strip()
+            or (managed_dependency_parent.tail or "").strip()
+            or any(
+                child.tag != f"{{{MAVEN_NAMESPACE}}}dependency"
+                for child in managed_dependency_parent
+            )
+        ):
+            raise PolicyError(
+                "generated published POM managed dependencies are ambiguous"
+            )
+        for dependency in managed_dependency_parent:
+            type_nodes = dependency.findall("m:type", namespace)
+            scope_nodes = dependency.findall("m:scope", namespace)
+            expected_order = [
+                f"{{{MAVEN_NAMESPACE}}}groupId",
+                f"{{{MAVEN_NAMESPACE}}}artifactId",
+                f"{{{MAVEN_NAMESPACE}}}version",
+            ]
+            if type_nodes:
+                expected_order.append(f"{{{MAVEN_NAMESPACE}}}type")
+            if scope_nodes:
+                expected_order.append(f"{{{MAVEN_NAMESPACE}}}scope")
+            if (
+                dependency.attrib
+                or (dependency.text or "").strip()
+                or (dependency.tail or "").strip()
+                or [child.tag for child in dependency] != expected_order
+                or len(type_nodes) > 1
+                or len(scope_nodes) > 1
+            ):
+                raise PolicyError(
+                    "generated published POM managed dependency has unsupported "
+                    "fields or order"
+                )
+            managed_dependencies.append(
+                (
+                    required_text(
+                        dependency, "groupId", "managed dependency groupId"
+                    ),
+                    required_text(
+                        dependency, "artifactId", "managed dependency artifactId"
+                    ),
+                    required_text(
+                        dependency, "version", "managed dependency version"
+                    ),
+                    (
+                        required_text(
+                            dependency, "type", "managed dependency type"
+                        )
+                        if type_nodes
+                        else None
+                    ),
+                    (
+                        required_text(
+                            dependency, "scope", "managed dependency scope"
+                        )
+                        if scope_nodes
+                        else None
+                    ),
+                )
+            )
+    elif expected_dependency_management not in (None, ()):
+        raise PolicyError(
+            "generated published POM must contain one dependencyManagement element"
+        )
+
+    expected_management = (
+        EXPECTED_PUBLISHED_DEPENDENCY_MANAGEMENT
+        if expected_dependency_management is None and managed_dependencies
+        else (() if expected_dependency_management is None else expected_dependency_management)
+    )
+    if tuple(managed_dependencies) != expected_management:
+        raise PolicyError(
+            "generated published POM dependencyManagement differs from the exact "
+            "compatibility contract"
+        )
+    published_osv = _osv_maven_inventory(published_sbom)
+    for group, name, version, _, _ in managed_dependencies:
+        canonical, _, _, _ = _canonical_maven_purl(
+            f"pkg:maven/{group}/{name}@{version}"
+        )
+        if canonical not in published_osv:
+            raise PolicyError(
+                "generated published POM managed dependency is missing from the "
+                f"published SBOM: {canonical}"
+            )
 
     dependencies: dict[str, str] = {}
     dependency_parent = root.findall("m:dependencies", namespace)
@@ -2526,11 +3001,26 @@ def _validate_root_reachable_dependency_graph(
 
 
 def _published_inventory(
-    published_sbom: dict[str, Any], published_pom: Path, published_lock: Path
+    published_sbom: dict[str, Any],
+    published_pom: Path,
+    published_lock: Path,
+    *,
+    expected_root_name: str = PUBLISHED_ROOT_NAME,
+    expected_project_name: str = PUBLISHED_PROJECT_NAME,
+    expected_project_description: str = PUBLISHED_PROJECT_DESCRIPTION,
+    expected_dependency_management: tuple[
+        tuple[str, str, str, str | None, str | None], ...
+    ] | None = None,
 ) -> tuple[dict[str, dict[str, Any]], dict[str, str], set[str]]:
     resolved_inventory = _maven_inventory(published_sbom)
     osv_inventory = _osv_maven_inventory(published_sbom)
-    pom_dependencies = _published_pom_inventory(published_pom, published_sbom)
+    pom_dependencies = _published_pom_inventory(
+        published_pom,
+        published_sbom,
+        expected_project_name=expected_project_name,
+        expected_project_description=expected_project_description,
+        expected_dependency_management=expected_dependency_management,
+    )
     runtime_locked = _published_runtime_lock_inventory(published_lock)
     missing = set(pom_dependencies) - set(osv_inventory)
     if missing:
@@ -2551,7 +3041,7 @@ def _published_inventory(
         published_sbom["metadata"]["component"], "published SBOM metadata.component"
     )
     root_resolved, _ = _sbom_root_identity(
-        published_sbom, PUBLISHED_ROOT_NAME, "published SBOM"
+        published_sbom, expected_root_name, "published SBOM"
     )
     exact_to_resolved: dict[str, str] = {root_ref: root_resolved}
     for component in published_sbom["components"]:
@@ -2592,15 +3082,20 @@ def _published_inventory(
         pending.extend(graph[ref])
     if reachable != set(graph):
         raise PolicyError("published SBOM contains a node unreachable from its root")
-    root_direct = {
-        _parse_maven_purl(exact_to_resolved[target])[0]
-        for target in graph[root_ref]
-    }
-    expected_pom_dependencies = {
+    direct_jar_dependencies = {
         _parse_maven_purl(exact_to_resolved[target])[0]
         for target in graph[root_ref]
         if _parse_maven_purl(exact_to_resolved[target])[4] == {"type": "jar"}
-        and _parse_maven_purl(exact_to_resolved[target])[0] in runtime_locked
+    }
+    first_party_dependencies = {
+        purl
+        for purl in direct_jar_dependencies
+        if _parse_maven_purl(purl)[1] == FIRST_PARTY_GROUP
+    }
+    expected_pom_dependencies = {
+        purl
+        for purl in direct_jar_dependencies
+        if purl in runtime_locked or purl in first_party_dependencies
     }
     if not expected_pom_dependencies:
         raise PolicyError("published runtime/direct dependency contract is empty")
@@ -2610,9 +3105,14 @@ def _published_inventory(
             f"contract: expected={sorted(expected_pom_dependencies)}, "
             f"found={sorted(pom_dependencies)}"
         )
-    if set(pom_dependencies.values()) != {"runtime"}:
+    expected_pom_scopes = {
+        purl: ("compile" if purl in first_party_dependencies else "runtime")
+        for purl in expected_pom_dependencies
+    }
+    if pom_dependencies != expected_pom_scopes:
         raise PolicyError(
-            "generated published POM dependency scopes must exactly be runtime"
+            "generated published POM dependency scopes differ from the exact "
+            "first-party compile / third-party runtime contract"
         )
     for dependency in pom_dependencies:
         if resolved_by_gav[dependency] not in {
@@ -2650,25 +3150,42 @@ def _published_inventory(
             )
         runtime_closure.add(purl)
         pending_canonical.extend(canonical_graph[purl])
-    if runtime_closure != runtime_locked:
+    third_party_runtime_closure = runtime_closure - {
+        purl
+        for purl in runtime_closure
+        if _parse_maven_purl(purl)[1] == FIRST_PARTY_GROUP
+    }
+    if third_party_runtime_closure != runtime_locked:
         raise PolicyError(
             "published SBOM/POM runtime closure differs from the dependency lock: "
-            f"lockOnly={sorted(runtime_locked - runtime_closure)}, "
-            f"closureOnly={sorted(runtime_closure - runtime_locked)}"
+            f"lockOnly={sorted(runtime_locked - third_party_runtime_closure)}, "
+            f"closureOnly={sorted(third_party_runtime_closure - runtime_locked)}"
         )
-    return resolved_inventory, pom_dependencies, runtime_closure
+    return resolved_inventory, pom_dependencies, third_party_runtime_closure
 
 
 def _validate_resolved_profile_partition(
     aggregate_sbom: dict[str, Any],
     published_sbom: dict[str, Any],
     example_sbom: dict[str, Any],
-) -> tuple[set[str], set[str], set[str], set[str]]:
-    _, expected_published_root, expected_example_root = _validate_sbom_roles(
-        aggregate_sbom, published_sbom, example_sbom
+    core_sbom: dict[str, Any] | None = None,
+) -> tuple[set[str], set[str], set[str], set[str], set[str], set[str]]:
+    (
+        _,
+        expected_core_root,
+        expected_published_root,
+        expected_example_root,
+    ) = _validate_sbom_roles(
+        aggregate_sbom, published_sbom, example_sbom, core_sbom
     )
+    core = _maven_inventory_with_root(core_sbom) if core_sbom is not None else {}
     published = _maven_inventory_with_root(published_sbom)
     example = _maven_inventory_with_root(example_sbom)
+    core_root: str | None = None
+    if core_sbom is not None:
+        core_root, _ = _sbom_root_identity(
+            core_sbom, CORE_ROOT_NAME, "core SBOM"
+        )
     published_root, _ = _sbom_root_identity(
         published_sbom, PUBLISHED_ROOT_NAME, "published SBOM"
     )
@@ -2676,12 +3193,16 @@ def _validate_resolved_profile_partition(
         example_sbom, EXAMPLE_ROOT_NAME, "example SBOM"
     )
     project_roots = {published_root, example_root}
+    if core_root is not None:
+        project_roots.add(core_root)
     if (
+        core_root != expected_core_root
+        or
         published_root != expected_published_root
         or example_root != expected_example_root
     ):
         raise PolicyError("direct SBOM roots changed during role validation")
-    # Aggregate components include the two project modules, while each direct
+    # Aggregate components include the project modules, while each direct
     # SBOM carries its own module as metadata.component. Compare every resolved
     # third-party component, not only Maven, after removing those exact project
     # identities. Maven profile sets remain separately canonicalized for OSV.
@@ -2699,11 +3220,16 @@ def _validate_resolved_profile_partition(
         return result
 
     aggregate_component_map = component_map(aggregate_sbom, "aggregate SBOM")
+    core_component_map = (
+        component_map(core_sbom, "core SBOM") if core_sbom is not None else {}
+    )
     published_component_map = component_map(published_sbom, "published SBOM")
     example_component_map = component_map(example_sbom, "example SBOM")
     aggregate_components = set(aggregate_component_map) - project_roots
     direct_components = (
-        set(published_component_map) | set(example_component_map)
+        set(core_component_map)
+        | set(published_component_map)
+        | set(example_component_map)
     ) - project_roots
     if aggregate_components != direct_components:
         raise PolicyError(
@@ -2713,6 +3239,8 @@ def _validate_resolved_profile_partition(
         )
     for identity in sorted(direct_components):
         candidates = [aggregate_component_map[identity]]
+        if identity in core_component_map:
+            candidates.append(core_component_map[identity])
         if identity in published_component_map:
             candidates.append(published_component_map[identity])
         if identity in example_component_map:
@@ -2729,13 +3257,16 @@ def _validate_resolved_profile_partition(
                 f"{identity}"
             )
     aggregate = set(_third_party_maven_inventory(aggregate_sbom))
-    combined = (set(published) | set(example)) - project_roots
+    combined = (set(core) | set(published) | set(example)) - project_roots
     if aggregate != combined:
         raise PolicyError(
-            "aggregate Maven set differs from published/example direct profiles; "
+            "aggregate Maven set differs from core/published/example direct profiles; "
             f"aggregateOnly={sorted(aggregate - combined)}, "
             f"profileOnly={sorted(combined - aggregate)}"
         )
+    for purl, component in core.items():
+        if purl != core_root:
+            _prove_component_scope(component, "published-module", f"core SBOM {purl}")
     for purl, component in published.items():
         if purl != published_root:
             _prove_component_scope(
@@ -2744,13 +3275,143 @@ def _validate_resolved_profile_partition(
     for purl, component in example.items():
         if purl != example_root:
             _prove_component_scope(component, "test-runtime", f"example SBOM {purl}")
+    core_resolved = set(core) - project_roots
     published_resolved = set(published) - project_roots
     example_resolved = set(example) - project_roots
+    core_osv = {_parse_maven_purl(purl)[0] for purl in core_resolved}
     published_osv = {_parse_maven_purl(purl)[0] for purl in published_resolved}
     example_osv = {_parse_maven_purl(purl)[0] for purl in example_resolved}
-    if len(published_osv) != len(published_resolved) or len(example_osv) != len(example_resolved):
+    if (
+        len(core_osv) != len(core_resolved)
+        or len(published_osv) != len(published_resolved)
+        or len(example_osv) != len(example_resolved)
+    ):
         raise PolicyError("resolved Maven profiles collapse to duplicate OSV coordinates")
-    return published_resolved, example_resolved, published_osv, example_osv
+    return (
+        core_resolved,
+        published_resolved,
+        example_resolved,
+        core_osv,
+        published_osv,
+        example_osv,
+    )
+
+
+def _validate_six_resolved_profile_partition(
+    aggregate_sbom: dict[str, Any],
+    core_sbom: dict[str, Any],
+    adapter553_sbom: dict[str, Any],
+    adapter552_sbom: dict[str, Any],
+    mysql553_sbom: dict[str, Any],
+    mysql552_sbom: dict[str, Any],
+) -> dict[str, tuple[set[str], set[str]]]:
+    direct_documents = {
+        CORE_ROOT_NAME: core_sbom,
+        PUBLISHED_ROOT_NAME: adapter553_sbom,
+        ADAPTER_552_ROOT_NAME: adapter552_sbom,
+        EXAMPLE_ROOT_NAME: mysql553_sbom,
+        MYSQL_552_ROOT_NAME: mysql552_sbom,
+    }
+    roots = _validate_six_sbom_roles(
+        aggregate_sbom,
+        core_sbom,
+        adapter553_sbom,
+        adapter552_sbom,
+        mysql553_sbom,
+        mysql552_sbom,
+    )
+    project_roots = set(roots.values())
+    direct_inventories = {
+        role: _maven_inventory_with_root(document)
+        for role, document in direct_documents.items()
+    }
+
+    def resolved_identity(component: dict[str, Any], label: str) -> str:
+        purl = _component_purl(component, label)
+        return (
+            _validate_resolved_maven_purl(purl)[0]
+            if purl.startswith("pkg:maven/")
+            else purl
+        )
+
+    def component_map(
+        sbom: dict[str, Any], label: str
+    ) -> dict[str, dict[str, Any]]:
+        result: dict[str, dict[str, Any]] = {}
+        for component in sbom["components"]:
+            identity = resolved_identity(component, f"{label} component")
+            if identity in result:
+                raise PolicyError(
+                    f"{label} repeats resolved component identity: {identity}"
+                )
+            result[identity] = component
+        return result
+
+    aggregate_map = component_map(aggregate_sbom, "aggregate SBOM")
+    direct_maps = {
+        role: component_map(document, f"{role} SBOM")
+        for role, document in direct_documents.items()
+    }
+    aggregate_components = set(aggregate_map) - project_roots
+    direct_components = set().union(
+        *(set(component_map_value) for component_map_value in direct_maps.values())
+    ) - project_roots
+    if aggregate_components != direct_components:
+        raise PolicyError(
+            "aggregate component set differs from six direct profiles; "
+            f"aggregateOnly={sorted(aggregate_components - direct_components)}, "
+            f"profileOnly={sorted(direct_components - aggregate_components)}"
+        )
+    for identity in sorted(direct_components):
+        candidates = [aggregate_map[identity]]
+        candidates.extend(
+            component_map_value[identity]
+            for component_map_value in direct_maps.values()
+            if identity in component_map_value
+        )
+        fingerprints = {
+            _component_artifact_fingerprint(
+                component, f"cross-role component {identity}"
+            )
+            for component in candidates
+        }
+        if len(fingerprints) != 1:
+            raise PolicyError(
+                "cross-role component artifact metadata differs for resolved identity: "
+                f"{identity}"
+            )
+
+    aggregate_maven = set(_third_party_maven_inventory(aggregate_sbom))
+    combined_maven = set().union(
+        *(set(inventory) for inventory in direct_inventories.values())
+    ) - project_roots
+    if aggregate_maven != combined_maven:
+        raise PolicyError(
+            "aggregate Maven set differs from six direct profiles; "
+            f"aggregateOnly={sorted(aggregate_maven - combined_maven)}, "
+            f"profileOnly={sorted(combined_maven - aggregate_maven)}"
+        )
+
+    results: dict[str, tuple[set[str], set[str]]] = {}
+    for role, inventory in direct_inventories.items():
+        expected_scope = (
+            "test-runtime"
+            if role in {EXAMPLE_ROOT_NAME, MYSQL_552_ROOT_NAME}
+            else "published-module"
+        )
+        for purl, component in inventory.items():
+            if purl not in project_roots:
+                _prove_component_scope(
+                    component, expected_scope, f"{role} SBOM {purl}"
+                )
+        resolved = set(inventory) - project_roots
+        osv = {_parse_maven_purl(purl)[0] for purl in resolved}
+        if len(osv) != len(resolved):
+            raise PolicyError(
+                f"{role} resolved Maven profile collapses to duplicate OSV coordinates"
+            )
+        results[role] = (resolved, osv)
+    return results
 
 
 def _validate_test_runtime_license_exception_scopes(
@@ -3005,39 +3666,446 @@ def _apply_vulnerability_policy(
     return []
 
 
+def _load_optional_core_sbom(
+    arguments: argparse.Namespace,
+) -> dict[str, Any] | None:
+    core_json = arguments.core_sbom
+    core_xml = arguments.core_sbom_xml
+    if (core_json is None) != (core_xml is None):
+        raise PolicyError("core JSON and XML SBOM paths must be supplied together")
+    return _load_sbom(core_json) if core_json is not None else None
+
+
+def _six_role_mode(arguments: argparse.Namespace) -> bool:
+    names = (
+        "adapter552_sbom",
+        "adapter552_sbom_xml",
+        "mysql552_sbom",
+        "mysql552_sbom_xml",
+        "adapter552_pom",
+        "adapter552_lock",
+        "core_pom",
+        "core_lock",
+    )
+    values = [getattr(arguments, name, None) for name in names]
+    if any(value is not None for value in values):
+        required = {
+            "core_sbom": getattr(arguments, "core_sbom", None),
+            "core_sbom_xml": getattr(arguments, "core_sbom_xml", None),
+            **{name: getattr(arguments, name, None) for name in names},
+        }
+        missing = sorted(name for name, value in required.items() if value is None)
+        if missing:
+            raise PolicyError(
+                "six-role supply-chain inputs must be supplied together; "
+                f"missing={missing}"
+            )
+        return True
+    return False
+
+
+def _six_role_documents(
+    arguments: argparse.Namespace,
+    aggregate_sbom: dict[str, Any],
+    core_sbom: dict[str, Any],
+    adapter553_sbom: dict[str, Any],
+    mysql553_sbom: dict[str, Any],
+) -> dict[str, dict[str, Any]]:
+    if not _six_role_mode(arguments):
+        raise PolicyError("six-role supply-chain inputs are not complete")
+    return {
+        AGGREGATE_ROOT_NAME: aggregate_sbom,
+        CORE_ROOT_NAME: core_sbom,
+        PUBLISHED_ROOT_NAME: adapter553_sbom,
+        ADAPTER_552_ROOT_NAME: _load_sbom(arguments.adapter552_sbom),
+        EXAMPLE_ROOT_NAME: mysql553_sbom,
+        MYSQL_552_ROOT_NAME: _load_sbom(arguments.mysql552_sbom),
+    }
+
+
+def _validate_six_role_static_inputs(
+    arguments: argparse.Namespace,
+    documents: dict[str, dict[str, Any]],
+    policy: dict[str, Any],
+) -> tuple[
+    dict[str, tuple[set[str], set[str]]],
+    dict[str, tuple[dict[str, dict[str, Any]], dict[str, str], set[str]]],
+]:
+    for role, document in documents.items():
+        _validate_supported_component_ecosystems(document, policy, f"{role} SBOM")
+    _validate_six_sbom_roles(
+        documents[AGGREGATE_ROOT_NAME],
+        documents[CORE_ROOT_NAME],
+        documents[PUBLISHED_ROOT_NAME],
+        documents[ADAPTER_552_ROOT_NAME],
+        documents[EXAMPLE_ROOT_NAME],
+        documents[MYSQL_552_ROOT_NAME],
+    )
+    _validate_six_pinned_example_dependency_contract(
+        documents[AGGREGATE_ROOT_NAME],
+        documents[EXAMPLE_ROOT_NAME],
+        documents[MYSQL_552_ROOT_NAME],
+    )
+    _validate_shardingsphere_profile_version(
+        documents[CORE_ROOT_NAME], None, "core SBOM"
+    )
+    for role, version in (
+        (PUBLISHED_ROOT_NAME, "5.5.3"),
+        (EXAMPLE_ROOT_NAME, "5.5.3"),
+        (ADAPTER_552_ROOT_NAME, "5.5.2"),
+        (MYSQL_552_ROOT_NAME, "5.5.2"),
+    ):
+        _validate_shardingsphere_profile_version(
+            documents[role], version, f"{role} SBOM"
+        )
+
+    xml_paths = {
+        AGGREGATE_ROOT_NAME: arguments.sbom_xml,
+        CORE_ROOT_NAME: arguments.core_sbom_xml,
+        PUBLISHED_ROOT_NAME: arguments.published_sbom_xml,
+        ADAPTER_552_ROOT_NAME: arguments.adapter552_sbom_xml,
+        EXAMPLE_ROOT_NAME: arguments.example_sbom_xml,
+        MYSQL_552_ROOT_NAME: arguments.mysql552_sbom_xml,
+    }
+    for role, document in documents.items():
+        _validate_licenses(
+            document,
+            policy,
+            require_all_exceptions=(role == AGGREGATE_ROOT_NAME),
+        )
+        _validate_xml_pair(document, xml_paths[role], role)
+        _validate_root_reachable_dependency_graph(document, f"{role} SBOM")
+
+    module_inventories = {
+        CORE_ROOT_NAME: _published_inventory(
+            documents[CORE_ROOT_NAME],
+            arguments.core_pom,
+            arguments.core_lock,
+            expected_root_name=CORE_ROOT_NAME,
+            expected_project_name=CORE_PROJECT_NAME,
+            expected_project_description=CORE_PROJECT_DESCRIPTION,
+            expected_dependency_management=(),
+        ),
+        PUBLISHED_ROOT_NAME: _published_inventory(
+            documents[PUBLISHED_ROOT_NAME],
+            arguments.published_pom,
+            arguments.published_lock,
+            expected_root_name=PUBLISHED_ROOT_NAME,
+            expected_project_name=PUBLISHED_PROJECT_NAME,
+            expected_project_description=PUBLISHED_PROJECT_DESCRIPTION,
+            expected_dependency_management=EXPECTED_PUBLISHED_DEPENDENCY_MANAGEMENT,
+        ),
+        ADAPTER_552_ROOT_NAME: _published_inventory(
+            documents[ADAPTER_552_ROOT_NAME],
+            arguments.adapter552_pom,
+            arguments.adapter552_lock,
+            expected_root_name=ADAPTER_552_ROOT_NAME,
+            expected_project_name=ADAPTER_552_PROJECT_NAME,
+            expected_project_description=ADAPTER_552_PROJECT_DESCRIPTION,
+            expected_dependency_management=EXPECTED_ADAPTER_552_DEPENDENCY_MANAGEMENT,
+        ),
+    }
+    profiles = _validate_six_resolved_profile_partition(
+        documents[AGGREGATE_ROOT_NAME],
+        documents[CORE_ROOT_NAME],
+        documents[PUBLISHED_ROOT_NAME],
+        documents[ADAPTER_552_ROOT_NAME],
+        documents[EXAMPLE_ROOT_NAME],
+        documents[MYSQL_552_ROOT_NAME],
+    )
+    published_profile = (
+        profiles[CORE_ROOT_NAME][1]
+        | profiles[PUBLISHED_ROOT_NAME][1]
+        | profiles[ADAPTER_552_ROOT_NAME][1]
+    )
+    example_profile = (
+        profiles[EXAMPLE_ROOT_NAME][1] | profiles[MYSQL_552_ROOT_NAME][1]
+    )
+    _validate_test_runtime_license_exception_scopes(
+        policy,
+        published_profile,
+        example_profile,
+        documents[PUBLISHED_ROOT_NAME],
+        documents[EXAMPLE_ROOT_NAME],
+    )
+    return profiles, module_inventories
+
+
+def _six_inventory_command(
+    arguments: argparse.Namespace,
+    aggregate_sbom: dict[str, Any],
+    core_sbom: dict[str, Any],
+    adapter553_sbom: dict[str, Any],
+    mysql553_sbom: dict[str, Any],
+    policy: dict[str, Any],
+) -> None:
+    documents = _six_role_documents(
+        arguments,
+        aggregate_sbom,
+        core_sbom,
+        adapter553_sbom,
+        mysql553_sbom,
+    )
+    _validate_six_role_static_inputs(arguments, documents, policy)
+    inventory = _osv_maven_inventory(aggregate_sbom)
+    _write_text_atomic(arguments.output, _inventory_content(inventory))
+    print(
+        "verified six-role supply-chain inventory: "
+        f"{len(inventory)} Maven packages"
+    )
+
+
 def _inventory_command(arguments: argparse.Namespace) -> None:
     sbom = _load_sbom(arguments.sbom)
+    core_sbom = _load_optional_core_sbom(arguments)
     published_sbom = _load_sbom(arguments.published_sbom)
     example_sbom = _load_sbom(arguments.example_sbom)
     policy = _load_policy(arguments.policy)
-    for role_label, role_sbom in (
+    if _six_role_mode(arguments):
+        if core_sbom is None:
+            raise PolicyError("six-role supply-chain inventory requires the core SBOM")
+        _six_inventory_command(
+            arguments,
+            sbom,
+            core_sbom,
+            published_sbom,
+            example_sbom,
+            policy,
+        )
+        return
+    role_sboms = [
         ("aggregate SBOM", sbom),
         ("published SBOM", published_sbom),
         ("example SBOM", example_sbom),
-    ):
+    ]
+    if core_sbom is not None:
+        role_sboms.insert(1, ("core SBOM", core_sbom))
+    for role_label, role_sbom in role_sboms:
         _validate_supported_component_ecosystems(role_sbom, policy, role_label)
-    _validate_sbom_roles(sbom, published_sbom, example_sbom)
+    _validate_sbom_roles(sbom, published_sbom, example_sbom, core_sbom)
     _validate_pinned_example_dependency_contract(sbom, example_sbom)
     _validate_licenses(sbom, policy)
+    if core_sbom is not None:
+        _validate_licenses(core_sbom, policy, require_all_exceptions=False)
     _validate_licenses(published_sbom, policy, require_all_exceptions=False)
     _validate_licenses(example_sbom, policy, require_all_exceptions=False)
     _validate_xml_pair(sbom, arguments.sbom_xml, "aggregate")
+    if core_sbom is not None:
+        _validate_xml_pair(core_sbom, arguments.core_sbom_xml, "core")
     _validate_xml_pair(published_sbom, arguments.published_sbom_xml, "published")
     _validate_xml_pair(example_sbom, arguments.example_sbom_xml, "example")
     _published_inventory(
         published_sbom, arguments.published_pom, arguments.published_lock
     )
-    _, _, published_profile, example_profile = (
-        _validate_resolved_profile_partition(sbom, published_sbom, example_sbom)
+    (
+        _,
+        _,
+        _,
+        core_profile,
+        published_profile,
+        example_profile,
+    ) = _validate_resolved_profile_partition(
+        sbom, published_sbom, example_sbom, core_sbom
     )
     _validate_root_reachable_dependency_graph(sbom, "aggregate SBOM")
+    if core_sbom is not None:
+        _validate_root_reachable_dependency_graph(core_sbom, "core SBOM")
     _validate_root_reachable_dependency_graph(example_sbom, "example SBOM")
     _validate_test_runtime_license_exception_scopes(
-        policy, published_profile, example_profile, published_sbom, example_sbom
+        policy,
+        core_profile | published_profile,
+        example_profile,
+        published_sbom,
+        example_sbom,
     )
     inventory = _osv_maven_inventory(sbom)
     _write_text_atomic(arguments.output, _inventory_content(inventory))
     print(f"verified supply-chain inventory: {len(inventory)} Maven packages")
+
+
+def _six_verify_command(
+    arguments: argparse.Namespace,
+    aggregate_sbom: dict[str, Any],
+    core_sbom: dict[str, Any],
+    adapter553_sbom: dict[str, Any],
+    mysql553_sbom: dict[str, Any],
+    policy: dict[str, Any],
+    policy_content: bytes,
+) -> None:
+    documents = _six_role_documents(
+        arguments,
+        aggregate_sbom,
+        core_sbom,
+        adapter553_sbom,
+        mysql553_sbom,
+    )
+    profiles, module_inventories = _validate_six_role_static_inputs(
+        arguments, documents, policy
+    )
+    sbom_paths = {
+        AGGREGATE_ROOT_NAME: arguments.sbom,
+        CORE_ROOT_NAME: arguments.core_sbom,
+        PUBLISHED_ROOT_NAME: arguments.published_sbom,
+        ADAPTER_552_ROOT_NAME: arguments.adapter552_sbom,
+        EXAMPLE_ROOT_NAME: arguments.example_sbom,
+        MYSQL_552_ROOT_NAME: arguments.mysql552_sbom,
+    }
+    xml_paths = {
+        AGGREGATE_ROOT_NAME: arguments.sbom_xml,
+        CORE_ROOT_NAME: arguments.core_sbom_xml,
+        PUBLISHED_ROOT_NAME: arguments.published_sbom_xml,
+        ADAPTER_552_ROOT_NAME: arguments.adapter552_sbom_xml,
+        EXAMPLE_ROOT_NAME: arguments.example_sbom_xml,
+        MYSQL_552_ROOT_NAME: arguments.mysql552_sbom_xml,
+    }
+    license_counts = {
+        role: _validate_licenses(
+            document,
+            policy,
+            require_all_exceptions=(role == AGGREGATE_ROOT_NAME),
+        )
+        for role, document in documents.items()
+    }
+    xml_evidence = {
+        role: _validate_xml_pair(document, xml_paths[role], role)
+        for role, document in documents.items()
+    }
+
+    lock = _load_scanner_lock(arguments.scanner_lock)
+    scanner_config = _read_regular_bytes(
+        arguments.scanner_config, "explicit OSV scanner configuration"
+    )
+    if scanner_config:
+        raise PolicyError("explicit OSV scanner configuration must be exactly empty")
+    if arguments.scanner_platform not in lock["scanner"]["platforms"]:
+        raise PolicyError("scanner platform is not present in the pinned lock")
+    scanner_asset = lock["scanner"]["platforms"][arguments.scanner_platform]
+
+    inventory = _osv_maven_inventory(aggregate_sbom)
+    expected_inventory = _inventory_content(inventory)
+    if _read_text(arguments.inventory, "derived Maven inventory") != expected_inventory:
+        raise PolicyError(
+            "derived Maven inventory does not exactly match the verified SBOM"
+        )
+    raw_scan = _read_json(arguments.raw_scan, allow_escaped_whitespace=True)
+    findings = _findings(_scanner_packages(raw_scan), inventory)
+    accepted = _apply_vulnerability_policy(findings)
+
+    def role_evidence(role: str) -> dict[str, Any]:
+        resolved_profile, _ = profiles[role]
+        xml_component_count, xml_sha = xml_evidence[role]
+        return {
+            "componentLicenseCount": license_counts[role],
+            "mavenPackageCount": len(resolved_profile),
+            "resolvedProfileSha256": _purl_set_sha256(resolved_profile),
+            "sbomSha256": _sha256(sbom_paths[role]),
+            "xmlComponentCount": xml_component_count,
+            "xmlSha256": xml_sha,
+        }
+
+    module_paths = {
+        CORE_ROOT_NAME: (arguments.core_pom, arguments.core_lock),
+        PUBLISHED_ROOT_NAME: (arguments.published_pom, arguments.published_lock),
+        ADAPTER_552_ROOT_NAME: (arguments.adapter552_pom, arguments.adapter552_lock),
+    }
+
+    def module_evidence(role: str) -> dict[str, Any]:
+        entry = role_evidence(role)
+        _, pom_dependencies, runtime_closure = module_inventories[role]
+        pom_path, lock_path = module_paths[role]
+        entry.update(
+            {
+                "pomDependencyCount": len(pom_dependencies),
+                "pomSha256": _sha256(pom_path),
+                "dependencyLockSha256": _sha256(lock_path),
+                "runtimeClosureCount": len(runtime_closure),
+                "runtimeClosureSha256": hashlib.sha256(
+                    ("\n".join(sorted(runtime_closure)) + "\n").encode("utf-8")
+                ).hexdigest(),
+            }
+        )
+        return entry
+
+    evidence = {
+        "revision": arguments.revision,
+        "sourceTree": arguments.source_tree,
+        "scanner": {
+            "binarySha256": scanner_asset["sha256"],
+            "binarySize": scanner_asset["size"],
+            "binaryUrl": scanner_asset["url"],
+            "commit": lock["scanner"]["commit"],
+            "database": {
+                "ecosystem": lock["database"]["ecosystem"],
+                "generation": lock["database"]["generation"],
+                "lastModified": lock["database"]["lastModified"],
+                "sha256": lock["database"]["sha256"],
+                "size": lock["database"]["size"],
+                "url": lock["database"]["url"],
+            },
+            "name": lock["scanner"]["name"],
+            "platform": arguments.scanner_platform,
+            "scalibrVersion": lock["scanner"]["scalibrVersion"],
+            "scannerLockSha256": _sha256(arguments.scanner_lock),
+            "scannerConfigSha256": hashlib.sha256(scanner_config).hexdigest(),
+            "version": lock["scanner"]["version"],
+        },
+        "schemaVersion": 3,
+        "sbom": {
+            "componentLicenseCount": license_counts[AGGREGATE_ROOT_NAME],
+            "documentCount": 12,
+            "inventorySha256": hashlib.sha256(
+                expected_inventory.encode("utf-8")
+            ).hexdigest(),
+            "licensePolicy": "passed",
+            "licenseReviews": [
+                {
+                    key: review[key]
+                    for key in (
+                        "action",
+                        "componentName",
+                        "componentVersion",
+                        "expires",
+                        "owner",
+                        "purl",
+                        "rationaleCode",
+                        "reviewedAt",
+                        "scope",
+                        "status",
+                    )
+                }
+                for review in policy["licenseReviewExceptions"]
+            ],
+            "mavenPackageCount": len(inventory),
+            "policySha256": hashlib.sha256(policy_content).hexdigest(),
+            "roleCount": 6,
+            "sha256": _sha256(arguments.sbom),
+            "unresolvedLicenseReviewCount": len(
+                policy["licenseReviewExceptions"]
+            ),
+            "xmlComponentCount": xml_evidence[AGGREGATE_ROOT_NAME][0],
+            "xmlSha256": xml_evidence[AGGREGATE_ROOT_NAME][1],
+        },
+        # Backward-compatible 5.5.3 evidence keys. Final 5.5.2 roles use
+        # explicit names below and are never folded into these aliases.
+        "publishedModule": module_evidence(PUBLISHED_ROOT_NAME),
+        "exampleProfile": role_evidence(EXAMPLE_ROOT_NAME),
+        "coreModule": module_evidence(CORE_ROOT_NAME),
+        "adapter552Module": module_evidence(ADAPTER_552_ROOT_NAME),
+        "mysql552Profile": role_evidence(MYSQL_552_ROOT_NAME),
+        "vulnerabilities": {
+            "acceptedExceptionCount": len(accepted),
+            "findingCount": len(findings),
+            "findings": accepted,
+            "unreviewedCount": 0,
+        },
+    }
+    _write_text_atomic(
+        arguments.output, json.dumps(evidence, indent=2, sort_keys=True) + "\n"
+    )
+    print(
+        "verified six-role supply-chain policy: "
+        f"{len(inventory)} Maven packages, {len(findings)} findings"
+    )
 
 
 def _verify_command(arguments: argparse.Namespace) -> None:
@@ -3046,18 +4114,40 @@ def _verify_command(arguments: argparse.Namespace) -> None:
     if HEX_40.fullmatch(arguments.source_tree) is None:
         raise PolicyError("source tree must be exactly 40 lowercase hex characters")
     sbom = _load_sbom(arguments.sbom)
+    core_sbom = _load_optional_core_sbom(arguments)
     published_sbom = _load_sbom(arguments.published_sbom)
     example_sbom = _load_sbom(arguments.example_sbom)
     policy, policy_content = _load_policy_snapshot(arguments.policy)
-    for role_label, role_sbom in (
+    if _six_role_mode(arguments):
+        if core_sbom is None:
+            raise PolicyError("six-role supply-chain verification requires the core SBOM")
+        _six_verify_command(
+            arguments,
+            sbom,
+            core_sbom,
+            published_sbom,
+            example_sbom,
+            policy,
+            policy_content,
+        )
+        return
+    role_sboms = [
         ("aggregate SBOM", sbom),
         ("published SBOM", published_sbom),
         ("example SBOM", example_sbom),
-    ):
+    ]
+    if core_sbom is not None:
+        role_sboms.insert(1, ("core SBOM", core_sbom))
+    for role_label, role_sbom in role_sboms:
         _validate_supported_component_ecosystems(role_sbom, policy, role_label)
-    _validate_sbom_roles(sbom, published_sbom, example_sbom)
+    _validate_sbom_roles(sbom, published_sbom, example_sbom, core_sbom)
     _validate_pinned_example_dependency_contract(sbom, example_sbom)
     license_component_count = _validate_licenses(sbom, policy)
+    core_license_component_count = (
+        _validate_licenses(core_sbom, policy, require_all_exceptions=False)
+        if core_sbom is not None
+        else 0
+    )
     published_license_component_count = _validate_licenses(
         published_sbom, policy, require_all_exceptions=False
     )
@@ -3067,6 +4157,12 @@ def _verify_command(arguments: argparse.Namespace) -> None:
     aggregate_xml_component_count, aggregate_xml_sha = _validate_xml_pair(
         sbom, arguments.sbom_xml, "aggregate"
     )
+    core_xml_component_count = 0
+    core_xml_sha = ""
+    if core_sbom is not None:
+        core_xml_component_count, core_xml_sha = _validate_xml_pair(
+            core_sbom, arguments.core_sbom_xml, "core"
+        )
     published_xml_component_count, published_xml_sha = _validate_xml_pair(
         published_sbom, arguments.published_sbom_xml, "published"
     )
@@ -3086,15 +4182,25 @@ def _verify_command(arguments: argparse.Namespace) -> None:
         published_sbom, arguments.published_pom, arguments.published_lock
     )
     (
+        core_resolved_profile,
         published_resolved_profile,
         example_resolved_profile,
+        core_profile,
         published_profile,
         example_profile,
-    ) = _validate_resolved_profile_partition(sbom, published_sbom, example_sbom)
+    ) = _validate_resolved_profile_partition(
+        sbom, published_sbom, example_sbom, core_sbom
+    )
     _validate_root_reachable_dependency_graph(sbom, "aggregate SBOM")
+    if core_sbom is not None:
+        _validate_root_reachable_dependency_graph(core_sbom, "core SBOM")
     _validate_root_reachable_dependency_graph(example_sbom, "example SBOM")
     _validate_test_runtime_license_exception_scopes(
-        policy, published_profile, example_profile, published_sbom, example_sbom
+        policy,
+        core_profile | published_profile,
+        example_profile,
+        published_sbom,
+        example_sbom,
     )
     inventory = _osv_maven_inventory(sbom)
     expected_inventory = _inventory_content(inventory)
@@ -3132,7 +4238,7 @@ def _verify_command(arguments: argparse.Namespace) -> None:
             "scannerConfigSha256": hashlib.sha256(scanner_config).hexdigest(),
             "version": lock["scanner"]["version"],
         },
-        "schemaVersion": 1,
+        "schemaVersion": 2 if core_sbom is not None else 1,
         "sbom": {
             "componentLicenseCount": license_component_count,
             "licenseReviews": [
@@ -3194,6 +4300,15 @@ def _verify_command(arguments: argparse.Namespace) -> None:
             "unreviewedCount": 0,
         },
     }
+    if core_sbom is not None:
+        evidence["coreModule"] = {
+            "componentLicenseCount": core_license_component_count,
+            "mavenPackageCount": len(core_resolved_profile),
+            "resolvedProfileSha256": _purl_set_sha256(core_resolved_profile),
+            "sbomSha256": _sha256(arguments.core_sbom),
+            "xmlComponentCount": core_xml_component_count,
+            "xmlSha256": core_xml_sha,
+        }
     _write_text_atomic(
         arguments.output, json.dumps(evidence, indent=2, sort_keys=True) + "\n"
     )
@@ -3228,12 +4343,22 @@ def _parser() -> argparse.ArgumentParser:
     inventory = commands.add_parser("inventory", help="derive exact scanner inventory")
     inventory.add_argument("--sbom", type=Path, required=True)
     inventory.add_argument("--sbom-xml", type=Path, required=True)
+    inventory.add_argument("--core-sbom", type=Path)
+    inventory.add_argument("--core-sbom-xml", type=Path)
+    inventory.add_argument("--core-pom", type=Path)
+    inventory.add_argument("--core-lock", type=Path)
     inventory.add_argument("--published-sbom", type=Path, required=True)
     inventory.add_argument("--published-sbom-xml", type=Path, required=True)
+    inventory.add_argument("--adapter552-sbom", type=Path)
+    inventory.add_argument("--adapter552-sbom-xml", type=Path)
     inventory.add_argument("--example-sbom", type=Path, required=True)
     inventory.add_argument("--example-sbom-xml", type=Path, required=True)
+    inventory.add_argument("--mysql552-sbom", type=Path)
+    inventory.add_argument("--mysql552-sbom-xml", type=Path)
     inventory.add_argument("--published-pom", type=Path, required=True)
     inventory.add_argument("--published-lock", type=Path, required=True)
+    inventory.add_argument("--adapter552-pom", type=Path)
+    inventory.add_argument("--adapter552-lock", type=Path)
     inventory.add_argument("--policy", type=Path, required=True)
     inventory.add_argument("--output", type=Path, required=True)
     inventory.set_defaults(handler=_inventory_command)
@@ -3241,12 +4366,22 @@ def _parser() -> argparse.ArgumentParser:
     verify = commands.add_parser("verify", help="verify raw scan and write sanitized evidence")
     verify.add_argument("--sbom", type=Path, required=True)
     verify.add_argument("--sbom-xml", type=Path, required=True)
+    verify.add_argument("--core-sbom", type=Path)
+    verify.add_argument("--core-sbom-xml", type=Path)
+    verify.add_argument("--core-pom", type=Path)
+    verify.add_argument("--core-lock", type=Path)
     verify.add_argument("--published-sbom", type=Path, required=True)
     verify.add_argument("--published-sbom-xml", type=Path, required=True)
+    verify.add_argument("--adapter552-sbom", type=Path)
+    verify.add_argument("--adapter552-sbom-xml", type=Path)
     verify.add_argument("--example-sbom", type=Path, required=True)
     verify.add_argument("--example-sbom-xml", type=Path, required=True)
+    verify.add_argument("--mysql552-sbom", type=Path)
+    verify.add_argument("--mysql552-sbom-xml", type=Path)
     verify.add_argument("--published-pom", type=Path, required=True)
     verify.add_argument("--published-lock", type=Path, required=True)
+    verify.add_argument("--adapter552-pom", type=Path)
+    verify.add_argument("--adapter552-lock", type=Path)
     verify.add_argument("--policy", type=Path, required=True)
     verify.add_argument("--scanner-lock", type=Path, required=True)
     verify.add_argument("--scanner-config", type=Path, required=True)

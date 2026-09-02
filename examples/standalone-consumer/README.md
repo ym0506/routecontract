@@ -4,8 +4,10 @@ This Gradle build is intentionally outside RouteContract's multi-project build. 
 `settings.gradle`, resolves RouteContract only by the published Maven coordinate, and uses an
 exclusive repository rule for the RouteContract group. The test verifies that:
 
-1. `RouteContract` was loaded from a JAR rather than a Gradle project output directory;
-2. the JAR supplies the ShardingSphere `SQLExecutionHook` service descriptor;
+1. `RouteContract` was loaded from the published core JAR rather than a Gradle project output
+   directory;
+2. the hook provider and ShardingSphere `SQLExecutionHook` service descriptor were loaded from the
+   published exact 5.5.3 adapter JAR;
 3. ShardingSphere's service loader discovers the provider during `RouteContract.captureResult`;
 4. one real ShardingSphere-JDBC 5.5.3 query reaches MySQL 8.4.11 and produces a complete,
    one-attempt observed execution snapshot.
@@ -47,21 +49,23 @@ runtime, the annotations artifact shared with Jackson 3
 resolves to 2.21. The BOM does not replace or downgrade RouteContract's separate
 `tools.jackson.core:jackson-core:3.1.5` product runtime.
 
-The verification metadata trusts only the exact RouteContract first-party
-group/artifact and a non-SNAPSHOT stable or strict `-rcN` version because
-`install-release-assets.py` has already checked that JAR and POM against the
-public Release `SHA256SUMS`. Third-party
-dependencies remain checksum-verified; this exception does not disable Gradle
-dependency verification globally.
+The verification metadata trusts only the exact RouteContract first-party core and 5.5.3 adapter
+names at a non-SNAPSHOT stable or strict `-rcN` version. In the same-checkout lane, the verifier
+publishes both reviewed projects into a new isolated repository. Legacy public-asset consumption
+separately requires `install-release-assets.py` to check the v0.1 adapter JAR and POM against the
+public Release `SHA256SUMS`; future public split-artifact consumption still requires a verified
+immutable Release or Maven Central publication. Third-party dependencies remain checksum-verified;
+this exception does not disable Gradle dependency verification globally.
 
-Run the repository-level verifier, which publishes to an isolated temporary Maven repository first:
+Run the repository-level verifier, which publishes the version-neutral core and exact 5.5.3
+adapter to an isolated temporary Maven repository first:
 
 ```bash
 ./scripts/verify-standalone-consumer.sh
 ```
 
 That command is same-checkout packaging evidence. It proves that the generated
-Maven publication can be consumed without a Gradle project dependency; it is
+split Maven publications can be consumed transitively without a Gradle project dependency; it is
 not an external-user installation or adoption claim.
 
 After an annotated `v0.1.2` tag, a public immutable non-prerelease Release, a successful

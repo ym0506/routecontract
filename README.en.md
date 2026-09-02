@@ -35,11 +35,23 @@
 - **CI decision:** in the verified `1 → 2` fixture, attempt-count and data-source-budget overruns fail the manifest assertion with `RCM201` and `RCM202`; configuring it as a required check can block the merge, while RouteContract does not label `1 → 2` itself as a performance defect and requires a person to review whether the change is intentional
 - **Verified boundary:** Java 17, exactly ShardingSphere-JDBC 5.5.3, normal-returning and non-interrupted synchronous non-batch `PreparedStatement`; it does not decide SQL semantic equivalence or reconstruct a complete route plan, commit, or business success
 
+> **Release/source-tree boundary:** the `v0.1.2` Quick Start and installation commands below apply
+> only to the exact annotated-tag checkout and that tag's single all-in-one
+> `routecontract-shardingsphere-5.5:0.1.2` Release JAR, which contains the API, collector, manifest,
+> and 5.5.3 provider. The current source tree declares unreleased project version `0.2.0`. It is
+> moving the public API, collector, and manifest into `routecontract-core` and splitting exact
+> 5.5.3 and exact 5.5.2 thin adapters. Local modules, fixtures, or tests do not establish a
+> `0.2.0` Release or a 5.5.2 support claim.
+
 [Watch the 2:54 demo](https://www.youtube.com/watch?v=pcgvNNxd1mM)
 
 ![A verified real-MySQL case where the business result stays the same while observed attempts and reviewed data-source aliases change from one to two, producing RCM201 and RCM202](submission/assets/baseline-candidate.png)
 
 ## Quick Start
+
+The block below does not build the current source tree. It clones the exact `v0.1.2` tag into a new
+directory and runs that tagged public product. Do not replace `source_dir` with the current
+`0.2.0` work checkout.
 
 Prerequisites are Git, Java 17, a running Docker daemon, Bash/POSIX tools, and the executable Gradle
 Wrapper. The first run may need network access for the public tag, Gradle and Maven Central
@@ -200,8 +212,9 @@ If the failure reports a path-binding change, the original path may no longer na
 reservation. Do not repair, delete, or reuse either the original path or any moved reservation.
 
 Important: the immutable `v0.1.2` Release body and the README stored in that tag still point to the
-`v0.1.0` onboarding path. The current `main` documentation and guide are a post-release bridge for
-consuming `v0.1.2` assets; they do not make `v0.1.2` a self-contained immutable onboarding Release.
+`v0.1.0` onboarding path. This README's `v0.1.2` onboarding sections and guide are a post-release
+bridge for consuming those assets, not a consumption path for the current source tree's unreleased
+`0.2.0` artifacts. They also do not make `v0.1.2` a self-contained immutable onboarding Release.
 Each helper and verifier added after the tag is pinned to its own exact bridge-commit permalink for
 that implementation and the SHA-256 recorded in the guide.
 
@@ -271,7 +284,7 @@ ManifestAssertions.assertMatched(result); // A mismatch fails CI with stable RCM
 
 Writing a candidate never overwrites the approved file automatically. When a change is intentional, a person must review the diff and explicitly replace the approved baseline.
 
-[examples/manifests](examples/manifests/README.md) contains canonical JSON from the real MySQL equality baseline and the same-result `BETWEEN` candidate, together with verifier output. The integration test regenerates these files on every run and checks byte-for-byte equality and deterministic structural manifest diffs with stable RCM codes.
+[examples/manifests](examples/manifests/README.md) contains canonical JSON from the real MySQL equality baseline and the same-result `BETWEEN` candidate, together with verifier output. The integration test regenerates the schema 2 files carrying the exact ShardingSphere 5.5.3 runtime identity and checks byte-for-byte equality plus deterministic structural manifest diffs with stable RCM codes. The unsuffixed schema 1 files remain byte-for-byte historical v0.1 evidence, and their decode/encode compatibility is verified separately.
 
 <details>
 <summary>Alias trust boundary and strict/budgetOnly policy details</summary>
@@ -312,7 +325,7 @@ choice explicit with `ManifestAssertions.assertPassesBlockingChecks(result)`.
 | Isolated consumer build | In the same checkout, a standalone consumer using only the generated JAR and POM in a temporary Maven repository passed SPI auto-discovery and a MySQL execution test; this is not evidence of external adoption |
 | Isolated Maven 3.9.14 pilot | In the same checkout, a Java 17 default cell and an explicit Java 21 compatibility cell verify an inactive profile, fresh caches, a SHA-256 negative check, an exact ShardingSphere-JDBC 5.5.3/MySQL 8.4.11 candidate, and a mechanical match; this is not human approval, an external user, or adoption evidence |
 
-Run the full 52-test verification:
+Run the current source-tree verification:
 
 ```bash
 ./gradlew --no-daemon --no-build-cache clean check assemble validateOfficialCycloneDxSbom
@@ -321,7 +334,16 @@ Run the full 52-test verification:
 ./scripts/verify-maven-pilot.sh --java 21
 ```
 
-The first command runs 52 core and MySQL-corpus tests on Java 17, ShardingSphere-JDBC 5.5.3, and a digest-pinned MySQL 8.4.11 Testcontainers image, then generates the JAR, Javadoc, and SBOM. The second command runs one separate consumer test. The third and fourth require exact Apache Maven 3.9.14 and verify the same isolated profile-off, checksum, and candidate paths with the Java 17 default and an explicit Java 21 runtime/classfile-major-65 mode, respectively. The Java 21 cell is same-checkout compatibility evidence for immutable v0.1.2 with exact ShardingSphere-JDBC 5.5.3/MySQL 8.4.11; it does not broaden the Java 17 boundary of the external assisted runner or starter. All require Docker.
+The first command runs the unit, real-MySQL, and structural tests plus SBOM validation configured in the
+current checkout, then generates JARs, Javadoc, and SBOMs. The suite is changing during the
+`0.2.0` split, so this README does not freeze its current test count. The immutable `v0.1.2`
+release-evidence `test-summary.txt` records 52 passing tests for that tag; do not reuse that count as
+evidence for the current checkout or `0.2.0`. The second command verifies the current checkout's
+separate consumer path. The third and fourth require exact Apache Maven 3.9.14; the current tree's
+post-release pilot/bridge consumes immutable `v0.1.2` assets in the Java 17 default and an explicit
+Java 21 runtime/classfile-major-65 mode. These commands do not verify unreleased `0.2.0` artifacts,
+an external user, or adoption, and they do not broaden the Java 17 boundary of the external
+assisted runner or starter. All require Docker.
 
 ## Precise comparison with existing tools
 
@@ -338,20 +360,23 @@ See [competitive-analysis.md](docs/competitive-analysis.md) for the sourced comp
 
 ## Code and public-evidence boundaries
 
-Code map (representative boundaries; a directory is not assumed to have only one role):
+Current unreleased `0.2.0` source-tree map (representative boundaries; a directory is not assumed
+to have only one role):
 
 | Boundary | Representative paths | Role |
 |---|---|---|
-| Shipped library | `routecontract-shardingsphere-5.5/src/main` | Consumer API and 5.5.3 SPI provider included in the Release JAR. |
-| Public verification and examples | `routecontract-shardingsphere-5.5/src/test`, `examples/` | Unit, real-MySQL, and standalone-consumer fixtures; not included in the library JAR. |
+| Core work | `routecontract-core/src/main` | Unreleased `0.2.0` public API, capture/collector, manifest, and internal adapter bridge. |
+| Exact 5.5.3 adapter work | `routecontract-shardingsphere-5.5/src/main` | Unreleased thin 5.5.3 SPI adapter that uses core. |
+| Exact 5.5.2 adapter work | `routecontract-shardingsphere-5.5.2/src/main` | Unreleased thin adapter that remains unsupported until every version-specific gate passes. |
+| Public verification and examples | `routecontract-core/src/test`, `routecontract-shardingsphere-5.5/src/test`, `routecontract-shardingsphere-5.5.2/src/test`, `examples/` | Unit, structural, real-MySQL, and consumer fixtures; their presence is not Release or support evidence. |
 | Mixed automation | `scripts/`, `.github/workflows/`, `security/`, `gradle/` | `scripts/` contains user-facing Quick Start and Release-asset installation tools plus maintainer release, supply-chain, and demonstration-verification tools. None is a consumer runtime API. |
 | Verification/submission support | `submission/`, `scripts/video-demo-session.sh`, `docs/evidence-matrix.md` | Evidence tracking, result-report, and reproducible packaging material; not part of the shipped product. |
 
-This source declares release-target project version `0.1.2`, with corresponding tag name `v0.1.2`.
-A version string or checkout does not prove that an annotated tag, public immutable
-non-prerelease Release, same-revision release-evidence run, or external-user result exists.
-Use public assets only after verifying tag/Release/evidence-run revision identity and every
-postpublication check in the [release procedure](RELEASING.md).
+The current source tree declares unreleased project version `0.2.0`. That version string, a module,
+fixture, or checkout does not prove a `v0.2.0` tag, public immutable Release, same-revision release
+evidence, 5.5.2 support, or an external-user result. Public stable `v0.1.2` remains immutable and
+uses the pre-split all-in-one layout. Use public assets only after verifying tag/Release/evidence-run
+revision identity and every postpublication check in the [release procedure](RELEASING.md).
 
 <details>
 <summary>Exact evidence boundary for historical RC and public-CI records</summary>
@@ -451,13 +476,13 @@ To reproduce an actual non-zero CI-gate exit using only two verified manifest fi
 
 This command does not require Docker. It prints `RCM201` and `RCM202`, then intentionally exits with code `1`. It is a dedicated fixture excluded from the regular `test` and `check` tasks.
 
-To regenerate and compare the canonical files against real MySQL, then fail the build against the same approved baseline, run:
+To regenerate and compare the schema 2 canonical files against real MySQL, then fail the build against a preserved schema 1 approved baseline, run:
 
 ```bash
 ./scripts/demo-end-to-end-ci-failure.sh
 ```
 
-Even when the preceding stages succeed, this command intentionally exits with code `1` at the final contract assertion.
+Even when the preceding stages succeed, this command intentionally exits with code `1` at the final contract assertion. The final non-zero fixture also proves that a historical schema 1 approval remains readable.
 
 ## Exact evidence boundary
 
@@ -512,12 +537,13 @@ The exact coordinate in the postpublication-verified stable `v0.1.2` Release is
 on Maven Central. Do not add it directly to the default dependency graph. Use it only in the
 isolated pilot from the [first real integration guide](docs/first-integration.md), which reuses the
 existing ShardingSphere-JDBC 5.5.3 fixture and requires inspection of its complete runtime
-classpath.
+classpath. This `0.1.2` JAR is an all-in-one artifact containing the public API, collector,
+manifest, and 5.5.3 provider. Do not project the current source tree's `routecontract-core` plus
+exact-adapter layout onto the tagged `v0.1.2` installation or POM.
 
-The RouteContract build does not configure dependency embedding. Its
-module-level `compileOnly` ShardingSphere/BOM declarations are not published as
-consumer version constraints. In the verified
-Gradle test/runtime graph, the Jackson 2 core, databind, datatype-jdk8, and
+The tagged `v0.1.2` build does not configure dependency embedding. Its all-in-one module-level
+`compileOnly` ShardingSphere/BOM declarations are not published as consumer version constraints.
+In the verified `v0.1.2` Gradle test/runtime graph, the Jackson 2 core, databind, datatype-jdk8, and
 datatype-jsr310 modules in ShardingSphere 5.5.3's compatibility graph resolve to
 2.18.9, while Calcite Core and linq4j resolve to 1.42.0. JTS Core 1.19.0 remains,
 but JTS I/O Common must be absent from the graph. In the runtime that also contains Jackson 3.1.5, the shared
@@ -550,10 +576,14 @@ ShardingSphere version, a user-visible regression or missing capability, and a m
 fixture. An implementation change should include a failing test, real-MySQL verification, and an
 explicit support boundary.
 
-A new adapter or reporter is considered only after public demand, a version-specific fixture, and real-MySQL CI exist. The current v0.1 boundary remains exactly 5.5.3. See the [contribution guide](CONTRIBUTING.md) for the full workflow.
+A new adapter or reporter is considered only after public demand, a version-specific fixture, and
+real-MySQL CI exist. The public v0.1 boundary remains exactly 5.5.3. The current source tree's
+unreleased 5.5.2 adapter work does not expand support until those gates pass. See the
+[contribution guide](CONTRIBUTING.md) for the full workflow.
 
 ## Documentation and reproduction paths
 
+- [Production-system CI adoption and operations runbook](docs/production-readiness.md)
 - [Technical specification](docs/specification.md)
 - [Architecture and trust boundaries](docs/architecture.md)
 - [Competitive analysis](docs/competitive-analysis.md)

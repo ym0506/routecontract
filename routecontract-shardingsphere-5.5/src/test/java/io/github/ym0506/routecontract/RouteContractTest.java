@@ -1,6 +1,6 @@
 package io.github.ym0506.routecontract;
 
-import io.github.ym0506.routecontract.internal.RouteContractSqlExecutionHook;
+import io.github.ym0506.routecontract.shardingsphere553.internal.RouteContract553SqlExecutionHook;
 import org.junit.jupiter.api.Test;
 
 import java.util.AbstractList;
@@ -19,7 +19,7 @@ class RouteContractTest {
         SensitiveParameter secret = new SensitiveParameter();
 
         RouteSnapshot snapshot = RouteContract.capture("privacy", () -> {
-            RouteContractSqlExecutionHook hook = new RouteContractSqlExecutionHook();
+            RouteContract553SqlExecutionHook hook = new RouteContract553SqlExecutionHook();
             hook.start(
                     "ds_1",
                     "SELECT * FROM t_order_1 WHERE user_id = ? AND status = 'PRIVATE_LITERAL'",
@@ -30,6 +30,8 @@ class RouteContractTest {
         });
 
         assertEquals(CaptureStatus.COMPLETE, snapshot.status());
+        assertEquals(2, snapshot.schemaVersion());
+        assertEquals(ShardingSphereRuntimeIdentity.SHARDINGSPHERE_5_5_3, snapshot.runtimeIdentity());
         assertEquals(1, snapshot.observedPhysicalAttemptCount());
         assertEquals(List.of("ds_1"), snapshot.observedDataSourceNames());
         PhysicalExecutionAttempt attempt = snapshot.attempts().get(0);
@@ -41,9 +43,58 @@ class RouteContractTest {
     }
 
     @Test
+    void legacySnapshotConstructorDescriptorRemainsAvailableAndImplicitlyUses553() throws Exception {
+        assertEquals(12, RouteSnapshot.class.getConstructor(
+                int.class,
+                String.class,
+                CaptureStatus.class,
+                int.class,
+                int.class,
+                int.class,
+                int.class,
+                int.class,
+                int.class,
+                List.class,
+                List.class,
+                List.class).getParameterCount());
+        RouteSnapshot source = RouteContract.capture("legacy-source", () ->
+                callbackReturnedHook("ds_0", true));
+
+        RouteSnapshot legacy = new RouteSnapshot(
+                1,
+                source.operationId(),
+                source.status(),
+                source.observedPhysicalAttemptCount(),
+                source.callbackReturnedCount(),
+                source.callbackFailureCount(),
+                source.unknownOutcomeCount(),
+                source.trunkThreadFlagCount(),
+                source.workerThreadFlagCount(),
+                source.observedDataSourceNames(),
+                source.attempts(),
+                source.collectorDiagnostics());
+
+        assertEquals(1, legacy.schemaVersion());
+        assertEquals(ShardingSphereRuntimeIdentity.SHARDINGSPHERE_5_5_3, legacy.runtimeIdentity());
+        assertThrows(IllegalArgumentException.class, () -> new RouteSnapshot(
+                RouteSnapshot.CURRENT_SCHEMA_VERSION,
+                source.operationId(),
+                source.status(),
+                source.observedPhysicalAttemptCount(),
+                source.callbackReturnedCount(),
+                source.callbackFailureCount(),
+                source.unknownOutcomeCount(),
+                source.trunkThreadFlagCount(),
+                source.workerThreadFlagCount(),
+                source.observedDataSourceNames(),
+                source.attempts(),
+                source.collectorDiagnostics()));
+    }
+
+    @Test
     void missingTerminalCallbackMakesCaptureIncomplete() throws Exception {
         RouteSnapshot snapshot = RouteContract.capture("incomplete", () -> {
-            RouteContractSqlExecutionHook hook = new RouteContractSqlExecutionHook();
+            RouteContract553SqlExecutionHook hook = new RouteContract553SqlExecutionHook();
             hook.start("ds_0", "SELECT 1", List.of(), null, true);
         });
 
@@ -56,7 +107,7 @@ class RouteContractTest {
     @Test
     void failureStoresOnlyExceptionType() throws Exception {
         RouteSnapshot snapshot = RouteContract.capture("failed", () -> {
-            RouteContractSqlExecutionHook hook = new RouteContractSqlExecutionHook();
+            RouteContract553SqlExecutionHook hook = new RouteContract553SqlExecutionHook();
             hook.start("ds_0", "UPDATE t_order_0 SET status = ?", List.of("PAID"), null, false);
             hook.finishFailure(new IllegalStateException("do-not-store-this-message"));
         });
@@ -115,7 +166,7 @@ class RouteContractTest {
     @Test
     void hookCollectorFailureIsContainedAndVisibleAsIncomplete() throws Exception {
         RouteSnapshot snapshot = RouteContract.capture("collector-failure", () -> {
-            RouteContractSqlExecutionHook hook = new RouteContractSqlExecutionHook();
+            RouteContract553SqlExecutionHook hook = new RouteContract553SqlExecutionHook();
             hook.start("ds_0", "SELECT ?", new ExplodingList(), null, true);
             hook.finishSuccess();
         });
@@ -128,7 +179,7 @@ class RouteContractTest {
     @Test
     void nullHookParametersCannotProduceACompleteCapture() throws Exception {
         RouteSnapshot snapshot = RouteContract.capture("null-parameters", () -> {
-            RouteContractSqlExecutionHook hook = new RouteContractSqlExecutionHook();
+            RouteContract553SqlExecutionHook hook = new RouteContract553SqlExecutionHook();
             hook.start("ds_0", "SELECT 1", null, null, true);
             hook.finishSuccess();
         });
@@ -170,7 +221,7 @@ class RouteContractTest {
     @Test
     void orphanFinishIsContainedAndReported() throws Exception {
         RouteSnapshot snapshot = RouteContract.capture("orphan-finish", () ->
-                new RouteContractSqlExecutionHook().finishSuccess());
+                new RouteContract553SqlExecutionHook().finishSuccess());
 
         assertEquals(CaptureStatus.INCOMPLETE, snapshot.status());
         assertEquals(0, snapshot.observedPhysicalAttemptCount());
@@ -182,7 +233,7 @@ class RouteContractTest {
     @Test
     void duplicateFinishIsContainedAndReportedWithoutCorruptingCounts() throws Exception {
         RouteSnapshot snapshot = RouteContract.capture("duplicate-finish", () -> {
-            RouteContractSqlExecutionHook hook = new RouteContractSqlExecutionHook();
+            RouteContract553SqlExecutionHook hook = new RouteContract553SqlExecutionHook();
             hook.start("ds_0", "SELECT 1", List.of(), null, true);
             hook.finishSuccess();
             hook.finishFailure(new IllegalStateException("ignored"));
@@ -203,6 +254,7 @@ class RouteContractTest {
 
         assertThrows(IllegalArgumentException.class, () -> new RouteSnapshot(
                 source.schemaVersion(),
+                source.runtimeIdentity(),
                 source.operationId(),
                 CaptureStatus.REPORTED_EXECUTION_FAILURE,
                 source.observedPhysicalAttemptCount(),
@@ -222,6 +274,7 @@ class RouteContractTest {
 
         assertThrows(IllegalArgumentException.class, () -> new RouteSnapshot(
                 source.schemaVersion(),
+                source.runtimeIdentity(),
                 source.operationId(),
                 CaptureStatus.COMPLETE,
                 source.observedPhysicalAttemptCount(),
@@ -239,6 +292,7 @@ class RouteContractTest {
     void zeroAttemptAndInvalidOperationIdsCannotForgeCapturesOrSnapshots() throws Exception {
         assertThrows(IllegalArgumentException.class, () -> new RouteSnapshot(
                 RouteSnapshot.CURRENT_SCHEMA_VERSION,
+                ShardingSphereRuntimeIdentity.SHARDINGSPHERE_5_5_3,
                 "forged-zero",
                 CaptureStatus.COMPLETE,
                 0,
@@ -261,6 +315,7 @@ class RouteContractTest {
                     () -> RouteContract.capture(invalidOperationId, () -> { }));
             assertThrows(IllegalArgumentException.class, () -> new RouteSnapshot(
                     RouteSnapshot.CURRENT_SCHEMA_VERSION,
+                    ShardingSphereRuntimeIdentity.SHARDINGSPHERE_5_5_3,
                     invalidOperationId,
                     CaptureStatus.INCOMPLETE,
                     0,
@@ -290,6 +345,7 @@ class RouteContractTest {
 
         assertThrows(IllegalArgumentException.class, () -> new RouteSnapshot(
                 RouteSnapshot.CURRENT_SCHEMA_VERSION,
+                ShardingSphereRuntimeIdentity.SHARDINGSPHERE_5_5_3,
                 "forged-over-limit",
                 CaptureStatus.COMPLETE,
                 forgedCount,
@@ -352,7 +408,7 @@ class RouteContractTest {
     }
 
     private static void callbackReturnedHook(final String dataSourceName, final boolean trunk) {
-        RouteContractSqlExecutionHook hook = new RouteContractSqlExecutionHook();
+        RouteContract553SqlExecutionHook hook = new RouteContract553SqlExecutionHook();
         hook.start(dataSourceName, "SELECT * FROM t_order WHERE user_id = ?", List.of(3L), null, trunk);
         hook.finishSuccess();
     }

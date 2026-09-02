@@ -2,16 +2,18 @@
 
 이 디렉터리는 설명용으로 손으로 꾸민 fixture가 아닙니다. MySQL 통합 테스트가
 ShardingSphere-JDBC 5.5.3과 digest로 고정한 MySQL 8.4.11 두 개에서 실제로 생성한 canonical
-manifest와 verifier 출력을 저장합니다.
+manifest와 verifier 출력을 저장합니다. 이름에 버전이 없는 기존 JSON 네 개는 공개 v0.1에서
+생성된 schema 1 역사 증거이며 byte-for-byte로 보존합니다. `shardingsphere-5.5.3.schema2`가
+포함된 JSON은 v0.2가 exact runtime identity를 기록해 새로 생성한 현재 증거입니다.
 
-- `find-paid-orders-by-user.approved.json`: `user_id = ?` 기준. 같은 비즈니스 행 1개를 반환하고
+- `find-paid-orders-by-user.shardingsphere-5.5.3.schema2.approved.json`: `user_id = ?` 기준. 같은 비즈니스 행 1개를 반환하고
   관측된 물리 JDBC 실행 시도는 1개, data-source alias는 `orders-odd` 하나입니다.
-- `find-paid-orders-by-user.candidate.json`: 같은 값을 `BETWEEN ? AND ?`로 표현한 mutation.
+- `find-paid-orders-by-user.shardingsphere-5.5.3.schema2.candidate.json`: 같은 값을 `BETWEEN ? AND ?`로 표현한 mutation.
   비즈니스 행은 그대로지만 관측된 실행 시도는 2개, alias는 `orders-even`과 `orders-odd`입니다.
 - `find-paid-orders-by-user.expected-diff.txt`: strict policy가 출력하는 결정적 차단 코드입니다.
-- `find-order-by-user-after-strategy-change.approved.json`: database/table strategy가 모두 있는
+- `find-order-by-user-after-strategy-change.shardingsphere-5.5.3.schema2.approved.json`: database/table strategy가 모두 있는
   기준 설정입니다. 관측된 실행 시도와 alias는 각각 1개입니다.
-- `find-order-by-user-after-strategy-change.candidate.json`: table strategy만 제거한 설정입니다.
+- `find-order-by-user-after-strategy-change.shardingsphere-5.5.3.schema2.candidate.json`: table strategy만 제거한 설정입니다.
   같은 비즈니스 행과 동일한 `1 attempt / 1 alias` budget을 유지하지만, 관측된 SQL
   fingerprint와 parameter 구조가 달라집니다.
 - `find-order-by-user-after-strategy-change.expected-diff.txt`: count budget만으로는 놓치는 위
@@ -32,7 +34,8 @@ data-source 이름, 원문 SQL, parameter 값은 manifest에 저장되지 않습
 위 명령은 예상된 위반까지 검증하므로 성공하면 종료 코드 `0`을 반환합니다. 실제 CI gate처럼
 checked-in 승인본과 후보본을 파일에서 읽고 `ManifestAssertions.assertMatched(...)`가 build를
 실패시키는 모습을 보려면 다음 명령을 실행합니다. Docker는 필요하지 않으며, `RCM201`과
-`RCM202`를 출력한 뒤 의도한 종료 코드 `1`을 반환합니다.
+`RCM202`를 출력한 뒤 의도한 종료 코드 `1`을 반환합니다. 이 intentional-red fixture는
+이름에 버전이 없는 보존된 schema 1 pair를 읽어 이전 승인본 호환성도 함께 검증합니다.
 
 ```bash
 ./scripts/demo-manifest-ci-failure.sh

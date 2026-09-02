@@ -1803,7 +1803,10 @@ empty=
         result = self.prepare_inventory()
 
         self.assertNotEqual(0, result.returncode)
-        self.assertIn("dependency scopes must exactly be runtime", result.stderr)
+        self.assertIn(
+            "dependency scopes differ from the exact first-party compile / third-party runtime contract",
+            result.stderr,
+        )
 
     def test_rejects_runtime_lock_coordinate_outside_pom_seeded_closure(self) -> None:
         self.write_fixture()

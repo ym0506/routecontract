@@ -8,6 +8,7 @@ import io.github.ym0506.routecontract.RouteAssertions;
 import io.github.ym0506.routecontract.RouteContract;
 import io.github.ym0506.routecontract.RouteContractViolationException;
 import io.github.ym0506.routecontract.RouteSnapshot;
+import io.github.ym0506.routecontract.ShardingSphereRuntimeIdentity;
 import io.github.ym0506.routecontract.manifest.DataSourceAliases;
 import io.github.ym0506.routecontract.manifest.ManifestAssertions;
 import io.github.ym0506.routecontract.manifest.ManifestCodec;
@@ -32,6 +33,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -40,6 +42,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -285,19 +288,38 @@ class ObservedExecutionRegressionCorpusMySqlTest {
         byte[] candidateBytes = codec.encode(candidate);
         Path committedExampleDirectory = Path.of(
                 System.getProperty("routecontract.repositoryRoot"), "examples", "manifests");
+        assertLegacySchemaOneBytesRemainStable(
+                codec,
+                committedExampleDirectory.resolve(
+                        "find-order-by-user-after-strategy-change.approved.json"),
+                657,
+                "a8ef5c3e78b49e241cbfb71a4ceeaf20f1a56507cf3c98fe17ea9aecf1086fce");
+        assertLegacySchemaOneBytesRemainStable(
+                codec,
+                committedExampleDirectory.resolve(
+                        "find-order-by-user-after-strategy-change.candidate.json"),
+                674,
+                "a38003f209c4f9d8c57ebdf7bb80e5e32d815f3365837b4f22f0717bf9a38daa");
         assertArrayEquals(
                 Files.readAllBytes(committedExampleDirectory.resolve(
-                        "find-order-by-user-after-strategy-change.approved.json")),
+                        "find-order-by-user-after-strategy-change.shardingsphere-5.5.3.schema2.approved.json")),
                 approvedBytes,
                 () -> "checked-in same-budget approved bytes differ from canonical MySQL evidence; actual="
                         + new String(approvedBytes, StandardCharsets.UTF_8));
         assertArrayEquals(
                 Files.readAllBytes(committedExampleDirectory.resolve(
-                        "find-order-by-user-after-strategy-change.candidate.json")),
+                        "find-order-by-user-after-strategy-change.shardingsphere-5.5.3.schema2.candidate.json")),
                 candidateBytes,
                 () -> "checked-in same-budget candidate bytes differ from canonical MySQL evidence; actual="
                         + new String(candidateBytes, StandardCharsets.UTF_8));
         ManifestVerificationResult verification = new ManifestVerifier().verify(approved, candidate);
+        ObservedExecutionManifest legacyApproved = codec.decode(Files.readAllBytes(
+                committedExampleDirectory.resolve(
+                        "find-order-by-user-after-strategy-change.approved.json")));
+        assertEquals(
+                verification,
+                new ManifestVerifier().verify(legacyApproved, candidate),
+                "the immutable schema-1 approval must produce the same schema-2 candidate decision");
 
         assertEquals(VerificationStatus.DRIFT, verification.status());
         assertFalse(verification.passesBlockingChecks());
@@ -768,6 +790,23 @@ class ObservedExecutionRegressionCorpusMySqlTest {
                 .replace("DS1_URL", DS_1.getJdbcUrl())
                 .replace("DS1_USER", DS_1.getUsername())
                 .replace("DS1_PASSWORD", DS_1.getPassword());
+    }
+
+    private static void assertLegacySchemaOneBytesRemainStable(
+            final ManifestCodec codec,
+            final Path legacyManifest,
+            final int expectedSize,
+            final String expectedSha256) throws Exception {
+        byte[] bytes = Files.readAllBytes(legacyManifest);
+        assertEquals(expectedSize, bytes.length, "historical schema-1 byte size changed");
+        assertEquals(
+                expectedSha256,
+                HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes)),
+                "historical schema-1 SHA-256 changed");
+        ObservedExecutionManifest decoded = codec.decode(bytes);
+        assertEquals(1, decoded.schemaVersion());
+        assertEquals(ShardingSphereRuntimeIdentity.SHARDINGSPHERE_5_5_3, decoded.runtimeIdentity());
+        assertArrayEquals(bytes, codec.encode(decoded));
     }
 
     private static void close(final DataSource dataSource) throws Exception {
