@@ -139,18 +139,26 @@ own their baseline reviews, keep a removal path, and decide whether the check is
 their own risk policy. Only the latest tagged `0.1.x` receives security fixes during the initial
 project phase; see [SECURITY.md](../SECURITY.md) for the current policy and private reporting path.
 
-## Evidence required to call a repository an actual user
+## Use, verification and public evidence
 
-An actual external-user result exists only when an external team or developer has, in a repository
-they own or are authorized to maintain:
+An external developer or team can use RouteContract in a private project, local integration tests
+or private CI. Public source and public CI are not prerequisites for use. Record the stage reached
+separately from who assisted, what was verified and what the user permits to be published:
 
-1. applied the RouteContract dependency to one representative operation;
-2. retained the existing business assertion;
-3. had an authorized human review and approve the exact baseline;
-4. run the candidate assertion successfully in that repository's upstream public CI; and
-5. exposed public evidence tying the dependency, operation, approved baseline, approval record,
-   tested commit, and CI run together.
+1. **Project pilot:** capture a valid candidate from one representative operation in their own
+   project, retaining the existing business assertion.
+2. **Completed integration:** an authorized human reviews the exact baseline and the candidate
+   assertion succeeds against it in that project's local tests or CI.
+3. **Repeat use:** use the check on a later real project change and record whether the result
+   helped a decision, required investigation or led to removing the check.
 
-Consent, a draft PR, a local or fork run, Quick Start, artifact download, workflow approval, or a
-self-reported comment is useful progress but is not production use, adoption, endorsement, or an
-actual external-user result.
+Label reports as self-reported until the relevant evidence has been inspected. For a publicly
+reproducible case, tie the dependency, operation, approved baseline, approval record, tested commit
+and successful CI run together. Obtain permission for the proposed case-study details; sharing one
+public comment is not blanket permission to identify an employer or claim endorsement.
+
+Keep failed attempts and blockers in the record. Consent, generated patches, draft PRs, demo runs,
+downloads and maintainer-owned fixtures do not establish external project use. Repeating an
+unchanged demo is not repeat use on a real change. A successful integration also does not by itself
+prove production use, performance improvement or endorsement. Historical submission and pilot
+records retain their original evidence scope.

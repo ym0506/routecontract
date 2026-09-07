@@ -11,6 +11,11 @@ evidence**, an upstream contribution, an independent execution, a user result, a
 support or endorsement by Quarkiverse or Apache ShardingSphere. No external maintainer participated.
 No human-approved baseline is included or created.
 
+These participation and result claims describe the sealed local record dated **2026-08-29** in
+`receipt.json`. They do not describe later upstream activity or the current eligibility rules for
+using RouteContract. Current [use and evidence definitions](../../user-feedback.md#recording-use-and-evidence)
+allow private-project and local use while recording assistance and verification separately.
+
 ## What the pilot established
 
 - With the opt-in profile disabled, the patched checkout's full four-module `clean test` reactor
@@ -112,9 +117,16 @@ integration test inserts the same account id and shares the Quarkus H2 applicati
 tests are selected together. Every profile-on run uses `clean` so Quarkus re-augments the application
 with the opt-in dependency.
 
-## Human review remains unresolved
+## Historical pilot evidence and baseline status
 
-The candidate is a proposal, not an approval. A repository owner would still need to review the
-operation boundary, aliases and budgets, then deliberately approve exact baseline bytes in their
-own repository. This local packet does not make that decision, and therefore does not satisfy the
-project's strict definition of an actual external user integration.
+The candidate in this packet is a proposal, not an approval. No target-authorized review or baseline
+approval is recorded. The earlier public upstream integration evidence standard required a target
+maintainer-approved baseline, an upstream dependency and representative check, and passing public CI.
+This sealed author-run packet did not satisfy that standard and remains a local H2 feasibility
+check. Its receipt, reproducer, technical evidence and original claim limits are unchanged.
+
+Under the current product definitions, private-project or local checks can constitute real use.
+That does not turn this historical packet into an external user's result: the RouteContract
+maintainer ran it, and the target maintainer did not approve its baseline. Future project pilots,
+completed integrations and repeat use must be recorded at their actual stage with the relevant
+assistance and verification information, as described in [user feedback](../../user-feedback.md#recording-use-and-evidence).

@@ -278,27 +278,6 @@ class GradleDirectReleaseContractTest(unittest.TestCase):
         self.assertIn('dependsOn(tasks.named("run"))', check_block)
         self.assertIn("Runtime classpath must contain the staged RouteContract JAR exactly once", self.build)
 
-    def test_docs_preserve_candidate_human_approval_and_ci_boundary(self) -> None:
-        required = (
-            "representative ShardingSphere-JDBC operation",
-            "business-result assertion",
-            "exact candidate bytes",
-            "human authorized to approve changes",
-            "upstream public CI",
-            "--dependency-verification=strict",
-            "is not adoption and is not an actual user",
-            "post-verification compatibility assertion",
-            "not claimed as a pre-instantiation security boundary",
-        )
-        for value in required:
-            with self.subTest(value=value):
-                self.assertIn(value, self.readme)
-        candidate = self.readme.index("writes only a separate candidate")
-        human = self.readme.index("A human authorized to approve changes")
-        ci = self.readme.index("upstream public CI")
-        self.assertLess(candidate, human)
-        self.assertLess(human, ci)
-
     def test_source_tree_has_no_generated_state(self) -> None:
         forbidden = (
             FIXTURE / ".gradle",

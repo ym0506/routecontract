@@ -4,46 +4,36 @@
 
 [![CI](https://github.com/ym0506/routecontract/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ym0506/routecontract/actions/workflows/ci.yml?query=branch%3Amain)
 
-> **저장소 owner 또는 권한 있는 maintainer: 30분 scoping session 요청 — 신청 전 설치 불필요**
-> [English pilot details](README.en.md) · [Reply `interested` in Discussion #34](https://github.com/ym0506/routecontract/discussions/34)
->
-> 공개 저장소의 권한 있는 owner 또는 maintainer만 신청할 수 있으며, 제3자 저장소 추천 채널이 아닙니다.
-> 저장소는 Java 17, 정확히 ShardingSphere-JDBC 5.5.3, 기존 동기식 non-batch
-> `PreparedStatement` 테스트를 갖춰야 합니다. [Discussion #34](https://github.com/ym0506/routecontract/discussions/34)에 아래 형식으로 답하세요.
->
-> 아래 세 줄을 그대로 복사해 `OWNER/REPOSITORY`를 바꾸고 Gradle 또는 Maven을 고르세요.
->
-> ```text
-> interested
-> Repository: https://github.com/OWNER/REPOSITORY
-> Build: Gradle or Maven
-> ```
->
-> Discussion #34나 비공개 채널로 credentials, raw SQL, binds, JDBC URLs, customer data,
-> private topology, hostnames, absolute paths, logs, screenshots, personal info를 보내지 마세요.
->
-> RouteContract maintainer는 공개 코드만 검토합니다. 대상 저장소의 license, contribution rules, AI policy가
-> 허용할 때만 unpublished review-only first-pass patch를 준비할 수 있으며 이는 선택 사항입니다.
-> 공개 PR 전에는 대상 저장소의 권한 있는 owner 또는 maintainer가 별도로 확인해야 합니다.
-> baseline은 외부 저장소의 권한 있는 maintainer가 별도로 검토·승인해야 합니다.
-> 30분은 초기 scoping/session 범위일 뿐, 답변·patch·완료 시간 약속이 아닙니다.
+**같은 결과를 반환해도 DB 실행은 달라질 수 있습니다.**
 
-[Apache ShardingSphere-JDBC](https://github.com/apache/shardingsphere)는 Java 애플리케이션 안에서 하나의 논리 SQL을 여러 data source로 나눠 실행할 수 있는 JDBC middleware입니다. RouteContract는 기능 결과만 보는 테스트가 놓칠 수 있는 실행 구조 변화를 사람이 검토한 승인본과 비교해 manifest assertion을 실패시키는 Java 테스트 라이브러리입니다. 이 assertion을 required CI check로 설정하면 승인되지 않은 변화가 merge되는 것을 막을 수 있습니다.
+RouteContract는 [ShardingSphere-JDBC](https://github.com/apache/shardingsphere)의
+`SQLExecutionHook`이 보고한 물리 JDBC 실행 시도를 사람이 검토한 기준과 비교하는 Java 테스트
+라이브러리입니다. 기존 업무 결과 assertion을 유지하면서, 실행 시도 수나 관측된 데이터 소스
+집합의 변화도 CI에서 검사합니다.
 
-- **사용자:** Apache ShardingSphere-JDBC 5.5.3을 사용하거나 도입을 평가하는 Java 개발자·팀
-- **검출 공백:** 기능 assertion이 같은 한 행으로 통과해도 hook이 보고한 물리 JDBC 실행 시도와 data source는 각각 `1 → 2`로 달라질 수 있음
-- **CI 판단:** 검증한 `1 → 2` fixture에서는 시도 수·data-source 예산 초과가 `RCM201`·`RCM202` manifest assertion 실패가 됨; 이를 required check로 설정하면 merge를 막을 수 있지만, `1 → 2` 자체를 성능 결함으로 단정하지 않고 의도한 변경인지 사람의 검토를 요구함
-- **검증 경계:** Java 17, 정확히 ShardingSphere-JDBC 5.5.3, 정상 반환·비-interrupt 동기식 non-batch `PreparedStatement`; SQL 의미 동치나 complete route plan·commit·비즈니스 성공은 판정하지 않음
+포함된 MySQL 예제는 같은 행을 반환하면서 관측된 실행 시도가 `1 → 2`로 늘어나는 변경을
+`RCM201`·`RCM202`로 거부합니다. 실행 증가가 의도한 변경인지는 담당자가 검토합니다.
 
-> **Release와 현재 source-tree 경계:** 아래 `v0.1.2` Quick Start·설치 명령은 exact annotated
-> tag checkout과 그 tag의 단일 all-in-one
-> `routecontract-shardingsphere-5.5:0.1.2` Release JAR(API·collector·manifest·5.5.3 provider 포함)에
-> 만 적용됩니다. 현재 source tree는 project version `0.2.0`을 선언한 미출시 작업입니다.
-> public API·collector·manifest를 `routecontract-core`로 옮기고 exact 5.5.3 thin adapter 및
-> exact 5.5.2 adapter를 분리하는 중이지만, 로컬 module·fixture·test가 존재한다는 사실은
-> `0.2.0` Release나 5.5.2 지원을 뜻하지 않습니다.
+**지원:** Java 17 · 정확히 ShardingSphere-JDBC 5.5.3 · 동기식·비배치 `PreparedStatement`.
+[실행 경계와 한계](docs/start-here.md#도입-전에-확인할-세-가지--check-fit)를 먼저 확인하세요.
 
-[2분 54초 시연 영상 보기](https://www.youtube.com/watch?v=pcgvNNxd1mM)
+## 시작하기
+
+| 하고 싶은 일 | 시작점 |
+| --- | --- |
+| 먼저 동작 보기 | [2분 54초 시연 영상 보기](https://www.youtube.com/watch?v=pcgvNNxd1mM) · [실제 비교 결과](examples/manifests/README.md) — 설치 불필요 |
+| 같은 결과인데 실행이 달라지는 사례 재현 | [아래 Quick Start](#quick-start) — Git, Java 17, Docker 필요 |
+| 내 프로젝트의 테스트 한 개에 적용 | [짧은 설치 명령](docs/install-local.md) · [버전·빌드 경로 선택](docs/start-here.md) · [Maven starter](examples/maven-pilot/README.md#review-only-starter-bundle) |
+| 적용 가능성 질문·경험 공유 | [짧은 피드백](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml) — 설치나 공개 저장소 없이 참여 가능 |
+
+정식 `v0.1.2`는 Maven Central에 없으며 검증된 GitHub Release 자산을 사용합니다.
+새 Markdown·JSON CI 리포트는 [개발 소스의 기능](docs/ci-review-report.md)으로 정식판에 포함되지 않습니다.
+비공개 프로젝트도 자신의 환경에서 사용할 수 있습니다. 공개 피드백에는 SQL·바인딩 값·접속 정보·전체 로그를 넣지 마세요.
+[도움받는 방법과 사용 사례 기록 기준](docs/user-feedback.md)을 확인할 수 있습니다.
+
+현재 소스는 미출시 `0.2.0` 개발판입니다. `routecontract-core`와 exact 5.5.2/5.5.3
+어댑터 분리는 [개발 설계](docs/versioned-shardingsphere-adapters.md)에서 다루며, 아래 설치
+명령은 정식 `v0.1.2`를 사용합니다.
 
 ![같은 업무 결과에서 승인본과 candidate의 관측 실행 시도 및 data-source alias가 1에서 2로 달라져 RCM201과 RCM202가 발생한 실제 MySQL 검증](submission/assets/baseline-candidate.png)
 
@@ -101,7 +91,12 @@ Maven 3.9.14 pilot에서 capture → candidate → 사람 승인 baseline → ca
 `v0.1.2`는 Maven Central에 게시되어 있지 않으므로 가이드는 검증된 GitHub Release 자산을
 별도 로컬 Maven repository에 설치하는 현재 경로를 사용합니다.
 
-가장 짧은 공개 설치 경로는 아래와 같습니다. `install_root`는 신뢰할 수 있는 기존 canonical
+Maven 사용자는 [검토용 starter bundle](examples/maven-pilot/README.md#review-only-starter-bundle)을
+먼저 사용하세요. 기존 테스트·operation·예산·alias를 지정하면 검토할 patch와 다음 명령을 생성합니다.
+생성기는 대상 저장소를 변경하거나 baseline을 승인하지 않습니다. runner가 필요한 Maven과
+정확한 Release 자산을 설치하므로 별도 설치를 먼저 할 필요는 없습니다.
+
+Gradle 사용자 또는 설치를 별도로 검증하려는 사용자의 공개 설치 경로는 아래와 같습니다. `install_root`는 신뢰할 수 있는 기존 canonical
 parent 아래의 정규화된 절대 경로의 새 디렉터리로 바꾸고, 그 아래 `maven` 경로가
 `~/.m2/repository` 또는 그 하위가 되지 않게 하세요. 공개 HTTPS 네트워크, Bash와 POSIX
 tools, `curl`, Python 3.10 이상이 필요하지만 GitHub
@@ -197,7 +192,7 @@ Maven pilot 두 테스트를 준비한 뒤에는 [6개 필드 예제 JSON](examp
 기존 검증기의 12개 입력을 직접 조립하지 않고 `review`·`matched` 경계를 실행할 수 있습니다.
 
 처음 실행했거나 현재 환경에는 맞지 않는다고 판단했다면
-[stable v0.1.2 feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)에
+[짧은 피드백 양식](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)에
 성공·막힌 지점·지원 범위 밖·필요 없음 중 어느 결과든 짧게 남길 수 있습니다. 공개 Issue에는
 원문 SQL, bind 값, JDBC URL, 실제 topology, full log 같은 민감 정보를 넣지 마세요.
 
@@ -285,7 +280,7 @@ MySQL fixture에서는 fingerprint와 parameter type 순서만 달라졌습니�
 | 격리된 소비자 빌드 | 같은 checkout에서 임시 Maven 저장소에 생성한 JAR와 POM만 사용하는 standalone consumer에서 SPI 자동 발견과 MySQL 실행 통과. 외부 채택 증거는 아님 |
 | 격리된 Maven 3.9.14 pilot | Java 17 기본 셀과 명시적 Java 21 호환성 셀에서 inactive profile, fresh cache, SHA-256 음성 검증, exact ShardingSphere-JDBC 5.5.3/MySQL 8.4.11 candidate와 mechanical match를 같은 checkout에서 검증. 사람 승인·외부 사용자·adoption 증거는 아님 |
 
-현재 source-tree 검증 명령:
+현재 checkout의 전체 검증:
 
 ```bash
 ./gradlew --no-daemon --no-build-cache clean check assemble validateOfficialCycloneDxSbom
@@ -529,17 +524,17 @@ Javadoc classifier에는 OpenJDK standard-doclet 정적 자산과 `legal/` 고�
 ## 기여와 확장
 
 `v0.1.2`의 문서·Quick Start·Release 설치·실제 적용 가능성을 처음 검토했다면
-[짧은 stable feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)에
-성공, blocker, 지원 범위 밖 또는 필요 없음 중 어느 결과든 남길 수 있습니다. 이 기록은
-self-reported usability/fit feedback이며 그 자체로 production 사용, adoption, security,
-performance 또는 endorsement를 증명하지 않습니다.
+[짧은 피드백 양식](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)에
+성공, blocker, 지원 범위 밖 또는 필요 없음 중 어느 결과든 남길 수 있습니다. 비공개 프로젝트의 사용 경험도 환영합니다. 설치 없이 검증 방법이나 필요한 기능만 알려주셔도 됩니다.
+사용 단계와 확인 가능한 근거는 [별도로 기록](docs/user-feedback.md#recording-use-and-evidence)하며,
+피드백만으로 운영 사용·보안·성능·추천을 주장하지 않습니다.
 
 버그나 기능 제안은 정확한 ShardingSphere version, 사용자에게 보이는 회귀 또는 누락된
 capability, 최소화한 synthetic fixture를
 [Issue form](https://github.com/ym0506/routecontract/issues/new/choose)에 기록합니다. 구현 변경은
 failing test, 실제 MySQL 검증, 명시적인 지원 한계를 함께 제시해야 합니다.
 
-새 adapter나 reporter는 공개 수요, version-specific fixture, real-MySQL CI를 갖춘 뒤
+새 adapter나 reporter는 구체적인 사용자 필요, version-specific fixture, real-MySQL CI를 갖춘 뒤
 검토합니다. 공개 v0.1 범위는 정확히 5.5.3으로 유지됩니다. 현재 source tree의 미출시
 5.5.2 adapter 작업은 해당 gate를 통과하기 전까지 지원 범위를 넓히지 않습니다. 전체 절차는
 [기여 가이드](CONTRIBUTING.md)에 있습니다.

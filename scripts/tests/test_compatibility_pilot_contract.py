@@ -309,7 +309,6 @@ class CompatibilityPilotContractTest(unittest.TestCase):
             "does not seal a test-scope comparison or the exact discovery time",
             "this packet makes no HTTP-capture claim",
             "Each attempt begins with SQLExecutionHook.start",
-            "does not satisfy the project's strict definition of an actual external user integration",
         ):
             self.assertIn(phrase, normalized_readme)
 

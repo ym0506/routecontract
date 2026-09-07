@@ -1,87 +1,56 @@
-name: Stable v0.1.2 feedback
-description: Share a first run, blocker, documentation note, or fit assessment for RouteContract v0.1.2.
-title: "[stable-feedback] "
+name: Question or user feedback
+description: Ask about fit or share an experience. No installation or public repository required.
+title: "[feedback] "
 labels: [community, needs-triage]
 body:
   - type: markdown
     attributes:
       value: |
-        Thank you for trying or reviewing RouteContract v0.1.2. Positive, negative, blocked, and not-a-fit outcomes are all useful.
+        A short question or experience is enough. Successful, blocked, unsupported and not-a-fit outcomes are welcome, including private-project use and questions before installation.
 
-        This form records self-reported usability and fit feedback. It does not by itself establish production use, adoption, security, performance, or endorsement.
+        Keep private code and artifacts in your own environment. Do not post raw SQL, bind values, credentials, connection details, full logs or screenshots. For a vulnerability, use [private reporting](https://github.com/ym0506/routecontract/security/advisories/new).
 
-        Share only the useful minimum. Remove credentials, raw SQL and bind values, JDBC URLs, customer data, private topology, hostnames, absolute paths, full logs, screenshots, and personal information. If this may be a vulnerability, stop and use [private vulnerability reporting](https://github.com/ym0506/routecontract/security/advisories/new).
+        We [record use separately from verification and permission to publish](https://github.com/ym0506/routecontract/blob/main/docs/user-feedback.md#recording-use-and-evidence). A self-report is not automatically independently verified evidence or an endorsement.
 
-  - type: dropdown
-    id: integration_stage
+  - type: textarea
+    id: result
     attributes:
-      label: Highest consecutive integration stage completed
-      description: Choose the last stage reached in order. Each numbered stage includes the earlier stages.
-      options:
-        - Stage 0 — reviewed the README and support boundary
-        - Stage 1 — also ran the exact v0.1.2 Quick Start
-        - Stage 2 — also verified and installed the exact v0.1.2 Release assets
-        - Stage 3 — also captured one representative operation in a repository I own, maintain, or am authorized to modify
-        - Stage 4 — an authorized owner or maintainer there also reviewed and approved the exact baseline
-        - Stage 5 — also ran a candidate check locally or in non-upstream CI
-        - Stage 6 — also ran the candidate check in the repository's upstream public CI
-    validations:
-      required: true
-
-  - type: dropdown
-    id: outcome
-    attributes:
-      label: Outcome
-      options:
-        - Worked as documented
-        - Documentation review only
-        - Product or documentation blocker
-        - Prerequisite or environment blocker
-        - Not a fit for my use case
-        - Stopped before completion
-        - Other
+      label: What would you like to ask or share?
+      description: Your current verification method, a recent change, a blocker, or a result. A few sentences are enough.
+      placeholder: We check returned rows after SQL changes. Can this help check whether physical execution also changed?
     validations:
       required: true
 
   - type: input
     id: environment
     attributes:
-      label: Environment, if code ran
-      description: Version and platform only; no employer, hostname, or private path is needed.
-      placeholder: RouteContract 0.1.2; ShardingSphere-JDBC 5.5.3; Java 17; Linux x86_64; Docker 27
+      label: Versions and build tool, if known
+      description: Optional. No employer, hostname, private path or repository URL is needed.
+      placeholder: ShardingSphere-JDBC 5.5.3; Java 17; Maven; RouteContract 0.1.2
 
-  - type: textarea
-    id: result
+  - type: dropdown
+    id: integration_stage
     attributes:
-      label: What happened, and what would help?
-      description: A few sentences are enough. Include the first unclear point, verification marker, minimized blocker, or missing capability; do not paste full logs.
-    validations:
-      required: true
+      label: Stage reached, if you tried the tool
+      description: Optional. Select what you actually did; the stages are not mandatory prerequisites for feedback.
+      options:
+        - Read documentation or asked about fit
+        - Ran a RouteContract demo
+        - Captured a candidate from one operation in my own project
+        - Used a target-approved baseline and successfully checked a candidate in my own project
+        - Used the check again on a later real project change
+        - Stopped or not sure
 
   - type: textarea
     id: public_evidence
     attributes:
-      label: Public evidence URL(s), if any
-      description: >-
-        Optional; leave blank when there is no public evidence or the repository is private.
-        Only a verified Stage 6 result can establish an actual external integration: link the
-        immutable source commit, dependency, representative test, exact baseline approved by an
-        authorized owner or maintainer of that external repository, approval record, and upstream
-        public CI run for that commit. A PR may provide additional review context. A private,
-        local-only, draft, or self-reported result is feedback only and does not establish an actual
-        external integration, production use, adoption, performance, security, or endorsement.
-      placeholder: |
-        Source commit or PR:
-        Dependency/build:
-        Representative test:
-        Approved baseline:
-        Human-review record:
-        CI run + tested commit:
+      label: Public links, if you want to share them
+      description: Optional. Leave blank for a private project. A test, review or CI link can help explain the result; publishing evidence is not required for use or feedback.
 
   - type: checkboxes
     id: privacy
     attributes:
       label: Public-information check
       options:
-        - label: I did not paste credentials, raw SQL or bind values, JDBC URLs, customer data, private topology, hostnames, absolute paths, logs, screenshots, or unnecessary personal information, and I checked any linked public evidence for the same risks.
+        - label: I checked that my text and linked material do not expose private source, credentials, raw SQL, bind values, connection details, customer data, private topology, full logs, screenshots or unnecessary personal information.
           required: true

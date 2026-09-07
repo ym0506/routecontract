@@ -131,6 +131,17 @@ jobs:
           ./gradlew --no-daemon --no-build-cache clean check assemble
           validateOfficialCycloneDxSbom
 
+      - name: Verify printed Gradle and Maven installation configuration
+        shell: bash
+        timeout-minutes: 12
+        run: |
+          set -euo pipefail
+          local_repository="${RUNNER_TEMP}/routecontract-local-v012"
+          consumer_work="${RUNNER_TEMP}/routecontract-local-install-consumers"
+          python -I scripts/install-local.py --repository "${local_repository}"
+          python -I scripts/verify-local-install-consumers.py \
+            --repository "${local_repository}" --work-dir "${consumer_work}"
+
       - name: Smoke-test local Maven Central staging and signing
         shell: bash
         run: |
@@ -572,6 +583,18 @@ jobs:
             build/ci-evidence/maven-pilot-summary.txt
             build/ci-evidence/gradle-split-consumer-summary.txt
             build/ci-evidence/maven-split-consumer-summary.txt
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Upload installed consumer evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: routecontract-installed-consumer-evidence-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/routecontract-local-install-consumers/summary.json
+            ${{ runner.temp }}/routecontract-local-install-consumers/*/build/test-results/test/*.xml
+            ${{ runner.temp }}/routecontract-local-install-consumers/*/target/surefire-reports/*.xml
           if-no-files-found: warn
           retention-days: 90
 
