@@ -1,6 +1,6 @@
 # RouteContract for ShardingSphere-JDBC
 
-[한국어](README.md) | [English](README.en.md)
+[한국어](README.md) | [English](README.en.md) | [처음 오셨나요? / Start here](docs/start-here.md) | [Roadmap](docs/product-roadmap.md)
 
 [![CI](https://github.com/ym0506/routecontract/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ym0506/routecontract/actions/workflows/ci.yml?query=branch%3Amain)
 
@@ -87,6 +87,9 @@ cd "${source_dir}"
 SQL·parameter·connection 정보가 섞일 수 있는 하위 프로세스 원문은 화면에 다시 출력하지 않습니다.
 
 </details>
+
+<details>
+<summary>기존 프로젝트에 통합하기: Gradle·Maven 상세 절차</summary>
 
 ## 다음 단계: 첫 통합 가능성 검토하기
 
@@ -197,6 +200,8 @@ Maven pilot 두 테스트를 준비한 뒤에는 [6개 필드 예제 JSON](examp
 [stable v0.1.2 feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)에
 성공·막힌 지점·지원 범위 밖·필요 없음 중 어느 결과든 짧게 남길 수 있습니다. 공개 Issue에는
 원문 SQL, bind 값, JDBC URL, 실제 topology, full log 같은 민감 정보를 넣지 마세요.
+
+</details>
 
 ## 가장 작은 사용 예
 
@@ -352,6 +357,9 @@ adoption으로 승격하지 않습니다.
 
 </details>
 
+<details>
+<summary>Maven Central 배포 전 Release 자산을 설치하는 상세 절차</summary>
+
 ## 공개 Release 자산을 registry 없이 사용하기
 
 이 경로는 annotated `v0.1.2` tag, 공개·불변 non-prerelease Release, 동일 revision의
@@ -435,6 +443,8 @@ MySQL 시나리오를 실행합니다. 이 명령은 예상된 위반을 검증�
 ```bash
 ./scripts/demo-end-to-end-ci-failure.sh
 ```
+
+</details>
 
 ## 정확한 증거 경계
 

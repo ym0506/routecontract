@@ -38,6 +38,26 @@ tasks.named('test') {
     }
 }
 
+tasks.register('reviewManifest', JavaExec) {
+    group = 'verification'
+    description = 'Compare two manifests and create a minimized CI review report; fails on any non-match'
+    dependsOn tasks.named('classes')
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'io.github.ym0506.routecontract.manifest.ManifestReviewCli'
+    workingDir = rootProject.projectDir
+    doFirst {
+        for (property in ['approvedManifest', 'candidateManifest', 'reviewReportOutput']) {
+            if (!providers.gradleProperty(property).isPresent()) {
+                throw new GradleException("Missing -P${property}; see docs/ci-review-report.md")
+            }
+        }
+        args '--baseline', providers.gradleProperty('approvedManifest').get(),
+                '--candidate', providers.gradleProperty('candidateManifest').get(),
+                '--format', providers.gradleProperty('reviewReportFormat').getOrElse('markdown'),
+                '--output', providers.gradleProperty('reviewReportOutput').get()
+    }
+}
+
 jar {
     manifest {
         attributes(

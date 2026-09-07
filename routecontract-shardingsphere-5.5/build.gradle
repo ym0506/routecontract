@@ -83,6 +83,12 @@ tasks.register('manifestCiFailureDemo', Test) {
     }
 }
 
+tasks.register('reviewManifest') {
+    group = 'verification'
+    description = 'Compatibility alias for the version-neutral core manifest review command'
+    dependsOn ':routecontract-core:reviewManifest'
+}
+
 jar {
     manifest {
         attributes('Automatic-Module-Name': 'io.github.ym0506.routecontract.shardingsphere55')

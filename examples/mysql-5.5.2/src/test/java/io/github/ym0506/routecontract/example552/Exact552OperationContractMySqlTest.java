@@ -236,6 +236,18 @@ class Exact552OperationContractMySqlTest {
                 crossVersion.diffs().stream().map(diff -> diff.code()).toList());
         assertEquals("RCM005", ManifestDiffCode.RUNTIME_IDENTITY_MISMATCH.stableCode());
 
+        var review = io.github.ym0506.routecontract.manifest.ManifestReviewReport.compare(approved, candidate);
+        assertEquals(verification, review.verification());
+        assertEquals(1, review.strictExitCode());
+        assertTrue(review.toMarkdown().contains("| Physical JDBC execution attempts | 1 | 2 | 1 |"));
+        assertTrue(review.toJson().contains("\"manifestSchemaVersion\":2"));
+        var crossVersionReview = io.github.ym0506.routecontract.manifest.ManifestReviewReport.compare(
+                approved553, approved);
+        assertEquals(crossVersion, crossVersionReview.verification());
+        assertEquals(1, crossVersionReview.strictExitCode());
+        assertTrue(crossVersionReview.toMarkdown().contains("RCM005"));
+        assertTrue(crossVersionReview.toJson().contains("RCM005"));
+
         Path generated = Path.of("build", "routecontract-552-evidence");
         Files.createDirectories(generated);
         Files.write(generated.resolve("find-paid-orders-by-user.shardingsphere-5.5.2.schema2.approved.json"),
@@ -245,9 +257,18 @@ class Exact552OperationContractMySqlTest {
         Files.write(generated.resolve("find-paid-orders-by-user.shardingsphere-5.5.2.expected-diff.txt"),
                 diffBytes);
 
+        Files.writeString(generated.resolve("review.md"), review.toMarkdown(), StandardCharsets.UTF_8);
+        Files.writeString(generated.resolve("review.json"), review.toJson(), StandardCharsets.UTF_8);
+        Files.writeString(generated.resolve("cross-runtime-review.md"),
+                crossVersionReview.toMarkdown(), StandardCharsets.UTF_8);
+        Files.writeString(generated.resolve("cross-runtime-review.json"),
+                crossVersionReview.toJson(), StandardCharsets.UTF_8);
+
         String publicEvidence = new String(approvedBytes, StandardCharsets.UTF_8)
                 + new String(candidateBytes, StandardCharsets.UTF_8)
-                + new String(diffBytes, StandardCharsets.UTF_8);
+                + new String(diffBytes, StandardCharsets.UTF_8)
+                + review.toMarkdown() + review.toJson()
+                + crossVersionReview.toMarkdown() + crossVersionReview.toJson();
         for (String sensitive : List.of("SELECT", "t_order", "PAID", "ds_0", "ds_1")) {
             assertFalse(publicEvidence.contains(sensitive),
                     () -> "5.5.2 evidence exposed raw execution data: " + sensitive);

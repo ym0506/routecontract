@@ -544,14 +544,29 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
+      - name: Show the real-MySQL contract review
+        if: always()
+        shell: bash
+        run: |
+          if test -f examples/mysql/build/routecontract-demo/review.md; then
+            cat examples/mysql/build/routecontract-demo/review.md >> "${GITHUB_STEP_SUMMARY}"
+          fi
+
       - name: Upload test and environment evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: routecontract-test-evidence-${{ github.sha }}
           path: |
+            routecontract-core/build/test-results/test/*.xml
             routecontract-shardingsphere-5.5/build/test-results/test/*.xml
+            routecontract-shardingsphere-5.5.2/build/test-results/test/*.xml
+            examples/mysql-5.5.2/build/test-results/test/*.xml
+            examples/mysql-5.5.2/build/routecontract-552-evidence/*.md
+            examples/mysql-5.5.2/build/routecontract-552-evidence/*.json
             examples/mysql/build/test-results/test/*.xml
+            examples/mysql/build/routecontract-demo/review.md
+            examples/mysql/build/routecontract-demo/review.json
             examples/standalone-consumer/build/test-results/test/*.xml
             build/ci-evidence/environment.txt
             build/ci-evidence/maven-pilot-summary.txt

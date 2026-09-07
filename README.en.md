@@ -1,6 +1,6 @@
 # RouteContract for ShardingSphere-JDBC
 
-[한국어](README.md) | [English](README.en.md)
+[한국어](README.md) | [English](README.en.md) | [처음 오셨나요? / Start here](docs/start-here.md) | [Roadmap](docs/product-roadmap.md)
 
 [![CI](https://github.com/ym0506/routecontract/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ym0506/routecontract/actions/workflows/ci.yml?query=branch%3Amain)
 
@@ -91,6 +91,9 @@ verification failure exits `2`. The wrapper does not echo raw child-process
 output that could contain SQL, parameters, or connection details.
 
 </details>
+
+<details>
+<summary>Integrate an existing project: detailed Gradle and Maven paths</summary>
 
 ## Next step: assess a first integration
 
@@ -245,6 +248,8 @@ After a first run—or after deciding that the current scope is not a fit—use 
 to share a success, blocker, unsupported setup, or not-a-fit result. Do not put raw SQL, bind values,
 JDBC URLs, real topology, full logs, or other sensitive information in the public Issue.
 
+</details>
+
 ## Smallest usage example
 
 ```java
@@ -398,6 +403,9 @@ limitations. None of these results implies production support or general perform
 
 </details>
 
+<details>
+<summary>Detailed Release-asset installation before Maven Central publication</summary>
+
 ## Consume public Release assets without a registry
 
 This path becomes usable only after an annotated `v0.1.2` tag, a public immutable non-prerelease
@@ -483,6 +491,8 @@ To regenerate and compare the schema 2 canonical files against real MySQL, then 
 ```
 
 Even when the preceding stages succeed, this command intentionally exits with code `1` at the final contract assertion. The final non-zero fixture also proves that a historical schema 1 approval remains readable.
+
+</details>
 
 ## Exact evidence boundary
 
