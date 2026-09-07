@@ -549,6 +549,12 @@ No existing approved baseline is automatically migrated, renamed, copied between
 directories, or approved by RouteContract. A 5.5.2 integration requires its external maintainer to
 approve the exact 5.5.2 baseline.
 
+The [independent staged-artifact MySQL consumer](../examples/staged-split-artifact-consumer/README.md)
+provides a bounded local packaged-byte check for both exact versions: fresh dependency caches,
+reviewed baseline MATCH, same-result 1-to-2 candidate rejection, and consumer graph rejection cases.
+Its [local evidence](evidence/staged-split-consumer-2026-09-07.md) is separate from anonymous public
+repository consumption, the complete route-risk corpus, and the remaining release gates below.
+
 ## 8. Publication and rollback gates
 
 Publication is all-or-nothing for the 0.2.0 three-artifact graph. It is blocked unless:
