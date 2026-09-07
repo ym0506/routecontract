@@ -248,9 +248,10 @@ or a corrected later stable patch selected by the final manifest, must use a
 new stable tag/revision/evidence run with `prerelease=false`; never retag or
 promote RC assets as if they were the final stable evidence.
 
-The v0.1 GitHub Release packaging gate requires no signature assets. The
-separate Central staging procedure below adds signatures only to the Central
-upload bundle and does not change the historical GitHub asset contract. Do not imply SLSA
+The v0.1 packaging gate requires no signature assets in the twelve-file
+GitHub Release asset set. The separate Central staging procedure below adds
+signatures only to the Central upload bundle and does not change the historical
+GitHub asset contract. Do not imply SLSA
 provenance or reproducible builds unless those properties have been separately
 implemented and verified.
 
