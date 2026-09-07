@@ -80,7 +80,8 @@ workflow. The workflow:
   child exit `1`;
 - runs unit and real MySQL integration tests without reusing cached task results;
 - generates `test-summary.txt` from the resulting JUnit XML and fails unless
-  the exact seven expected suites contain 52 passing, non-skipped tests; the
+  the exact eight expected library and MySQL suites contain 62 passing, non-skipped tests;
+  the standalone consumer runs separately and is not included in this count. The
   fixed summary records the Git revision and per-suite counts but deliberately
   omits test names, timings, hostnames, paths, ports, SQL and captured output;
 - builds reproducible-order JARs and the generated Maven POM;
@@ -481,17 +482,19 @@ payload. A Portal success response alone is not public-availability evidence.
 
 Then run the standalone consumer from a clean reviewed source checkout with a
 new empty Gradle cache and only the public Maven Central endpoint for the
-RouteContract group:
+RouteContract group. Set `release_version` to the exact later stable version just
+published and verified above:
 
 ```bash
 (
 set -e
+release_version=REPLACE_WITH_PUBLISHED_STABLE_VERSION
 fresh_gradle_home=/absolute/path/to/new-empty-gradle-home
 test ! -e "${fresh_gradle_home}"
 mkdir -m 700 "${fresh_gradle_home}"
 ROUTECONTRACT_REPOSITORY=https://repo.maven.apache.org/maven2 \
 ROUTECONTRACT_GROUP=io.github.ym0506.routecontract \
-ROUTECONTRACT_VERSION=0.1.1 \
+ROUTECONTRACT_VERSION="${release_version}" \
 GRADLE_USER_HOME="${fresh_gradle_home}" ./gradlew \
   --no-daemon --no-build-cache --no-configuration-cache \
   --refresh-dependencies -p examples/standalone-consumer clean test

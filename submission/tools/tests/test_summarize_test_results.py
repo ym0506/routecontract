@@ -21,6 +21,19 @@ assert PACKAGE_SPEC is not None and PACKAGE_SPEC.loader is not None
 package_submission = importlib.util.module_from_spec(PACKAGE_SPEC)
 PACKAGE_SPEC.loader.exec_module(package_submission)
 
+# Keep the acceptance fixture independent of the summarizer's allowlist so a
+# newly added release suite cannot disappear from both the input and expectation.
+CURRENT_RELEASE_SUITES = {
+    "io.github.ym0506.routecontract.RouteContractTest": 18,
+    "io.github.ym0506.routecontract.example.DataSourceProxyComparisonMySqlTest": 1,
+    "io.github.ym0506.routecontract.example.FailureBoundaryMySqlTest": 1,
+    "io.github.ym0506.routecontract.example.ObservedExecutionRegressionCorpusMySqlTest": 7,
+    "io.github.ym0506.routecontract.example.OperationCorrelationMySqlTest": 5,
+    "io.github.ym0506.routecontract.internal.ShardingSphere553PreflightTest": 3,
+    "io.github.ym0506.routecontract.manifest.ManifestReviewReportTest": 10,
+    "io.github.ym0506.routecontract.manifest.ObservedExecutionManifestTest": 17,
+}
+
 
 class SummarizeTestResultsTest(unittest.TestCase):
     revision = "1" * 40
@@ -70,7 +83,7 @@ class SummarizeTestResultsTest(unittest.TestCase):
         mysql = root / "mysql"
         core.mkdir()
         mysql.mkdir()
-        for suite, tests in summarize_test_results.EXPECTED_SUITES.items():
+        for suite, tests in CURRENT_RELEASE_SUITES.items():
             destination = mysql if ".example." in suite else core
             self.write_suite(
                 destination,
@@ -92,20 +105,43 @@ class SummarizeTestResultsTest(unittest.TestCase):
             )
 
             self.assertEqual(first, second)
-            self.assertEqual(
-                package_submission.expected_release_test_summary(self.revision), first
-            )
             self.assertTrue(first.endswith("\n"))
             self.assertIn("format=routecontract-test-summary-v1\n", first)
             self.assertIn(f"revision={self.revision}\n", first)
-            self.assertIn("suite_count=7\n", first)
-            self.assertIn("test_count=52\n", first)
+            self.assertIn("suite_count=8\n", first)
+            self.assertIn("test_count=62\n", first)
+            self.assertIn(
+                "suite=io.github.ym0506.routecontract.manifest.ManifestReviewReportTest"
+                "|tests=10|failures=0|errors=0|skipped=0\n",
+                first,
+            )
             self.assertIn("failure_count=0\nerror_count=0\nskipped_count=0\n", first)
             self.assertNotIn(secret, first)
             self.assertNotIn("private-hostname", first)
             self.assertNotIn("timestamp", first)
             suite_lines = [line for line in first.splitlines() if line.startswith("suite=")]
             self.assertEqual(sorted(suite_lines), suite_lines)
+
+    def test_keeps_historical_contest_summary_unchanged(self) -> None:
+        historical = package_submission.expected_release_test_summary(self.revision)
+
+        self.assertIn("suite_count=7\n", historical)
+        self.assertIn("test_count=52\n", historical)
+        self.assertNotIn("ManifestReviewReportTest", historical)
+
+    def test_rejects_unexpected_suites_including_standalone_consumer(self) -> None:
+        for suite in (
+            "io.github.ym0506.routecontract.UnexpectedTest",
+            "io.github.ym0506.routecontract.consumer.PublishedArtifactMySqlTest",
+        ):
+            with self.subTest(suite=suite), tempfile.TemporaryDirectory() as raw:
+                directories = self.complete_results(Path(raw))
+                self.write_suite(directories[0], suite, 1)
+
+                with self.assertRaisesRegex(
+                    summarize_test_results.SummaryError, "unexpected JUnit suite"
+                ):
+                    summarize_test_results.build_summary(self.revision, directories)
 
     def test_writes_summary_atomically(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
