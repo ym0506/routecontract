@@ -1,6 +1,7 @@
 # ADR: version-scoped ShardingSphere-JDBC adapters for RouteContract 0.2.0
 
-Status: implemented and verified in the local 0.2 candidate; not released and not a support claim.
+Status: implementation candidate with verified subsets; the release acceptance matrix remains
+incomplete. Not released and not a released-support claim.
 
 Target release: `0.2.0`.
 
@@ -15,9 +16,11 @@ This document uses two evidence classes deliberately:
 - **Planned** means a required 0.2.0 release gate. A planned item is not released, supported, or
   published merely because it appears in this ADR or is implemented in a local candidate.
 
-The local 0.2 candidate now includes exact 5.5.2 and 5.5.3 adapters, real-MySQL coverage, and
-separate Gradle and Maven split-artifact consumers. Those checks are local pre-release evidence;
-they do not establish a public artifact, public CI result, or external adoption.
+The 0.2 candidate includes exact 5.5.2 and 5.5.3 adapters, real-MySQL coverage, and separate
+Gradle and Maven metadata/preflight consumers. The initial candidate at `008e125` passed
+[public CI 34102575120](https://github.com/ym0506/routecontract/actions/runs/34102575120).
+That run predates the complete 5.5.2 corpus and independent staged-artifact MySQL consumer added
+later; it does not complete every acceptance row or establish a public release or external adoption.
 
 The current released contract remains exact ShardingSphere-JDBC 5.5.3. Multiple ShardingSphere
 versions are explicitly outside the v0.1 scope. Nothing in this ADR changes the immutable `v0.1.2`
@@ -43,7 +46,7 @@ The following facts are verified at the design baseline used for this ADR.
 | O-07 | The current 0.1.2 5.5.3 release-asset POM contains TTL and Jackson runtime dependencies but no ShardingSphere runtime dependency or compatibility constraint. Its Gradle metadata has no ShardingSphere constraint or mutual-exclusion capability. | A consumer resolver can currently assemble an unsupported mixed graph without metadata-level rejection. |
 | O-08 | Both relevant ShardingSphere versions discover providers through `ServiceLoader.load(serviceClass)` and cache the discovered set globally per service-interface class. | The TCCL visible at first ShardingSphere discovery is a support boundary; later visibility cannot be assumed to attach a provider. |
 | O-09 | The v0.1 manifest schema is `1` and contains no adapter/runtime identity. The current preflight checks only the `infra-executor` and `infra-spi` package implementation versions and exactly one current provider. | A structurally equal 5.5.2 candidate could otherwise be compared with a 5.5.3-approved baseline without declaring the changed runtime contract. |
-| O-10 | At the design baseline, no 5.5.2 real-MySQL corpus, Maven consumer, Gradle consumer, wrong-runtime public CI lane, or released artifact existed. The local 0.2 candidate now provides the first three; public CI and a released artifact still do not exist. | Exact 5.5.2 support remains unreleased. Local pre-release evidence cannot establish a public support claim. |
+| O-10 | At the design baseline, no 5.5.2 real-MySQL corpus, Maven consumer, Gradle consumer, wrong-runtime public CI lane, or released artifact existed. The initial candidate now has MySQL tests, Gradle/Maven metadata/preflight consumers and the public CI run linked above; subsequent corpus, staged-consumer and migration work needs its own evidence. No 0.2 release exists. | Exact 5.5.2 support remains unreleased. A partial passing matrix cannot establish full release acceptance. |
 | O-11 | The immutable `v0.1.0`, `v0.1.1`, and `v0.1.2` tag trees, plus the audited RC tag trees, contain the same all-in-one public classes, legacy hook-provider FQCN, capture registry, and hook service descriptor. | Collision handling must identify the pre-0.2 all-in-one layout, not special-case version 0.1.2. |
 
 The hook evidence keeps the existing claim boundary: it is a ShardingSphere-reported physical JDBC
@@ -240,7 +243,9 @@ source and runtime boundaries separately:
   retains its inlined `1`; recompiling identical source that passes the constant to a legacy
   constructor succeeds but fails when that constructor runs. For new schema-2 values, use the
   constructor with an explicit `ShardingSphereRuntimeIdentity`. Keep literal schema `1` only
-  when intentionally reconstructing legacy exact-5.5.3 data.
+  when intentionally reconstructing legacy exact-5.5.3 data. New captures produce schema `2`,
+  so old bytecode that checks a capture against its inlined constant `1` also needs migration;
+  successful linkage does not make that check compatible.
 - `ManifestDiffCode` adds `UNSUPPORTED_RUNTIME_IDENTITY` (`RCM004`) and
   `RUNTIME_IDENTITY_MISMATCH` (`RCM005`). Add both blocking cases to exhaustive switch expressions,
   or use a fallback that blocks unknown findings. An exhaustive switch compiled against the old
