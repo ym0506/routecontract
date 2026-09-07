@@ -1,14 +1,20 @@
 # 0.1.3 Central candidate
 
-Status: **planned, unpublished**. This candidate uses the existing single
+Status: **published on GitHub; Maven Central pending**. The immutable
+[v0.1.3 GitHub Release](https://github.com/ym0506/routecontract/releases/tag/v0.1.3)
+and its twelve assets passed [public readback and release verification](evidence/release-0.1.3-github.md).
+The exact CI payloads have been reviewed; protected-key signing, Portal publication
+and public Central consumption remain pending in [issue #36](https://github.com/ym0506/routecontract/issues/36).
+This candidate uses the existing single
 `io.github.ym0506.routecontract:routecontract-shardingsphere-5.5` artifact and
-exact ShardingSphere-JDBC 5.5.3 support. It adds the current development
-Markdown/JSON report API and ordinary Central distribution after verification.
+exact ShardingSphere-JDBC 5.5.3 support. Its Markdown/JSON report API is included
+in the GitHub release; ordinary Central distribution still requires verification.
 The core split and 5.5.2 adapter remain separate unreleased 0.2 work.
 
 The immutable v0.1.2 release, its installer pins and contest evidence remain
-historical release evidence. The currently published user instructions continue
-to point to v0.1.2 until the new version passes anonymous public consumption.
+historical release evidence. Existing local-install and assisted-pilot instructions
+remain pinned to v0.1.2; the [released report example](ci-review-report.md) uses v0.1.3.
+Central becomes the primary dependency path only after its public consumption checks pass.
 This candidate does not activate a new contest recruitment window.
 
 Acceptance before publication:

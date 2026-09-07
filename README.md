@@ -22,18 +22,24 @@ RouteContract는 [ShardingSphere-JDBC](https://github.com/apache/shardingsphere)
 | 하고 싶은 일 | 시작점 |
 | --- | --- |
 | 먼저 동작 보기 | [2분 54초 시연 영상 보기](https://www.youtube.com/watch?v=pcgvNNxd1mM) · [실제 비교 결과](examples/manifests/README.md) — 설치 불필요 |
+| CI에서 읽을 리포트 확인 | [Markdown 미리보기](docs/evidence/ci-review-report-example.md) · [v0.1.3으로 직접 생성](docs/ci-review-report.md#try-the-released-report-without-docker) — Git·Java 17, Docker 불필요 |
 | 같은 결과인데 실행이 달라지는 사례 재현 | [아래 Quick Start](#quick-start) — Git, Java 17, Docker 필요 |
 | 내 프로젝트의 테스트 한 개에 적용 | [짧은 설치 명령](docs/install-local.md) · [버전·빌드 경로 선택](docs/start-here.md) · [Maven starter](examples/maven-pilot/README.md#review-only-starter-bundle) |
 | 적용 가능성 질문·경험 공유 | [짧은 피드백](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml) — 설치나 공개 저장소 없이 참여 가능 |
 
-정식 `v0.1.2`는 Maven Central에 없으며 검증된 GitHub Release 자산을 사용합니다.
-새 Markdown·JSON CI 리포트는 [개발 소스의 기능](docs/ci-review-report.md)으로 정식판에 포함되지 않습니다.
+최신 [정식 `v0.1.3`](https://github.com/ym0506/routecontract/releases/tag/v0.1.3)은
+Markdown·JSON [CI 리포트](docs/ci-review-report.md)를 포함하며 GitHub Release로 공개됐습니다.
+Maven Central 배포는 준비 중입니다. 아래 MySQL Quick Start와 기존 짧은 설치 명령·통합 가이드는
+검증된 `v0.1.2` 경로에 고정되어 있고, 새 리포트는 위의 `v0.1.3` 체험 경로를 사용합니다.
 비공개 프로젝트도 자신의 환경에서 사용할 수 있습니다. 공개 피드백에는 SQL·바인딩 값·접속 정보·전체 로그를 넣지 마세요.
 [도움받는 방법과 사용 사례 기록 기준](docs/user-feedback.md)을 확인할 수 있습니다.
 
 ![같은 업무 결과에서 승인본과 candidate의 관측 실행 시도 및 data-source alias가 1에서 2로 달라져 RCM201과 RCM202가 발생한 실제 MySQL 검증](submission/assets/baseline-candidate.png)
 
 ## Quick Start
+
+이 MySQL 시연은 `v0.1.2`에 고정되어 있습니다. 최신 리포트 기능을 먼저 보려면
+[Docker 없는 v0.1.3 체험](docs/ci-review-report.md#try-the-released-report-without-docker)을 사용하세요.
 
 필수 조건은 Git, Java 17, 실행 중인 Docker daemon, Bash/POSIX 도구와 실행 가능한 Gradle
 Wrapper입니다. 최초 실행은 공개 tag, Gradle·Maven Central 의존성과 로컬에 없는
