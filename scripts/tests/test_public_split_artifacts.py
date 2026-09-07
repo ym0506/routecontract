@@ -65,7 +65,7 @@ class PublicReceiptTest(unittest.TestCase):
 
     def test_rejects_ambiguous_invalid_and_oversized_json(self):
         for payload in (b'{"formatVersion":1,"formatVersion":1}', b'{"a":NaN}', b'\xff', b'{', b' ',
-                        b' '*(receipt.MAX_RECEIPT_BYTES+1), b'['*2000):
+                        b' '*(receipt.MAX_RECEIPT_BYTES+1), b'['*2000, b'{"n":' + b'1'*5000 + b'}'):
             with self.subTest(payload=payload[:30]), tempfile.TemporaryDirectory() as directory:
                 path = Path(directory) / 'receipt.json'
                 path.write_bytes(payload)

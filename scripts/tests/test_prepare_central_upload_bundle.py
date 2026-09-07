@@ -490,6 +490,33 @@ class CentralUploadBundleTest(unittest.TestCase):
             output_directory=output or self.output,
         )
 
+    def test_public_readback_reverifies_real_signed_fixture_before_synthetic_transport(self):
+        # The OpenPGP signatures and local bundle verification are real. The
+        # HTTP responder is deliberately synthetic and proves no publication.
+        from scripts.tests.test_verify_public_central_readback import readback, FakeCentral
+        result = self.build()
+        snapshot = readback.verified_snapshot(
+            repository=self.repository, bundle=result.bundle_path, receipt=result.receipt_path,
+            reviewed_payload_manifest=self.manifest, public_gpg_home=self.public_home,
+            expected_primary_fingerprint=self.fingerprint)
+        self.assertEqual(result.bundle_sha256, snapshot.bundle_sha256)
+        self.assertEqual(result.receipt_sha256, snapshot.receipt_sha256)
+        self.assertEqual(90, len(snapshot.entries))
+        transport = FakeCentral(snapshot)
+        evidence = self.root / 'readback-evidence'
+        self.assertEqual(0, readback.readback(snapshot, evidence, opener=transport))
+        self.assertEqual(90, len(transport.requests))
+        public_receipt = readback.artifacts.load_consumer_receipt(evidence / 'consumer-receipt.json')
+        self.assertEqual(9, len(public_receipt['artifacts']))
+        self.assertEqual(VERSION, public_receipt['routeContractVersion'])
+        # An altered local receipt cannot reach any HTTP responder.
+        result.receipt_path.write_text('{}\n', encoding='utf-8')
+        with self.assertRaises(readback.bundle_tool.BundleError):
+            readback.verified_snapshot(
+                repository=self.repository, bundle=result.bundle_path, receipt=result.receipt_path,
+                reviewed_payload_manifest=self.manifest, public_gpg_home=self.public_home,
+                expected_primary_fingerprint=self.fingerprint)
+
     def verify(self, bundle: Path, receipt: Path):
         return self.module.verify_bundle(
             repository=self.repository,

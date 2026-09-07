@@ -94,7 +94,9 @@ def load_consumer_receipt(path: Path) -> dict:
         document = json.loads(payload.decode('utf-8'), object_pairs_hook=_unique_object,
                               parse_constant=_reject_constant)
         return validate_consumer_receipt(document)
-    except (OSError, UnicodeError, json.JSONDecodeError, RecursionError) as error:
+    except ReceiptError:
+        raise
+    except (OSError, UnicodeError, ValueError, RecursionError) as error:
         raise ReceiptError('Consumer receipt cannot be read as strict UTF-8 JSON') from error
     finally:
         if descriptor is not None:
