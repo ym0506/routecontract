@@ -3,10 +3,18 @@
 RouteContract follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html) for public version identifiers.
 
-## Unreleased
+## Unreleased — 0.1.3 candidate
+
+This candidate prepares the existing exact ShardingSphere-JDBC 5.5.3 artifact
+for a separately verified Maven Central publication. It is not published yet.
+See the [candidate acceptance plan](docs/release-0.1.3-candidate.md).
 
 ### Added
 
+- Add the development `ManifestReviewReport` and `ManifestReviewCli` API for
+  Markdown/JSON comparison reports and an explicit failing CI exit code.
+- Retain exact five-payload Central candidate evidence, including Gradle Module
+  Metadata, separately from the established GitHub Release asset set.
 - Add an inactive-by-default Gradle Kotlin DSL assisted-pilot lane with exact `v0.1.2` local
   repository provenance, real MySQL verification, missing-baseline failure, and a separate
   synthetic match check.

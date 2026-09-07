@@ -85,6 +85,13 @@ workflow. The workflow:
   fixed summary records the Git revision and per-suite counts but deliberately
   omits test names, timings, hostnames, paths, ports, SQL and captured output;
 - builds reproducible-order JARs and the generated Maven POM;
+- for stable `0.1.x` versions from `0.1.3` onwards, also generates Gradle Module
+  Metadata and retains the exact three JARs, POM and `.module` as a separate
+  `routecontract-central-candidate-COMMIT` Actions artifact. Its sixth file,
+  `candidate-payloads.json`, records observed names, sizes, hashes and the tagged
+  revision with `reviewed`, `signed` and `published` all false. Review this
+  artifact together with the successful whole run; it does not change the
+  twelve GitHub Release assets or the existing 17-file evidence artifact;
 - generates direct and aggregate CycloneDX JSON/XML SBOMs and fails unless
   every first-party component declares Apache-2.0, Connector/J includes its
   Universal FOSS Exception and MySQL example BOMs contain the digest-pinned,
@@ -241,9 +248,9 @@ or a corrected later stable patch selected by the final manifest, must use a
 new stable tag/revision/evidence run with `prerelease=false`; never retag or
 promote RC assets as if they were the final stable evidence.
 
-The v0.1 packaging gate requires no signature assets because no signing
-workflow or key-management policy is implemented. Add signing only in a future
-release with an explicit design and verification path. Do not imply SLSA
+The v0.1 GitHub Release packaging gate requires no signature assets. The
+separate Central staging procedure below adds signatures only to the Central
+upload bundle and does not change the historical GitHub asset contract. Do not imply SLSA
 provenance or reproducible builds unless those properties have been separately
 implemented and verified.
 
@@ -254,6 +261,11 @@ not published to Maven Central. This section applies only to a later stable
 version selected through a separate release approval. It does not authorize
 overwriting, retagging, or describing `0.1.0` or `0.1.2` as a Central artifact,
 and it does not plan or authorize another release by itself.
+
+The current selected candidate is [0.1.3](docs/release-0.1.3-candidate.md),
+using the existing single artifact and exact ShardingSphere-JDBC 5.5.3 support.
+The separate 0.2 core/adapter split is not part of this release. Selection is
+not publication or approval of bytes that have not yet been produced.
 
 Use the current official [Central publishing guide](https://central.sonatype.org/publish/publish-portal-guide/),
 [Portal API documentation](https://central.sonatype.org/publish/publish-portal-api/)
@@ -389,9 +401,9 @@ record has only `name`, `size` and `sha256`. The five records are the POM,
 Gradle Module Metadata, main JAR, sources JAR and Javadoc JAR. The manifest must
 be produced and approved as part of the approval-bound candidate; the bundle
 tool never creates or edits it and does not turn computed staging hashes into
-approval. A later release-evidence design must therefore retain and review the
-exact Gradle Module Metadata bytes; the current `v0.1.2` release evidence does
-not do that and cannot be substituted.
+approval. Use the separate five-payload candidate artifact retained by the
+tagged workflow and review its exact Gradle Module Metadata bytes. The
+`v0.1.2` release evidence does not retain these bytes and cannot be substituted.
 
 The upload ZIP contains exactly 30 regular files under the one Maven version
 path:
@@ -480,31 +492,31 @@ metadata, main/sources/Javadoc JARs and other published version files without
 authentication and compare them byte-for-byte with the reviewed staged
 payload. A Portal success response alone is not public-availability evidence.
 
-Then run the standalone consumer from a clean reviewed source checkout with a
-new empty Gradle cache and only the public Maven Central endpoint for the
-RouteContract group. Set `release_version` to the exact later stable version just
-published and verified above:
+For the single-artifact stable `0.1.x` line from `0.1.3` onwards, run the
+[public byte readback](docs/public-release-central-verification.md) against the
+reviewed signed bundle. It verifies all 30 public files and only then emits
+`consumer-receipt.json`. Run both [independent public consumers](docs/public-release-consumers.md)
+from the clean reviewed source checkout using that receipt:
 
 ```bash
-(
-set -e
-release_version=REPLACE_WITH_PUBLISHED_STABLE_VERSION
-fresh_gradle_home=/absolute/path/to/new-empty-gradle-home
-test ! -e "${fresh_gradle_home}"
-mkdir -m 700 "${fresh_gradle_home}"
-ROUTECONTRACT_REPOSITORY=https://repo.maven.apache.org/maven2 \
-ROUTECONTRACT_GROUP=io.github.ym0506.routecontract \
-ROUTECONTRACT_VERSION="${release_version}" \
-GRADLE_USER_HOME="${fresh_gradle_home}" ./gradlew \
-  --no-daemon --no-build-cache --no-configuration-cache \
-  --refresh-dependencies -p examples/standalone-consumer clean test
-)
+python3 -I scripts/verify-public-gradle-release-consumer.py \
+  --receipt /absolute/path/to/consumer-receipt.json \
+  --evidence-directory /absolute/path/to/new-public-gradle-evidence
+
+python3 -I scripts/verify-public-maven-release-consumer.py \
+  --receipt /absolute/path/to/consumer-receipt.json \
+  --evidence-directory /absolute/path/to/new-public-maven-evidence
 ```
 
-The consumer must not use `mavenLocal()`, a file repository, a project
+Each command creates its own absent cache and copied consumer outside the
+checkout, pins the first-party bytes to the receipt, and requires three real
+MySQL tests plus the shared CLI assertions. Consumers must not use
+`mavenLocal()`, a file repository, a project
 dependency, a composite build, an authenticated deployment endpoint or an old
 cache. Claim Maven Central availability only after both unauthenticated byte
-readback and this fresh-cache consumer pass.
+readback and both fresh-cache consumers pass. A missing version or failed
+consumer remains unverified; local staging or fixture-only success cannot
+substitute for either public run.
 
 Published Central coordinates are immutable. If any published byte, metadata,
 signature or verification result is wrong, preserve the evidence, stop using
