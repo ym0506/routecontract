@@ -1,0 +1,517 @@
+Compiled from "AttemptOutcome.java"
+public final class io.github.ym0506.routecontract.AttemptOutcome extends java.lang.Enum<io.github.ym0506.routecontract.AttemptOutcome> {
+  public static final io.github.ym0506.routecontract.AttemptOutcome START_REPORTED;
+    descriptor: Lio/github/ym0506/routecontract/AttemptOutcome;
+  public static final io.github.ym0506.routecontract.AttemptOutcome CALLBACK_RETURNED;
+    descriptor: Lio/github/ym0506/routecontract/AttemptOutcome;
+  public static final io.github.ym0506.routecontract.AttemptOutcome CALLBACK_FAILURE;
+    descriptor: Lio/github/ym0506/routecontract/AttemptOutcome;
+  public static io.github.ym0506.routecontract.AttemptOutcome[] values();
+    descriptor: ()[Lio/github/ym0506/routecontract/AttemptOutcome;
+
+  public static io.github.ym0506.routecontract.AttemptOutcome valueOf(java.lang.String);
+    descriptor: (Ljava/lang/String;)Lio/github/ym0506/routecontract/AttemptOutcome;
+}
+Compiled from "CaptureStatus.java"
+public final class io.github.ym0506.routecontract.CaptureStatus extends java.lang.Enum<io.github.ym0506.routecontract.CaptureStatus> {
+  public static final io.github.ym0506.routecontract.CaptureStatus COMPLETE;
+    descriptor: Lio/github/ym0506/routecontract/CaptureStatus;
+  public static final io.github.ym0506.routecontract.CaptureStatus REPORTED_EXECUTION_FAILURE;
+    descriptor: Lio/github/ym0506/routecontract/CaptureStatus;
+  public static final io.github.ym0506.routecontract.CaptureStatus INCOMPLETE;
+    descriptor: Lio/github/ym0506/routecontract/CaptureStatus;
+  public static io.github.ym0506.routecontract.CaptureStatus[] values();
+    descriptor: ()[Lio/github/ym0506/routecontract/CaptureStatus;
+
+  public static io.github.ym0506.routecontract.CaptureStatus valueOf(java.lang.String);
+    descriptor: (Ljava/lang/String;)Lio/github/ym0506/routecontract/CaptureStatus;
+}
+Compiled from "CapturedResult.java"
+public final class io.github.ym0506.routecontract.CapturedResult<T> extends java.lang.Record {
+  public io.github.ym0506.routecontract.CapturedResult(T, io.github.ym0506.routecontract.RouteSnapshot);
+    descriptor: (Ljava/lang/Object;Lio/github/ym0506/routecontract/RouteSnapshot;)V
+
+  public final java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+
+  public final int hashCode();
+    descriptor: ()I
+
+  public final boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+
+  public T value();
+    descriptor: ()Ljava/lang/Object;
+
+  public io.github.ym0506.routecontract.RouteSnapshot snapshot();
+    descriptor: ()Lio/github/ym0506/routecontract/RouteSnapshot;
+}
+Compiled from "PhysicalExecutionAttempt.java"
+public final class io.github.ym0506.routecontract.PhysicalExecutionAttempt extends java.lang.Record {
+  public io.github.ym0506.routecontract.PhysicalExecutionAttempt(java.lang.String, java.lang.String, int, java.util.List<java.lang.String>, io.github.ym0506.routecontract.ThreadRole, io.github.ym0506.routecontract.AttemptOutcome, java.lang.String);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;ILjava/util/List;Lio/github/ym0506/routecontract/ThreadRole;Lio/github/ym0506/routecontract/AttemptOutcome;Ljava/lang/String;)V
+
+  public final java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+
+  public final int hashCode();
+    descriptor: ()I
+
+  public final boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+
+  public java.lang.String observedDataSourceName();
+    descriptor: ()Ljava/lang/String;
+
+  public java.lang.String sqlFingerprint();
+    descriptor: ()Ljava/lang/String;
+
+  public int parameterCount();
+    descriptor: ()I
+
+  public java.util.List<java.lang.String> parameterTypes();
+    descriptor: ()Ljava/util/List;
+
+  public io.github.ym0506.routecontract.ThreadRole threadRole();
+    descriptor: ()Lio/github/ym0506/routecontract/ThreadRole;
+
+  public io.github.ym0506.routecontract.AttemptOutcome outcome();
+    descriptor: ()Lio/github/ym0506/routecontract/AttemptOutcome;
+
+  public java.lang.String reportedFailureType();
+    descriptor: ()Ljava/lang/String;
+}
+Compiled from "RouteAssertions.java"
+public final class io.github.ym0506.routecontract.RouteAssertions {
+  public static io.github.ym0506.routecontract.RouteAssertions assertThat(io.github.ym0506.routecontract.RouteSnapshot);
+    descriptor: (Lio/github/ym0506/routecontract/RouteSnapshot;)Lio/github/ym0506/routecontract/RouteAssertions;
+
+  public io.github.ym0506.routecontract.RouteAssertions hasAtMostObservedPhysicalAttempts(int);
+    descriptor: (I)Lio/github/ym0506/routecontract/RouteAssertions;
+
+  public io.github.ym0506.routecontract.RouteAssertions hasExactlyObservedPhysicalAttempts(int);
+    descriptor: (I)Lio/github/ym0506/routecontract/RouteAssertions;
+
+  public io.github.ym0506.routecontract.RouteAssertions hasAtMostDistinctObservedDataSourceNames(int);
+    descriptor: (I)Lio/github/ym0506/routecontract/RouteAssertions;
+
+  public io.github.ym0506.routecontract.RouteAssertions observesExactlyDataSourceNames(java.lang.String...);
+    descriptor: ([Ljava/lang/String;)Lio/github/ym0506/routecontract/RouteAssertions;
+
+  public io.github.ym0506.routecontract.RouteAssertions observesOnlyDataSourceNames(java.lang.String...);
+    descriptor: ([Ljava/lang/String;)Lio/github/ym0506/routecontract/RouteAssertions;
+
+  public io.github.ym0506.routecontract.RouteAssertions hasCompleteCapture();
+    descriptor: ()Lio/github/ym0506/routecontract/RouteAssertions;
+
+  public io.github.ym0506.routecontract.RouteAssertions hasNoReportedExecutionFailures();
+    descriptor: ()Lio/github/ym0506/routecontract/RouteAssertions;
+}
+Compiled from "RouteContract.java"
+public final class io.github.ym0506.routecontract.RouteContract {
+  public static final int MAX_RETAINED_ATTEMPTS_PER_CAPTURE = 10000;
+    descriptor: I
+  public static final int MAX_OPERATION_ID_UTF16_CODE_UNITS = 200;
+    descriptor: I
+  public static io.github.ym0506.routecontract.RouteSnapshot capture(java.lang.String, io.github.ym0506.routecontract.ThrowingRunnable) throws java.lang.Exception;
+    descriptor: (Ljava/lang/String;Lio/github/ym0506/routecontract/ThrowingRunnable;)Lio/github/ym0506/routecontract/RouteSnapshot;
+
+  public static <T> io.github.ym0506.routecontract.CapturedResult<T> captureResult(java.lang.String, io.github.ym0506.routecontract.ThrowingSupplier<T>) throws java.lang.Exception;
+    descriptor: (Ljava/lang/String;Lio/github/ym0506/routecontract/ThrowingSupplier;)Lio/github/ym0506/routecontract/CapturedResult;
+}
+Compiled from "RouteContractViolationException.java"
+public final class io.github.ym0506.routecontract.RouteContractViolationException extends java.lang.AssertionError {
+  public io.github.ym0506.routecontract.RouteContractViolationException(java.lang.String);
+    descriptor: (Ljava/lang/String;)V
+}
+Compiled from "RouteSnapshot.java"
+public final class io.github.ym0506.routecontract.RouteSnapshot extends java.lang.Record {
+  public static final int CURRENT_SCHEMA_VERSION = 1;
+    descriptor: I
+  public io.github.ym0506.routecontract.RouteSnapshot(int, java.lang.String, io.github.ym0506.routecontract.CaptureStatus, int, int, int, int, int, int, java.util.List<java.lang.String>, java.util.List<io.github.ym0506.routecontract.PhysicalExecutionAttempt>, java.util.List<java.lang.String>);
+    descriptor: (ILjava/lang/String;Lio/github/ym0506/routecontract/CaptureStatus;IIIIIILjava/util/List;Ljava/util/List;Ljava/util/List;)V
+
+  public final java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+
+  public final int hashCode();
+    descriptor: ()I
+
+  public final boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+
+  public int schemaVersion();
+    descriptor: ()I
+
+  public java.lang.String operationId();
+    descriptor: ()Ljava/lang/String;
+
+  public io.github.ym0506.routecontract.CaptureStatus status();
+    descriptor: ()Lio/github/ym0506/routecontract/CaptureStatus;
+
+  public int observedPhysicalAttemptCount();
+    descriptor: ()I
+
+  public int callbackReturnedCount();
+    descriptor: ()I
+
+  public int callbackFailureCount();
+    descriptor: ()I
+
+  public int unknownOutcomeCount();
+    descriptor: ()I
+
+  public int trunkThreadFlagCount();
+    descriptor: ()I
+
+  public int workerThreadFlagCount();
+    descriptor: ()I
+
+  public java.util.List<java.lang.String> observedDataSourceNames();
+    descriptor: ()Ljava/util/List;
+
+  public java.util.List<io.github.ym0506.routecontract.PhysicalExecutionAttempt> attempts();
+    descriptor: ()Ljava/util/List;
+
+  public java.util.List<java.lang.String> collectorDiagnostics();
+    descriptor: ()Ljava/util/List;
+}
+Compiled from "ThreadRole.java"
+public final class io.github.ym0506.routecontract.ThreadRole extends java.lang.Enum<io.github.ym0506.routecontract.ThreadRole> {
+  public static final io.github.ym0506.routecontract.ThreadRole TRUNK;
+    descriptor: Lio/github/ym0506/routecontract/ThreadRole;
+  public static final io.github.ym0506.routecontract.ThreadRole WORKER;
+    descriptor: Lio/github/ym0506/routecontract/ThreadRole;
+  public static io.github.ym0506.routecontract.ThreadRole[] values();
+    descriptor: ()[Lio/github/ym0506/routecontract/ThreadRole;
+
+  public static io.github.ym0506.routecontract.ThreadRole valueOf(java.lang.String);
+    descriptor: (Ljava/lang/String;)Lio/github/ym0506/routecontract/ThreadRole;
+}
+Compiled from "ThrowingRunnable.java"
+public interface io.github.ym0506.routecontract.ThrowingRunnable {
+  public abstract void run() throws java.lang.Exception;
+    descriptor: ()V
+}
+Compiled from "ThrowingSupplier.java"
+public interface io.github.ym0506.routecontract.ThrowingSupplier<T> {
+  public abstract T get() throws java.lang.Exception;
+    descriptor: ()Ljava/lang/Object;
+}
+Compiled from "DataSourceAliases.java"
+public final class io.github.ym0506.routecontract.manifest.DataSourceAliases {
+  public static io.github.ym0506.routecontract.manifest.DataSourceAliases of(java.util.Map<java.lang.String, java.lang.String>);
+    descriptor: (Ljava/util/Map;)Lio/github/ym0506/routecontract/manifest/DataSourceAliases;
+
+  public java.lang.String resolve(java.lang.String);
+    descriptor: (Ljava/lang/String;)Ljava/lang/String;
+}
+Compiled from "ManifestAssertions.java"
+public final class io.github.ym0506.routecontract.manifest.ManifestAssertions {
+  public static io.github.ym0506.routecontract.manifest.ManifestVerificationResult assertMatched(io.github.ym0506.routecontract.manifest.ManifestVerificationResult);
+    descriptor: (Lio/github/ym0506/routecontract/manifest/ManifestVerificationResult;)Lio/github/ym0506/routecontract/manifest/ManifestVerificationResult;
+
+  public static io.github.ym0506.routecontract.manifest.ManifestVerificationResult assertPassesBlockingChecks(io.github.ym0506.routecontract.manifest.ManifestVerificationResult);
+    descriptor: (Lio/github/ym0506/routecontract/manifest/ManifestVerificationResult;)Lio/github/ym0506/routecontract/manifest/ManifestVerificationResult;
+}
+Compiled from "ManifestAttempt.java"
+public final class io.github.ym0506.routecontract.manifest.ManifestAttempt extends java.lang.Record {
+  public static final java.util.Comparator<io.github.ym0506.routecontract.manifest.ManifestAttempt> CANONICAL_ORDER;
+    descriptor: Ljava/util/Comparator;
+  public io.github.ym0506.routecontract.manifest.ManifestAttempt(java.lang.String, java.lang.String, int, java.util.List<java.lang.String>, io.github.ym0506.routecontract.AttemptOutcome, int);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;ILjava/util/List;Lio/github/ym0506/routecontract/AttemptOutcome;I)V
+
+  public final java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+
+  public final int hashCode();
+    descriptor: ()I
+
+  public final boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+
+  public java.lang.String observedDataSourceAlias();
+    descriptor: ()Ljava/lang/String;
+
+  public java.lang.String sqlFingerprint();
+    descriptor: ()Ljava/lang/String;
+
+  public int parameterCount();
+    descriptor: ()I
+
+  public java.util.List<java.lang.String> parameterTypes();
+    descriptor: ()Ljava/util/List;
+
+  public io.github.ym0506.routecontract.AttemptOutcome outcome();
+    descriptor: ()Lio/github/ym0506/routecontract/AttemptOutcome;
+
+  public int multiplicity();
+    descriptor: ()I
+}
+Compiled from "ManifestCodec.java"
+public final class io.github.ym0506.routecontract.manifest.ManifestCodec {
+  public io.github.ym0506.routecontract.manifest.ManifestCodec();
+    descriptor: ()V
+
+  public byte[] encode(io.github.ym0506.routecontract.manifest.ObservedExecutionManifest);
+    descriptor: (Lio/github/ym0506/routecontract/manifest/ObservedExecutionManifest;)[B
+
+  public io.github.ym0506.routecontract.manifest.ObservedExecutionManifest decode(byte[]) throws io.github.ym0506.routecontract.manifest.ManifestFormatException;
+    descriptor: ([B)Lio/github/ym0506/routecontract/manifest/ObservedExecutionManifest;
+
+  public io.github.ym0506.routecontract.manifest.ObservedExecutionManifest decode(java.io.InputStream) throws java.io.IOException;
+    descriptor: (Ljava/io/InputStream;)Lio/github/ym0506/routecontract/manifest/ObservedExecutionManifest;
+}
+Compiled from "ManifestCounts.java"
+public final class io.github.ym0506.routecontract.manifest.ManifestCounts extends java.lang.Record {
+  public io.github.ym0506.routecontract.manifest.ManifestCounts(int, int, int, int, int);
+    descriptor: (IIIII)V
+
+  public final java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+
+  public final int hashCode();
+    descriptor: ()I
+
+  public final boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+
+  public int observedPhysicalAttemptCount();
+    descriptor: ()I
+
+  public int callbackReturnedCount();
+    descriptor: ()I
+
+  public int callbackFailureCount();
+    descriptor: ()I
+
+  public int unknownOutcomeCount();
+    descriptor: ()I
+
+  public int distinctObservedDataSourceNameCount();
+    descriptor: ()I
+}
+Compiled from "ManifestDiff.java"
+public final class io.github.ym0506.routecontract.manifest.ManifestDiff extends java.lang.Record {
+  public io.github.ym0506.routecontract.manifest.ManifestDiff(io.github.ym0506.routecontract.manifest.ManifestDiffCode, io.github.ym0506.routecontract.manifest.ManifestDiffSeverity, java.lang.String);
+    descriptor: (Lio/github/ym0506/routecontract/manifest/ManifestDiffCode;Lio/github/ym0506/routecontract/manifest/ManifestDiffSeverity;Ljava/lang/String;)V
+
+  public final java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+
+  public final int hashCode();
+    descriptor: ()I
+
+  public final boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+
+  public io.github.ym0506.routecontract.manifest.ManifestDiffCode code();
+    descriptor: ()Lio/github/ym0506/routecontract/manifest/ManifestDiffCode;
+
+  public io.github.ym0506.routecontract.manifest.ManifestDiffSeverity severity();
+    descriptor: ()Lio/github/ym0506/routecontract/manifest/ManifestDiffSeverity;
+
+  public java.lang.String detail();
+    descriptor: ()Ljava/lang/String;
+}
+Compiled from "ManifestDiffCode.java"
+public final class io.github.ym0506.routecontract.manifest.ManifestDiffCode extends java.lang.Enum<io.github.ym0506.routecontract.manifest.ManifestDiffCode> {
+  public static final io.github.ym0506.routecontract.manifest.ManifestDiffCode MATCH;
+    descriptor: Lio/github/ym0506/routecontract/manifest/ManifestDiffCode;
+  public static final io.github.ym0506.routecontract.manifest.ManifestDiffCode UNSUPPORTED_SCHEMA;
+    descriptor: Lio/github/ym0506/routecontract/manifest/ManifestDiffCode;
+  public static final io.github.ym0506.routecontract.manifest.ManifestDiffCode OPERATION_ID_MISMATCH;
+    descriptor: Lio/github/ym0506/routecontract/manifest/ManifestDiffCode;
+  public static final io.github.ym0506.routecontract.manifest.ManifestDiffCode APPROVED_MANIFEST_NOT_ELIGIBLE;
+    descriptor: Lio/github/ym0506/routecontract/manifest/ManifestDiffCode;
+  public static final io.github.ym0506.routecontract.manifest.ManifestDiffCode CAPTURE_INCOMPLETE;
+    descriptor: Lio/github/ym0506/routecontract/manifest/ManifestDiffCode;
+  public static final io.github.ym0506.routecontract.manifest.ManifestDiffCode CALLBACK_FAILURE_NOT_ELIGIBLE;
+    descriptor: Lio/github/ym0506/routecontract/manifest/ManifestDiffCode;
+  public static final io.github.ym0506.routecontract.manifest.ManifestDiffCode ATTEMPT_BUDGET_EXCEEDED;
+    descriptor: Lio/github/ym0506/routecontract/manifest/ManifestDiffCode;
+  public static final io.github.ym0506.routecontract.manifest.ManifestDiffCode DATA_SOURCE_BUDGET_EXCEEDED;
+    descriptor: Lio/github/ym0506/routecontract/manifest/ManifestDiffCode;
+  public static final io.github.ym0506.routecontract.manifest.ManifestDiffCode POLICY_CHANGED;
+    descriptor: Lio/github/ym0506/routecontract/manifest/ManifestDiffCode;
+  public static final io.github.ym0506.routecontract.manifest.ManifestDiffCode STRUCTURAL_ATTEMPT_REMOVED;
+    descriptor: Lio/github/ym0506/routecontract/manifest/ManifestDiffCode;
+  public static final io.github.ym0506.routecontract.manifest.ManifestDiffCode STRUCTURAL_ATTEMPT_ADDED;
+    descriptor: Lio/github/ym0506/routecontract/manifest/ManifestDiffCode;
+  public static final io.github.ym0506.routecontract.manifest.ManifestDiffCode OBSERVED_ATTEMPT_COUNT_CHANGED;
+    descriptor: Lio/github/ym0506/routecontract/manifest/ManifestDiffCode;
+  public static final io.github.ym0506.routecontract.manifest.ManifestDiffCode OBSERVED_DATA_SOURCE_SET_CHANGED;
+    descriptor: Lio/github/ym0506/routecontract/manifest/ManifestDiffCode;
+  public static final io.github.ym0506.routecontract.manifest.ManifestDiffCode OUTCOME_COUNTS_CHANGED;
+    descriptor: Lio/github/ym0506/routecontract/manifest/ManifestDiffCode;
+  public static io.github.ym0506.routecontract.manifest.ManifestDiffCode[] values();
+    descriptor: ()[Lio/github/ym0506/routecontract/manifest/ManifestDiffCode;
+
+  public static io.github.ym0506.routecontract.manifest.ManifestDiffCode valueOf(java.lang.String);
+    descriptor: (Ljava/lang/String;)Lio/github/ym0506/routecontract/manifest/ManifestDiffCode;
+
+  public java.lang.String stableCode();
+    descriptor: ()Ljava/lang/String;
+}
+Compiled from "ManifestDiffSeverity.java"
+public final class io.github.ym0506.routecontract.manifest.ManifestDiffSeverity extends java.lang.Enum<io.github.ym0506.routecontract.manifest.ManifestDiffSeverity> {
+  public static final io.github.ym0506.routecontract.manifest.ManifestDiffSeverity BLOCKING;
+    descriptor: Lio/github/ym0506/routecontract/manifest/ManifestDiffSeverity;
+  public static final io.github.ym0506.routecontract.manifest.ManifestDiffSeverity REVIEW;
+    descriptor: Lio/github/ym0506/routecontract/manifest/ManifestDiffSeverity;
+  public static final io.github.ym0506.routecontract.manifest.ManifestDiffSeverity INFO;
+    descriptor: Lio/github/ym0506/routecontract/manifest/ManifestDiffSeverity;
+  public static io.github.ym0506.routecontract.manifest.ManifestDiffSeverity[] values();
+    descriptor: ()[Lio/github/ym0506/routecontract/manifest/ManifestDiffSeverity;
+
+  public static io.github.ym0506.routecontract.manifest.ManifestDiffSeverity valueOf(java.lang.String);
+    descriptor: (Ljava/lang/String;)Lio/github/ym0506/routecontract/manifest/ManifestDiffSeverity;
+}
+Compiled from "ManifestFormatException.java"
+public final class io.github.ym0506.routecontract.manifest.ManifestFormatException extends java.io.IOException {
+  public io.github.ym0506.routecontract.manifest.ManifestFormatException(java.lang.String);
+    descriptor: (Ljava/lang/String;)V
+
+  public io.github.ym0506.routecontract.manifest.ManifestFormatException(java.lang.String, java.lang.Throwable);
+    descriptor: (Ljava/lang/String;Ljava/lang/Throwable;)V
+}
+Compiled from "ManifestPolicy.java"
+public final class io.github.ym0506.routecontract.manifest.ManifestPolicy extends java.lang.Record {
+  public io.github.ym0506.routecontract.manifest.ManifestPolicy(int, int, boolean, boolean);
+    descriptor: (IIZZ)V
+
+  public static io.github.ym0506.routecontract.manifest.ManifestPolicy strict(int, int);
+    descriptor: (II)Lio/github/ym0506/routecontract/manifest/ManifestPolicy;
+
+  public static io.github.ym0506.routecontract.manifest.ManifestPolicy budgetOnly(int, int);
+    descriptor: (II)Lio/github/ym0506/routecontract/manifest/ManifestPolicy;
+
+  public final java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+
+  public final int hashCode();
+    descriptor: ()I
+
+  public final boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+
+  public int maxObservedPhysicalAttempts();
+    descriptor: ()I
+
+  public int maxDistinctObservedDataSourceNames();
+    descriptor: ()I
+
+  public boolean requireNoCallbackFailures();
+    descriptor: ()Z
+
+  public boolean requireExactExecutionSignatures();
+    descriptor: ()Z
+}
+Compiled from "ManifestStore.java"
+public final class io.github.ym0506.routecontract.manifest.ManifestStore {
+  public io.github.ym0506.routecontract.manifest.ManifestStore();
+    descriptor: ()V
+
+  public io.github.ym0506.routecontract.manifest.ManifestStore(io.github.ym0506.routecontract.manifest.ManifestCodec);
+    descriptor: (Lio/github/ym0506/routecontract/manifest/ManifestCodec;)V
+
+  public io.github.ym0506.routecontract.manifest.ObservedExecutionManifest read(java.nio.file.Path) throws java.io.IOException;
+    descriptor: (Ljava/nio/file/Path;)Lio/github/ym0506/routecontract/manifest/ObservedExecutionManifest;
+
+  public java.nio.file.Path writeCandidate(java.nio.file.Path, java.nio.file.Path, io.github.ym0506.routecontract.manifest.ObservedExecutionManifest) throws java.io.IOException;
+    descriptor: (Ljava/nio/file/Path;Ljava/nio/file/Path;Lio/github/ym0506/routecontract/manifest/ObservedExecutionManifest;)Ljava/nio/file/Path;
+}
+Compiled from "ManifestVerificationResult.java"
+public final class io.github.ym0506.routecontract.manifest.ManifestVerificationResult extends java.lang.Record {
+  public io.github.ym0506.routecontract.manifest.ManifestVerificationResult(io.github.ym0506.routecontract.manifest.VerificationStatus, java.util.List<io.github.ym0506.routecontract.manifest.ManifestDiff>);
+    descriptor: (Lio/github/ym0506/routecontract/manifest/VerificationStatus;Ljava/util/List;)V
+
+  public boolean matched();
+    descriptor: ()Z
+
+  public boolean passesBlockingChecks();
+    descriptor: ()Z
+
+  public final java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+
+  public final int hashCode();
+    descriptor: ()I
+
+  public final boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+
+  public io.github.ym0506.routecontract.manifest.VerificationStatus status();
+    descriptor: ()Lio/github/ym0506/routecontract/manifest/VerificationStatus;
+
+  public java.util.List<io.github.ym0506.routecontract.manifest.ManifestDiff> diffs();
+    descriptor: ()Ljava/util/List;
+}
+Compiled from "ManifestVerifier.java"
+public final class io.github.ym0506.routecontract.manifest.ManifestVerifier {
+  public io.github.ym0506.routecontract.manifest.ManifestVerifier();
+    descriptor: ()V
+
+  public io.github.ym0506.routecontract.manifest.ManifestVerificationResult verify(io.github.ym0506.routecontract.manifest.ObservedExecutionManifest, io.github.ym0506.routecontract.RouteSnapshot, io.github.ym0506.routecontract.manifest.DataSourceAliases);
+    descriptor: (Lio/github/ym0506/routecontract/manifest/ObservedExecutionManifest;Lio/github/ym0506/routecontract/RouteSnapshot;Lio/github/ym0506/routecontract/manifest/DataSourceAliases;)Lio/github/ym0506/routecontract/manifest/ManifestVerificationResult;
+
+  public io.github.ym0506.routecontract.manifest.ManifestVerificationResult verify(io.github.ym0506.routecontract.manifest.ObservedExecutionManifest, io.github.ym0506.routecontract.manifest.ObservedExecutionManifest);
+    descriptor: (Lio/github/ym0506/routecontract/manifest/ObservedExecutionManifest;Lio/github/ym0506/routecontract/manifest/ObservedExecutionManifest;)Lio/github/ym0506/routecontract/manifest/ManifestVerificationResult;
+}
+Compiled from "ObservedExecutionManifest.java"
+public final class io.github.ym0506.routecontract.manifest.ObservedExecutionManifest extends java.lang.Record {
+  public static final int CURRENT_SCHEMA_VERSION = 1;
+    descriptor: I
+  public io.github.ym0506.routecontract.manifest.ObservedExecutionManifest(int, java.lang.String, io.github.ym0506.routecontract.CaptureStatus, io.github.ym0506.routecontract.manifest.ManifestPolicy, io.github.ym0506.routecontract.manifest.ManifestCounts, java.util.List<io.github.ym0506.routecontract.manifest.ManifestAttempt>);
+    descriptor: (ILjava/lang/String;Lio/github/ym0506/routecontract/CaptureStatus;Lio/github/ym0506/routecontract/manifest/ManifestPolicy;Lio/github/ym0506/routecontract/manifest/ManifestCounts;Ljava/util/List;)V
+
+  public static io.github.ym0506.routecontract.manifest.ObservedExecutionManifest from(io.github.ym0506.routecontract.RouteSnapshot, io.github.ym0506.routecontract.manifest.DataSourceAliases, io.github.ym0506.routecontract.manifest.ManifestPolicy);
+    descriptor: (Lio/github/ym0506/routecontract/RouteSnapshot;Lio/github/ym0506/routecontract/manifest/DataSourceAliases;Lio/github/ym0506/routecontract/manifest/ManifestPolicy;)Lio/github/ym0506/routecontract/manifest/ObservedExecutionManifest;
+
+  public final java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+
+  public final int hashCode();
+    descriptor: ()I
+
+  public final boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+
+  public int schemaVersion();
+    descriptor: ()I
+
+  public java.lang.String operationId();
+    descriptor: ()Ljava/lang/String;
+
+  public io.github.ym0506.routecontract.CaptureStatus captureStatus();
+    descriptor: ()Lio/github/ym0506/routecontract/CaptureStatus;
+
+  public io.github.ym0506.routecontract.manifest.ManifestPolicy policy();
+    descriptor: ()Lio/github/ym0506/routecontract/manifest/ManifestPolicy;
+
+  public io.github.ym0506.routecontract.manifest.ManifestCounts counts();
+    descriptor: ()Lio/github/ym0506/routecontract/manifest/ManifestCounts;
+
+  public java.util.List<io.github.ym0506.routecontract.manifest.ManifestAttempt> attempts();
+    descriptor: ()Ljava/util/List;
+}
+Compiled from "VerificationStatus.java"
+public final class io.github.ym0506.routecontract.manifest.VerificationStatus extends java.lang.Enum<io.github.ym0506.routecontract.manifest.VerificationStatus> {
+  public static final io.github.ym0506.routecontract.manifest.VerificationStatus INCOMPATIBLE;
+    descriptor: Lio/github/ym0506/routecontract/manifest/VerificationStatus;
+  public static final io.github.ym0506.routecontract.manifest.VerificationStatus NOT_ELIGIBLE;
+    descriptor: Lio/github/ym0506/routecontract/manifest/VerificationStatus;
+  public static final io.github.ym0506.routecontract.manifest.VerificationStatus POLICY_VIOLATION;
+    descriptor: Lio/github/ym0506/routecontract/manifest/VerificationStatus;
+  public static final io.github.ym0506.routecontract.manifest.VerificationStatus DRIFT;
+    descriptor: Lio/github/ym0506/routecontract/manifest/VerificationStatus;
+  public static final io.github.ym0506.routecontract.manifest.VerificationStatus REVIEW_REQUIRED;
+    descriptor: Lio/github/ym0506/routecontract/manifest/VerificationStatus;
+  public static final io.github.ym0506.routecontract.manifest.VerificationStatus MATCH;
+    descriptor: Lio/github/ym0506/routecontract/manifest/VerificationStatus;
+  public static io.github.ym0506.routecontract.manifest.VerificationStatus[] values();
+    descriptor: ()[Lio/github/ym0506/routecontract/manifest/VerificationStatus;
+
+  public static io.github.ym0506.routecontract.manifest.VerificationStatus valueOf(java.lang.String);
+    descriptor: (Ljava/lang/String;)Lio/github/ym0506/routecontract/manifest/VerificationStatus;
+}
