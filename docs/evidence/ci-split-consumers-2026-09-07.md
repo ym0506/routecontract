@@ -38,6 +38,9 @@ Gradle `.module` hashes differ. The minimized archives do not retain those
 metadata bytes, so their precise difference is **unverified**. Review final
 release metadata itself and derive the public-consumer receipt from its signed
 bundle; do not substitute the older local receipt for the CI receipt.
+The following CI revision adds a separate three-file staged-metadata artifact
+so a future run can support that byte-level comparison. It cannot recover the
+omitted bytes from this completed run.
 
 Evidence labels are **verified - unit**, **verified - MySQL**, and the exact
 ShardingSphere-JDBC 5.5.2/5.5.3 labels for the recorded lanes. This is local

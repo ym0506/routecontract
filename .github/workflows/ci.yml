@@ -672,6 +672,18 @@ jobs:
           if-no-files-found: warn
           retention-days: 90
 
+      - name: Retain exact staged Gradle metadata for byte-level review
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: routecontract-staged-metadata-evidence-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/routecontract-central-smoke/unsigned-repository/io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.module
+            ${{ runner.temp }}/routecontract-central-smoke/unsigned-repository/io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.module
+            ${{ runner.temp }}/routecontract-central-smoke/unsigned-repository/io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.module
+          if-no-files-found: warn
+          retention-days: 90
+
       - name: Upload staged split-artifact consumer evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
