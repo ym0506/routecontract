@@ -1,6 +1,77 @@
 # CI review reports
 
-Status: development feature in this checkout; not part of the published v0.1.2 assets.
+Available in the [v0.1.3 GitHub release](https://github.com/ym0506/routecontract/releases/tag/v0.1.3).
+The v0.1.2 local installer does not include these APIs. Maven Central publication is pending.
+
+## See the result first
+
+Open the [Markdown example](evidence/ci-review-report-example.md) or
+[JSON example](evidence/ci-review-report-example.json) without installing anything.
+The report shows attempts and observed data-source aliases changing from `1` to `2`,
+with `POLICY_VIOLATION`, `RCM201` and `RCM202`. It includes the governing baseline
+limits and the next investigation steps.
+
+## Try the released report without Docker
+
+You need Git and Java 17. The first run needs network access for Gradle and Java
+dependencies. This checks the committed example manifests; it does not start a
+database or constitute a new MySQL experiment.
+
+Run this from a directory where `routecontract-v0.1.3-review` does not already exist:
+
+```bash
+(
+set -e
+git clone --depth 1 --branch v0.1.3 --single-branch \
+  https://github.com/ym0506/routecontract.git routecontract-v0.1.3-review
+cd routecontract-v0.1.3-review
+mkdir -p build
+./gradlew --quiet :routecontract-shardingsphere-5.5:reviewManifest \
+  -PapprovedManifest=examples/manifests/find-paid-orders-by-user.approved.json \
+  -PcandidateManifest=examples/manifests/find-paid-orders-by-user.candidate.json \
+  -PreviewReportOutput=build/review-first.md
+)
+```
+
+**Expected result:** Gradle reports a failure because the example violates the
+contract. Open `routecontract-v0.1.3-review/build/review-first.md` to see the
+`POLICY_VIOLATION` report with `RCM201` and `RCM202`. A failed command without that
+report is not a successful demonstration; inspect the setup or build error.
+
+For JSON, run the same Gradle command from the cloned directory with
+`-PreviewReportFormat=json` and `-PreviewReportOutput=build/review-first.json`.
+Use a new output path each time; an existing report is never overwritten.
+
+To see a passing unchanged-input comparison, run this from the cloned directory:
+
+```bash
+./gradlew --quiet :routecontract-shardingsphere-5.5:reviewManifest \
+  -PapprovedManifest=examples/manifests/find-paid-orders-by-user.approved.json \
+  -PcandidateManifest=examples/manifests/find-paid-orders-by-user.approved.json \
+  -PreviewReportOutput=build/review-match.md
+```
+
+This command exits successfully and writes `MATCH`. It compares the same committed
+fixture on both sides; your own project's baseline still needs its normal review.
+
+This path uses the immutable v0.1.3 source tag. The [v0.1.2 MySQL Quick Start](../README.en.md#quick-start)
+remains a separate database demonstration. The [release verification record](evidence/release-0.1.3-github.md)
+identifies the published binaries and the tagged CI run.
+
+## Use in an application test
+
+With the v0.1.3 library on the test classpath, call
+`ManifestReviewReport.compare(approved, candidate)`, then `toMarkdown()` or `toJson()`.
+Use `verification()` with the existing assertions; the report is a presentation layer.
+The CLI main class is `io.github.ym0506.routecontract.manifest.ManifestReviewCli`,
+accepting exactly `--baseline PATH --candidate PATH --format markdown|json --output PATH`.
+It needs the library's runtime dependencies on the classpath; the published JAR is
+not a self-contained executable JAR.
+
+To discuss whether the output would help your CI review, use the
+[short feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml).
+A description of what was clear or missing is enough; running this example is not
+the same as integrating RouteContract into your own project.
 
 ## Acceptance contract
 
@@ -26,29 +97,6 @@ ineligible capture, budget violation, structural drift, review required, match.
 - Digests identify the decoded, canonically re-encoded manifest, not original file bytes, origin,
   freshness or human approval. Approval provenance stays in the repository's review process.
 - No command approves a baseline, uploads artifacts, posts a PR comment or connects to a database.
-
-## Run against the included example
-
-Java 17 and this source checkout are required. No Docker is needed to review the committed
-example; this command alone does not constitute a new database experiment.
-
-```bash
-mkdir -p build
-./gradlew --quiet :routecontract-shardingsphere-5.5:reviewManifest \
-  -PapprovedManifest=examples/manifests/find-paid-orders-by-user.approved.json \
-  -PcandidateManifest=examples/manifests/find-paid-orders-by-user.candidate.json \
-  -PreviewReportOutput=build/review-first.md
-```
-
-The Gradle task intentionally fails because the example violates the contract. The Markdown
-report remains at `build/review-first.md`. Choose a new output path for each invocation.
-Add `-PreviewReportFormat=json` for JSON. Paths are relative to the repository root.
-
-From an application test, call `ManifestReviewReport.compare(approved, candidate)`, then
-`toMarkdown()` or `toJson()`. Use `verification()` with the existing assertions; the report is
-a presentation layer. The CLI main class is
-`io.github.ym0506.routecontract.manifest.ManifestReviewCli`, accepting exactly
-`--baseline PATH --candidate PATH --format markdown|json --output PATH`.
 
 ## CI use
 

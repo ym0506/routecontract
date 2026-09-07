@@ -22,19 +22,25 @@ Read the [execution boundary and limitations](docs/start-here.md#도입-전에-�
 | Your goal | Start here |
 | --- | --- |
 | See what it does | [Watch the 2:54 demo](https://www.youtube.com/watch?v=pcgvNNxd1mM) · [Actual comparison](examples/manifests/README.md) — no installation |
+| See the report a CI reviewer reads | [Markdown preview](docs/evidence/ci-review-report-example.md) · [Generate it with v0.1.3](docs/ci-review-report.md#try-the-released-report-without-docker) — Git and Java 17, no Docker |
 | Reproduce the same-result, changed-execution case | [Quick Start below](#quick-start) — Git, Java 17, Docker |
 | Apply it to one test in your project | [Short installation command](docs/install-local.md) · [Choose a version and build path](docs/start-here.md) · [Maven starter](examples/maven-pilot/README.md#review-only-starter-bundle) |
 | Ask about fit or share an experience | [Short feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml) — no installation or public repository required |
 
-Released `v0.1.2` uses verified GitHub Release assets and is not on Maven Central.
-The new Markdown/JSON [CI review reports](docs/ci-review-report.md) require development source;
-they are not included in that release. Private projects can use the library in their own environment.
+The latest [v0.1.3 release](https://github.com/ym0506/routecontract/releases/tag/v0.1.3) includes
+Markdown/JSON [CI review reports](docs/ci-review-report.md) and is available through GitHub Release assets.
+Maven Central publication is pending. The MySQL Quick Start below, short local installer and
+existing integration guides remain pinned to verified v0.1.2; use the v0.1.3 report path above
+to try the new reports. Private projects can use the library in their own environment.
 Keep SQL, bind values, connection details and full logs out of public feedback.
 See [how to get help and record use](docs/user-feedback.md).
 
 ![A verified real-MySQL case where the business result stays the same while observed attempts and reviewed data-source aliases change from one to two, producing RCM201 and RCM202](submission/assets/baseline-candidate.png)
 
 ## Quick Start
+
+This MySQL demonstration is pinned to v0.1.2. To try the latest report feature first,
+use the [v0.1.3 example without Docker](docs/ci-review-report.md#try-the-released-report-without-docker).
 
 Prerequisites are Git, Java 17, a running Docker daemon, Bash/POSIX tools, and the executable Gradle
 Wrapper. The first run may need network access for the public tag, Gradle and Maven Central

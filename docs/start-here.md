@@ -13,25 +13,28 @@ where the same result needs `1 → 2` observed attempts.
 | 목적 / Goal | 시작점 / Start | 필요한 것 / Requirements |
 | --- | --- | --- |
 | 동작 이해 / Understand | [2분 54초 데모 / Demo](https://www.youtube.com/watch?v=pcgvNNxd1mM) | 설치 없음 / No installation |
-| 실제 DB 반례 재현 / Reproduce | [정식판 Quick Start / Released Quick Start](../README.en.md#quick-start) | Git, Java 17, Docker, network |
-| CI 결과 검토 / Review a CI result | [Markdown·JSON 리포트 / Review reports](ci-review-report.md) | 개발 소스 + Java 17 / Development source + Java 17 |
-| Release 자산 설치 / Install | [짧은 설치 명령 / Local installer](install-local.md) | Python 3.10+, curl, POSIX, network |
+| 실제 DB 반례 재현 / Reproduce | [v0.1.2 고정 Quick Start / Pinned Quick Start](../README.en.md#quick-start) | Git, Java 17, Docker, network |
+| CI 결과 검토 / Review a CI result | [미리보기 / Preview](evidence/ci-review-report-example.md) · [v0.1.3 리포트 생성 / Generate a report](ci-review-report.md#try-the-released-report-without-docker) | 미리보기는 설치 없음; 생성은 Git·Java 17·network / No install to preview; Git, Java 17 and network to generate |
+| Release 자산 설치 / Install | [v0.1.2 고정 설치 명령 / Pinned local installer](install-local.md) | Python 3.10+, curl, POSIX, network |
 | 내 테스트에 도입 / Integrate | [지원 범위와 빌드 경로 / Integration guide](first-integration.md) | Java 17, 기존 테스트 / Existing test |
 | 질문·경험 공유 / Ask or share | [짧은 피드백 / Short feedback](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml), [도움받기 / Get help](user-feedback.md) | 설치 불필요 / No installation |
 | 기여 / Contribute | [기여 지침 / Contributor guide](../CONTRIBUTING.md), [다음 단계 / Roadmap](product-roadmap.md) | 재현 가능한 문제 / Reproducible problem |
 
 ## 도입 전에 확인할 세 가지 / Check fit
 
-1. **버전 / Version:** 정식 v0.1.2는 ShardingSphere-JDBC **5.5.3** 대상입니다.
+1. **버전 / Version:** 최신 정식 v0.1.3은 ShardingSphere-JDBC **5.5.3** 대상이며 Markdown·JSON 리포트를 포함합니다.
    5.5.2 어댑터와 코어 분리는 [PR #62](https://github.com/ym0506/routecontract/pull/62)의 미출시 작업입니다.
 2. **실행 경계 / Execution boundary:** 동기·non-batch `PreparedStatement` 작업을 대상으로 합니다.
    Proxy, 임의 async, batch, reactive와 완전한 라우팅 계획 검증은 지원 주장에 포함되지 않습니다.
-3. **설치 / Distribution:** v0.1.2는 Maven Central에 없습니다. 현재는 검증된 GitHub Release 자산을
-   사용합니다. 상세 가이드에서 Gradle 또는 Maven 한 경로만 선택하세요.
+3. **설치 / Distribution:** v0.1.3은 [GitHub Release](https://github.com/ym0506/routecontract/releases/tag/v0.1.3)로
+   공개됐으며 Maven Central 배포는 준비 중입니다. 기존 짧은 설치·통합 가이드는 v0.1.2에 고정되어
+   있습니다. 새 리포트는 위의 v0.1.3 태그 체험 경로를 사용하세요.
 
-Released v0.1.2 supports exact ShardingSphere-JDBC 5.5.3 and synchronous non-batch
-`PreparedStatement` operations. Core separation and the 5.5.2 adapter remain unreleased.
-Use verified GitHub Release assets until Central publication is independently confirmed.
+Released v0.1.3 supports exact ShardingSphere-JDBC 5.5.3 and synchronous non-batch
+`PreparedStatement` operations, and includes Markdown/JSON reports. It is available on GitHub;
+Central publication is pending. Existing installation and assisted-pilot paths remain pinned
+to v0.1.2. Use the v0.1.3 tag example above for reports. Core separation and the 5.5.2 adapter
+remain unreleased.
 
 ## 성공 기준 / What success means
 
