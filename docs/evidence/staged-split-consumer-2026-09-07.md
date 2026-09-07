@@ -78,7 +78,8 @@ Environment: macOS 26.4.1 arm64, Homebrew OpenJDK 17.0.15+0, Gradle wrapper 8.14
 Docker 29.2.1, Testcontainers 1.21.4, and two containers per lane of
 `mysql:8.4.11@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb`.
 These local paths are temporary; commands and source tests provide reproduction, not an immutable
-public run. Public CI wiring and verification remain subsequent work.
+public run. Ordinary CI invokes this harness after preparing its own coordinated staging files;
+the CI receipt identifies the checked-out revision independently of this local run.
 
 Observed evidence is a ShardingSphere SQLExecutionHook-reported physical JDBC execution attempt.
 It is not a complete route plan, transaction result, business success, or measured performance.

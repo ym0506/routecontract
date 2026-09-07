@@ -505,6 +505,26 @@ jobs:
             --repository "${RUNNER_TEMP}/routecontract-central-smoke/unsigned-repository" \
             --evidence-directory "${RUNNER_TEMP}/routecontract-staged-split-consumers"
 
+      - name: Verify staged adapters through independent Maven MySQL consumers
+        shell: bash
+        timeout-minutes: 15
+        run: |
+          set -euo pipefail
+          python scripts/verify-staged-maven-artifact-consumer.py \
+            --repository "${RUNNER_TEMP}/routecontract-central-smoke/unsigned-repository" \
+            --evidence-directory "${RUNNER_TEMP}/routecontract-staged-maven-consumers" \
+            --java-home "${JAVA_HOME}"
+
+      - name: Verify old bytecode and public API migration through the adapter POM
+        shell: bash
+        timeout-minutes: 15
+        run: |
+          set -euo pipefail
+          python scripts/verify-public-api-migration.py \
+            --legacy-repository "${RUNNER_TEMP}/routecontract-local-v012" \
+            --repository "${RUNNER_TEMP}/routecontract-central-smoke/unsigned-repository" \
+            --evidence-directory "${RUNNER_TEMP}/routecontract-api-migration"
+
       - name: Verify same-checkout Maven publication consumer
         run: ./scripts/verify-standalone-consumer.sh
 
@@ -618,6 +638,34 @@ jobs:
             ${{ runner.temp }}/routecontract-local-install-consumers/summary.json
             ${{ runner.temp }}/routecontract-local-install-consumers/*/build/test-results/test/*.xml
             ${{ runner.temp }}/routecontract-local-install-consumers/*/target/surefire-reports/*.xml
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Upload minimized Maven staged-consumer evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: routecontract-staged-maven-consumer-evidence-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/routecontract-staged-maven-consumers/summary.json
+            ${{ runner.temp }}/routecontract-staged-maven-consumers/staged-receipt.json
+            ${{ runner.temp }}/routecontract-staged-maven-consumers/5.5.*/summary.json
+            ${{ runner.temp }}/routecontract-staged-maven-consumers/5.5.*/resolved-graph.json
+            ${{ runner.temp }}/routecontract-staged-maven-consumers/5.5.*/reports/**/*.json
+            ${{ runner.temp }}/routecontract-staged-maven-consumers/5.5.*/reports/**/*.md
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Upload minimized public API migration evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: routecontract-api-migration-evidence-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/routecontract-api-migration/summary.json
+            ${{ runner.temp }}/routecontract-api-migration/artifact-receipts.json
+            ${{ runner.temp }}/routecontract-api-migration/old-mysql-bytecode.json
+            ${{ runner.temp }}/routecontract-api-migration/0.*/mysql-evidence/0.*/*.json
           if-no-files-found: warn
           retention-days: 90
 

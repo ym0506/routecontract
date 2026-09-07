@@ -91,7 +91,10 @@ macOS trust bundle explicitly; certificate verification was not disabled.
 ## Remaining boundary
 
 The new Maven fixture is a local staged acceptance path. Public unauthenticated Central byte
-readback and an independent public consumer for both exact runtimes remain required before a
-`0.2.x` release. This change does not implement release/CI wiring, legacy physical-classpath cases,
-offline or corruption matrices, the full seven-risk corpus, or a Central account workflow.
-No production library implementation, existing baseline, ADR, or release guard was changed.
+readback and public consumers for both exact runtimes remain separate requirements: implement and
+review their verifiers before upload, then execute them after publication before claiming Central
+availability. Ordinary CI invokes this harness against its coordinated staging files and uploads
+minimized summaries, dependency graphs and reports. Raw local logs/JUnit are not included in that
+new artifact. This fixture does not cover legacy physical-classpath cases, offline or corruption
+matrices, the full route-risk corpus, or a Central account workflow. Its implementation changes no
+production library code or existing baseline, and the release guard remains in place.
