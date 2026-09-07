@@ -79,12 +79,12 @@ def prepare_metadata(source: Path, destination: Path, receipt: dict) -> None:
             components.remove(component)
     for module in MODULES:
         component = ET.SubElement(components, f'{{{NAMESPACE}}}component',
-                                  {'group': GROUP, 'name': module, 'version': VERSION})
+                                  {'group': GROUP, 'name': module, 'version': receipt['routeContractVersion']})
         for payload in receipt['artifacts']:
             if payload['module'] == module:
                 artifact = ET.SubElement(component, f'{{{NAMESPACE}}}artifact', {'name': payload['name']})
                 ET.SubElement(artifact, f'{{{NAMESPACE}}}sha256', {
-                    'value': payload['sha256'], 'origin': 'Supplied local staged-byte receipt; not public publisher provenance'})
+                    'value': payload['sha256'], 'origin': 'Reviewed expected-byte receipt; not independent publisher authentication'})
     destination.parent.mkdir(parents=True, exist_ok=True)
     ET.register_namespace('', NAMESPACE)
     tree.write(destination, encoding='UTF-8', xml_declaration=True)
