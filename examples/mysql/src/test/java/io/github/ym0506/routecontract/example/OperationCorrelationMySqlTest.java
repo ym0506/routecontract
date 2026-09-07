@@ -309,9 +309,21 @@ class OperationCorrelationMySqlTest {
         assertTrue(manifestViolation.getMessage().contains(
                 "RCM202 BLOCKING DATA_SOURCE_BUDGET_EXCEEDED: maximum=1, observed=2"));
 
+        var review = io.github.ym0506.routecontract.manifest.ManifestReviewReport.compare(
+                approvedRoundTrip, candidate);
+        assertEquals(verification, review.verification());
+        assertEquals(1, review.strictExitCode());
+        assertTrue(review.toMarkdown().contains("| Physical JDBC execution attempts | 1 | 2 | 1 |"));
+        assertTrue(review.toMarkdown().contains("RCM201"));
+        assertTrue(review.toMarkdown().contains("RCM202"));
+        assertTrue(review.toJson().contains("\"status\":\"POLICY_VIOLATION\""));
+        Files.writeString(demoEvidenceDirectory.resolve("review.md"), review.toMarkdown(), StandardCharsets.UTF_8);
+        Files.writeString(demoEvidenceDirectory.resolve("review.json"), review.toJson(), StandardCharsets.UTF_8);
+
         String externallyVisibleEvidence = new String(approvedBytes, StandardCharsets.UTF_8)
                 + new String(candidateBytes, StandardCharsets.UTF_8)
                 + verification
+                + review.toMarkdown() + review.toJson()
                 + manifestViolation.getMessage();
         for (String sensitiveText : List.of("SELECT", "t_order", "PAID")) {
             assertFalse(
