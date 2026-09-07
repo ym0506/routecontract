@@ -346,6 +346,69 @@ GNUPGHOME=/absolute/path/to/protected-gnupg-home ./gradlew \
 )
 ```
 
+#### Stage the reviewed CI payload bytes without rebuilding
+
+This is an alternative to rebuilding the payloads in the command above. Start
+with another fresh detached checkout if that command has already run.
+
+For the final candidate, use the five payloads retained by the exact tagged
+Linux/Temurin release-evidence run. A local JDK can generate different Javadoc
+bytes. In a fresh detached checkout of that same tag, first verify the downloaded
+Actions artifact digest and each payload's name, size and SHA-256 against the
+reviewed five-payload manifest. Copy those exact bytes into the publication's
+expected output locations:
+
+```bash
+release_version=REPLACE_WITH_REVIEWED_TAG_VERSION
+reviewed_payload_directory=/absolute/path/to/reviewed-five-payloads
+release_module=routecontract-shardingsphere-5.5
+release_base="${release_module}-${release_version}"
+test ! -e "${release_module}/build"
+mkdir -p "${release_module}/build/libs" \
+  "${release_module}/build/publications/mavenJava"
+for suffix in .jar -sources.jar -javadoc.jar; do
+  cp "${reviewed_payload_directory}/${release_base}${suffix}" \
+    "${release_module}/build/libs/${release_base}${suffix}"
+done
+cp "${reviewed_payload_directory}/${release_base}.pom" \
+  "${release_module}/build/publications/mavenJava/pom-default.xml"
+cp "${reviewed_payload_directory}/${release_base}.module" \
+  "${release_module}/build/publications/mavenJava/module.json"
+```
+
+Recheck all five seeded files against the same reviewed manifest before
+signing. Add these exclusions to the signed local-staging command above:
+
+```bash
+  -x :routecontract-shardingsphere-5.5:jar \
+  -x :routecontract-shardingsphere-5.5:sourcesJar \
+  -x :routecontract-shardingsphere-5.5:javadocJar \
+  -x :routecontract-shardingsphere-5.5:generatePomFileForMavenJavaPublication \
+  -x :routecontract-shardingsphere-5.5:generateMetadataFileForMavenJavaPublication
+```
+
+First add `--dry-run` and require exactly `signMavenJavaPublication` followed by
+`publishMavenJavaPublicationToCentralStagingRepository`. Then run the identical
+command without `--dry-run`, while the staging repository is still absent.
+Do not add `clean`, `assemble` or `check` to this signing invocation. Use `-x`;
+setting a generator's `enabled` flag to false can omit its publication artifact.
+
+After staging, compare each seeded and staged payload's size and SHA-256 with
+the reviewed CI bytes. A successful Gradle exit alone is insufficient: require
+the existing schema-1 bundle builder and verifier to validate the exact 55-file
+staging inventory, all checksums, five SHA-384 primary-key signatures and the
+30-entry upload bundle. These checks also reject missing stronger checksum
+sidecars if Gradle's `org.gradle.internal.publish.checksums.insecure` property is
+enabled or a checksum write fails. No payload hash mismatch may be repaired by
+replacing the approved manifest with locally regenerated hashes.
+
+This flow was exercised with Gradle 8.14.4, macOS JDK 17.0.15, synthetic supplied
+payloads and a disposable test key: only the two signing/publication tasks ran,
+all five seeded and staged bytes matched, no classes/Javadoc output was created,
+and the existing 55-file/30-entry verification passed. This is local fixture
+evidence; final CI payloads and protected-key signatures still need their own
+checks.
+
 Before upload, recheck the official list of Central-supported keyservers and
 distribute the exact public primary key to one currently supported server. In a
 fresh empty private `GNUPGHOME`, receive/import it from that same server using
