@@ -508,8 +508,11 @@ jobs:
       - name: Verify staged adapters through independent Maven MySQL consumers
         shell: bash
         timeout-minutes: 15
+        env:
+          SSL_CERT_FILE: /etc/ssl/certs/ca-certificates.crt
         run: |
           set -euo pipefail
+          test -r "${SSL_CERT_FILE}"
           python scripts/verify-staged-maven-artifact-consumer.py \
             --repository "${RUNNER_TEMP}/routecontract-central-smoke/unsigned-repository" \
             --evidence-directory "${RUNNER_TEMP}/routecontract-staged-maven-consumers" \
