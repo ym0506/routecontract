@@ -10,7 +10,7 @@ Make observed database-execution regressions easy to understand and review in a 
 The core stays a local test library with deterministic contracts. Distribution, actionable
 reports and repeated independent use take priority over a hosted dashboard.
 
-The first audience is a ShardingSphere-JDBC maintainer changing sharding predicates, SQL
+The first audience is a ShardingSphere-JDBC developer or team changing sharding predicates, SQL
 rewrites, routing configuration or middleware versions. The job is to catch a changed execution
 structure while preserving the application's existing result assertions.
 
@@ -22,7 +22,7 @@ structure while preserving the application's existing result assertions.
 | 2 | Choose one short onboarding path | Newcomer identifies fit, runs one example, explains the rejection; record time and failure as well as success | [Start here](start-here.md); external usability unverified |
 | 3 | Install through ordinary Gradle/Maven coordinates | Exact release resolved from public Central with empty caches and no credentials in both consumers | v0.1.2 not on Central; existing signed staging work is not publication |
 | 4 | Support exact version lanes | Review [PR #62](https://github.com/ym0506/routecontract/pull/62); real DB tests and wrong-version/dual-adapter failures in each lane | Candidate supports 5.5.2/5.5.3; not released |
-| 5 | Demonstrate repeated independent value | External maintainer-approved baseline, upstream dependency/check and passing upstream CI; later run on another change | Pilot and draft PR alone do not qualify |
+| 5 | Demonstrate repeated independent value | External developer uses a reviewed baseline and candidate check in their own project, then on a later real change; record assistance and verification separately | Private projects qualify; public case studies require separate evidence and permission |
 | 6 | Offer shared review history if needed | At least three independent teams repeatedly need cross-run review and agree to a bounded pilot | Hypothesis; no hosted-service or revenue claim |
 
 ## Technical depth to pursue
@@ -43,10 +43,14 @@ structure while preserving the application's existing result assertions.
 
 ## Adoption work
 
-Ask for one concrete pain point and one representative operation. Record separately: eligible
-contact, opt-in, first attempt, first valid candidate, independent upstream integration, and
-repeat use. Downloads, stars, maintainer-run examples and private unverified reports are not
-equivalent to adoption. Record abandoned and failed attempts with their causes.
+Start with a short question about a recent SQL/sharding change and the existing verification method;
+installation and a public repository are not prerequisites for that conversation. If there is a fit,
+help the developer apply the library to one representative operation. Record conversation, demo,
+project pilot, completed integration and repeat use separately from assistance, verification and
+permission to publish. Private-project use is valid; label self-reported use as self-reported instead
+of treating it as independently verified. Downloads, stars and maintainer-run examples are not
+substitutes for external use. Record abandoned and failed attempts with their causes. Use the
+[shared definitions](user-feedback.md#recording-use-and-evidence).
 
 Prefer a small number of permission-based pilots over unsolicited patches. After fixing a
 reported blocker, ask whether the same maintainer can finish the step independently. Public

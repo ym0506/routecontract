@@ -1,11 +1,14 @@
 # First real integration
 
-This is a maintainer-authorized workflow: use it only for a public repository you own or maintain,
-or after an authorized maintainer of the target repository requests the review. It is not a
-third-party nomination workflow. The guide moves from the RouteContract Quick Start to one
-representative operation in that repository, keeps its existing business assertion, records a
-separate candidate, requires an authorized maintainer of that external repository to review and
-approve the exact first baseline, and checks later candidates in tests or CI.
+Use this guide in a public or private repository you own, maintain, or are authorized to modify.
+You do not need to publish your code, baseline, or CI results to use RouteContract. The guide moves
+from the demo to one representative operation, keeps its existing business assertion, records a
+separate candidate, requires the target repository's authorized owner or maintainer to approve the
+exact first baseline, and checks later candidates in tests or CI. Keep private code and test
+artifacts in your own environment.
+
+The optional [public assisted pilot](user-feedback.md#optional-public-assisted-pilot) has separate
+participation rules. Those rules do not restrict self-service use or a conversation about fit.
 
 This is a narrow test integration, not production instrumentation. The supported boundary is Java
 17 with exactly Apache ShardingSphere-JDBC 5.5.3 and a normal-returning, non-interrupted,
@@ -41,17 +44,21 @@ substitute for it.
 4. **Review, approve, and gate separately.** An authorized owner or maintainer of the external
    repository reviews the minimized candidate, explicit budgets, operation identity, and build diff,
    then separately approves those exact candidate bytes as the baseline through the repository's
-   normal review process. Then run the matched candidate assertion as a required CI check; never
-   approve or update the baseline in CI.
+   normal review process. Run the matched candidate assertion locally or in CI; make it a required
+   CI check when it should gate merges. Never approve or update the baseline in CI.
 
-An external-user result exists only when an external team or developer applies the RouteContract
-dependency, an exact baseline approved by an authorized owner or maintainer of that external
-repository, and the candidate check to a representative operation in their own repository, and that
-check succeeds in the repository's upstream public CI. Assisted help or an unpublished review-only
-first-pass patch is allowed only when the target repository's license, contribution rules, and AI
-policy permit it; a RouteContract-maintainer-only, same-checkout, local-only, or draft result is
-insufficient and does not establish adoption, endorsement, production use, performance, or
-security.
+A candidate from an external developer's own representative operation is a project pilot. A
+reviewed baseline and a successful candidate check establish a completed integration; another check
+on a later real change provides repeat-use evidence. These stages can happen in private repositories
+and local tests or private CI. Record who ran the check and what was inspected separately from the
+stage; a self-report is not independently verified evidence. Public source, review and CI links are
+one way to make a result independently inspectable, not a prerequisite for use. Maintainer-run
+examples and generated patches alone are not external-user results. See the
+[use and evidence definitions](user-feedback.md#recording-use-and-evidence).
+
+Assisted patches must follow the target repository's license, contribution rules and AI policy.
+Obtain the target maintainer's confirmation before opening an external public PR. Neither a pilot
+nor a successful check alone establishes production use, endorsement, performance or security.
 
 ## 1. Verify the published demo first
 
@@ -95,7 +102,14 @@ step requires a GitHub login, token, API call, or GitHub CLI.
 
 ## 2. Install the exact v0.1.2 Release assets
 
-RouteContract `0.1.2` is **not published to Maven Central**. The recommended wrapper below downloads
+RouteContract `0.1.2` is **not published to Maven Central**. The [short local installer](install-local.md)
+wraps the same verified Release installer and prints the selected Gradle or Maven repository setup.
+Artifact installation needs Python 3.10+, `curl`, POSIX and network access; it does not require Java or
+Docker. Existing supported tests still require Java 17 and their own database environment. Maven
+starter users can let the assisted runner install the assets instead.
+
+For a separate transport audit, use the detailed path below.
+The recommended wrapper below downloads
 the exact immutable [GitHub Release](https://github.com/ym0506/routecontract/releases/tag/v0.1.2),
 verifies its fixed anchors, and installs the Maven coordinate into a new explicit repository. It
 does not depend on the step 1 checkout. Replace `install_root` with a new normalized absolute path
@@ -683,10 +697,11 @@ replaces only the fail-closed `fail(...)` statement containing
 existing business assertion, and follows the generated `NEXT-STEPS.md`. The generated
 `review` command invokes `scripts/run-assisted-maven-pilot.py`, privately installs exact `v0.1.2`
 assets and Maven 3.9.14, and must finish with a candidate present while the approved baseline remains
-absent. That is first-candidate evidence only. It is not baseline approval, adoption, endorsement,
-or an actual external integration; an authorized maintainer must separately copy the exact reviewed
-candidate bytes to the approved path through the repository's normal review process, followed by a
-successful matched check in upstream public CI.
+absent. That is first-candidate evidence for a project pilot, not baseline approval or repeated use.
+An authorized maintainer must separately copy the exact reviewed candidate bytes to the approved
+path through the repository's normal review process, followed by a successful matched check locally
+or in the team's CI. Public CI can make the result independently inspectable but is not required
+for use. See [recording use and evidence](user-feedback.md#recording-use-and-evidence).
 
 #### Manual and audit reference
 
@@ -2028,8 +2043,10 @@ automatically in CI.
 
 ## 6. Report the stage reached
 
-The [stable v0.1.2 feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)
-records the highest consecutive stage reached, including blockers and not-a-fit results. An
-optional public evidence URL can make a run independently inspectable, but the form or URL alone
-does not establish production use, adoption, performance, security, or endorsement. Do not publish
-raw SQL, bind values, JDBC URLs, real topology, full logs, private paths, or customer information.
+The [short feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)
+accepts a question or a short description of what happened, including blockers and not-a-fit results.
+Stage, environment and public evidence links are optional. Private-project use is welcome; do not
+publish private code or artifacts to prove it. Record the use stage, assistance and verification
+separately using the [evidence definitions](user-feedback.md#recording-use-and-evidence). A form or
+URL alone does not prove production use, performance, security or endorsement. Do not publish raw
+SQL, bind values, JDBC URLs, real topology, full logs, private paths or customer information.

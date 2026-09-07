@@ -87,10 +87,19 @@ Do this in a branch of the repository that owns the representative operation:
 This probe's empty capture validates loading and compatibility only. It is not a representative
 database operation, candidate baseline, external integration, or user.
 
-## Convert one representative operation into a verified integration
+## Apply one representative operation in your project
 
-Follow the full [first-integration guide](../../docs/first-integration.md). The ownership boundary
-is mandatory:
+Follow the current [first-integration guide](../../docs/first-integration.md) in a public or private
+repository you are authorized to modify. Keep the business assertion, capture a separate candidate,
+have the target's authorized owner or maintainer review and approve the baseline, and run the
+candidate check locally or in the team's CI. Publishing code or CI is not required for use.
+[Record the use stage separately from assistance, verification and publication permission](../../docs/user-feedback.md#recording-use-and-evidence).
+
+### Historical public upstream integration evidence standard
+
+The earlier public-evidence standard required all five steps below, including an independently
+inspectable upstream CI result. It is retained to explain the boundary of those public claims;
+it is not a prerequisite for private or local project use:
 
 1. An external repository chooses one deterministic representative ShardingSphere-JDBC operation
    that already has a business-result assertion. Keep that assertion.
@@ -108,8 +117,12 @@ is mandatory:
    in its upstream public CI with `--dependency-verification=strict`. CI must prove the approved
    file is unchanged and the fresh candidate matches it.
 
-Only after all five steps pass publicly is this an external integration. A clone, download, local
-probe, fork-only CI run, draft PR, or maintainer comment is not adoption and is not an actual user.
+Completing all five steps publicly can establish a publicly inspectable upstream integration.
+A private project can reach the same use stage without publishing its evidence. A clone, download,
+this empty local probe, draft PR or maintainer comment alone still does not establish that someone
+used RouteContract on their own representative operation. Record an actual project result at its
+observed stage and evidence quality; do not relabel this author-run compatibility fixture as an
+external user, completed integration or repeated use.
 
 ## Run the repository-owned verifier
 

@@ -4,38 +4,33 @@
 
 [![CI](https://github.com/ym0506/routecontract/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ym0506/routecontract/actions/workflows/ci.yml?query=branch%3Amain)
 
-> **Repository owners or authorized maintainers: request a 30-minute scoping session — no setup first**
->
-> Only an authorized owner or maintainer of the target public repository should post; this is not a third-party repository nomination channel.
-> The repository must use Java 17, exactly ShardingSphere-JDBC 5.5.3, and have an existing synchronous
-> non-batch `PreparedStatement` test. Reply in [Discussion #34](https://github.com/ym0506/routecontract/discussions/34) using this format.
->
-> Copy these three lines, replace `OWNER/REPOSITORY`, and select Gradle or Maven:
->
-> ```text
-> interested
-> Repository: https://github.com/OWNER/REPOSITORY
-> Build: Gradle or Maven
-> ```
->
-> Do not send credentials, raw SQL, binds, JDBC URLs, customer data, private topology, hostnames,
-> absolute paths, logs, screenshots, or personal info in Discussion #34 or through a private channel.
->
-> RouteContract maintainers inspect public code only. If the target repository's license, contribution rules, and AI policy
-> permit it, I may prepare an optional unpublished, review-only first-pass patch for you to review.
-> Separate confirmation from an authorized owner or maintainer of the target repository is required before any public PR.
-> Any baseline must be separately reviewed and approved by an authorized maintainer of the target external repository.
-> `30 minutes` covers only the initial scoping/session; it is not a response, patch, or completion-time guarantee,
-> and no turnaround is promised.
+**The result can stay the same while database execution changes.**
 
-[Apache ShardingSphere-JDBC](https://github.com/apache/shardingsphere) is JDBC middleware that can split one logical SQL operation across multiple data sources inside a Java application. RouteContract is a Java testing library that compares execution-structure changes missed by business-result tests with a human-reviewed baseline and fails a manifest assertion. Configuring that assertion as a required CI check can stop an unapproved change from merging.
+RouteContract is a Java test library that compares physical JDBC execution attempts reported by
+[ShardingSphere-JDBC](https://github.com/apache/shardingsphere)'s `SQLExecutionHook` with a reviewed
+baseline. Keep your business-result assertions and check changes to observed execution counts and
+data-source sets in CI.
 
-- **Who:** developers and teams using or evaluating Apache ShardingSphere-JDBC 5.5.3
-- **Missed change:** a functional assertion can return the same row and pass while hook-reported physical JDBC execution attempts and data sources each change from `1 → 2`
-- **CI decision:** in the verified `1 → 2` fixture, attempt-count and data-source-budget overruns fail the manifest assertion with `RCM201` and `RCM202`; configuring it as a required check can block the merge, while RouteContract does not label `1 → 2` itself as a performance defect and requires a person to review whether the change is intentional
-- **Verified boundary:** Java 17, exactly ShardingSphere-JDBC 5.5.3, normal-returning and non-interrupted synchronous non-batch `PreparedStatement`; it does not decide SQL semantic equivalence or reconstruct a complete route plan, commit, or business success
+The included MySQL example returns the same row while observed attempts grow from `1 → 2`;
+the contract rejects it with `RCM201` and `RCM202`. Review whether that change is intentional.
 
-[Watch the 2:54 demo](https://www.youtube.com/watch?v=pcgvNNxd1mM)
+**Supported:** Java 17 · exact ShardingSphere-JDBC 5.5.3 · synchronous non-batch `PreparedStatement`.
+Read the [execution boundary and limitations](docs/start-here.md#도입-전에-확인할-세-가지--check-fit) before integrating.
+
+## Get started
+
+| Your goal | Start here |
+| --- | --- |
+| See what it does | [Watch the 2:54 demo](https://www.youtube.com/watch?v=pcgvNNxd1mM) · [Actual comparison](examples/manifests/README.md) — no installation |
+| Reproduce the same-result, changed-execution case | [Quick Start below](#quick-start) — Git, Java 17, Docker |
+| Apply it to one test in your project | [Short installation command](docs/install-local.md) · [Choose a version and build path](docs/start-here.md) · [Maven starter](examples/maven-pilot/README.md#review-only-starter-bundle) |
+| Ask about fit or share an experience | [Short feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml) — no installation or public repository required |
+
+Released `v0.1.2` uses verified GitHub Release assets and is not on Maven Central.
+The new Markdown/JSON [CI review reports](docs/ci-review-report.md) require development source;
+they are not included in that release. Private projects can use the library in their own environment.
+Keep SQL, bind values, connection details and full logs out of public feedback.
+See [how to get help and record use](docs/user-feedback.md).
 
 ![A verified real-MySQL case where the business result stays the same while observed attempts and reviewed data-source aliases change from one to two, producing RCM201 and RCM202](submission/assets/baseline-candidate.png)
 
@@ -123,11 +118,11 @@ python3 -I scripts/run-assisted-maven-pilot.py \
 
 The runner downloads Maven 3.9.14 and installs the exact `v0.1.2` assets into a private repository;
 Maven starter users do not need to run the separate installer below first. The review run must leave
-a candidate present and the approved baseline absent. It is first-candidate evidence only—not
-baseline approval, an actual external integration, adoption, or endorsement. Separate exact-byte
-approval by an authorized maintainer must copy the exact reviewed candidate bytes to the approved
-path through the repository's normal review process; a successful matched check in upstream public
-CI is also required.
+a candidate present and the approved baseline absent. This establishes a project pilot, not baseline
+approval or repeated use. An authorized target maintainer must review the exact candidate bytes and
+approve them through the repository's normal review process before running the matched check locally
+or in the team's CI. Public CI is optional for use; it can make the result independently inspectable.
+[Use and evidence are recorded separately](docs/user-feedback.md#recording-use-and-evidence).
 
 ### Gradle and manual-audit installation path
 
@@ -231,7 +226,7 @@ and [one-command runner](examples/maven-pilot/README.md#one-command-runner-for-a
 remain the manual `review` and `matched` reference path.
 
 After a first run—or after deciding that the current scope is not a fit—use the
-[stable v0.1.2 feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)
+[short feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)
 to share a success, blocker, unsupported setup, or not-a-fit result. Do not put raw SQL, bind values,
 JDBC URLs, real topology, full logs, or other sensitive information in the public Issue.
 
@@ -317,7 +312,7 @@ choice explicit with `ManifestAssertions.assertPassesBlockingChecks(result)`.
 | Isolated consumer build | In the same checkout, a standalone consumer using only the generated JAR and POM in a temporary Maven repository passed SPI auto-discovery and a MySQL execution test; this is not evidence of external adoption |
 | Isolated Maven 3.9.14 pilot | In the same checkout, a Java 17 default cell and an explicit Java 21 compatibility cell verify an inactive profile, fresh caches, a SHA-256 negative check, an exact ShardingSphere-JDBC 5.5.3/MySQL 8.4.11 candidate, and a mechanical match; this is not human approval, an external user, or adoption evidence |
 
-Run the full 52-test verification:
+Run the full verification for the current checkout:
 
 ```bash
 ./gradlew --no-daemon --no-build-cache clean check assemble validateOfficialCycloneDxSbom
@@ -326,7 +321,7 @@ Run the full 52-test verification:
 ./scripts/verify-maven-pilot.sh --java 21
 ```
 
-The first command runs 52 core and MySQL-corpus tests on Java 17, ShardingSphere-JDBC 5.5.3, and a digest-pinned MySQL 8.4.11 Testcontainers image, then generates the JAR, Javadoc, and SBOM. The second command runs one separate consumer test. The third and fourth require exact Apache Maven 3.9.14 and verify the same isolated profile-off, checksum, and candidate paths with the Java 17 default and an explicit Java 21 runtime/classfile-major-65 mode, respectively. The Java 21 cell is same-checkout compatibility evidence for immutable v0.1.2 with exact ShardingSphere-JDBC 5.5.3/MySQL 8.4.11; it does not broaden the Java 17 boundary of the external assisted runner or starter. All require Docker.
+The first command runs the core and MySQL-corpus tests on Java 17, ShardingSphere-JDBC 5.5.3, and a digest-pinned MySQL 8.4.11 Testcontainers image, then generates the JAR, Javadoc, and SBOM. The second command runs one separate consumer test. The third and fourth require exact Apache Maven 3.9.14 and verify the same isolated profile-off, checksum, and candidate paths with the Java 17 default and an explicit Java 21 runtime/classfile-major-65 mode, respectively. The Java 21 cell is same-checkout compatibility evidence for immutable v0.1.2 with exact ShardingSphere-JDBC 5.5.3/MySQL 8.4.11; it does not broaden the Java 17 boundary of the external assisted runner or starter. All require Docker.
 
 ## Precise comparison with existing tools
 
@@ -549,10 +544,11 @@ Snapshots and manifests do not store raw SQL, parameter values, connection prope
 ## Contributing and extension gates
 
 If you are reviewing the `v0.1.2` documentation, Quick Start, Release installation, or fit for the
-first time, use the [short stable feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)
-for a successful, blocked, unsupported, or not-a-fit outcome. This record is self-reported usability
-and fit feedback; it does not by itself establish production use, adoption, security, performance,
-or endorsement.
+first time, use the [short feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)
+for a successful, blocked, unsupported, or not-a-fit outcome. Private-project experiences are welcome;
+you can describe your current verification method or a missing capability without installing anything.
+[Record the use stage separately from its evidence](docs/user-feedback.md#recording-use-and-evidence).
+Feedback alone does not justify production-use, security, performance, or endorsement claims.
 
 Report a bug or feature proposal through the
 [Issue forms](https://github.com/ym0506/routecontract/issues/new/choose) with the exact
@@ -560,7 +556,7 @@ ShardingSphere version, a user-visible regression or missing capability, and a m
 fixture. An implementation change should include a failing test, real-MySQL verification, and an
 explicit support boundary.
 
-A new adapter or reporter is considered only after public demand, a version-specific fixture, and real-MySQL CI exist. The current v0.1 boundary remains exactly 5.5.3. See the [contribution guide](CONTRIBUTING.md) for the full workflow.
+A new adapter or reporter is considered only after a documented user need, a version-specific fixture, and real-MySQL CI exist. The current v0.1 boundary remains exactly 5.5.3. See the [contribution guide](CONTRIBUTING.md) for the full workflow.
 
 ## Documentation and reproduction paths
 
