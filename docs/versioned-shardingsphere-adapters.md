@@ -224,12 +224,45 @@ The old documented-public constructor descriptors for `RouteSnapshot` and
 `ObservedExecutionManifest` remain as explicit overloads so existing bytecode can link. They
 create only schema-1/implicit-5.5.3 values. This is a binary-linkage bridge, not a promise that
 source recompilation, reflective record-component enumeration, `toString`/equality shape,
-serialization, code-source location, or module-path ownership is unchanged. Those migration
-surfaces have separate tests and release notes. In particular, recompiling old source that passes
+serialization, code-source location, or module-path ownership is unchanged. A-26 requires separate
+verification of those migration surfaces before release. In particular, recompiling old source that passes
 `CURRENT_SCHEMA_VERSION` to a legacy constructor inlines the new value `2`, which that schema-1-only
 overload must reject; such source must migrate to the explicit-identity constructor. New code must
 not use the legacy overloads to fabricate a 5.5.2 identity. No `.internal` constructor or FQCN is
 covered by this bridge.
+
+### 3.1.1 Migrating existing callers
+
+When upgrading through the existing `routecontract-shardingsphere-5.5` coordinate, check these
+source and runtime boundaries separately:
+
+- Both `CURRENT_SCHEMA_VERSION` constants change from `1` to `2`. An already compiled caller
+  retains its inlined `1`; recompiling identical source that passes the constant to a legacy
+  constructor succeeds but fails when that constructor runs. For new schema-2 values, use the
+  constructor with an explicit `ShardingSphereRuntimeIdentity`. Keep literal schema `1` only
+  when intentionally reconstructing legacy exact-5.5.3 data.
+- `ManifestDiffCode` adds `UNSUPPORTED_RUNTIME_IDENTITY` (`RCM004`) and
+  `RUNTIME_IDENTITY_MISMATCH` (`RCM005`). Add both blocking cases to exhaustive switch expressions,
+  or use a fallback that blocks unknown findings. An exhaustive switch compiled against the old
+  enum can throw `IncompatibleClassChangeError` when it receives a new value; recompilation fails
+  until the switch is updated. Later enum ordinals shift. Store or exchange `stableCode()` values,
+  not `ordinal()` values.
+- `RouteSnapshot` record components grow from 12 to 13; `ObservedExecutionManifest` grows from
+  6 to 7. Both insert `runtimeIdentity` immediately after `schemaVersion`. Update reflective
+  component indexing, canonical-constructor lookup and record-pattern assumptions. Legacy
+  constructor overloads remain, but record `equals`, `hashCode` and `toString` include the new
+  component. Do not depend on the old textual or reflective shape.
+- Compare approved baselines with `ManifestVerifier`, not record `equals`. An equivalent schema-1
+  and schema-2 exact-5.5.3 manifest can produce `MATCH` while the records compare unequal. Different
+  exact runtime identities remain incompatible even when business rows and observed counts agree.
+- Public API classes now have `routecontract-core-0.2.0.jar` as their code source. Resolve the
+  adapter's transitive core dependency through the normal build tool; copying only the thin
+  adapter JAR is insufficient. Use the supported classpath setup. Capture on the module path is
+  rejected with `RC_UNSUPPORTED_MODULE_PATH` before the supplied action runs.
+
+These are required migration steps, not a claim of complete API compatibility. A-26 separately
+requires a resolved same-coordinate old-bytecode consumer and the source, reflection, record and
+module probes; preserving method descriptors alone does not complete that acceptance gate.
 
 ### 3.2 Schema-1 normalization and comparison
 
