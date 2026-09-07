@@ -40,6 +40,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.List;
@@ -171,31 +172,31 @@ class Exact552OperationContractMySqlTest {
     @Test
     @Order(1)
     void ordinarySqlAndSuccessiveCapturesRemainIsolatedOnExact552() throws Exception {
-        assertEquals(1, executeEqual(3L), "ordinary SQL before capture must remain unaffected");
+        assertEquals(expectedPaidOrders(3L), executeEqual(3L), "ordinary SQL before capture must remain unaffected");
 
         RouteSnapshot equality = RouteContract.capture(
-                "552-first-equality", () -> assertEquals(1, executeEqual(3L)));
+                "552-first-equality", () -> assertEquals(expectedPaidOrders(3L), executeEqual(3L)));
         assertSnapshot(equality, 1, Set.of("ds_1"));
 
-        assertEquals(1, executeFanOut(3L), "ordinary SQL between captures must remain unaffected");
+        assertEquals(expectedPaidOrders(3L), executeFanOut(3L), "ordinary SQL between captures must remain unaffected");
 
         RouteSnapshot range = RouteContract.capture(
-                "552-second-range", () -> assertEquals(1, executeFanOut(3L)));
+                "552-second-range", () -> assertEquals(expectedPaidOrders(3L), executeFanOut(3L)));
         assertSnapshot(range, 2, Set.of("ds_0", "ds_1"));
 
         RouteSnapshot finalEquality = RouteContract.capture(
-                "552-third-equality", () -> assertEquals(1, executeEqual(2L)));
+                "552-third-equality", () -> assertEquals(expectedPaidOrders(2L), executeEqual(2L)));
         assertSnapshot(finalEquality, 1, Set.of("ds_0"));
-        assertEquals(1, executeEqual(2L), "ordinary SQL after capture must remain unaffected");
+        assertEquals(expectedPaidOrders(2L), executeEqual(2L), "ordinary SQL after capture must remain unaffected");
     }
 
     @Test
     @Order(2)
     void sameBusinessResultProducesCanonicalExact552PolicyEvidence() throws Exception {
         RouteSnapshot equality = RouteContract.capture(
-                "find-paid-orders-by-user", () -> assertEquals(1, executeEqual(3L)));
+                "find-paid-orders-by-user", () -> assertEquals(expectedPaidOrders(3L), executeEqual(3L)));
         RouteSnapshot range = RouteContract.capture(
-                "find-paid-orders-by-user", () -> assertEquals(1, executeFanOut(3L)));
+                "find-paid-orders-by-user", () -> assertEquals(expectedPaidOrders(3L), executeFanOut(3L)));
         assertSnapshot(equality, 1, Set.of("ds_1"));
         assertSnapshot(range, 2, Set.of("ds_0", "ds_1"));
 
@@ -277,7 +278,7 @@ class Exact552OperationContractMySqlTest {
         Set<String> repeatedSignatures = new HashSet<>();
         for (int iteration = 0; iteration < 20; iteration++) {
             RouteSnapshot repeated = RouteContract.capture(
-                    "552-repeat-" + iteration, () -> assertEquals(1, executeFanOut(3L)));
+                    "552-repeat-" + iteration, () -> assertEquals(expectedPaidOrders(3L), executeFanOut(3L)));
             assertSnapshot(repeated, 2, Set.of("ds_0", "ds_1"));
             assertEquals(1, repeated.trunkThreadFlagCount());
             assertEquals(1, repeated.workerThreadFlagCount());
@@ -317,8 +318,8 @@ class Exact552OperationContractMySqlTest {
             rawChild.start();
             rawChild.join();
 
-            assertEquals(1, executeEqual(3L));
-            assertEquals(1, executeFanOut(3L));
+            assertEquals(expectedPaidOrders(3L), executeEqual(3L));
+            assertEquals(expectedPaidOrders(3L), executeFanOut(3L));
         });
 
         assertSnapshot(snapshot, 3, Set.of("ds_0", "ds_1"));
@@ -331,9 +332,9 @@ class Exact552OperationContractMySqlTest {
     @Order(4)
     void concurrentSingleAndFanOutCapturesRemainIsolatedAcrossTwentyPairs() throws Exception {
         RouteSnapshot singleReference = RouteContract.capture(
-                "552-single-reference", () -> assertEquals(1, executeEqual(3L)));
+                "552-single-reference", () -> assertEquals(expectedPaidOrders(3L), executeEqual(3L)));
         RouteSnapshot fanOutReference = RouteContract.capture(
-                "552-fanout-reference", () -> assertEquals(1, executeFanOut(2L)));
+                "552-fanout-reference", () -> assertEquals(expectedPaidOrders(2L), executeFanOut(2L)));
         String singleSignature = canonicalSignature(singleReference);
         String fanOutSignature = canonicalSignature(fanOutReference);
         assertFalse(singleSignature.equals(fanOutSignature));
@@ -349,6 +350,8 @@ class Exact552OperationContractMySqlTest {
 
                 RouteSnapshot singleSnapshot = single.get();
                 RouteSnapshot fanOutSnapshot = fanOut.get();
+                assertEquals("552-single-" + iteration, singleSnapshot.operationId());
+                assertEquals("552-fanout-" + iteration, fanOutSnapshot.operationId());
                 assertSnapshot(singleSnapshot, 1, Set.of("ds_1"));
                 assertSnapshot(fanOutSnapshot, 2, Set.of("ds_0", "ds_1"));
                 assertEquals(0, singleSnapshot.workerThreadFlagCount());
@@ -367,7 +370,7 @@ class Exact552OperationContractMySqlTest {
         String operationId = "552-failure-boundary";
         RouteSnapshot successfulShape = RouteContract.capture(
                 operationId,
-                () -> assertEquals(2, executeFailureFanOut()));
+                () -> assertEquals(List.of(301L, 302L), executeFailureFanOut()));
         assertSnapshot(successfulShape, 2, Set.of("ds_0", "ds_1"));
 
         // This in-memory manifest is a test comparator only. It is never persisted, published,
@@ -435,7 +438,7 @@ class Exact552OperationContractMySqlTest {
         RouteSnapshot interrupted;
         try {
             interrupted = RouteContract.capture("552-interrupted-close", () -> {
-                assertEquals(1, executeEqual(3L));
+                assertEquals(expectedPaidOrders(3L), executeEqual(3L));
                 Thread.currentThread().interrupt();
             });
             assertTrue(Thread.currentThread().isInterrupted());
@@ -455,13 +458,43 @@ class Exact552OperationContractMySqlTest {
                         .hasExactlyObservedPhysicalAttempts(1));
     }
 
+    @Test
+    @Order(7)
+    void capturedEvidenceDoesNotRetainRawSecretValuesOnExact552() throws Exception {
+        String secret = "do-not-store-this-secret-value";
+        RouteSnapshot snapshot = RouteContract.capture("552-privacy", () -> assertEquals(
+                List.of(),
+                execute("SELECT order_id, user_id, status FROM t_order WHERE status = ?",
+                        statement -> statement.setString(1, secret))));
+        assertSnapshot(snapshot, 2, Set.of("ds_0", "ds_1"));
+        assertFalse(snapshot.toString().contains(secret));
+        assertFalse(snapshot.toString().contains("SELECT"));
+        assertTrue(snapshot.attempts().stream().allMatch(attempt -> attempt.parameterCount() == 2));
+        assertTrue(snapshot.attempts().stream().allMatch(attempt -> attempt.parameterTypes()
+                .equals(List.of(String.class.getName(), String.class.getName()))));
+    }
+
+    private record OrderRow(long orderId, long userId, String status) {
+    }
+
+    private static List<OrderRow> expectedPaidOrders(final long userId) {
+        // Deliberate fixture oracle: never derive expected business rows from another query.
+        if (userId == 2L) {
+            return List.of(new OrderRow(202L, 2L, "PAID"));
+        }
+        if (userId == 3L) {
+            return List.of(new OrderRow(201L, 3L, "PAID"));
+        }
+        throw new IllegalArgumentException("No fixture row for user " + userId);
+    }
+
     private static Callable<RouteSnapshot> capturedEqual(
             final String operationId,
             final long userId,
             final CyclicBarrier barrier) {
         return () -> RouteContract.capture(operationId, () -> {
             barrier.await();
-            assertEquals(1, executeEqual(userId));
+            assertEquals(expectedPaidOrders(userId), executeEqual(userId));
         });
     }
 
@@ -471,22 +504,22 @@ class Exact552OperationContractMySqlTest {
             final CyclicBarrier barrier) {
         return () -> RouteContract.capture(operationId, () -> {
             barrier.await();
-            assertEquals(1, executeFanOut(userId));
+            assertEquals(expectedPaidOrders(userId), executeFanOut(userId));
         });
     }
 
-    private static int executeFailureFanOut() throws SQLException {
+    private static List<Long> executeFailureFanOut() throws SQLException {
         try (Connection connection = shardingDataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(
                      "SELECT order_id FROM t_failure WHERE status = ?")) {
             statement.setString(1, "ACTIVE");
-            int rows = 0;
+            List<Long> rows = new ArrayList<>();
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
-                    rows++;
+                    rows.add(resultSet.getLong("order_id"));
                 }
             }
-            return rows;
+            return rows.stream().sorted().toList();
         }
     }
 
@@ -496,7 +529,7 @@ class Exact552OperationContractMySqlTest {
                 "ds_1", "failures-odd"));
     }
 
-    private static int executeEqual(final long userId) throws Exception {
+    private static List<OrderRow> executeEqual(final long userId) throws Exception {
         return execute(
                 "SELECT order_id, user_id, status FROM t_order WHERE user_id = ? AND status = ?",
                 statement -> {
@@ -505,7 +538,7 @@ class Exact552OperationContractMySqlTest {
                 });
     }
 
-    private static int executeFanOut(final long userId) throws Exception {
+    private static List<OrderRow> executeFanOut(final long userId) throws Exception {
         return execute(
                 "SELECT order_id, user_id, status FROM t_order WHERE user_id BETWEEN ? AND ? AND status = ?",
                 statement -> {
@@ -515,17 +548,18 @@ class Exact552OperationContractMySqlTest {
                 });
     }
 
-    private static int execute(final String sql, final StatementBinder binder) throws Exception {
+    private static List<OrderRow> execute(final String sql, final StatementBinder binder) throws Exception {
         try (Connection connection = shardingDataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             binder.bind(statement);
-            int rows = 0;
+            List<OrderRow> rows = new ArrayList<>();
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
-                    rows++;
+                    rows.add(new OrderRow(resultSet.getLong("order_id"),
+                            resultSet.getLong("user_id"), resultSet.getString("status")));
                 }
             }
-            return rows;
+            return List.copyOf(rows);
         }
     }
 
@@ -537,6 +571,10 @@ class Exact552OperationContractMySqlTest {
         assertEquals(CaptureStatus.COMPLETE, snapshot.status(), () -> "snapshot=" + snapshot);
         assertEquals(expectedAttempts, snapshot.observedPhysicalAttemptCount(), () -> "snapshot=" + snapshot);
         assertEquals(expectedDataSourceNames, Set.copyOf(snapshot.observedDataSourceNames()));
+        assertEquals(expectedAttempts, snapshot.callbackReturnedCount());
+        assertEquals(0, snapshot.callbackFailureCount());
+        assertEquals(0, snapshot.unknownOutcomeCount());
+        assertTrue(snapshot.collectorDiagnostics().isEmpty());
         assertTrue(snapshot.attempts().stream()
                 .allMatch(attempt -> attempt.outcome() == AttemptOutcome.CALLBACK_RETURNED));
     }
