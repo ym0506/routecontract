@@ -15,7 +15,9 @@ where the same result needs `1 → 2` observed attempts.
 | 동작 이해 / Understand | [2분 54초 데모 / Demo](https://www.youtube.com/watch?v=pcgvNNxd1mM) | 설치 없음 / No installation |
 | 실제 DB 반례 재현 / Reproduce | [정식판 Quick Start / Released Quick Start](../README.en.md#quick-start) | Git, Java 17, Docker, network |
 | CI 결과 검토 / Review a CI result | [Markdown·JSON 리포트 / Review reports](ci-review-report.md) | 개발 소스 + Java 17 / Development source + Java 17 |
-| 내 테스트에 도입 / Integrate | [지원 범위와 빌드 경로 / Integration guide](first-integration.md) | 기존 테스트 / Existing test |
+| Release 자산 설치 / Install | [짧은 설치 명령 / Local installer](install-local.md) | Python 3.10+, curl, POSIX, network |
+| 내 테스트에 도입 / Integrate | [지원 범위와 빌드 경로 / Integration guide](first-integration.md) | Java 17, 기존 테스트 / Existing test |
+| 질문·경험 공유 / Ask or share | [짧은 피드백 / Short feedback](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml), [도움받기 / Get help](user-feedback.md) | 설치 불필요 / No installation |
 | 기여 / Contribute | [기여 지침 / Contributor guide](../CONTRIBUTING.md), [다음 단계 / Roadmap](product-roadmap.md) | 재현 가능한 문제 / Reproducible problem |
 
 ## 도입 전에 확인할 세 가지 / Check fit
@@ -43,5 +45,10 @@ latency regression; review whether a change is intentional.
 
 도입이 막히면 [피드백 양식](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)에
 도달한 단계와 중단 이유를 남길 수 있습니다. SQL·바인딩 값·접속 정보·전체 로그는 보내지 마세요.
-공개 저장소의 권한 있는 관리자는 [통합 상담 / Assisted pilot](https://github.com/ym0506/routecontract/discussions/34)을
-신청할 수 있습니다. 상담·로컬 실행·정식 외부 통합은 서로 다른 결과로 기록합니다.
+비공개 프로젝트도 자신의 환경에서 사용할 수 있으며, 설치 없이 사용 버전과 현재 검증 방법만
+알려주셔도 됩니다. 소스 공개나 저장소 관리자 자격은 대화의 조건이 아닙니다.
+[도움받는 방법과 사용·증거 기록 기준 / Help and evidence](user-feedback.md)에서 단계별 경로를 확인하세요.
+
+Private-project use and questions before installation are welcome. Choose one existing test you are
+authorized to modify. A reviewed baseline and a successful check can be kept in local tests or private
+CI; public evidence is optional. Technical support limits above still apply.

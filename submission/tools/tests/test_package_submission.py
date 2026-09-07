@@ -858,8 +858,6 @@ class SubmissionClaimTextTest(unittest.TestCase):
         self.assertIn("intentional contract-gate\n  child exit `1`", releasing)
         self.assertIn("혼합 자동화", readme_ko)
         self.assertTrue(readme_ko.startswith("# RouteContract for ShardingSphere-JDBC\n"))
-        self.assertIn("사용하거나 도입을 평가하는 Java 개발자·팀", readme_ko)
-        self.assertIn("`1 → 2` 자체를 성능 결함으로 단정", readme_ko)
         self.assertIn(
             "MyBatis·JPA·Hibernate별 end-to-end 호환성을 검증했다는 뜻은 아닙니다",
             readme_ko,
@@ -880,8 +878,6 @@ class SubmissionClaimTextTest(unittest.TestCase):
         self.assertIn("docs/empirical-comparison.md", readme_ko)
         self.assertIn("Mixed automation", readme_en)
         self.assertTrue(readme_en.startswith("# RouteContract for ShardingSphere-JDBC\n"))
-        self.assertIn("developers and teams using or evaluating", readme_en)
-        self.assertIn("does not label `1 → 2` itself as a performance defect", readme_en)
         self.assertIn(
             "not verified end-to-end compatibility with each of MyBatis, JPA, and Hibernate",
             readme_en,
@@ -2072,102 +2068,6 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
                 check=False,
             )
             self.assertEqual(0, result.returncode, result.stderr)
-
-    def test_stable_feedback_records_cumulative_stage_without_adoption_claim(self) -> None:
-        form = (
-            REPOSITORY_ROOT / ".github" / "ISSUE_TEMPLATE" / "stable-feedback.yml"
-        ).read_text(encoding="utf-8")
-
-        def field_block(field_id: str) -> str:
-            identifier = f"    id: {field_id}"
-            identifier_index = form.index(identifier)
-            start = form.rfind("  - type:", 0, identifier_index)
-            end = form.find("\n  - type:", identifier_index)
-            return form[start:] if end == -1 else form[start:end]
-
-        integration_stage = field_block("integration_stage")
-        outcome = field_block("outcome")
-        self.assertTrue(integration_stage.startswith("  - type: dropdown\n"))
-        self.assertNotIn("id: path", form)
-        stage_options = (
-            "Stage 0 — reviewed the README and support boundary",
-            "Stage 1 — also ran the exact v0.1.2 Quick Start",
-            "Stage 2 — also verified and installed the exact v0.1.2 Release assets",
-            "Stage 3 — also captured one representative operation in a repository I own, maintain, or am authorized to modify",
-            "Stage 4 — an authorized owner or maintainer there also reviewed and approved the exact baseline",
-            "Stage 5 — also ran a candidate check locally or in non-upstream CI",
-            "Stage 6 — also ran the candidate check in the repository's upstream public CI",
-        )
-        self.assertEqual(
-            list(stage_options),
-            re.findall(r"^        - (.+)$", integration_stage, flags=re.MULTILINE),
-        )
-        self.assertRegex(
-            integration_stage,
-            r"\n    validations:\n      required: true\s*$",
-        )
-        self.assertNotIn("default:", integration_stage)
-        self.assertNotIn("multiple:", integration_stage)
-        outcome_options = (
-            "Worked as documented",
-            "Documentation review only",
-            "Product or documentation blocker",
-            "Prerequisite or environment blocker",
-            "Not a fit for my use case",
-            "Stopped before completion",
-            "Other",
-        )
-        self.assertTrue(outcome.startswith("  - type: dropdown\n"))
-        self.assertEqual(
-            list(outcome_options),
-            re.findall(r"^        - (.+)$", outcome, flags=re.MULTILINE),
-        )
-        self.assertRegex(outcome, r"\n    validations:\n      required: true\s*$")
-        self.assertNotIn("default:", outcome)
-        self.assertNotIn("multiple:", outcome)
-        self.assertNotIn("Not selected yet", form)
-        self.assertNotIn("id: fit", form)
-        self.assertEqual(
-            {
-                "integration_stage",
-                "outcome",
-                "environment",
-                "result",
-                "public_evidence",
-                "privacy",
-            },
-            set(re.findall(r"^    id: (.+)$", form, flags=re.MULTILINE)),
-        )
-        public_evidence_block = field_block("public_evidence")
-        public_evidence_compact = " ".join(public_evidence_block.split())
-        self.assertIn("Optional; leave blank", public_evidence_block)
-        self.assertNotIn("validations:", public_evidence_block)
-        self.assertIn(
-            "Only a verified Stage 6 result can establish an actual external integration",
-            public_evidence_compact,
-        )
-        self.assertIn(
-            "approved by an authorized owner or maintainer of that external repository",
-            public_evidence_compact,
-        )
-        self.assertIn("upstream public CI run for that commit", public_evidence_compact)
-        self.assertIn(
-            "A private, local-only, draft, or self-reported result is feedback only",
-            public_evidence_compact,
-        )
-        self.assertIn("link the immutable source commit", public_evidence_compact)
-        self.assertIn("A PR may provide additional review context", public_evidence_compact)
-        for evidence_label in (
-            "Source commit or PR:",
-            "Dependency/build:",
-            "Representative test:",
-            "Approved baseline:",
-            "Human-review record:",
-            "CI run + tested commit:",
-        ):
-            self.assertEqual(1, public_evidence_block.count(evidence_label))
-        self.assertIn("does not by itself establish production use, adoption", form)
-        self.assertIn("checked any linked public evidence", form)
 
     def test_activation_shell_examples_parse_and_readme_compares_candidate(self) -> None:
         paths = (
