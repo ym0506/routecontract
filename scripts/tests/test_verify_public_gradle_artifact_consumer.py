@@ -268,6 +268,44 @@ class PublicGradleConsumerFailureTest(unittest.TestCase):
         run.assert_not_called()
         self.assertEqual([], list(self.evidence.iterdir()))
 
+    def test_checkout_evidence_including_symlinked_parent_is_rejected_before_preparation(self):
+        checkout = self.root / 'checkout'
+        checkout.mkdir()
+        alias = self.root / 'checkout-alias'
+        alias.symlink_to(checkout, target_is_directory=True)
+        for evidence in (checkout / 'evidence-direct', alias / 'evidence-linked'):
+            with self.subTest(evidence=evidence), \
+                    mock.patch.object(MODULE, 'load_tool', return_value=self.helper), \
+                    mock.patch.object(MODULE.tempfile, 'TemporaryDirectory') as temporary, \
+                    mock.patch.object(MODULE, 'verify_lane', return_value={}) as lane:
+                temporary.return_value.__enter__.return_value = str(self.root / 'outside-checkout')
+                with self.assertRaisesRegex(MODULE.PublicConsumerError, 'evidence.*outside the checkout'):
+                    MODULE.verify(checkout, self.receipt_path, evidence)
+                temporary.assert_not_called()
+                lane.assert_not_called()
+                self.assertFalse(evidence.exists())
+
+    def test_actual_checkout_temporary_directory_is_rejected_before_evidence_or_consumer(self):
+        checkout = self.root / 'checkout'
+        checkout.mkdir()
+        alias = self.root / 'checkout-alias'
+        alias.symlink_to(checkout, target_is_directory=True)
+        # Model an actual tempfile result after TMPDIR was redirected into the checkout.
+        with tempfile.TemporaryDirectory(dir=checkout) as inside:
+            for source_root in (checkout, alias):
+                evidence = self.root / f'evidence-{source_root.name}'
+                with self.subTest(source_root=source_root), \
+                        mock.patch.object(MODULE, 'load_tool', return_value=self.helper), \
+                        mock.patch.object(MODULE.tempfile, 'TemporaryDirectory') as temporary, \
+                        mock.patch.object(MODULE, 'verify_lane', return_value={}) as lane:
+                    temporary.return_value.__enter__.return_value = inside
+                    with self.assertRaisesRegex(MODULE.PublicConsumerError, 'temporary.*outside the checkout'):
+                        MODULE.verify(source_root, self.receipt_path, evidence)
+                    temporary.assert_called_once()
+                    lane.assert_not_called()
+                    self.assertEqual([], list(Path(inside).iterdir()))
+                    self.assertFalse(evidence.exists())
+
     def test_command_failure_retains_diagnostics_and_does_not_write_success_summary(self):
         raw_junit = b'<testsuite tests="3" failures="1" errors="0" skipped="0"/>'
         minimized_report = b'{"status":"POLICY_VIOLATION"}\n'

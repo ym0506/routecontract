@@ -9,7 +9,9 @@ have not been verified as available. This document is not a publication, support
   the coordinated core/5.5.3-adapter/5.5.2-adapter release. Accept only strict stable `0.2.x`
   versions. Receipt validation belongs to the shared public-artifact validator.
 - Copy the existing real-MySQL consumer outside the checkout and use an absent/new Gradle user
-  home for each exact 5.5.2 and 5.5.3 lane. Configure exactly one anonymous dependency repository:
+  home for each exact 5.5.2 and 5.5.3 lane. Reject evidence paths inside the resolved checkout,
+  including paths through symlinked parents. Check the actual temporary directory before
+  preparing a consumer or evidence, so a checkout-local `TMPDIR` also fails. Configure exactly one anonymous dependency repository:
   `https://repo.maven.apache.org/maven2`. No local repository, Maven Local, composite build,
   project source, account credentials, caller-supplied repository URL or fallback is permitted.
 - Request only the selected adapter directly. Require its published dependency to provide core
@@ -87,10 +89,12 @@ satisfy that publication-dependent requirement. No release guard is removed by t
 
 ## Local preparation evidence, 2026-09-07
 
-`verified - unit`: 14 public-wrapper preparation/failure tests and 8 existing staged-helper tests
+`verified - unit`: 16 public-wrapper preparation/failure tests and 8 existing staged-helper tests
 pass. They cover unchanged fixture bytes, receipt-version metadata, first-party-only lock edits,
 shared receipt rejection before network/cache creation, evidence retention, changed expected hashes
-and removal of the independent `GRADLE_RO_DEP_CACHE` cache.
+and removal of the independent `GRADLE_RO_DEP_CACHE` cache. The checkout-boundary regressions
+failed before the guards were added; they now reject both checkout-local evidence (including a
+symlinked parent) and an actual temporary directory inside a resolved or symlinked checkout.
 
 Gradle 8.14.4 configured both public runtime branches and the staged 5.5.3 branch successfully in
 offline `help` runs. This proves build-script configuration only, not resolution or MySQL behavior.
@@ -108,3 +112,20 @@ Local negative evidence:
 The final public cache sanitizer and mixed non-anchor graph received targeted independent review.
 The strengthened **public** non-anchor and dual-adapter cases still require published metadata;
 a successful local staged regression cannot establish that public result.
+
+`verified - MySQL`: the shared fixture and staged harness from commit `4eabeb3` passed one complete
+staged regression against the retained `008e125` repository: exact 5.5.2 and 5.5.3, three MySQL
+tests and five staged negative graph cases each, with zero failures, errors or skips. Java 17,
+Gradle 8.14.4 and fresh per-lane dependency caches were used. Reproduce with:
+
+```sh
+python3 -I scripts/verify-staged-split-artifact-consumer.py \
+  --repository /private/tmp/routecontract-staged-consumer-008e125/repository \
+  --evidence-directory /absolute/path/to/new-staged-regression-evidence
+```
+
+Local receipt, logs, retained build scripts, reports and JUnit:
+`/private/tmp/routecontract-staged-public-mode-regression-20260907`.
+Its summary explicitly records `publicRepositoryConsumptionVerified: false`; this verifies the
+existing staged entry point after the optional public fixture change. It does not execute the
+publication-dependent public negative graphs or establish public availability.

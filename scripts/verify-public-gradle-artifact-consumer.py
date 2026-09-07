@@ -133,6 +133,7 @@ def verify_lane(root: Path, temporary: Path, evidence: Path, runtime: str, recei
 
 
 def verify(root: Path, receipt_path: Path, evidence: Path) -> dict:
+    root = root.resolve()
     public = load_tool('_routecontract_public_split_artifacts_gradle', 'public_split_artifacts.py')
     receipt = public.load_consumer_receipt(receipt_path)
     reviewed_bytes = (json.dumps(receipt, indent=2) + '\n').encode('utf-8')
@@ -143,10 +144,15 @@ def verify(root: Path, receipt_path: Path, evidence: Path) -> dict:
         raise PublicConsumerError('The public Gradle lane accepts only strict stable 0.2.x receipts')
     if evidence.exists() or evidence.is_symlink():
         raise PublicConsumerError('Choose a new public-consumer evidence directory')
-    evidence.mkdir(parents=True)
-    (evidence / 'reviewed-receipt.json').write_bytes(reviewed_bytes)
+    evidence = evidence.resolve()
+    if evidence.is_relative_to(root):
+        raise PublicConsumerError('Public-consumer evidence must be outside the checkout')
     with tempfile.TemporaryDirectory(prefix='routecontract-public-gradle-consumer-') as directory:
         temporary = Path(directory).resolve()
+        if temporary.is_relative_to(root):
+            raise PublicConsumerError('Public-consumer temporary directory must be outside the checkout')
+        evidence.mkdir(parents=True)
+        (evidence / 'reviewed-receipt.json').write_bytes(reviewed_bytes)
         lanes = []
         for runtime in LANES:
             if public.load_consumer_receipt(receipt_path) != receipt:
