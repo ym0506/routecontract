@@ -522,16 +522,27 @@ public-availability evidence.
 
 The post-publication `0.2.x` fresh-consumer gate is currently **not
 implemented**. This is a release-blocking gap: the existing standalone consumer
-belongs to the pre-split `0.1.x` artifact and must not be used as evidence for
-the three-coordinate publication. Before any `0.2.x` Central publication, add
-and review an independent clean-cache consumer that resolves
+builds coordinated core and 5.5.3 adapter files from the same checkout into a
+temporary local repository. The separate staged consumer checks supplied local
+files on both runtime lanes. Neither establishes public Central consumption.
+Before any `0.2.x` upload, implement and review independent clean-cache Gradle
+and Maven consumers that resolve
 `routecontract-core` plus exactly one exact-version adapter at the same
-candidate version, enforces the whole-graph adapter exclusivity policy, and
-runs its compile and representative candidate check using only the public
-unauthenticated Maven Central endpoint. It must also prove that selecting both
+candidate version, enforce the whole-graph adapter exclusivity policy, and
+run their compile and representative candidate checks using only the public
+unauthenticated Maven Central endpoint. Each must also prove that selecting both
 adapters, or the wrong adapter for the ShardingSphere runtime, fails closed.
+Run both consumers separately with exact ShardingSphere 5.5.2 and 5.5.3, compare
+loaded first-party JAR hashes with the reviewed staging receipt, and retain
+real-MySQL baseline MATCH and candidate-rejection evidence for each lane.
 
-That consumer must not use `mavenLocal()`, a file repository, a project
+Implementation and review of these verifiers precede upload. Execution against
+the candidate version on Central follows publication and anonymous byte
+readback; requiring that version to resolve from Central before its first
+publication would be circular. These are release-maintainer checks, not extra
+participation requirements for ordinary users.
+
+Neither consumer may use `mavenLocal()`, a file repository, a project
 dependency, a composite build, an authenticated deployment endpoint or an old
 cache. Do not claim Maven Central availability until both unauthenticated byte
 readback and the still-to-be-implemented split-artifact fresh-consumer gate
