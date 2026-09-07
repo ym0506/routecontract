@@ -77,6 +77,8 @@ def verified_snapshot(*, repository: Path, bundle: Path, receipt: Path,
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, request, response, code, message, headers, new_url):
+        if response is not None:
+            response.close()
         raise ReadbackError('REDIRECT_REJECTED')
 
 

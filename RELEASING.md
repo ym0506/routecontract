@@ -520,13 +520,18 @@ published version files without authentication and compare them byte-for-byte
 with the reviewed staged payloads. A Portal success response alone is not
 public-availability evidence.
 
-The post-publication `0.2.x` fresh-consumer gate is currently **not
-implemented**. This is a release-blocking gap: the existing standalone consumer
-builds coordinated core and 5.5.3 adapter files from the same checkout into a
-temporary local repository. The separate staged consumer checks supplied local
-files on both runtime lanes. Neither establishes public Central consumption.
-Before any `0.2.x` upload, implement and review independent clean-cache Gradle
-and Maven consumers that resolve
+The post-publication `0.2.x` checks now have separate entry points:
+[`verify-public-central-readback.py`](scripts/verify-public-central-readback.py),
+[`verify-public-gradle-artifact-consumer.py`](scripts/verify-public-gradle-artifact-consumer.py)
+and [`verify-public-maven-artifact-consumer.py`](scripts/verify-public-maven-artifact-consumer.py).
+Their [verification contract and commands](docs/public-central-verification.md)
+distinguish implementation/unit evidence from actual public execution, which
+remains **unverified** for the unreleased candidate. The release workflow's
+0.2 guard remains in place until coordinated final release evidence is ready;
+adding these commands alone does not clear the other release gates.
+
+The existing same-checkout and local-staged consumers remain local evidence.
+The independent public Gradle and Maven consumers must resolve
 `routecontract-core` plus exactly one exact-version adapter at the same
 candidate version, enforce the whole-graph adapter exclusivity policy, and
 run their compile and representative candidate checks using only the public
@@ -545,7 +550,7 @@ participation requirements for ordinary users.
 Neither consumer may use `mavenLocal()`, a file repository, a project
 dependency, a composite build, an authenticated deployment endpoint or an old
 cache. Do not claim Maven Central availability until both unauthenticated byte
-readback and the still-to-be-implemented split-artifact fresh-consumer gate
+readback and the split-artifact fresh-consumer gate
 pass.
 
 Published Central coordinates are immutable. If any published byte, metadata,
