@@ -80,7 +80,7 @@ workflow. The workflow:
   child exit `1`;
 - runs unit and real MySQL integration tests without reusing cached task results;
 - generates `test-summary.txt` from the resulting JUnit XML and fails unless
-  the exact eight expected library and MySQL suites contain 62 passing, non-skipped tests;
+  the exact twenty expected core, adapter and MySQL suites contain 135 passing, non-skipped tests;
   the standalone consumer runs separately and is not included in this count. The
   fixed summary records the Git revision and per-suite counts but deliberately
   omits test names, timings, hostnames, paths, ports, SQL and captured output;

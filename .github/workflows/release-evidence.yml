@@ -165,8 +165,11 @@ jobs:
           mkdir -p build/release-public
           python3 scripts/summarize-test-results.py \
             --revision "${GITHUB_SHA}" \
+            --results-dir routecontract-core/build/test-results/test \
             --results-dir routecontract-shardingsphere-5.5/build/test-results/test \
+            --results-dir routecontract-shardingsphere-5.5.2/build/test-results/test \
             --results-dir examples/mysql/build/test-results/test \
+            --results-dir examples/mysql-5.5.2/build/test-results/test \
             --output build/release-public/test-summary.txt
 
       - name: Stage legacy single-artifact Release subset and checksums

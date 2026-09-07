@@ -131,6 +131,19 @@ jobs:
           ./gradlew --no-daemon --no-build-cache clean check assemble
           validateOfficialCycloneDxSbom
 
+      - name: Verify complete core, adapter and MySQL result coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/summarize-test-results.py \
+            --revision "${GITHUB_SHA}" \
+            --results-dir routecontract-core/build/test-results/test \
+            --results-dir routecontract-shardingsphere-5.5/build/test-results/test \
+            --results-dir routecontract-shardingsphere-5.5.2/build/test-results/test \
+            --results-dir examples/mysql/build/test-results/test \
+            --results-dir examples/mysql-5.5.2/build/test-results/test \
+            --output build/ci-evidence/test-summary.txt
+
       - name: Verify printed Gradle and Maven installation configuration
         shell: bash
         timeout-minutes: 12
@@ -483,6 +496,15 @@ jobs:
             --public-gpg-home "${public_gnupg_home}" \
             --expected-primary-fingerprint "${fingerprint}"
 
+      - name: Verify staged core and adapters with independent MySQL consumers
+        shell: bash
+        timeout-minutes: 15
+        run: |
+          set -euo pipefail
+          python scripts/verify-staged-split-artifact-consumer.py \
+            --repository "${RUNNER_TEMP}/routecontract-central-smoke/unsigned-repository" \
+            --evidence-directory "${RUNNER_TEMP}/routecontract-staged-split-consumers"
+
       - name: Verify same-checkout Maven publication consumer
         run: ./scripts/verify-standalone-consumer.sh
 
@@ -581,6 +603,7 @@ jobs:
             examples/standalone-consumer/build/test-results/test/*.xml
             build/ci-evidence/environment.txt
             build/ci-evidence/maven-pilot-summary.txt
+            build/ci-evidence/test-summary.txt
             build/ci-evidence/gradle-split-consumer-summary.txt
             build/ci-evidence/maven-split-consumer-summary.txt
           if-no-files-found: warn
@@ -595,6 +618,19 @@ jobs:
             ${{ runner.temp }}/routecontract-local-install-consumers/summary.json
             ${{ runner.temp }}/routecontract-local-install-consumers/*/build/test-results/test/*.xml
             ${{ runner.temp }}/routecontract-local-install-consumers/*/target/surefire-reports/*.xml
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Upload staged split-artifact consumer evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: routecontract-staged-split-consumer-evidence-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/routecontract-staged-split-consumers/summary.json
+            ${{ runner.temp }}/routecontract-staged-split-consumers/staged-receipt.json
+            ${{ runner.temp }}/routecontract-staged-split-consumers/5.5.*/junit/*.xml
+            ${{ runner.temp }}/routecontract-staged-split-consumers/5.5.*/reports/**
           if-no-files-found: warn
           retention-days: 90
 

@@ -24,14 +24,26 @@ PACKAGE_SPEC.loader.exec_module(package_submission)
 # Keep the acceptance fixture independent of the summarizer's allowlist so a
 # newly added release suite cannot disappear from both the input and expectation.
 CURRENT_RELEASE_SUITES = {
-    "io.github.ym0506.routecontract.RouteContractTest": 18,
+    "io.github.ym0506.routecontract.internal.RuntimeAdapterRegistryTest": 7,
+    "io.github.ym0506.routecontract.manifest.ManifestReviewReportTest": 13,
+    "io.github.ym0506.routecontract.structure.CorePublicationStructureTest": 3,
+    "io.github.ym0506.routecontract.RouteContractTest": 19,
+    "io.github.ym0506.routecontract.ShardingSphereRuntimeIdentityTest": 3,
+    "io.github.ym0506.routecontract.manifest.ObservedExecutionManifestTest": 22,
+    "io.github.ym0506.routecontract.shardingsphere553.internal.FreshJvmGuardFailureTest": 2,
+    "io.github.ym0506.routecontract.shardingsphere553.internal.ShardingSphere553PreflightTest": 8,
+    "io.github.ym0506.routecontract.structure.ArtifactIsolationTest": 6,
+    "io.github.ym0506.routecontract.shardingsphere552.internal.FreshJvmCompatibilityFailureTest": 3,
+    "io.github.ym0506.routecontract.shardingsphere552.internal.FreshJvmGuardFailureTest": 2,
+    "io.github.ym0506.routecontract.shardingsphere552.internal.RouteContract552HookContainmentTest": 3,
+    "io.github.ym0506.routecontract.shardingsphere552.internal.ShardingSphere552PreflightTest": 8,
+    "io.github.ym0506.routecontract.structure.ArtifactIsolation552Test": 8,
     "io.github.ym0506.routecontract.example.DataSourceProxyComparisonMySqlTest": 1,
     "io.github.ym0506.routecontract.example.FailureBoundaryMySqlTest": 1,
     "io.github.ym0506.routecontract.example.ObservedExecutionRegressionCorpusMySqlTest": 7,
     "io.github.ym0506.routecontract.example.OperationCorrelationMySqlTest": 5,
-    "io.github.ym0506.routecontract.internal.ShardingSphere553PreflightTest": 3,
-    "io.github.ym0506.routecontract.manifest.ManifestReviewReportTest": 10,
-    "io.github.ym0506.routecontract.manifest.ObservedExecutionManifestTest": 17,
+    "io.github.ym0506.routecontract.example552.Exact552OperationContractMySqlTest": 7,
+    "io.github.ym0506.routecontract.example552.Exact552ObservedExecutionRegressionCorpusMySqlTest": 7,
 }
 
 
@@ -84,12 +96,12 @@ class SummarizeTestResultsTest(unittest.TestCase):
         core.mkdir()
         mysql.mkdir()
         for suite, tests in CURRENT_RELEASE_SUITES.items():
-            destination = mysql if ".example." in suite else core
+            destination = mysql if ".example" in suite else core
             self.write_suite(
                 destination,
                 suite,
                 tests,
-                captured_output=secret if secret and ".example." in suite else None,
+                captured_output=secret if secret and ".example" in suite else None,
             )
         return [core, mysql]
 
@@ -108,11 +120,11 @@ class SummarizeTestResultsTest(unittest.TestCase):
             self.assertTrue(first.endswith("\n"))
             self.assertIn("format=routecontract-test-summary-v1\n", first)
             self.assertIn(f"revision={self.revision}\n", first)
-            self.assertIn("suite_count=8\n", first)
-            self.assertIn("test_count=62\n", first)
+            self.assertIn("suite_count=20\n", first)
+            self.assertIn("test_count=135\n", first)
             self.assertIn(
                 "suite=io.github.ym0506.routecontract.manifest.ManifestReviewReportTest"
-                "|tests=10|failures=0|errors=0|skipped=0\n",
+                "|tests=13|failures=0|errors=0|skipped=0\n",
                 first,
             )
             self.assertIn("failure_count=0\nerror_count=0\nskipped_count=0\n", first)
