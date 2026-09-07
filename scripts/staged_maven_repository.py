@@ -84,7 +84,9 @@ class CentralRedirectHandler(HTTPRedirectHandler):
         redirected = super().redirect_request(request, fp, code, message, headers, newurl)
         if redirected is not None:
             # Do not carry any auth or cookie state even across an accepted redirect.
-            return Request(redirected.full_url, method=redirected.get_method(),
+            # Older urllib versions rebuild a HEAD redirect as GET. Preserve the
+            # caller's read method rather than inheriting that version-specific change.
+            return Request(redirected.full_url, method=request.get_method(),
                            headers={'User-Agent': 'RouteContract-staged-consumer/1',
                                     'Accept-Encoding': 'identity'})
         return redirected

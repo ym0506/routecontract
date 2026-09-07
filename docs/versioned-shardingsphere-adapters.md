@@ -17,10 +17,12 @@ This document uses two evidence classes deliberately:
   published merely because it appears in this ADR or is implemented in a local candidate.
 
 The 0.2 candidate includes exact 5.5.2 and 5.5.3 adapters, real-MySQL coverage, and separate
-Gradle and Maven metadata/preflight consumers. The initial candidate at `008e125` passed
-[public CI 34102575120](https://github.com/ym0506/routecontract/actions/runs/34102575120).
-That run predates the complete 5.5.2 corpus and independent staged-artifact MySQL consumer added
-later; it does not complete every acceptance row or establish a public release or external adoption.
+Gradle and Maven metadata/preflight consumers. At `0f0a0ca`,
+[public CI 34106764778](https://github.com/ym0506/routecontract/actions/runs/34106764778) passed the
+complete versioned MySQL corpus and independent Gradle staged-artifact consumer; its exact
+[scope and raw artifacts](evidence/staged-split-consumer-2026-09-07.md#public-ci-follow-up) are
+recorded separately. Later Maven staged-consumer and A-26 checks have their own local evidence.
+These results do not complete every release row or establish a public release or external adoption.
 
 The current released contract remains exact ShardingSphere-JDBC 5.5.3. Multiple ShardingSphere
 versions are explicitly outside the v0.1 scope. Nothing in this ADR changes the immutable `v0.1.2`

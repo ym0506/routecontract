@@ -1,6 +1,6 @@
 # Independent staged-artifact consumer verification — 2026-09-07
 
-Status: `verified - MySQL` on local staged bytes; unreleased 0.2 development evidence.
+Status: `verified - MySQL` on local and CI-staged bytes; unreleased 0.2 development evidence.
 No Maven Central availability, anonymous public consumption, external user, full route-risk matrix,
 or release-readiness claim is made. The 0.2 release-evidence fail-closed guard is unchanged.
 
@@ -80,6 +80,27 @@ Docker 29.2.1, Testcontainers 1.21.4, and two containers per lane of
 These local paths are temporary; commands and source tests provide reproduction, not an immutable
 public run. Ordinary CI invokes this harness after preparing its own coordinated staging files;
 the CI receipt identifies the checked-out revision independently of this local run.
+
+## Public CI follow-up
+
+[CI 34106764778](https://github.com/ym0506/routecontract/actions/runs/34106764778) passed all five
+jobs for PR head `0f0a0caab3d6c3176d0e8c5eb8731e16f96054a0`. Its tested merge
+`b7d64ac2ad7315a11490bb317ad877c4c105cd73` has the same tree
+`42852caaf2d406c6f2c082698555a811f49eb34c` as that head.
+
+The [staged-consumer artifact](https://github.com/ym0506/routecontract/actions/runs/34106764778/artifacts/10013680934)
+contains two raw JUnit suites with six tests and zero failures/errors/skips; its summary records all
+ten graph rejection cases. The candidate, reviewed baseline and Markdown/JSON report files for both
+exact runtimes are byte-identical to the eight corresponding files from the local run above.
+This comparison is limited to those fixtures and the two recorded environments.
+
+The [main test artifact](https://github.com/ym0506/routecontract/actions/runs/34106764778/artifacts/10013679868)
+separately contains the 20-suite/135-test core, adapter and versioned-MySQL result summary, plus one
+same-checkout publication-consumer test; all 136 raw test results passed without skips. The
+[v0.1.2 installed-consumer artifact](https://github.com/ym0506/routecontract/actions/runs/34106764778/artifacts/10013680361)
+contains nine passing tests across Gradle Groovy, Kotlin DSL and Maven. These groups cover different
+consumer paths and must not be relabeled as independent users or a Central release. The later Maven
+staged-consumer and A-26 additions are not part of this run.
 
 Observed evidence is a ShardingSphere SQLExecutionHook-reported physical JDBC execution attempt.
 It is not a complete route plan, transaction result, business success, or measured performance.

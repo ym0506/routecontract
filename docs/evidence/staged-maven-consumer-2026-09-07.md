@@ -88,6 +88,13 @@ dependency resolution because the host Python installation had no default CA bun
 receipt and incomplete summary remain preserved. The successful fresh-cache run used the existing
 macOS trust bundle explicitly; certificate verification was not disabled.
 
+The integrated Python 3.12.14 suite exposed an additional transport difference: that urllib
+version rebuilds a permitted HEAD redirect as GET, unlike the tested Python 3.13.0 behavior.
+The mirror now preserves the original request method when rebuilding its sanitized redirect.
+All 21 mirror/consumer helper tests pass on both Python versions after this fix. The Maven POM,
+Java fixture and reviewed staged bytes are unchanged; this focused transport verification is
+separate from the two completed MySQL lanes above.
+
 ## Remaining boundary
 
 The new Maven fixture is a local staged acceptance path. Public unauthenticated Central byte
