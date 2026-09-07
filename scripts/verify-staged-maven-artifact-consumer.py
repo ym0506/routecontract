@@ -44,7 +44,7 @@ def write_json(path: Path, value: dict) -> None:
 
 def clean_environment(java_home: Path) -> dict[str, str]:
     environment = dict(os.environ)
-    for name in ('MAVEN_ARGS', 'MAVEN_OPTS', 'JAVA_OPTS', 'JAVA_TOOL_OPTIONS',
+    for name in ('MAVEN_ARGS', 'MAVEN_OPTS', 'MAVEN_DEBUG_OPTS', 'JAVA_OPTS', 'JAVA_TOOL_OPTIONS',
                  'JDK_JAVA_OPTIONS', '_JAVA_OPTIONS', 'MAVEN_PROJECTBASEDIR',
                  'MAVEN_BASEDIR', 'MAVEN_CONFIG', 'M2_HOME', 'MAVEN_HOME'):
         environment.pop(name, None)
@@ -57,7 +57,7 @@ def run(command: list[str], cwd: Path, environment: dict[str, str], log: Path,
         expect_failure: bool = False) -> str:
     # Stream to retained evidence: failed/timeout runs must not discard partial output.
     with log.open('w', encoding='utf-8') as output:
-        result = subprocess.run(command, cwd=cwd, env=environment, stdin=subprocess.DEVNULL,
+        result = subprocess.run(command, cwd=cwd, env={**environment, 'MAVEN_BASEDIR': str(cwd)}, stdin=subprocess.DEVNULL,
                                 stdout=output, stderr=subprocess.STDOUT, timeout=TIMEOUT_SECONDS)
     text = log.read_text(encoding='utf-8', errors='replace')
     if expect_failure:
@@ -68,20 +68,27 @@ def run(command: list[str], cwd: Path, environment: dict[str, str], log: Path,
     return text
 
 
-def write_settings(path: Path, url: str) -> None:
+def write_settings(path: Path, url: str, mirror_id: str = MIRROR_ID) -> None:
     settings = ET.Element('settings', {'xmlns': 'http://maven.apache.org/SETTINGS/1.2.0'})
     mirrors = ET.SubElement(settings, 'mirrors')
     item = ET.SubElement(mirrors, 'mirror')
-    for name, text in (('id', MIRROR_ID), ('mirrorOf', '*'), ('url', url)):
+    for name, text in (('id', mirror_id), ('mirrorOf', '*'), ('url', url)):
         ET.SubElement(item, name).text = text
     ET.indent(settings)
     ET.ElementTree(settings).write(path, encoding='UTF-8', xml_declaration=True)
 
 
-def copy_consumer(root: Path, destination: Path) -> None:
+def copy_consumer(root: Path, destination: Path, version: str = VERSION) -> None:
     destination.mkdir()
     shutil.copy2(root / 'examples/staged-maven-artifact-consumer/pom.xml', destination / 'pom.xml')
     shutil.copytree(root / 'examples/staged-split-artifact-consumer/src', destination / 'src')
+    if version != VERSION:
+        tree = ET.parse(destination / 'pom.xml')
+        tree.getroot().find(N + 'properties/' + N + 'routecontract.version').text = version
+        tree.getroot().find('.//' + N + 'requireProperty/' + N + 'regex').text = re.escape(version)
+        ET.register_namespace('', POM_NS)
+        ET.indent(tree)
+        tree.write(destination / 'pom.xml', encoding='UTF-8', xml_declaration=True)
 
 
 def retain_lane_evidence(consumer: Path, cache: Path, destination: Path) -> None:
@@ -101,10 +108,10 @@ def nodes(tree: dict):
         yield from nodes(child)
 
 
-def verify_tree(tree: dict, runtime: str, adapter: str) -> dict:
+def verify_tree(tree: dict, runtime: str, adapter: str, version: str = VERSION) -> dict:
     selected = list(nodes(tree))
     first_party = {(n.get('artifactId'), n.get('version')) for n in selected if n.get('groupId') == GROUP}
-    expected = {(adapter, VERSION), ('routecontract-core', VERSION)}
+    expected = {(adapter, version), ('routecontract-core', version)}
     if first_party != expected:
         raise VerificationError(f'Unexpected selected RouteContract graph: {first_party}')
     direct = [n for n in tree.get('children', []) if n.get('groupId') == GROUP]
@@ -120,7 +127,7 @@ def verify_tree(tree: dict, runtime: str, adapter: str) -> dict:
             'shardingSphereComponents': len(ss)}
 
 
-def verify_origins(cache: Path, adapter: str, receipt: dict) -> None:
+def verify_origins(cache: Path, adapter: str, receipt: dict, mirror_id: str = MIRROR_ID) -> None:
     for item in receipt['artifacts']:
         if item['module'] not in ('routecontract-core', adapter) or not item['name'].endswith(('.jar', '.pom')):
             continue
@@ -128,11 +135,17 @@ def verify_origins(cache: Path, adapter: str, receipt: dict) -> None:
         if not resolved.is_file() or resolved.is_symlink() or shared.sha256(resolved) != item['sha256']:
             raise VerificationError(f'Resolved bytes do not match staged receipt: {item["name"]}')
         marker = resolved.parent / '_remote.repositories'
-        if not marker.is_file() or f'{resolved.name}>{MIRROR_ID}=' not in marker.read_text():
+        if not marker.is_file() or marker.is_symlink():
+            raise VerificationError(f'Resolved payload does not identify the controlled mirror: {item["name"]}')
+        entries = {line.strip() for line in marker.read_text().splitlines()
+                   if line.strip() and not line.lstrip().startswith(('#', '!'))}
+        origins = {line for line in entries if line.startswith(f'{resolved.name}>')}
+        if origins != {f'{resolved.name}>{mirror_id}='}:
             raise VerificationError(f'Resolved payload does not identify the controlled mirror: {item["name"]}')
 
 
-def negative_pom(source: Path, destination: Path, case: str, runtime: str) -> tuple[str, str]:
+def negative_pom(source: Path, destination: Path, case: str, runtime: str,
+                 artifact_version: str = VERSION) -> tuple[str, str]:
     tree = ET.parse(source)
     dependencies = tree.getroot().find(N + 'dependencies')
     opposite_runtime = '5.5.3' if runtime == '5.5.2' else '5.5.2'
@@ -141,7 +154,7 @@ def negative_pom(source: Path, destination: Path, case: str, runtime: str) -> tu
     elif case == 'wrong-non-anchor':
         group, artifact, version = SS_GROUP, 'shardingsphere-infra-common', opposite_runtime
     elif case in ('dual-selected-first', 'dual-opposite-first'):
-        group, artifact, version = GROUP, LANES[opposite_runtime], VERSION
+        group, artifact, version = GROUP, LANES[opposite_runtime], artifact_version
     else:
         raise VerificationError(f'Unknown negative graph case: {case}')
     dependency = ET.Element(N + 'dependency')
@@ -154,7 +167,8 @@ def negative_pom(source: Path, destination: Path, case: str, runtime: str) -> tu
     return artifact, version
 
 
-def verify_negative_selection(tree: dict, case: str, runtime: str, artifact: str, version: str) -> None:
+def verify_negative_selection(tree: dict, case: str, runtime: str, artifact: str, version: str,
+                              artifact_version: str = VERSION) -> None:
     selected = {(n.get('groupId'), n.get('artifactId')): n.get('version') for n in nodes(tree)}
     group = GROUP if case.startswith('dual-') else SS_GROUP
     if selected.get((group, artifact)) != version:
@@ -164,21 +178,23 @@ def verify_negative_selection(tree: dict, case: str, runtime: str, artifact: str
         anchors = ('shardingsphere-infra-executor', 'shardingsphere-infra-spi', database)
         if any(selected.get((SS_GROUP, anchor)) != runtime for anchor in anchors):
             raise VerificationError('Wrong non-anchor case must retain all three correct runtime anchors')
-    if case.startswith('dual-') and selected.get((GROUP, LANES[runtime])) != VERSION:
+    if case.startswith('dual-') and selected.get((GROUP, LANES[runtime])) != artifact_version:
         raise VerificationError('Dual-adapter case must actually select both ordinary module requests')
 
 
-def verify_lane(root: Path, temporary: Path, evidence: Path, repository: Path, settings: Path,
-                maven: str, environment: dict[str, str], runtime: str, adapter: str, receipt: dict) -> dict:
+def verify_lane(root: Path, temporary: Path, evidence: Path, repository: Path | None, settings: Path,
+                maven: str, environment: dict[str, str], runtime: str, adapter: str, receipt: dict,
+                *, version: str = VERSION, mirror_id: str = MIRROR_ID,
+                maven_arguments: tuple[str, ...] = ()) -> dict:
     consumer, cache = temporary / f'consumer-{runtime}', temporary / f'm2-{runtime}'
-    copy_consumer(root, consumer)
+    copy_consumer(root, consumer, version)
     if cache.exists():
         raise VerificationError('Maven local repository must start absent')
     lane = evidence / runtime
     lane.mkdir()
     arguments = [maven, '--batch-mode', '--no-transfer-progress', '--strict-checksums',
                  '--settings', str(settings), '--global-settings', str(settings),
-                 f'-Dmaven.repo.local={cache}', f'-Pruntime-{runtime}', '-Dstyle.color=never']
+                 f'-Dmaven.repo.local={cache}', f'-Pruntime-{runtime}', '-Dstyle.color=never', *maven_arguments]
     for module, property_name in (('routecontract-core', 'core'), (adapter, 'adapter')):
         digest = next(item['sha256'] for item in receipt['artifacts']
                       if item['module'] == module and item['name'].endswith('.jar'))
@@ -186,7 +202,8 @@ def verify_lane(root: Path, temporary: Path, evidence: Path, repository: Path, s
     def command(pom: Path, goals: list[str], log: Path, expect_failure: bool = False) -> str:
         return run([*arguments, '--file', str(pom), *goals], consumer, environment, log, expect_failure)
 
-    shared.verify_receipt(repository, receipt)
+    if repository is not None:
+        shared.verify_receipt(repository, receipt)
     print(f'Checking Maven {runtime} real-MySQL consumer with a fresh local repository...', flush=True)
     try:
         output = command(consumer / 'pom.xml', ['clean', 'verify'], lane / 'maven.log')
@@ -198,28 +215,30 @@ def verify_lane(root: Path, temporary: Path, evidence: Path, repository: Path, s
         graph_path = lane / 'resolved-graph.json'
         command(consumer / 'pom.xml', [DEPENDENCY_TREE, '-DoutputType=json', f'-DoutputFile={graph_path}'],
                 lane / 'graph.log')
-        graph = verify_tree(json.loads(graph_path.read_text()), runtime, adapter)
-        verify_origins(cache, adapter, receipt)
+        graph = verify_tree(json.loads(graph_path.read_text()), runtime, adapter, version)
+        verify_origins(cache, adapter, receipt, mirror_id)
         negatives = []
         for case in ('wrong-runtime', 'wrong-non-anchor', 'dual-selected-first', 'dual-opposite-first'):
             case_path = lane / case
             case_path.mkdir()
             pom = case_path / 'pom.xml'
-            artifact, version = negative_pom(consumer / 'pom.xml', pom, case, runtime)
+            artifact, rejected_version = negative_pom(consumer / 'pom.xml', pom, case, runtime, version)
             # Direct tree goal does not enter validate. Preserve the actual selected graph
             # independently of Enforcer's rejection; no enforcer.skip or fake metadata.
             selected_path = case_path / 'selected-graph.json'
             command(pom, [DEPENDENCY_TREE, '-DoutputType=json', f'-DoutputFile={selected_path}'],
                     case_path / 'graph.log')
-            verify_negative_selection(json.loads(selected_path.read_text()), case, runtime, artifact, version)
+            verify_negative_selection(json.loads(selected_path.read_text()), case, runtime, artifact,
+                                      rejected_version, version)
             rejected = command(pom, ['validate'], case_path / 'rejection.log', expect_failure=True)
-            if f'{artifact}:jar:{version}' not in rejected:
+            if f'{artifact}:jar:{rejected_version}' not in rejected:
                 raise VerificationError(f'Enforcer rejection did not identify the offending dependency: {case}')
             negatives.append(case)
-        shared.verify_receipt(repository, receipt)
+        if repository is not None:
+            shared.verify_receipt(repository, receipt)
         result = {'runtime': runtime, 'adapter': adapter, 'junit': counts, **graph,
                   'negativeGraphCases': negatives, 'evidenceLabel': 'verified - MySQL',
-                  'distributionEvidence': 'local-staged-bytes'}
+                  'distributionEvidence': 'local-staged-bytes' if repository is not None else 'public-maven-central'}
         write_json(lane / 'summary.json', result)
         print(f'Verified Maven {runtime}: real MySQL tests=3, ordinary negative graphs=4.', flush=True)
         return result
