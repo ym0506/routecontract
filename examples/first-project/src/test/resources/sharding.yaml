@@ -1,0 +1,42 @@
+mode:
+  type: Standalone
+dataSources:
+  ds_0:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: 'EVEN_URL'
+    username: routecontract
+    password: routecontract
+  ds_1:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: 'ODD_URL'
+    username: routecontract
+    password: routecontract
+rules:
+  - !SHARDING
+    tables:
+      t_order:
+        actualDataNodes: ds_${0..1}.t_order_${0..1}
+        databaseStrategy:
+          standard:
+            shardingColumn: user_id
+            shardingAlgorithmName: database_inline
+        tableStrategy:
+          standard:
+            shardingColumn: user_id
+            shardingAlgorithmName: table_inline
+    shardingAlgorithms:
+      database_inline:
+        type: INLINE
+        props:
+          algorithm-expression: ds_${user_id % 2}
+          allow-range-query-with-inline-sharding: true
+      table_inline:
+        type: INLINE
+        props:
+          algorithm-expression: t_order_${user_id % 2}
+          allow-range-query-with-inline-sharding: true
+props:
+  sql-show: false
+  executor-size: 4
