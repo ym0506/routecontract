@@ -3,10 +3,19 @@
 RouteContract follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html) for public version identifiers.
 
-## Unreleased
+## [0.1.3] - 2026-09-07
+
+Published as an immutable [GitHub Release](https://github.com/ym0506/routecontract/releases/tag/v0.1.3)
+for exact ShardingSphere-JDBC 5.5.3, and now available as a Maven Central test dependency.
+See the [GitHub release verification](docs/evidence/release-0.1.3-github.md) and
+[Central publication and consumer evidence](docs/evidence/release-0.1.3-central.md).
 
 ### Added
 
+- Add the `ManifestReviewReport` and `ManifestReviewCli` API for
+  Markdown/JSON comparison reports and an explicit failing CI exit code.
+- Retain exact five-payload Central candidate evidence, including Gradle Module
+  Metadata, separately from the established GitHub Release asset set.
 - Add an inactive-by-default Gradle Kotlin DSL assisted-pilot lane with exact `v0.1.2` local
   repository provenance, real MySQL verification, missing-baseline failure, and a separate
   synthetic match check.

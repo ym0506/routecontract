@@ -85,6 +85,13 @@ workflow. The workflow:
   fixed summary records the Git revision and per-suite counts but deliberately
   omits test names, timings, hostnames, paths, ports, SQL and captured output;
 - builds reproducible-order JARs and the generated Maven POM;
+- for stable `0.1.x` versions from `0.1.3` onwards, also generates Gradle Module
+  Metadata and retains the exact three JARs, POM and `.module` as a separate
+  `routecontract-central-candidate-COMMIT` Actions artifact. Its sixth file,
+  `candidate-payloads.json`, records observed names, sizes, hashes and the tagged
+  revision with `reviewed`, `signed` and `published` all false. Review this
+  artifact together with the successful whole run; it does not change the
+  twelve GitHub Release assets or the existing 17-file evidence artifact;
 - generates direct and aggregate CycloneDX JSON/XML SBOMs and fails unless
   every first-party component declares Apache-2.0, Connector/J includes its
   Universal FOSS Exception and MySQL example BOMs contain the digest-pinned,
@@ -241,9 +248,10 @@ or a corrected later stable patch selected by the final manifest, must use a
 new stable tag/revision/evidence run with `prerelease=false`; never retag or
 promote RC assets as if they were the final stable evidence.
 
-The v0.1 packaging gate requires no signature assets because no signing
-workflow or key-management policy is implemented. Add signing only in a future
-release with an explicit design and verification path. Do not imply SLSA
+The v0.1 packaging gate requires no signature assets in the twelve-file
+GitHub Release asset set. The separate Central staging procedure below adds
+signatures only to the Central upload bundle and does not change the historical
+GitHub asset contract. Do not imply SLSA
 provenance or reproducible builds unless those properties have been separately
 implemented and verified.
 
@@ -254,6 +262,12 @@ not published to Maven Central. This section applies only to a later stable
 version selected through a separate release approval. It does not authorize
 overwriting, retagging, or describing `0.1.0` or `0.1.2` as a Central artifact,
 and it does not plan or authorize another release by itself.
+
+[0.1.3](docs/release-0.1.3-candidate.md) is a completed single-artifact release for
+exact ShardingSphere-JDBC 5.5.3. The current source procedure below prepares the
+unreleased three-artifact 0.2 core/adapter split, whose release gates remain in force.
+Historical single-artifact instructions are identified separately. Selecting a new
+candidate is not publication or approval of bytes that have not yet been produced.
 
 Use the current official [Central publishing guide](https://central.sonatype.org/publish/publish-portal-guide/),
 [Portal API documentation](https://central.sonatype.org/publish/publish-portal-api/)
@@ -353,6 +367,82 @@ path and do not automatically delete, rename or complete either path; record
 their read-only state first and prepare a new candidate only after explicit
 reconciliation.
 
+<details>
+<summary>Historical single-artifact 0.1.3 staging</summary>
+
+The following five-payload procedure belongs to the immutable `v0.1.3` source checkout.
+It is retained for reproduction and does not apply to the current three-artifact 0.2
+aggregate publisher above. Use the [published 0.1.3 record](docs/evidence/release-0.1.3-central.md)
+for the completed release and its documented exception.
+
+#### Stage the reviewed CI payload bytes without rebuilding
+
+This is an alternative to rebuilding payloads with the single-module signing command
+in the [immutable 0.1.3 release checklist](https://github.com/ym0506/routecontract/blob/f1efd71e32078dd5812268a1ad24ee73110ff61f/RELEASING.md).
+That command uses `:routecontract-shardingsphere-5.5:publishMavenJavaPublicationToCentralStagingRepository`,
+not the current 0.2 aggregate task. Start with another fresh detached 0.1.3 checkout
+if the single-module command has already run.
+
+For the final candidate, use the five payloads retained by the exact tagged
+Linux/Temurin release-evidence run. A local JDK can generate different Javadoc
+bytes. In a fresh detached checkout of that same tag, first verify the downloaded
+Actions artifact digest and each payload's name, size and SHA-256 against the
+reviewed five-payload manifest. Copy those exact bytes into the publication's
+expected output locations:
+
+```bash
+release_version=REPLACE_WITH_REVIEWED_TAG_VERSION
+reviewed_payload_directory=/absolute/path/to/reviewed-five-payloads
+release_module=routecontract-shardingsphere-5.5
+release_base="${release_module}-${release_version}"
+test ! -e "${release_module}/build"
+mkdir -p "${release_module}/build/libs" \
+  "${release_module}/build/publications/mavenJava"
+for suffix in .jar -sources.jar -javadoc.jar; do
+  cp "${reviewed_payload_directory}/${release_base}${suffix}" \
+    "${release_module}/build/libs/${release_base}${suffix}"
+done
+cp "${reviewed_payload_directory}/${release_base}.pom" \
+  "${release_module}/build/publications/mavenJava/pom-default.xml"
+cp "${reviewed_payload_directory}/${release_base}.module" \
+  "${release_module}/build/publications/mavenJava/module.json"
+```
+
+Recheck all five seeded files against the same reviewed manifest before
+signing. Add these exclusions to that tagged 0.1.3 single-module signing command:
+
+```bash
+  -x :routecontract-shardingsphere-5.5:jar \
+  -x :routecontract-shardingsphere-5.5:sourcesJar \
+  -x :routecontract-shardingsphere-5.5:javadocJar \
+  -x :routecontract-shardingsphere-5.5:generatePomFileForMavenJavaPublication \
+  -x :routecontract-shardingsphere-5.5:generateMetadataFileForMavenJavaPublication
+```
+
+First add `--dry-run` and require exactly `signMavenJavaPublication` followed by
+`publishMavenJavaPublicationToCentralStagingRepository`. Then run the identical
+command without `--dry-run`, while the staging repository is still absent.
+Do not add `clean`, `assemble` or `check` to this signing invocation. Use `-x`;
+setting a generator's `enabled` flag to false can omit its publication artifact.
+
+After staging, compare each seeded and staged payload's size and SHA-256 with
+the reviewed CI bytes. A successful Gradle exit alone is insufficient: require
+the existing schema-1 bundle builder and verifier to validate the exact 55-file
+staging inventory, all checksums, five SHA-384 primary-key signatures and the
+30-entry upload bundle. These checks also reject missing stronger checksum
+sidecars if Gradle's `org.gradle.internal.publish.checksums.insecure` property is
+enabled or a checksum write fails. No payload hash mismatch may be repaired by
+replacing the approved manifest with locally regenerated hashes.
+
+This flow was exercised with Gradle 8.14.4, macOS JDK 17.0.15, synthetic supplied
+payloads and a disposable test key: only the two signing/publication tasks ran,
+all five seeded and staged bytes matched, no classes/Javadoc output was created,
+and the existing 55-file/30-entry verification passed. This is local fixture
+evidence; final CI payloads and protected-key signatures still need their own
+checks.
+
+</details>
+
 Before upload, recheck the official list of Central-supported keyservers and
 distribute the exact public primary key to one currently supported server. In a
 fresh empty private `GNUPGHOME`, receive/import it from that same server using
@@ -413,9 +503,9 @@ order and then lexicographically by filename. Each record has only
 Gradle Module Metadata, main JAR, sources JAR and Javadoc JAR. The manifest must
 be produced and approved as part of the approval-bound candidate; the bundle
 tool never creates or edits it and does not turn computed staging hashes into
-approval. The release-evidence design must retain and review the exact Gradle
-Module Metadata bytes; the current `v0.1.2` release evidence cannot be
-substituted.
+approval. The 0.2 release evidence must retain and review the exact Gradle Module
+Metadata and all fifteen payloads across the three artifacts. Historical five-payload
+0.1.3 evidence and the earlier v0.1.2 release evidence cannot substitute for that review.
 
 Before checking signatures, the tool verifies the dependency boundary in both
 metadata formats. Core must contain no RouteContract or ShardingSphere
@@ -552,6 +642,38 @@ dependency, a composite build, an authenticated deployment endpoint or an old
 cache. Do not claim Maven Central availability until both unauthenticated byte
 readback and the split-artifact fresh-consumer gate
 pass.
+
+#### Published single-artifact 0.1.x verification
+
+The commands below remain scoped to the single-artifact release family; they do not
+verify the current split 0.2 candidate.
+
+For the single-artifact stable `0.1.x` line from `0.1.3` onwards, run the
+[public byte readback](docs/public-release-central-verification.md) against the
+reviewed signed bundle. It verifies all 30 public files and only then emits
+`consumer-receipt.json`. Run both [independent public consumers](docs/public-release-consumers.md)
+from the clean reviewed source checkout using that receipt:
+
+```bash
+python3 -I scripts/verify-public-gradle-release-consumer.py \
+  --receipt /absolute/path/to/consumer-receipt.json \
+  --evidence-directory /absolute/path/to/new-public-gradle-evidence
+
+python3 -I scripts/verify-public-maven-release-consumer.py \
+  --receipt /absolute/path/to/consumer-receipt.json \
+  --java-home "$JAVA_HOME" \
+  --evidence-directory /absolute/path/to/new-public-maven-evidence
+```
+
+Each command creates its own absent cache and copied consumer outside the
+checkout, pins the first-party bytes to the receipt, and requires three real
+MySQL tests plus the shared CLI assertions. Consumers must not use
+`mavenLocal()`, a file repository, a project
+dependency, a composite build, an authenticated deployment endpoint or an old
+cache. Claim Maven Central availability only after both unauthenticated byte
+readback and both fresh-cache consumers pass. A missing version or failed
+consumer remains unverified; local staging or fixture-only success cannot
+substitute for either public run.
 
 Published Central coordinates are immutable. If any published byte, metadata,
 signature or verification result is wrong, preserve the evidence, stop using

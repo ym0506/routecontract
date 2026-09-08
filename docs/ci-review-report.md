@@ -1,6 +1,79 @@
 # CI review reports
 
-Status: development feature in this checkout; not part of the published v0.1.2 assets.
+Available in v0.1.3 through [GitHub Release assets](https://github.com/ym0506/routecontract/releases/tag/v0.1.3)
+and a [Maven Central test dependency](../README.en.md#install-013); see the
+[Central verification record](evidence/release-0.1.3-central.md).
+The v0.1.2 local installer does not include these APIs.
+
+## See the result first
+
+Open the [Markdown example](evidence/ci-review-report-example.md) or
+[JSON example](evidence/ci-review-report-example.json) without installing anything.
+The report shows attempts and observed data-source aliases changing from `1` to `2`,
+with `POLICY_VIOLATION`, `RCM201` and `RCM202`. It includes the governing baseline
+limits and the next investigation steps.
+
+## Try the released report without Docker
+
+You need Git and Java 17. The first run needs network access for Gradle and Java
+dependencies. This checks the committed example manifests; it does not start a
+database or constitute a new MySQL experiment.
+
+Run this from a directory where `routecontract-v0.1.3-review` does not already exist:
+
+```bash
+(
+set -e
+git clone --depth 1 --branch v0.1.3 --single-branch \
+  https://github.com/ym0506/routecontract.git routecontract-v0.1.3-review
+cd routecontract-v0.1.3-review
+mkdir -p build
+./gradlew --quiet :routecontract-shardingsphere-5.5:reviewManifest \
+  -PapprovedManifest=examples/manifests/find-paid-orders-by-user.approved.json \
+  -PcandidateManifest=examples/manifests/find-paid-orders-by-user.candidate.json \
+  -PreviewReportOutput=build/review-first.md
+)
+```
+
+**Expected result:** Gradle reports a failure because the example violates the
+contract. Open `routecontract-v0.1.3-review/build/review-first.md` to see the
+`POLICY_VIOLATION` report with `RCM201` and `RCM202`. A failed command without that
+report is not a successful demonstration; inspect the setup or build error.
+
+For JSON, run the same Gradle command from the cloned directory with
+`-PreviewReportFormat=json` and `-PreviewReportOutput=build/review-first.json`.
+Use a new output path each time; an existing report is never overwritten.
+
+To see a passing unchanged-input comparison, run this from the cloned directory:
+
+```bash
+./gradlew --quiet :routecontract-shardingsphere-5.5:reviewManifest \
+  -PapprovedManifest=examples/manifests/find-paid-orders-by-user.approved.json \
+  -PcandidateManifest=examples/manifests/find-paid-orders-by-user.approved.json \
+  -PreviewReportOutput=build/review-match.md
+```
+
+This command exits successfully and writes `MATCH`. It compares the same committed
+fixture on both sides; your own project's baseline still needs its normal review.
+
+This path uses the immutable v0.1.3 source tag. The [v0.1.2 MySQL Quick Start](../README.en.md#quick-start)
+remains a separate database demonstration. The [release verification record](evidence/release-0.1.3-github.md)
+identifies the published binaries and the tagged CI run.
+
+## Use in an application test
+
+With the v0.1.3 library on the test classpath, call
+`ManifestReviewReport.compare(approved, candidate)`, then `toMarkdown()` or `toJson()`.
+Use `verification()` with the existing assertions; the report is a presentation layer.
+The CLI main class is `io.github.ym0506.routecontract.manifest.ManifestReviewCli`,
+accepting exactly `--baseline PATH --candidate PATH --format markdown|json --output PATH`.
+It needs the library's runtime dependencies on the classpath; the published JAR is
+not a self-contained executable JAR.
+
+To discuss whether the output would help your CI review, use the
+[short feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml).
+A description of what was clear or missing is enough; running this example is not
+the same as integrating RouteContract into your own project.
 
 ## Acceptance contract
 
@@ -11,9 +84,6 @@ ineligible capture, budget violation, structural drift, review required, match.
 
 - A real-MySQL operation returning the same business result with attempts `1 → 2` must produce
   `POLICY_VIOLATION`, `RCM201`, `RCM202`, and a failing strict CI exit.
-- Schema-2 manifests from the same supported exact runtime may match. A 5.5.2/5.5.3
-  identity mismatch must produce `INCOMPATIBLE`, `RCM005`, and strict exit 1 before budget
-  checks. Unsupported identities produce `RCM004`; legacy schema 1 remains implicitly 5.5.3.
 - Same-count SQL/type-shape changes must remain visible as structural drift.
 - `REVIEW_REQUIRED` must never be presented as `MATCH`. The CLI requires an exact match (exit 0);
   any valid non-match exits 1; invalid input, arguments or output errors exit 2.
@@ -30,7 +100,14 @@ ineligible capture, budget violation, structural drift, review required, match.
   freshness or human approval. Approval provenance stays in the repository's review process.
 - No command approves a baseline, uploads artifacts, posts a PR comment or connects to a database.
 
-## Run against the included example
+## Unreleased 0.2 source example
+
+The following runtime-identity contract applies only to the unreleased 0.2 source.
+Published 0.1.3 uses schema 1 and exact ShardingSphere-JDBC 5.5.3.
+
+- Schema-2 manifests from the same supported exact runtime may match. A 5.5.2/5.5.3
+  identity mismatch must produce `INCOMPATIBLE`, `RCM005`, and strict exit 1 before budget
+  checks. Unsupported identities produce `RCM004`; legacy schema 1 remains implicitly 5.5.3.
 
 Java 17 and this source checkout are required. No Docker is needed to review the committed
 example; this command alone does not constitute a new database experiment.

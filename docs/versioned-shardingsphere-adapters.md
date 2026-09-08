@@ -615,10 +615,10 @@ Publication is all-or-nothing for the 0.2.0 three-artifact graph. It is blocked 
 Rollback rules are intentionally asymmetric around immutable publication:
 
 - Before publication, discard the staging repository and revert the local branch if any gate
-  fails. Continue to recommend immutable 0.1.2 for exact 5.5.3 only.
+  fails. Continue to recommend immutable 0.1.3 for exact 5.5.3 only.
 - A failing 5.5.2 gate does not justify publishing a partial 0.2.0 graph or weakening the test. The
   new adapter remains `planned`/`experimental`.
-- Never move, delete, replace, or reinterpret the immutable v0.1.2 tag, Release, assets, or GAV.
+- Never move, delete, replace, or reinterpret any published v0.1 tag, Release, assets, or GAV.
 - After an immutable 0.2.0 publication, do not overwrite artifacts. Publish a clear advisory and a
   corrected later version only after the same gates pass; keep schema-1 and already published
   schema-2 manifests readable.
@@ -634,8 +634,8 @@ addressable consent-only pilot pool while preserving the already supported 5.5.3
 
 That is a product-distribution opportunity, not adoption evidence. An artifact build, download,
 fork, star, local fixture, draft PR, maintainer comment, or green RouteContract-owned CI run does
-not create a user. A qualifying external user still requires all of the following in the external
-repository:
+not create a user. A publicly reproducible completed integration requires all of the following in
+the external repository:
 
 1. the matching RouteContract dependency;
 2. a representative application operation;
@@ -643,9 +643,13 @@ repository:
 4. a candidate check; and
 5. successful upstream public CI evidence.
 
-Until that evidence exists, the actual external-user count remains unchanged. This ADR must not be
-cited as support, adoption, endorsement, or permission to contact repositories in parallel with an
-active consent-only pilot.
+Private-project use is also valid: record self-reported installation, completed integration and
+repeat use separately from independent verification and permission to publish, following the
+[shared adoption definitions](user-feedback.md#recording-use-and-evidence). A public CI link is a
+requirement for the publicly reproducible completed-integration claim above, not a prerequisite for a
+private developer to participate. Do not upgrade a conversation, reaction or download to a use
+claim. This ADR does not grant permission to contact repositories in parallel with an active
+consent-only pilot.
 
 ## 10. Rejected alternatives
 

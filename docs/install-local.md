@@ -1,8 +1,12 @@
 # Install v0.1.2 in an existing test project
 
-Use a small local Maven repository while RouteContract is not yet on Maven Central.
+This historical v0.1.2 path uses a small local Maven repository. For current installation,
+use the [v0.1.3 Maven Central test dependency](../README.en.md#install-013), backed by the
+[public verification record](evidence/release-0.1.3-central.md).
 The same repository works with Gradle Groovy, Gradle Kotlin DSL and Maven. This
-installs the released **v0.1.2** library, not unreleased features from `main`.
+installs the released **v0.1.2** library. The newer **v0.1.3** GitHub release adds
+Markdown/JSON reports; use its [separate report example](ci-review-report.md#try-the-released-report-without-docker)
+to try those APIs. This installer's coordinate and verified hashes remain v0.1.2.
 
 ## Install once
 

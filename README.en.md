@@ -22,27 +22,69 @@ Read the [execution boundary and limitations](docs/start-here.md#도입-전에-�
 | Your goal | Start here |
 | --- | --- |
 | See what it does | [Watch the 2:54 demo](https://www.youtube.com/watch?v=pcgvNNxd1mM) · [Actual comparison](examples/manifests/README.md) — no installation |
+| See the report a CI reviewer reads | [Markdown preview](docs/evidence/ci-review-report-example.md) · [Generate it with v0.1.3](docs/ci-review-report.md#try-the-released-report-without-docker) — Git and Java 17, no Docker |
 | Reproduce the same-result, changed-execution case | [Quick Start below](#quick-start) — Git, Java 17, Docker |
-| Apply it to one test in your project | [Short installation command](docs/install-local.md) · [Choose a version and build path](docs/start-here.md) · [Maven starter](examples/maven-pilot/README.md#review-only-starter-bundle) |
+| Apply it to one test in your project | [Install 0.1.3 from Maven Central](#install-013) — existing Java 17 / ShardingSphere-JDBC 5.5.3 test |
 | Ask about fit or share an experience | [Short feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml) — no installation or public repository required |
 
-Released `v0.1.2` uses verified GitHub Release assets and is not on Maven Central.
-The new Markdown/JSON [CI review reports](docs/ci-review-report.md) require development source;
-they are not included in that release. Private projects can use the library in their own environment.
+The latest [v0.1.3 release](https://github.com/ym0506/routecontract/releases/tag/v0.1.3) includes
+Markdown/JSON [CI review reports](docs/ci-review-report.md) and `ManifestReviewCli`, and is available
+through GitHub Release assets and Maven Central. The MySQL Quick Start below, local installer and
+existing integration guides remain pinned to verified v0.1.2. Use the v0.1.3 report path above
+to try the reports. Private projects can use the library in their own environment.
 Keep SQL, bind values, connection details and full logs out of public feedback.
 See [how to get help and record use](docs/user-feedback.md).
 
 The current source tree is unreleased `0.2.0` development. The core and exact 5.5.2/5.5.3
 adapter split is described in the [development design](docs/versioned-shardingsphere-adapters.md);
-the installation commands below use released `v0.1.2`.
+ordinary installation uses public `v0.1.3`, while the database demo and existing local installer
+remain pinned to `v0.1.2`.
 
 ![A verified real-MySQL case where the business result stays the same while observed attempts and reviewed data-source aliases change from one to two, producing RCM201 and RCM202](submission/assets/baseline-candidate.png)
+
+## Install 0.1.3
+
+See the [public file verification and Gradle/Maven installation results](docs/evidence/release-0.1.3-central.md).
+
+Add the test dependency to an existing **Java 17 / ShardingSphere-JDBC 5.5.3** project.
+Keep its ShardingSphere configuration, data-source setup and business-result assertions.
+
+Gradle Groovy / Kotlin DSL:
+
+```kotlin
+repositories { mavenCentral() }
+
+dependencies {
+    testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.3")
+}
+```
+
+Maven (add inside `<dependencies>` in `pom.xml`):
+
+```xml
+<dependency>
+  <groupId>io.github.ym0506.routecontract</groupId>
+  <artifactId>routecontract-shardingsphere-5.5</artifactId>
+  <version>0.1.3</version>
+  <scope>test</scope>
+</dependency>
+```
+
+Wrap one synchronous non-batch `PreparedStatement` operation as in the
+[usage example below](#smallest-usage-example). RouteContract neither supplies ShardingSphere nor
+forces its whole dependency graph; every ShardingSphere module in the test runtime must be exactly 5.5.3.
+
+The v0.1.2 Quick Start, local installer and Maven starter below remain pinned reproduction paths.
+Installing 0.1.3 does not require that installer or a clone of this repository.
 
 ## Quick Start
 
 The block below does not build the current source tree. It clones the exact `v0.1.2` tag into a new
 directory and runs that tagged public product. Do not replace `source_dir` with the current
 `0.2.0` work checkout.
+
+This MySQL demonstration is pinned to v0.1.2. To try the latest report feature first,
+use the [v0.1.3 example without Docker](docs/ci-review-report.md#try-the-released-report-without-docker).
 
 Prerequisites are Git, Java 17, a running Docker daemon, Bash/POSIX tools, and the executable Gradle
 Wrapper. The first run may need network access for the public tag, Gradle and Maven Central
@@ -84,7 +126,7 @@ output that could contain SQL, parameters, or connection details.
 </details>
 
 <details>
-<summary>Integrate an existing project: detailed Gradle and Maven paths</summary>
+<summary>v0.1.2 integration path: detailed Gradle and Maven instructions</summary>
 
 ## Next step: assess a first integration
 
@@ -370,8 +412,8 @@ to have only one role):
 
 The current source tree declares unreleased project version `0.2.0`. That version string, a module,
 fixture, or checkout does not prove a `v0.2.0` tag, public immutable Release, same-revision release
-evidence, 5.5.2 support, or an external-user result. Public stable `v0.1.2` remains immutable and
-uses the pre-split all-in-one layout. Use public assets only after verifying tag/Release/evidence-run
+evidence, 5.5.2 support, or an external-user result. Public stable `v0.1.3` and the earlier `v0.1.2` remain immutable and
+use the pre-split all-in-one layout. Use public assets only after verifying tag/Release/evidence-run
 revision identity and every postpublication check in the [release procedure](RELEASING.md).
 
 <details>
@@ -395,7 +437,7 @@ limitations. None of these results implies production support or general perform
 </details>
 
 <details>
-<summary>Detailed Release-asset installation before Maven Central publication</summary>
+<summary>Detailed v0.1.2 GitHub Release-asset installation</summary>
 
 ## Consume public Release assets without a registry
 
