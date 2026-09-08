@@ -544,6 +544,29 @@ class GradleIntrinsicCollisionTest(unittest.TestCase):
             with self.subTest(mutation=mutation), self.assertRaises(MODULE.BoundaryError):
                 self.verify(case, output, invalid, metadata)
 
+    def test_retained_java_base_runtime_variant_paths_keep_all_exact_cause_restrictions(self):
+        # Recorded native graph SHA256: 7bcbefb518c2d43f1ddd237884644b6275b176156dc2bbef9e62382fb584dbd6
+        # Derive the new native POM path spelling from prior retained causes, then
+        # bind each complete cause to its actual newly retained message digest.
+        expected_message_hashes = {'org.apache.shardingsphere:shardingsphere-infra-executor:5.5.2': 'f4f355efb1d57be6aa5aabdb78902efb340fe53054751db3676b89d31c9fea89', 'org.apache.shardingsphere:shardingsphere-infra-spi:5.5.2': '02bb6640b7e5b20dcec8dd8c787c0c1c8a878b7e75e49f38a7a6a697f34749c8', 'org.apache.shardingsphere:shardingsphere-infra-spi:5.5.3': '02bb6640b7e5b20dcec8dd8c787c0c1c8a878b7e75e49f38a7a6a697f34749c8'}
+        case, output, graph, metadata = intrinsic_fixture()
+        for node in graph['unresolved']:
+            if node['requested'] in expected_message_hashes:
+                message = node['failureMessages'][1]['message'].replace(' (default)', ' (runtime)')
+                self.assertEqual(expected_message_hashes[node['requested']], hashlib.sha256(message.encode()).hexdigest())
+                node['failureMessages'][1]['message'] = message
+        output = output.replace(' (default)', ' (runtime)')
+        proof = self.verify(case, output, graph, metadata)
+        self.assertEqual('NATIVE_CAPABILITY_AND_INTRINSIC_STRICT_REJECTED', proof['result'])
+        self.assertEqual(3, len(proof['intrinsicStrictCollisions']))
+        for variant in ('api', 'custom-runtime'):
+            invalid = json.loads(json.dumps(graph).replace(' (runtime)', f' ({variant})'))
+            with self.subTest(variant=variant), self.assertRaises(MODULE.BoundaryError):
+                self.verify(case, output.replace(' (runtime)', f' ({variant})'), invalid, metadata)
+        invalid = json.loads(json.dumps(graph).replace(' (runtimeElements)', ' (runtime)'))
+        with self.assertRaises(MODULE.BoundaryError):
+            self.verify(case, output.replace(' (runtimeElements)', ' (runtime)'), invalid, metadata)
+
     def test_java_base_schema_does_not_enable_source_sets_or_change_ordinary_edges(self):
         text=(ROOT/'examples/dual-resolver-boundary-consumer/gradle/build.gradle.template').read_text()
         self.assertIn("id 'java-base'", text)

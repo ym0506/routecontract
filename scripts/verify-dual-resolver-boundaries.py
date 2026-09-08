@@ -205,7 +205,7 @@ def verify_intrinsic_strict(node, case, selected, metadata):
             # These are Gradle's retained contributing paths through a partially rejected graph.
             # They do not establish a coherent or executable runtime.
             if (kind != 'Dependency' or reason is not None
-                    or any(v not in (None, 'default', 'runtimeElements') for v in variants[1:])
+                    or any(v not in (None, 'default', 'runtime', 'runtimeElements') for v in variants[1:])
                     or any(not re.fullmatch(re.escape(SS) + r':shardingsphere-[a-z0-9.-]+:5[.]5[.][23]', c)
                            for c in coordinates[1:])
                     or coordinates[1].split(':')[1] not in anchors(case['runtime'])
