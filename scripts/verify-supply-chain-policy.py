@@ -2935,8 +2935,9 @@ def _published_pom_inventory(
     return dependencies
 
 
-def _published_runtime_lock_inventory(path: Path) -> set[str]:
+def _published_classpath_lock_inventories(path: Path) -> tuple[set[str], set[str]]:
     content = _read_text(path, "published module dependency lock")
+    compile_classpath: set[str] = set()
     runtime: set[str] = set()
     seen: set[str] = set()
     saw_empty = False
@@ -2980,11 +2981,13 @@ def _published_runtime_lock_inventory(path: Path) -> set[str]:
                 f"published dependency lock line {line_number} is ambiguous"
             )
         seen.add(canonical)
+        if "compileClasspath" in configurations:
+            compile_classpath.add(canonical)
         if "runtimeClasspath" in configurations:
             runtime.add(canonical)
     if not saw_empty or not seen:
         raise PolicyError("published dependency lock is incomplete")
-    return runtime
+    return compile_classpath, runtime
 
 
 def _validate_root_reachable_dependency_graph(
@@ -3052,7 +3055,7 @@ def _published_inventory(
         expected_project_description=expected_project_description,
         expected_dependency_management=expected_dependency_management,
     )
-    runtime_locked = _published_runtime_lock_inventory(published_lock)
+    compile_locked, runtime_locked = _published_classpath_lock_inventories(published_lock)
     missing = set(pom_dependencies) - set(osv_inventory)
     if missing:
         raise PolicyError(
@@ -3180,19 +3183,37 @@ def _published_inventory(
         }
         for ref, targets in resolved_graph.items()
     }
-    runtime_closure: set[str] = set()
-    pending_canonical = list(pom_dependencies)
-    while pending_canonical:
-        purl = pending_canonical.pop()
-        if purl in runtime_closure:
-            continue
-        if purl not in osv_inventory:
-            raise PolicyError(
-                "published runtime closure escaped the published dependency set: "
-                f"{purl}"
-            )
-        runtime_closure.add(purl)
-        pending_canonical.extend(canonical_graph[purl])
+    def reachable_dependencies(excluded: set[str]) -> set[str]:
+        reachable: set[str] = set()
+        pending = list(pom_dependencies)
+        while pending:
+            purl = pending.pop()
+            if purl in reachable or purl in excluded:
+                continue
+            if purl not in osv_inventory:
+                raise PolicyError(
+                    "published runtime closure escaped the published dependency set: "
+                    f"{purl}"
+                )
+            reachable.add(purl)
+            pending.extend(canonical_graph[purl])
+        return reachable
+
+    # The producer merges compile/runtime edges. Account for the entire POM-seeded
+    # graph before pruning, so compile-only nodes cannot hide unexplained children.
+    merged_closure = reachable_dependencies(set())
+    unexplained = {
+        purl for purl in merged_closure
+        if _parse_maven_purl(purl)[1] != FIRST_PARTY_GROUP
+    } - (compile_locked | runtime_locked)
+    if unexplained:
+        raise PolicyError(
+            "published merged dependency closure contains packages outside "
+            f"compile/runtime lock: {sorted(unexplained)}"
+        )
+    # Configuration membership comes from the strict lock, not the merged edges.
+    compile_only = compile_locked - runtime_locked
+    runtime_closure = reachable_dependencies(compile_only)
     third_party_runtime_closure = runtime_closure - {
         purl
         for purl in runtime_closure
