@@ -91,6 +91,8 @@ RouteAssertions.assertThat(snapshot)
 3. baseline을 명시적으로 승인한 뒤 이후 candidate를 CI에서 비교합니다.
 
 candidate 생성만으로 baseline이 승인되지는 않습니다. 의도한 변경도 새 검토를 거칩니다.
+[첫 프로젝트 가이드](docs/first-project.ko.md)에서 Maven·Gradle 예제로 Central 설치부터
+기준 검토와 CI 실패 확인까지 따라갈 수 있습니다.
 [Manifest API 예제](docs/reference-guide.md#approved-manifests-and-structural-manifest-diffs)와
 [CI 리포트 가이드](docs/ci-review-report.md)에서 Java API, Markdown·JSON 출력,
 진단 코드와 조사 방법을 확인할 수 있습니다.
@@ -114,7 +116,7 @@ candidate 생성만으로 baseline이 승인되지는 않습니다. 의도한 �
 | --- | --- | --- |
 | [v0.1.3 CI 리포트 생성](docs/ci-review-report.md#try-the-released-report-without-docker) | Git, Java 17, 최초 의존성 다운로드 | 저장된 manifest를 비교해 `POLICY_VIOLATION`, `RCM201`·`RCM202`를 출력합니다. 의도적으로 검사가 실패하는 예제이며 Docker는 필요 없습니다. |
 | [MySQL 실행 변화 재현](docs/reference-guide.ko.md#quick-start) | Git, Java 17, Docker, 최초 다운로드 | 불변 tag에 고정한 과거 **v0.1.2** 시연입니다. wrapper는 예상한 계약 거부까지 확인하면 성공합니다. |
-| [기존 테스트 한 개에 적용](#사용-예) | 지원 범위에 맞는 ShardingSphere 테스트 fixture | 업무 결과 assertion을 유지하면서 작업별 실행 예산을 정하고 검토합니다. |
+| [v0.1.3 첫 프로젝트 예제](docs/first-project.ko.md) | Git, Java 17, Docker; Maven 또는 Gradle wrapper | candidate 생성·기준 검토·`MATCH`를 확인하고, 같은 결과에서 실행 시도 `1 → 2` 변화로 실패하는 과정을 실행합니다. |
 
 ## 지원 범위
 
@@ -141,6 +143,7 @@ Proxy, batch, reactive 실행, 애플리케이션이 만든 async 경계와 SQL 
 | 주제 | 안내 |
 | --- | --- |
 | 내 상황에 맞는 시작점 | [Start here](docs/start-here.md) |
+| 공개 라이브러리를 프로젝트에 적용 | [첫 프로젝트](docs/first-project.ko.md) · [English](docs/first-project.md) |
 | API·정책·상세 재현 절차 | [한국어 상세 가이드](docs/reference-guide.ko.md) · [English guide](docs/reference-guide.md) |
 | CI 실패 검토 | [리포트·CLI](docs/ci-review-report.md) · [리포트 예제](docs/evidence/ci-review-report-example.md) |
 | 관측 내용 이해 | [아키텍처](docs/architecture.md) · [명세](docs/specification.md) |

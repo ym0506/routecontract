@@ -94,6 +94,8 @@ budget to your fixture. A hook callback returning does not prove a transaction c
 3. Approve the baseline explicitly. Compare subsequent candidates against that baseline in CI.
 
 Candidates never approve themselves. Intentional changes need a new review.
+Follow [one project from Central install to a failing CI check](docs/first-project.md),
+with runnable Maven and Gradle examples.
 The [manifest example](docs/reference-guide.md#approved-manifests-and-structural-manifest-diffs)
 shows the Java API; [CI review reports](docs/ci-review-report.md) add Markdown or JSON output
 with stable diagnostic codes and investigation steps.
@@ -117,7 +119,7 @@ They do not measure physical tables, a complete route plan or performance.
 | --- | --- | --- |
 | [Generate the v0.1.3 CI report](docs/ci-review-report.md#try-the-released-report-without-docker) | Git, Java 17; initial dependency downloads | Compares committed manifests; writes `POLICY_VIOLATION` with `RCM201` / `RCM202`. The example deliberately fails the check. No Docker. |
 | [Reproduce the MySQL change](docs/reference-guide.md#quick-start) | Git, Java 17, Docker; initial downloads | Historical **v0.1.2** demo, pinned to its immutable tag. The wrapper succeeds after verifying the expected contract rejection. |
-| [Apply it to one existing test](#usage) | Your supported ShardingSphere test fixture | Keep the result assertion; choose and review an execution budget for your operation. |
+| [Run the v0.1.3 first-project example](docs/first-project.md) | Git, Java 17, Docker; Maven or the Gradle wrapper | Capture a candidate, review a baseline, see `MATCH`, then reproduce the same-result `1 → 2` failure. Adapt one existing test. |
 
 ## Supported scope
 
@@ -145,6 +147,7 @@ Independent integration and repeat use have not yet been verified.
 | Topic | Guide |
 | --- | --- |
 | Find your next step | [Start here](docs/start-here.md) |
+| Apply the released library to one project | [First project](docs/first-project.md) · [한국어](docs/first-project.ko.md) |
 | API, policies and detailed reproduction | [Detailed guide](docs/reference-guide.md) · [한국어 상세 가이드](docs/reference-guide.ko.md) |
 | Review failures in CI | [Report guide and CLI](docs/ci-review-report.md) · [Example report](docs/evidence/ci-review-report-example.md) |
 | Understand what is observed | [Architecture](docs/architecture.md) · [Specification](docs/specification.md) |

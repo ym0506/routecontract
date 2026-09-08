@@ -1,0 +1,186 @@
+name: First project
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: first-project-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  public-example:
+    name: Public 0.1.3 / ${{ matrix.build }} / MySQL
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        build: [Maven, Gradle]
+    env:
+      BUILD_TOOL: ${{ matrix.build }}
+    defaults:
+      run:
+        working-directory: examples/first-project
+        shell: bash
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Java 17
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: '17.0.20+101'
+          verify-signature: true
+
+      - name: Set up Gradle
+        if: matrix.build == 'Gradle'
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          dependency-graph: disabled
+          validate-wrappers: true
+
+      - name: Install Maven 3.9.14
+        if: matrix.build == 'Maven'
+        run: |
+          set -euo pipefail
+          archive="${RUNNER_TEMP}/apache-maven-3.9.14-bin.tar.gz"
+          curl --disable --fail --location --silent --show-error --retry 3 \
+            --connect-timeout 15 --max-time 300 \
+            --output "$archive" \
+            https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.14/apache-maven-3.9.14-bin.tar.gz
+          printf '%s  %s\n' \
+            d50af8ab5e6005b46a07f0ce9d3719e67cfdf898da988a84871304cd59fb1af0fef2f99dea709e6e66f21f732f905979b5c2dce6b6860406f60a70e84d9cf0b8 \
+            "$archive" | sha512sum --check --strict
+          tar -xzf "$archive" -C "$RUNNER_TEMP"
+          printf '%s\n' "${RUNNER_TEMP}/apache-maven-3.9.14/bin" >> "$GITHUB_PATH"
+
+      - name: Verify first-time capture never approves a baseline
+        run: |
+          set -euo pipefail
+          baseline="${RUNNER_TEMP}/first-project-unapproved.json"
+          test ! -e "$baseline"
+          mkdir -p build/lifecycle-evidence
+          status=0
+          if test "$BUILD_TOOL" = Maven; then
+            mvn -B test "-Droutecontract.baseline=$baseline" > build/lifecycle-evidence/missing.log 2>&1 || status=$?
+          else
+            ../../gradlew -p . test --rerun-tasks "-ProutecontractBaseline=$baseline" > build/lifecycle-evidence/missing.log 2>&1 || status=$?
+          fi
+          test "$status" -ne 0
+          grep -Fq 'No approved baseline. Candidate was preserved' build/lifecycle-evidence/missing.log
+          test -f build/routecontract/candidate.json
+          test ! -e "$baseline"
+          test ! -e build/routecontract/review.md
+          test ! -e build/routecontract/review.json
+          if test "$BUILD_TOOL" = Maven; then
+            mvn -B test -Droutecontract.mode=capture "-Droutecontract.baseline=$baseline"
+          else
+            ../../gradlew -p . test --rerun-tasks -ProutecontractMode=capture "-ProutecontractBaseline=$baseline"
+          fi
+          test ! -e "$baseline"
+          test ! -e build/routecontract/review.md
+          test ! -e build/routecontract/review.json
+          cmp baselines/find-paid-orders-by-user.approved.json build/routecontract/candidate.json
+          cp build/routecontract/candidate.json build/lifecycle-evidence/unapproved-candidate.json
+
+      - name: Run the ordinary matching check
+        run: |
+          set -euo pipefail
+          mkdir -p build/lifecycle-evidence
+          sha256sum baselines/find-paid-orders-by-user.approved.json > build/lifecycle-evidence/baseline.sha256
+          if test "$BUILD_TOOL" = Maven; then
+            mvn -B test
+          else
+            ../../gradlew -p . test --rerun-tasks
+          fi
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path('build/routecontract/review.json').read_text())
+          assert report['status'] == 'MATCH' and report['matched'] is True
+          assert report['candidate']['observedPhysicalAttemptCount'] == 1
+          PY
+          mkdir -p build/lifecycle-evidence/match
+          cp build/routecontract/* build/lifecycle-evidence/match/
+
+      - name: Verify the intentional same-result regression fails
+        run: |
+          set -euo pipefail
+          status=0
+          if test "$BUILD_TOOL" = Maven; then
+            mvn -B test -Droutecontract.query=range || status=$?
+          else
+            ../../gradlew -p . test --rerun-tasks -ProutecontractQuery=range || status=$?
+          fi
+          test "$status" -ne 0
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          report = json.loads(Path('build/routecontract/review.json').read_text())
+          assert report['status'] == 'POLICY_VIOLATION'
+          assert report['matched'] is False and report['strictExitCode'] == 1
+          assert {finding['code'] for finding in report['findings']} == {'RCM201', 'RCM202'}
+          assert report['baseline']['observedPhysicalAttemptCount'] == 1
+          assert report['candidate']['observedPhysicalAttemptCount'] == 2
+          assert report['candidate']['captureStatus'] == 'COMPLETE'
+          junit = Path('target/surefire-reports' if os.environ['BUILD_TOOL'] == 'Maven'
+                       else 'build/test-results/test') / 'TEST-example.OrderContractTest.xml'
+          suite = ET.parse(junit).getroot()
+          assert (suite.get('tests'), suite.get('failures'), suite.get('errors'), suite.get('skipped')) == ('1', '1', '0', '0')
+          cases = suite.findall('testcase')
+          assert len(cases) == 1
+          assert cases[0].get('name') in ('paidOrdersKeepTheirBusinessResultAndExecutionContract',
+                                        'paidOrdersKeepTheirBusinessResultAndExecutionContract()')
+          failure = cases[0].find('failure')
+          assert failure is not None and failure.get('type') == 'io.github.ym0506.routecontract.RouteContractViolationException'
+          PY
+          sha256sum --check build/lifecycle-evidence/baseline.sha256
+          mkdir -p build/lifecycle-evidence/range
+          cp build/routecontract/* build/lifecycle-evidence/range/
+
+      - name: Restore the normal check
+        run: |
+          set -euo pipefail
+          if test "$BUILD_TOOL" = Maven; then
+            mvn -B test
+          else
+            ../../gradlew -p . test --rerun-tasks
+          fi
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path('build/routecontract/review.json').read_text())
+          assert report['status'] == 'MATCH' and report['matched'] is True
+          PY
+          sha256sum --check build/lifecycle-evidence/baseline.sha256
+
+      - name: Show the regression review
+        if: always()
+        run: |
+          report=build/lifecycle-evidence/range/review.md
+          if test -f "$report"; then
+            cat "$report" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Keep example results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: first-project-${{ matrix.build }}
+          path: |
+            examples/first-project/build/routecontract/
+            examples/first-project/build/lifecycle-evidence/
+            examples/first-project/build/test-results/
+            examples/first-project/target/surefire-reports/
+          retention-days: 14

@@ -18,6 +18,8 @@ ONBOARDING_PAGES = (
     "docs/start-here.md",
     "docs/user-feedback.md",
     "docs/first-integration.md",
+    "docs/first-project.md",
+    "docs/first-project.ko.md",
     "docs/product-roadmap.md",
 )
 FEEDBACK_PATH = REPOSITORY_ROOT / ".github/ISSUE_TEMPLATE/stable-feedback.yml"

@@ -1,5 +1,9 @@
 # First real integration
 
+**Historical v0.1.2 tooling.** For the current Maven Central release, use
+[First project — v0.1.3](first-project.md) ([한국어](first-project.ko.md)). The pinned commands
+below are retained for the earlier local-install and assisted-pilot workflow.
+
 Use this guide in a public or private repository you own, maintain, or are authorized to modify.
 You do not need to publish your code, baseline, or CI results to use RouteContract. The guide moves
 from the demo to one representative operation, keeps its existing business assertion, records a

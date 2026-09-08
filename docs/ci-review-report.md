@@ -62,6 +62,9 @@ identifies the published binaries and the tagged CI run.
 
 ## Use in an application test
 
+The [first-project guide](first-project.md) connects the published dependency, one MySQL test,
+candidate capture, baseline review and a failing CI comparison with Maven or Gradle.
+
 With the v0.1.3 library on the test classpath, call
 `ManifestReviewReport.compare(approved, candidate)`, then `toMarkdown()` or `toJson()`.
 Use `verification()` with the existing assertions; the report is a presentation layer.
