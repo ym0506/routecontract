@@ -22,7 +22,7 @@ Gradle and Maven metadata/preflight consumers. At `0f0a0ca`,
 complete versioned MySQL corpus and independent Gradle staged-artifact consumer; its exact
 [scope and raw artifacts](evidence/staged-split-consumer-2026-09-07.md#public-ci-follow-up) are
 recorded separately. Later Maven staged-consumer checks have their own local evidence. The
-[final-candidate A-26 follow-up](evidence/public-api-migration-final-candidate-2026-09-08.md)
+[historical 4e06694 A-26 follow-up](evidence/public-api-migration-final-candidate-2026-09-08.md)
 passed one unchanged-runner execution against reviewed `4e06694` staging, including old-bytecode
 MySQL, source, reflection, record-shape and bounded module-path migration probes.
 These results do not complete every release row or establish a public release or external adoption.
@@ -32,7 +32,7 @@ The original A-28 runtime-collision gate is now **FAILED**, with its observation
 immutable old entry code before a new guard could execute. The candidate adopts the explicit
 [current-entry migration contract](current-entry-migration-acceptance.md) and the separate A-29
 successor gate below. Its eight focused regression cells and integrated-source MySQL checks passed.
-The [full 64-cell successor execution](evidence/current-entry-successor-4e06694-2026-09-08.md)
+The [historical 4e06694 successor execution](evidence/current-entry-successor-4e06694-2026-09-08.md)
 also passed on reviewed `4e06694` staged bytes, with independently checked fresh-JVM observations.
 That result does not substitute for the distinct runtime-lifecycle/module or release-packaging rows.
 
@@ -40,6 +40,28 @@ The current released contract remains exact ShardingSphere-JDBC 5.5.3. Multiple 
 versions are explicitly outside the v0.1 scope. Nothing in this ADR changes the immutable `v0.1.2`
 tag, Release, assets, or the meaning of
 `io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.2`.
+
+## Current candidate evidence — 2026-09-08
+
+The current producer is `86a0be5d2e444f3b73925122fa448d9d1a324edd`. The following
+separate executions use its reviewed unsigned payloads; the older `4e06694` records
+elsewhere in this ADR remain historical and do not contribute to these totals.
+
+| Existing scope | Current candidate evidence |
+| --- | --- |
+| Mixed runtime | [14 manual cases](evidence/mixed-anchor-final-candidate-2026-09-08.md) |
+| Runtime boundaries | [28 cases](evidence/runtime-boundary-86a0be5-2026-09-08.md) |
+| Packaged MySQL corpus | [28 tests](evidence/packaged-corpus-final-86a0be5-2026-09-08.md); expected-result human review remains pending |
+| Lifecycle | [Six cases](evidence/runtime-lifecycle-final-86a0be5-2026-09-08.md) |
+| A-24 Gradle | [28 Groovy/Kotlin cases](evidence/a24-gradle-final-86a0be5-2026-09-08.md), with 24 MySQL executions, 16 rejections and four origin controls |
+| A-24 Maven | [Four Java 17/21 profiles](evidence/a24-maven-final-86a0be5-2026-09-08.md), with 24 MySQL executions and 16 negative controls |
+| A-26 migration | [Six MySQL tests and compatibility probes](evidence/public-api-migration-86a0be5-2026-09-08.md), within the documented migration limits |
+| A-27 resolver policies | [37 Gradle and 45 Maven cases](evidence/legacy-resolver-86a0be5-2026-09-08.md), with separate complete-log and artifact checks |
+| A-29 current entry | [64 fresh JVM cases](evidence/current-entry-successor-86a0be5-2026-09-08.md) |
+
+The [dual-resolver boundary](dual-resolver-boundary-acceptance.md), remaining final
+release evidence and human review retain their own requirements. These local results
+do not establish public 0.2 availability. The original A-28 failure remains disclosed.
 
 ## 1. Context and observed facts
 
@@ -584,12 +606,12 @@ mocked service collection.
 | A-23 | Run the complete existing route-risk, safe-control, physical-failure, 20-repeat determinism, and 20-pair isolation corpus separately on exact 5.5.2 and exact 5.5.3 MySQL fixtures. | Each version has independent raw evidence. Test source may be shared; expected counts, fingerprints, aliases, and approved baselines are version-specific and human-reviewed. Local full-corpus execution and the outstanding human-review boundary are recorded in [the exact 5.5.2 evidence note](evidence/exact-552-full-corpus-2026-09-07.md). |
 | A-24 | Maven Java 17, Gradle Groovy Java 17, Gradle Kotlin Java 17, and the existing bounded Java 21 lane; fresh-empty-cache online, isolated-cache offline after one successful staged-byte online prime, corrupted checksum, wrong artifact origin, and an exact-anchor/non-anchor-version-mismatch case in every build tool. | Both version lanes preserve whole-group ShardingSphere exactness, locks, checksums, fail-closed artifact identity, and documented Java boundaries. The offline run disables network and reuses only the frozen primed cache. Java 21 evidence does not broaden another lane by inference. |
 | A-25 | Strict root build, dependency verification, direct and aggregate SBOMs, license inventory, pinned OSV scan, sources/Javadoc/signature/checksum validation. | No verification bypass; every new 5.5.2 and core artifact is reviewed and represented in release evidence. |
-| A-26 | Compare the documented public API of 0.1.2 `routecontract-shardingsphere-5.5` with 0.2.0 through that same GAV; exclude `.internal`/provider FQCNs. Run an old-bytecode consumer, source recompilation, reflection over record components, equality/`toString`, code-source checks, and the documented classpath/module migration examples separately. | Old documented method and legacy-constructor descriptors link through transitive core on the classpath. Source/reflection/record-shape/code-source changes are either compatible or called out explicitly; module-path migration is rejected with the documented 0.2.0 boundary rather than claimed compatible. The [final-candidate local evidence](evidence/public-api-migration-final-candidate-2026-09-08.md) and preserved [historical record](evidence/public-api-migration-2026-09-07.md) map each category to its verified result and disclosed migration change; neither claims universal behavioral compatibility. |
+| A-26 | Compare the documented public API of 0.1.2 `routecontract-shardingsphere-5.5` with 0.2.0 through that same GAV; exclude `.internal`/provider FQCNs. Run an old-bytecode consumer, source recompilation, reflection over record components, equality/`toString`, code-source checks, and the documented classpath/module migration examples separately. | Old documented method and legacy-constructor descriptors link through transitive core on the classpath. Source/reflection/record-shape/code-source changes are either compatible or called out explicitly; module-path migration is rejected with the documented 0.2.0 boundary rather than claimed compatible. The [current candidate evidence](evidence/public-api-migration-86a0be5-2026-09-08.md) and preserved [historical record](evidence/public-api-migration-2026-09-07.md) map each category to its verified result and disclosed migration change; neither claims universal behavioral compatibility. |
 | A-27 | Gradle and Maven resolver fixtures combine every released stable pre-0.2 all-in-one version with core alone and with the different-GAV 5.5.2 adapter in both declaration orders. Separately request each same-GA legacy version and 0.2.0 with ordinary mediation, then with strict dual-version requirements; audit any RC-tag/release layout against the same registry. Maven also tests explicit consumer dependency management separately. | Different-component combinations fail through the legacy-GAV/core-owner capability or consumer Enforcer. Gradle ordinary mediation selects only 0.2.0. Maven equal-depth ordinary mediation follows declaration order, and Enforcer 3.6.3 rejects the legacy request even when it loses selection; explicit dependency management aligns both requests and passes only with exact current adapter/core JARs and no legacy file. Strict incompatible requirements fail the respective resolver. |
 | A-28 | For each released stable pre-0.2 all-in-one version, manually assemble legacy + core-0.2.0 + adapter-0.2.0 classpaths with the legacy JAR first and last, for both new adapters; execute ordinary SQL before capture and a capture sentinel. | Every version and order fails with `RC_LEGACY_ADAPTER_COLLISION` before SQL/action; no old-class shadowing, double capture, `AbstractMethodError`, or silent success. A tag-only RC layout may be covered by a byte/layout-identity proof plus oldest/latest executable cases; any distributed RC artifact is executed directly. |
 | A-29 | Successor current-entry contract: execute every distributed legacy JAR, both physical JAR orders and both exact adapters through both new `capture` and `captureResult` methods in fresh JVMs. Independently exercise ordinary SQL, clean old/current capture controls, full startup validation and actual MySQL operations. | Collision cells produce `RC_LEGACY_ADAPTER_COLLISION` before action/SQL with no linkage failure. Clean controls retain business/capture behavior; startup validation rejects missing/wrong adapters. Final staged JAR origins, hashes and classpath observations bind every cell. Old-FQCN calls on manually mixed legacy-first graphs remain outside the new diagnostic guarantee and the original A-28 result stays FAILED. |
 
-The [final-candidate Maven A-24 execution](evidence/a24-maven-staged-consumer-2026-09-08.md)
+The [historical 4e06694 Maven A-24 execution](evidence/a24-maven-staged-consumer-2026-09-08.md)
 passed all four Java 17/21 and exact 5.5.2/5.5.3 cells, with 24 online/offline MySQL test executions
 and 16 checksum/origin/version controls. Each offline run used its frozen prime after the HTTP
 endpoint closed, direct external connections were denied, and the fixed fixture explicitly
@@ -607,7 +629,7 @@ copyable core-ownership rule, both declaration orders and exact selected JAR has
 Maven portion also passed [45 actual consumer cases](evidence/maven-legacy-resolver-2026-09-08.md),
 including declaration-order mediation, verbose Enforcer rejection and explicitly managed selection.
 Those historical runs remain bound to their earlier staging inputs. The
-[new final-candidate runs](evidence/legacy-resolver-4e06694-2026-09-08.md) repeat all 37 Gradle and
+[historical 4e06694 runs](evidence/legacy-resolver-4e06694-2026-09-08.md) repeat all 37 Gradle and
 45 Maven cases against the reviewed nine-payload receipt from `4e06694`, which includes the new
 API JAR. Both complete runs and independent raw-result audits passed. These are resolver results;
 changed publication payloads still require new evidence for the changed bytes.
@@ -622,7 +644,7 @@ The candidate explicitly changes the application-entry contract and requires A-2
 The [eight focused local regressions](evidence/current-entry-regression-2026-09-08.md) and
 [integrated-source verification](evidence/current-entry-root-integration-2026-09-08.md) do not
 complete A-29 by themselves. The separate
-[full staged A-29 run](evidence/current-entry-successor-4e06694-2026-09-08.md) passed all 64 cells:
+[historical 4e06694 A-29 run](evidence/current-entry-successor-4e06694-2026-09-08.md) passed all 64 cells:
 32 current-entry capture collisions, 16 ordinary-SQL collisions, 12 clean controls and four startup
 rejections, with 64 distinct JVMs. Current release acceptance requires A-01 through A-27 and A-29 on final staged bytes,
 plus disclosure of the old-entry migration limit and original A-28 failure. Other failing gates

@@ -1,11 +1,20 @@
 # Staged consumer acceptance across build tools
 
-Status: the Gradle A-24 matrix is complete for Groovy/Kotlin, Java 17, and exact
-ShardingSphere-JDBC 5.5.2/5.5.3 against the reviewed 0.2 staged bytes. All 28
-cases passed and received an independent raw-evidence audit; see the
-[public minimized result](evidence/a24-gradle-consumer-2026-09-08.md).
-Maven Java 17/21 acceptance is reported separately and is not established by this
-Gradle result. Installed 0.1.2 evidence belongs to a different release family.
+Status: the existing Gradle A-24 matrix is complete on final staged source
+`86a0be5d2e444f3b73925122fa448d9d1a324edd` for Groovy/Kotlin,
+Java 17 and exact ShardingSphere-JDBC 5.5.2/5.5.3. All 28 cases passed in one
+complete execution and received a final independent retained-evidence audit;
+see the [final-candidate result](evidence/a24-gradle-final-86a0be5-2026-09-08.md).
+Its eight positive phases executed 24 MySQL JUnit tests; the other 20 cases
+were 16 rejections and four disabled-origin controls. All passed, with zero
+JUnit failures/errors/skips and no matrix or internal MySQL startup retries.
+
+Maven Java 17/21 is [reported separately](evidence/a24-maven-final-86a0be5-2026-09-08.md).
+This Gradle run alone does not establish full cross-tool A-24 acceptance,
+Gradle Java 21, public 0.2 availability or external adoption. The authentic
+human review of the 14 expected 5.5.2 corpus manifests remains unrecorded
+(`humanReview: null`). Installed 0.1.2 and older 4e06694 execution evidence
+remain historical and do not substitute for these final staged bytes.
 
 Required profiles are Gradle Groovy/Java 17, Gradle Kotlin/Java 17, Maven/Java 17,
 and the bounded Maven/Java 21 profile. Each profile runs separately against exact
@@ -101,13 +110,19 @@ notes contain minimized case results and hashes, with the exact tested profile,
 runtime, repetition count and remaining limitations. None of these maintainer
 executions establishes external adoption or public 0.2 availability.
 
+## Historical preparation and 4e06694 execution evidence
+
+The following unit/configuration/preparation and corrected-matrix observations
+belong to the prior 4e06694 work. They were not rerun as part of the final86
+matrix, and their executions are not included in the new totals.
+
 `verified - unit`: 32 focused Gradle harness tests passed, including exact native
 checksum-section/GET/byte binding, protected/control origin distinctions, exact
 runtime cause sets and anchors, immutable-input checks, and finite-plan boundaries.
 Both final Groovy and Kotlin build scripts passed Gradle 8.14.4 / Java 17
 configuration-only checks with every dependency configuration still unresolved.
 
-The new source `4e066942f6e244345fe908970b81446f9e08f64e` and separately reviewed
+The historical source `4e066942f6e244345fe908970b81446f9e08f64e` and separately reviewed
 nine-payload receipt SHA-256
 `38b2269eca162f121fd3996c56df8b894ae2f43cedeb08fcc627032cf70eaa43` produced an explicit
 28-case preparation manifest. Its output is `PREPARED_ONLY`, with zero executed
@@ -136,9 +151,64 @@ The complete Gradle summary SHA-256 is
 `b9b8afedffaf2312ac9fcdd446f1728ee0d08e47f7b6070de81e0d8d7670b2d7`;
 the independent audit SHA-256 is
 `5a1dcbba757143581495ac354c5d835a49b1d6328b5e823a8670a5aaf46899dd`.
-This closes the Gradle portion only; Maven has its own acceptance gate. These
+That historical run closed its Gradle portion only; Maven has its own acceptance gate. These
 are local unsigned staged-byte results, not public 0.2 availability or external
 adoption. No old `008e125` result substitutes for the new API bytes. A repeat
 execution must pass its reviewed `fixture-inputs.json` as
 `--expected-input-manifest` and retain the independently supplied receipt hash;
 changed inputs require renewed review.
+
+## Final staged-byte execution and reproduction
+
+The final run used consumer checkout
+`3ad510a0af972231fbd074607936ee52be3cad1f`, whose 69 production/publication
+inputs match staged source `86a0be5d2e444f3b73925122fa448d9d1a324edd`.
+The reviewed nine-payload receipt SHA-256 is
+`1f4bb21b430a03a44d89e6daddc1fbdede1886250637ef83cecedfd71e350c7e`.
+The Groovy build SHA-256 `7f465d3ed2bf656853bf1afe913468e5aaa5c1505e9f8cabf9bc248411dc835f`
+is unchanged from the corrected historical Gradle run. Of the 23 runner
+fingerprints, only the imported Maven harness changed; the four directly
+invoked helper functions, their inventory dependency and test-name constant
+retain identical ASTs. Its newly imported Central response-cache helper is
+not activated by this Gradle runner and was bound separately before/after
+execution. The reviewed expected-input manifest SHA-256 is
+`f115fc28b0042e039ad807b3a0ba82c332ab96ec596a6f0919f3f853f0b83b79`.
+
+The independent final audit rehashed all four retained cache snapshots and all
+28 case records after the final case, together with the copied and original
+inputs, artifacts and raw test/report evidence. The final raw summary SHA-256
+is `11c06fb9b79f08b98ffb3422174df9b2d24bfe2c2873f29d41fa3b0bb37ffdf4`; independent audit
+SHA-256 is `19031ef87d89eae6f434b91dfe8c3c4726ba7ac559c66cb2aff46963197e553c`.
+No source, fixture, golden, original staging file or first-party build was
+changed for this run. The historical 4e06694 preparation, failure and successful
+run remain retained separately.
+
+The executed command below replaces only private paths with named inputs.
+`REVIEWED_INPUT_MANIFEST` is the separately reviewed 23-entry manifest for this
+checkout; `REVIEWED_RECEIPT` is the reviewed receipt, not a newly computed
+approval. Use an absent evidence directory. Preserve the supplied receipt and
+manifest pins; changed bytes require renewed review. The wrapper ZIP is
+Gradle 8.14.4 with SHA-256
+`f1771298a70f6db5a29daf62378c4e18a17fc33c9ba6b14362e0cdf40610380d`.
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 SSL_CERT_FILE=/etc/ssl/cert.pem \
+  "$PYTHON" -B scripts/verify-a24-gradle-consumer.py \
+  --repository "$REVIEWED_STAGING_REPOSITORY" \
+  --staged-receipt "$REVIEWED_RECEIPT" \
+  --staged-receipt-sha256 1f4bb21b430a03a44d89e6daddc1fbdede1886250637ef83cecedfd71e350c7e \
+  --staged-source-revision 86a0be5d2e444f3b73925122fa448d9d1a324edd \
+  --evidence-directory "$NEW_EVIDENCE_DIRECTORY" \
+  --java-home "$JAVA17_HOME" \
+  --gradle-distribution-zip "$GRADLE_8_14_4_ZIP" \
+  --expected-input-manifest "$REVIEWED_INPUT_MANIFEST"
+```
+
+The finite plan remains Groovy/Kotlin × 5.5.2/5.5.3 × seven cases on Java 17.
+The three unchanged representative MySQL methods in each positive phase are
+not the separate 28-test packaged-corpus gate. CLI assertions execute
+`ManifestReviewCli.run` in process. Exact wrong-runtime diagnostics exit 0
+only after recording and validating their expected policy rejection, with no
+compilation or test execution in those cases. Scope remains local unsigned
+staged-byte acceptance; artifact signing, release approval, broader JDK/platform
+support and external-user adoption are not established here.
