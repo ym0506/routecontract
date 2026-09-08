@@ -28,11 +28,12 @@ def sibling(name, filename):
 
 maven_support = sibling('a24_maven_support', 'verify-staged-maven-artifact-consumer.py')
 network = sibling('a24_consumer_network', 'consumer_network_sandbox.py')
+source_support = sibling('a24_source_support', 'verify-gradle-legacy-artifact-consumer.py')
+receipts = sibling('a24_reviewed_receipts', 'public_split_artifacts.py')
+central_cache = sibling('a24_central_responses', 'maven_legacy_central_cache.py')
 shared = maven_support.shared
 mirror = maven_support.mirror
 VerificationError = shared.VerificationError
-REVIEWED_RECEIPT_SHA256 = 'ff4ad23aca357baa0a29f6ddac3a8b3708f1dbe62e0a73f200f84737449fdb41'
-STAGED_SOURCE = '008e125a0648ed615842a572d60fd453698bb5aa'
 BOUNDARY_CLASS = 'io.github.ym0506.routecontract.a24.A24JavaBoundary'
 DEPENDENCY_RESOLVE = 'org.apache.maven.plugins:maven-dependency-plugin:3.11.0:resolve'
 TEST_NAMES = {'loadedCoreAndAutoDiscoveredHookAreTheExpectedStagedJarBytes',
@@ -42,6 +43,41 @@ TEST_NAMES = {'loadedCoreAndAutoDiscoveredHookAreTheExpectedStagedJarBytes',
 
 def write_json(path, value):
     path.write_text(json.dumps(value, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+
+
+def reviewed_inputs(repository, receipt_path, expected_sha256, staged_source):
+    """Require an independently supplied approval hash; never infer approval."""
+    if (not isinstance(expected_sha256, str) or not re.fullmatch(r'[0-9a-f]{64}', expected_sha256)
+            or not isinstance(staged_source, str) or not re.fullmatch(r'[0-9a-f]{40}', staged_source)):
+        raise VerificationError('Explicit reviewed receipt SHA-256 and full staged source revision are required')
+    try:
+        receipt = receipts.load_consumer_receipt(receipt_path)
+        if shared.sha256(receipt_path) != expected_sha256:
+            raise VerificationError('Receipt differs from the independently reviewed SHA-256')
+        if receipt['routeContractVersion'] != '0.2.0':
+            raise VerificationError('This bounded fixture requires reviewed 0.2.0 payloads')
+        shared.verify_receipt(repository, receipt)
+        binding = source_support.source_binding(staged_source)
+        if shared.sha256(receipt_path) != expected_sha256:
+            raise VerificationError('Reviewed receipt changed during input verification')
+        return receipt, binding
+    except (receipts.ReceiptError, source_support.ResolverError) as error:
+        raise VerificationError(str(error)) from error
+
+
+def fixture_snapshot(root):
+    files = [Path(__file__), root/'scripts/tests/test_verify_a24_maven_consumer.py']
+    files += [root/'scripts'/name for name in (
+        'consumer_network_sandbox.py', 'staged_maven_repository.py',
+        'verify-staged-maven-artifact-consumer.py', 'verify-staged-split-artifact-consumer.py',
+        'verify-gradle-legacy-artifact-consumer.py', 'public_split_artifacts.py',
+        'legacy_artifact_inputs.py', 'maven_legacy_central_cache.py')]
+    files.append(root/'examples/staged-maven-artifact-consumer/pom.xml')
+    files += [path for path in (root/'examples/staged-split-artifact-consumer/src').rglob('*')
+              if path.is_file()]
+    if any(path.is_symlink() or not path.is_file() for path in files):
+        raise VerificationError('Executable fixture inputs must be regular files')
+    return {str(path.relative_to(root)): shared.sha256(path) for path in sorted(files)}
 
 
 def inventory(directory):
@@ -121,8 +157,69 @@ public final class A24JavaBoundary {
 
 
 def verify_failure(returncode, output, category, artifact):
-    if category != 'graph' or returncode == 0 or 'BannedDependencies failed' not in output or artifact not in output:
+    unrelated = ('Could not transfer artifact', 'Could not find artifact', 'Checksum validation failed',
+                 'PluginResolutionException', 'Non-resolvable parent POM', 'Could not transfer metadata')
+    exact_ban = (r'(?<![\w.:-])' + re.escape(artifact)
+                 + r'(?:\:[\w.-]+)?\s+<--- banned via the exclude/include list')
+    if (category != 'graph' or returncode == 0 or '[INFO] BUILD FAILURE' not in output.splitlines()
+            or 'org.apache.maven.enforcer.rules.dependency.BannedDependencies failed' not in output
+            or any(marker in output for marker in unrelated) or re.search(exact_ban, output) is None):
         raise VerificationError(f'Expected specific {category} rejection for {artifact}')
+
+
+def verify_negative_graph(tree, case, runtime, artifact, version, receipt):
+    maven_support.verify_negative_selection(tree, case, runtime, artifact, version)
+    selected = {(node.get('artifactId'), node.get('version')) for node in maven_support.nodes(tree)
+                if node.get('groupId') == maven_support.GROUP}
+    expected = {(shared.LANES[runtime], receipt['routeContractVersion']),
+                ('routecontract-core', receipt['routeContractVersion'])}
+    if selected != expected:
+        raise VerificationError('Negative graph must retain the exact reviewed core and intended adapter')
+    return {'selectedFirstParty': [{'module': module, 'version': found} for module, found in sorted(selected)],
+            'correctAnchorsRetained': case == 'wrong-non-anchor'}
+
+
+def selected_files(cache, adapter, receipt, mirror_id):
+    # Walk the complete fresh cache first so an ancestor symlink cannot hide an
+    # accepted marker or payload outside this consumer's repository.
+    inventory(cache)
+    maven_support.verify_origins(cache, adapter, receipt, mirror_id)
+    return [{'path': item['relativePath'], 'sha256': item['sha256'],
+             'origin': mirror_id, 'originMarkerSha256': shared.sha256((cache/item['relativePath']).parent/'_remote.repositories')}
+            for item in receipt['artifacts'] if item['module'] in ('routecontract-core', adapter)
+            and item['name'].endswith(('.jar', '.pom'))]
+
+
+def verify_settings(settings, url, mirror_id):
+    parsed = urlsplit(url)
+    if (parsed.scheme != 'http' or parsed.hostname != '127.0.0.1' or not parsed.port
+            or url != f'http://127.0.0.1:{parsed.port}/'):
+        raise VerificationError('Expected an exact controlled loopback endpoint')
+    ns = '{http://maven.apache.org/SETTINGS/1.2.0}'
+    entries = ET.parse(settings).getroot().findall(ns+'mirrors/'+ns+'mirror')
+    if (len(entries) != 1 or entries[0].findtext(ns+'id') != mirror_id
+            or entries[0].findtext(ns+'url') != url or entries[0].findtext(ns+'mirrorOf') != '*'):
+        raise VerificationError('Executed settings must identify only the intended diagnostic mirror')
+
+
+def verify_origin_requests(requests, consumed):
+    actual = {}
+    for item in consumed:
+        actual[item['path']] = [request for request in requests if request == {
+            'method': 'GET', 'route': 'staged', 'status': 200, 'path': item['path']}]
+        if not actual[item['path']]:
+            raise VerificationError('Origin proof needs finalized successful GETs for every exact consumed JAR/POM')
+    return actual
+
+
+def prepare_negative(root, work, feature):
+    work.mkdir()
+    consumer, home, cache = work/'consumer', work/'home', work/'repository'
+    home.mkdir()
+    configure_consumer(root, consumer, feature)
+    if cache.exists() or cache.is_symlink():
+        raise VerificationError('Each resolver-negative dependency cache must start absent')
+    return consumer, home, cache
 
 
 def checksum_control(repository, corrupted_repository, receipt):
@@ -168,6 +265,20 @@ def checksum_control(repository, corrupted_repository, receipt):
             'digests': digests,
             'originalStagingInventorySha256': hashlib.sha256(json.dumps(original_inventory, sort_keys=True).encode()).hexdigest(),
             'corruptedStagingInventorySha256': hashlib.sha256(json.dumps(changed_inventory, sort_keys=True).encode()).hexdigest()}
+
+
+def prepare_checksum_copy(repository, destination, receipt):
+    shutil.copytree(repository, destination)
+    core = next(item for item in receipt['artifacts']
+                if item['module'] == 'routecontract-core' and item['name'].endswith('.jar'))
+    path = destination/core['relativePath']
+    # Reviewed staging may be deliberately immutable. Change permissions only
+    # on this disposable payload; preserve original files and copied sidecars.
+    path.chmod(stat.S_IMODE(path.stat().st_mode) | stat.S_IWUSR)
+    data = bytearray(path.read_bytes())
+    data[len(data)//2] ^= 1
+    path.write_bytes(data)
+    return checksum_control(repository, destination, receipt)
 
 
 def verify_checksum_failure(returncode, output, requests, command, url, control):
@@ -367,29 +478,18 @@ def positive(root, work, evidence, cache, settings, maven, java_home, java_featu
         maven_support.retain_lane_evidence(consumer, cache, evidence)
 
 
-def negative(root, cell, snapshot, repository, receipt, maven, java_home, feature, runtime, adapter, case):
+def negative(root, cell, repository, receipt, maven, java_home, feature, runtime, adapter, case):
     evidence = cell/case
     evidence.mkdir()
     work = evidence/'work'
-    work.mkdir()
-    consumer, home, cache = work/'consumer', work/'home', work/'repository'
-    home.mkdir()
-    configure_consumer(root, consumer, feature)
-    clone_cache(snapshot, cache)
+    consumer, home, cache = prepare_negative(root, work, feature)
+    write_json(evidence/'initial-cache.json', {'dependencyCacheInitiallyAbsent': True,
+                                              'primedCacheImported': False})
     env = environment(java_home, home)
     selected_repository = repository
-    if case in ('checksum', 'wrong-origin'):
-        # Discard first-party files only in this new disposable clone to force a real download.
-        shutil.rmtree(cache/shared.GROUP_PATH)
     if case == 'checksum':
         selected_repository = work/'corrupt-staging'
-        shutil.copytree(repository, selected_repository)
-        core = next(item for item in receipt['artifacts'] if item['module']=='routecontract-core' and item['name'].endswith('.jar'))
-        path = selected_repository/core['relativePath']
-        data = bytearray(path.read_bytes())
-        data[len(data)//2] ^= 1
-        path.write_bytes(data)
-        control = checksum_control(repository, selected_repository, receipt)
+        control = prepare_checksum_copy(repository, selected_repository, receipt)
         write_json(evidence/'corruption.json', control)
     try:
         with mirror.serve_repository(selected_repository, evidence/'repository-requests.jsonl') as url:
@@ -407,7 +507,7 @@ def negative(root, cell, snapshot, repository, receipt, maven, java_home, featur
                 maven_support.verify_tree(json.loads(graph.read_text()), runtime, adapter)
                 # First establish correct bytes and the actual unintended origin; then require
                 # rejection solely because the expected controlled origin differs.
-                maven_support.verify_origins(cache, adapter, receipt, mirror_id)
+                consumed = selected_files(cache, adapter, receipt, mirror_id)
                 try:
                     maven_support.verify_origins(cache, adapter, receipt)
                 except VerificationError as error:
@@ -415,41 +515,43 @@ def negative(root, cell, snapshot, repository, receipt, maven, java_home, featur
                         raise
                     result = {'case': case, 'rejection': 'UNEXPECTED_REPOSITORY_ORIGIN',
                               'correctReviewedBytes': True, 'actualOrigin': mirror_id,
-                              'expectedOrigin': maven_support.MIRROR_ID}
+                              'expectedOrigin': maven_support.MIRROR_ID,
+                              'repositoryUrl': url, 'consumedFirstPartyFiles': consumed}
                 else:
                     raise VerificationError('Wrong actual repository origin was accepted')
             else:
                 pom = consumer/'negative-pom.xml'
                 artifact, version = maven_support.negative_pom(consumer/'pom.xml', pom, case, runtime)
                 graph = evidence/'selected-graph.json'
-                execute([*args, '--file', str(pom), maven_support.DEPENDENCY_TREE, '-DoutputType=json', f'-DoutputFile={graph}'],
+                execute([*args, '--file', str(pom), DEPENDENCY_RESOLVE, maven_support.DEPENDENCY_TREE, '-DoutputType=json', f'-DoutputFile={graph}'],
                         consumer, env, evidence, 'graph')
-                maven_support.verify_negative_selection(json.loads(graph.read_text()), case, runtime, artifact, version)
+                selected = verify_negative_graph(json.loads(graph.read_text()), case, runtime, artifact, version, receipt)
+                consumed = selected_files(cache, adapter, receipt, mirror_id)
                 execute([*args, '--file', str(pom), 'validate'], consumer, env, evidence, 'rejection',
-                        failure=('graph', f'{artifact}:jar:{version}'))
+                        failure=('graph', f'{maven_support.SS_GROUP}:{artifact}:jar:{version}'))
                 result = {'case': case, 'rejection': 'BannedDependencies', 'artifact': artifact,
-                          'rejectedVersion': version, 'correctAnchorsRetained': case=='wrong-non-anchor'}
+                          'rejectedVersion': version, **selected,
+                          'consumedFirstPartyFiles': consumed,
+                          'negativePomSha256': shared.sha256(pom)}
+        verify_settings(settings, url, mirror_id)
+        requests = [json.loads(line) for line in (evidence/'repository-requests.jsonl').read_text().splitlines()]
+        if case != 'checksum':
+            result['successfulRequests'] = verify_origin_requests(requests, consumed)
+            if (consumer/'target/surefire-reports').exists() or (consumer/'target/test-classes').exists():
+                raise VerificationError('A resolver-negative case must stop before test compilation or MySQL execution')
         if case == 'checksum':
             # Context shutdown joins all response threads and flushes the final GET
             # records before they can be used as evidence of a completed transfer.
             if checksum_control(repository, selected_repository, receipt) != control:
                 raise VerificationError('Reviewed/corrupted staging changed during native checksum execution')
-            requests = [json.loads(line) for line in (evidence/'repository-requests.jsonl').read_text().splitlines()]
             commands = [json.loads(line) for line in (evidence/'commands.jsonl').read_text().splitlines()]
             if len(commands) != 1 or commands[0]['name'] != 'rejection' or commands[0]['argv'] != command:
                 raise VerificationError('Checksum proof must match the exact recorded native Maven invocation')
-            settings_tree = ET.parse(settings).getroot()
-            settings_ns = '{http://maven.apache.org/SETTINGS/1.2.0}'
-            actual_mirror = settings_tree.findall(settings_ns+'mirrors/'+settings_ns+'mirror')
-            if (len(actual_mirror) != 1 or actual_mirror[0].findtext(settings_ns+'id') != maven_support.MIRROR_ID
-                    or actual_mirror[0].findtext(settings_ns+'url') != url
-                    or actual_mirror[0].findtext(settings_ns+'mirrorOf') != '*'):
-                raise VerificationError('The executed settings must identify only the controlled mirror')
             result = verify_checksum_failure(json.loads((evidence/'rejection-exit.json').read_text())['exitCode'],
                                              output, requests, command, url, control)
-            result['evidenceSha256'] = {name: shared.sha256(evidence/name) for name in
-                                       ('rejection.log', 'rejection-exit.json', 'repository-requests.jsonl',
-                                        'commands.jsonl', 'settings.xml', 'corruption.json')}
+        result['dependencyCacheInitiallyAbsent'] = True
+        result['evidenceSha256'] = {path.name: shared.sha256(path) for path in evidence.iterdir()
+                                   if path.is_file() and path.name != 'summary.json'}
         write_json(evidence/'summary.json', result)
         return result
     finally:
@@ -489,7 +591,7 @@ def cell(root, evidence, repository, receipt, maven, java_home, feature, runtime
     if inventory(snapshot) != before:
         raise VerificationError('Immutable primed cache changed during offline verification')
     write_json(directory/'frozen-cache-after-offline.json', inventory(snapshot))
-    rejected = [] if positive_only else [negative(root, directory, snapshot, repository, receipt, maven, java_home,
+    rejected = [] if positive_only else [negative(root, directory, repository, receipt, maven, java_home,
                          feature, runtime, adapter, case) for case in
                 ('checksum', 'wrong-origin', 'wrong-runtime', 'wrong-non-anchor')]
     if inventory(snapshot) != before:
@@ -509,6 +611,10 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
     parser.add_argument('--repository', type=Path, required=True)
     parser.add_argument('--reviewed-receipt', type=Path, required=True)
+    parser.add_argument('--reviewed-receipt-sha256', required=True,
+                        help='Expected SHA-256 supplied by independent review, never computed as approval')
+    parser.add_argument('--staged-source-revision', required=True,
+                        help='Full reviewed source commit with identical current production/publication inputs')
     parser.add_argument('--evidence-directory', type=Path, required=True)
     parser.add_argument('--java17-home', type=Path, required=True)
     parser.add_argument('--java21-home', type=Path, required=True)
@@ -521,11 +627,14 @@ def main(argv=None):
     root = Path(__file__).resolve().parents[1]
     repository = args.repository.resolve(strict=True)
     evidence = evidence_path(args.evidence_directory, root, repository)
-    receipt_path = args.reviewed_receipt.resolve(strict=True)
-    if shared.sha256(receipt_path) != REVIEWED_RECEIPT_SHA256:
-        raise VerificationError('The independently reviewed 008e125 receipt is required')
-    receipt = json.loads(receipt_path.read_text())
-    shared.verify_receipt(repository, receipt)
+    receipt_path = args.reviewed_receipt.expanduser().absolute()
+    receipt, binding = reviewed_inputs(repository, receipt_path, args.reviewed_receipt_sha256,
+                                      args.staged_source_revision)
+    receipt_bytes = receipt_path.read_bytes()
+    if hashlib.sha256(receipt_bytes).hexdigest() != args.reviewed_receipt_sha256:
+        raise VerificationError('Reviewed receipt changed before execution')
+    inputs = fixture_snapshot(root)
+    repository_before = inventory(repository)
     maven = shutil.which(args.maven)
     if not maven:
         raise VerificationError('Exact Maven 3.9.14 is required')
@@ -537,24 +646,41 @@ def main(argv=None):
     if args.positive_only and len(features)*len(runtimes) != 1:
         raise VerificationError('Positive-only diagnostics require exactly one explicit Java/runtime cell')
     evidence.mkdir(parents=True, mode=0o700)
-    shutil.copy2(receipt_path, evidence/'reviewed-staged-receipt.json')
+    (evidence/'reviewed-staged-receipt.json').write_bytes(receipt_bytes)
+    write_json(evidence/'source-binding.json', binding)
+    write_json(evidence/'fixture-inputs.json', inputs)
+    write_json(evidence/'staged-input-inventory.json', repository_before)
     summary = {'formatVersion': 1, 'requirement': 'A-24', 'complete': False, 'requestedCellsComplete': False,
+               'completeMavenA24Matrix': False, 'fullA24Complete': False,
+               'completionBoundary': 'This harness can verify only the Maven17/21 component of A-24',
                'requestedCells': [{'javaFeature': feature, 'runtime': runtime} for feature in features for runtime in runtimes],
                'fullMavenMatrixRequested': full_matrix, 'cells': [],
                'diagnosticOnly': args.positive_only,
-               'stagedSourceRevision': STAGED_SOURCE, 'reviewedReceiptSha256': REVIEWED_RECEIPT_SHA256,
+               'stagedSourceRevision': binding['stagedSourceRevision'],
+               'reviewedReceiptSha256': args.reviewed_receipt_sha256,
                'harnessSha256': shared.sha256(Path(__file__)),
                'mirrorHelperSha256': shared.sha256(Path(mirror.__file__)),
                'publicConsumption': False, 'boundary': 'Local staged 0.2 bytes; exact synchronous non-batch MySQL fixture only'}
     try:
         barrier = network.prepare_barrier(evidence/'network', {feature: homes[feature] for feature in features})
-        for feature in features:
-            for runtime in runtimes:
-                summary['cells'].append(cell(root, evidence, repository, receipt, maven, homes[feature], feature, runtime,
-                                             barrier, positive_only=args.positive_only))
+        # Repository-side HTTP response reuse never primes an individual Maven
+        # dependency cache. Every online/negative consumer starts absent.
+        with central_cache.cached_central(evidence/'central-responses'):
+            for feature in features:
+                for runtime in runtimes:
+                    summary['cells'].append(cell(root, evidence, repository, receipt, maven, homes[feature], feature, runtime,
+                                                 barrier, positive_only=args.positive_only))
+                    write_json(evidence/'summary.json', summary)
+        final_receipt, final_binding = reviewed_inputs(repository, receipt_path, args.reviewed_receipt_sha256,
+                                                       args.staged_source_revision)
+        if (fixture_snapshot(root) != inputs or final_binding != binding or final_receipt != receipt
+                or receipt_path.read_bytes() != receipt_bytes or inventory(repository) != repository_before):
+            raise VerificationError('Reviewed source, executable fixture, receipt or staged inputs changed during execution')
+        summary['finalInputsUnchanged'] = True
         summary['requestedCellsComplete'] = not args.positive_only
         summary['positiveDiagnosticsComplete'] = args.positive_only
-        summary['complete'] = full_matrix and not args.positive_only
+        summary['completeMavenA24Matrix'] = full_matrix and not args.positive_only
+        summary['repositoryResponseReceiptSha256'] = shared.sha256(evidence/'central-responses/receipt.json')
     finally:
         write_json(evidence/'summary.json', summary)
     marker = ('A24_MAVEN_POSITIVE_DIAGNOSTICS_ONLY' if args.positive_only else

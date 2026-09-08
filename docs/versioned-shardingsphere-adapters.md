@@ -589,6 +589,14 @@ mocked service collection.
 | A-28 | For each released stable pre-0.2 all-in-one version, manually assemble legacy + core-0.2.0 + adapter-0.2.0 classpaths with the legacy JAR first and last, for both new adapters; execute ordinary SQL before capture and a capture sentinel. | Every version and order fails with `RC_LEGACY_ADAPTER_COLLISION` before SQL/action; no old-class shadowing, double capture, `AbstractMethodError`, or silent success. A tag-only RC layout may be covered by a byte/layout-identity proof plus oldest/latest executable cases; any distributed RC artifact is executed directly. |
 | A-29 | Successor current-entry contract: execute every distributed legacy JAR, both physical JAR orders and both exact adapters through both new `capture` and `captureResult` methods in fresh JVMs. Independently exercise ordinary SQL, clean old/current capture controls, full startup validation and actual MySQL operations. | Collision cells produce `RC_LEGACY_ADAPTER_COLLISION` before action/SQL with no linkage failure. Clean controls retain business/capture behavior; startup validation rejects missing/wrong adapters. Final staged JAR origins, hashes and classpath observations bind every cell. Old-FQCN calls on manually mixed legacy-first graphs remain outside the new diagnostic guarantee and the original A-28 result stays FAILED. |
 
+The [final-candidate Maven A-24 execution](evidence/a24-maven-staged-consumer-2026-09-08.md)
+passed all four Java 17/21 and exact 5.5.2/5.5.3 cells, with 24 online/offline MySQL test executions
+and 16 checksum/origin/version controls. Each offline run used its frozen prime after the HTTP
+endpoint closed, direct external connections were denied, and the fixed fixture's image-pull
+policy was disabled. Loopback JDBC and the local Docker socket remained allowed; this is not a
+Docker-daemon-wide network-isolation claim. The separate Gradle/Kotlin A-24 portion remains
+pending, so this Maven result does not complete the whole A-24 row.
+
 The local Gradle portion of A-27 passed [37 actual resolver cases](evidence/gradle-legacy-resolver-2026-09-08.md)
 against four distributed legacy releases and reviewed 0.2 staging. The evidence includes the
 copyable core-ownership rule, both declaration orders and exact selected JAR hashes. The local

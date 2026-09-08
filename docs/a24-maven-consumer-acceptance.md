@@ -4,6 +4,132 @@ This harness extends acceptance evidence for the unreleased 0.2 candidate. It do
 publish artifacts or broaden released 0.1 compatibility. Each of Maven Java 17 and the
 bounded Maven Java 21 fixture runs exact ShardingSphere 5.5.2 and 5.5.3 separately.
 
+Every new run requires three explicit review inputs: `--reviewed-receipt`,
+`--reviewed-receipt-sha256`, and `--staged-source-revision`. The expected digest
+must come from independent review; the runner must never turn the receipt's own
+computed digest into approval. The strict receipt loader must require exactly
+nine unique, coordinate-bound JAR/POM/module payloads for 0.2.0. Check those bytes
+against the supplied repository and bind the full source commit to unchanged
+production/publication inputs with the existing `source_binding` verifier.
+Retain the reviewed receipt, input inventory, source binding and executable
+fixture hashes; recheck all of them before any complete-result claim. Existing
+`008e125` offline and checksum evidence below remains historical diagnostic data.
+
+The current-source Maven scope is exactly four cells: Java 17 and Java 21, each
+on ShardingSphere 5.5.2 and 5.5.3. Each cell needs online, its own frozen-cache
+offline replay, checksum, wrong-origin, wrong-anchor and wrong-non-anchor runs.
+Every resolver-negative consumer must start with an absent Maven dependency
+cache; copying the successful prime is reserved for offline replay. Maven-only
+completion is recorded separately and never implies that the Gradle lanes or
+all of A-24 are complete.
+
+The actual negative graph must retain exactly the reviewed core and intended
+adapter, materialize their pinned JAR/POM bytes from the controlled origin, and
+identify the injected ShardingSphere dependency. Non-anchor negatives retain
+all three correct runtime anchors. The native validation failure must identify
+the complete exact ShardingSphere JAR coordinate on the banned-node line and
+name `BannedDependencies`; version prefixes, separate mentions, unrelated rules
+or download failures cannot substitute for that result.
+
+Wrong-origin evidence first establishes the expected bytes and actual unintended
+origin, then requires rejection by the expected-origin verifier. After the
+repository has stopped, retain successful GETs for all four exact core/adapter
+JAR/POMs, endpoint/settings identity, origin-marker hashes, actual commands/logs
+and selected graph. Graph negatives retain their actual `negative-pom.xml` hash.
+
+An initially absent repository-side Central response cache may reuse verified
+third-party HTTP responses during one matrix run. It imports no developer or
+primed Maven cache and preserves certificate validation, body/deadline bounds
+and final byte verification. Every online/negative Maven consumer still fetches
+into its own absent cache with strict checksums. The receipt records response
+reuse separately from consumed artifact identity.
+
+## Current-source invocation
+
+Use an independently reviewed receipt and expected hash supplied together with
+the full staged source revision. The hash must be supplied as a reviewed input;
+do not replace it with a command that computes approval from the input file.
+The evidence directory must not exist and must be outside source and staging.
+
+```sh
+python3 scripts/verify-a24-maven-consumer.py \
+  --repository "$REVIEWED_STAGED_REPOSITORY" \
+  --reviewed-receipt "$REVIEWED_STAGED_RECEIPT" \
+  --reviewed-receipt-sha256 "$INDEPENDENTLY_REVIEWED_RECEIPT_SHA256" \
+  --staged-source-revision "$REVIEWED_STAGED_SOURCE_REVISION" \
+  --evidence-directory "$NEW_EVIDENCE_DIRECTORY" \
+  --java17-home "$JAVA17_HOME" \
+  --java21-home "$JAVA21_HOME" \
+  --maven "$MAVEN_3_9_14_EXECUTABLE"
+```
+
+Omitting cell selectors runs exactly Maven Java 17/21 × ShardingSphere 5.5.2/5.5.3.
+`--positive-only --java-feature 17 --runtime 5.5.2` runs one diagnostic online/offline
+pair and cannot complete the Maven matrix. Even a full Maven run leaves top-level
+`complete=false` and `fullA24Complete=false`; only `completeMavenA24Matrix` can
+become true after all four cells and final input rechecks. This does not establish
+Gradle/Java 21 support or complete the independent Gradle A-24 lanes.
+
+Current harness evidence label `verified - unit`: 24 focused tests cover explicit
+review-input validation, exact graph/origin rejection, empty negative caches,
+both Java compilation boundaries, and final receipt-change rejection. Stubbed
+cell aggregation tests make no Maven/MySQL claim. The first current-source
+matrix attempt passed the Java 17 / 5.5.2 online and offline runs, three MySQL
+tests each, then stopped before native checksum validation because the copied
+reviewed JAR retained read-only permissions. The regression fix makes only the
+disposable checksum target writable; original staging and copied sidecars remain
+unchanged. That failed partial run is preserved and excluded from the successful
+four-cell result below.
+
+## Current-source Maven result, 2026-09-08
+
+`verified - MySQL`, `verified - ShardingSphere-JDBC 5.5.2`, and
+`verified - ShardingSphere-JDBC 5.5.3`: all four Maven cells passed against the
+independently reviewed unsigned local staging from full source revision
+`4e066942f6e244345fe908970b81446f9e08f64e`. The supplied reviewed-receipt SHA-256
+was `38b2269eca162f121fd3996c56df8b894ae2f43cedeb08fcc627032cf70eaa43`.
+
+| Java / ShardingSphere | Online MySQL | Offline MySQL | Negative controls | Frozen cache entries |
+| --- | --- | --- | --- | --- |
+| 17.0.15 / 5.5.2 | 3 passed | 3 passed | 4 passed | 2,453 unchanged |
+| 17.0.15 / 5.5.3 | 3 passed | 3 passed | 4 passed | 2,079 unchanged |
+| 21.0.11 / 5.5.2 | 3 passed | 3 passed | 4 passed | 2,453 unchanged |
+| 21.0.11 / 5.5.3 | 3 passed | 3 passed | 4 passed | 2,079 unchanged |
+
+The single successful sequential matrix used Maven 3.9.14 on macOS 26.4.1 arm64.
+Its 24 actual MySQL test executions had no failures, errors or skips. Every
+online/offline pair retained the expected business row while the hook-reported
+physical JDBC execution attempt count changed from one to two; the approved
+baseline stayed unchanged, route-policy rejection was verified, and both JSON
+and Markdown CLI assertions returned the expected regression code. The fixture
+compiled and executed Java 17 classfiles (major 61) or Java 21 classfiles (major 65)
+in their corresponding lanes. This is the exact synchronous PreparedStatement,
+non-batch fixture, not a broader application or concurrency claim.
+
+Every cell also passed the four fresh-cache controls: native strict rejection
+of the exact one-byte-corrupted core JAR, rejection of correct reviewed bytes
+from the wrong repository origin, native Enforcer rejection of the exact wrong
+runtime anchor, and native Enforcer rejection of the exact wrong non-anchor
+while all three correct anchors remained selected. Every offline run used its
+own frozen prime after the original HTTP endpoint had closed, with OS-denied
+external access and the same locally inspected MySQL/Ryuk images under an
+actually invoked no-pull policy. All nine reviewed payloads, staging inventory,
+reviewed receipt, source binding and 14 executed fixture/helper hashes passed
+the final unchanged-input check.
+
+The raw aggregate SHA-256 is
+`db7b84385e2ff9a0cbe4e092aa12954fe792d605099101dfd9f8c17b38667856`;
+the executed harness SHA-256 is
+`86d0e9fdfb56fde20d82e3c1c5afa79c3a005f4d1baf5347137dca4fa164fc76`.
+The raw result records `completeMavenA24Matrix=true`, `finalInputsUnchanged=true`,
+`complete=false`, `fullA24Complete=false`, and `publicConsumption=false`.
+This closes the finite Maven component only. It does not establish Gradle Java 21
+support, completion of the independent Gradle A-24 lanes, a public 0.2 release,
+or external user adoption. The earlier `008e125` diagnostics below remain
+historical and are not added to the 24-test or 16-control totals.
+
+## Per-cell acceptance contract
+
 Each cell starts with an absent consumer, Maven repository and private home. One online
 prime compiles and executes the three existing MySQL tests, including exact business-row,
 route-policy, provider-origin, privacy and JSON/Markdown CLI assertions. The selected
@@ -18,8 +144,7 @@ inside the independently proved macOS outbound-network sandbox. The online repos
 proxy is stopped before this step. Loopback and the local Docker socket remain available.
 The immutable snapshot must be unchanged before and after offline execution.
 
-The resumed offline prerequisite diagnostic must additionally establish all of the
-following before another full matrix is attempted:
+Each current-source run also establishes all of the following offline controls:
 
 - Run a compiled Java socket control using the exact requested JDK under the same
   kernel policy as Maven. The trusted `JAVA_TOOL_OPTIONS` value must force IPv4
@@ -46,10 +171,11 @@ following before another full matrix is attempted:
 This is a direct kernel egress barrier for the harness processes plus a no-pull
 policy for the fixed Testcontainers fixture, not a general network sandbox for an
 arbitrary Docker workload or protection against an unrelated host loopback proxy.
-The diagnostic may execute one positive Java 17 / 5.5.2 online/offline pair against
-the retained reviewed `008e125` staging. Its result must say diagnostic-only and
-leave A-24 incomplete; checksum/origin/graph negatives and final-source full-matrix
-evidence remain separate requirements. Preserve the original failed receipts.
+These prerequisites were first exercised in a positive Java 17 / 5.5.2
+online/offline diagnostic against retained reviewed `008e125` staging. That
+historical result remains diagnostic-only and leaves A-24 incomplete. It does
+not substitute for the checksum/origin/graph controls or the newly reviewed
+current-source matrix above. The original failed receipts are preserved.
 
 Every cell also requires actual negative executions in separate disposable consumers:
 
@@ -66,7 +192,7 @@ No unavailable dependency, generic process failure, skipped test, help-only offl
 fabricated graph or changed baseline counts as acceptance. Raw evidence stays private.
 Public evidence is a minimized result with source/receipt hashes and explicit boundaries.
 
-## Offline prerequisite result, 2026-09-08
+## Historical offline prerequisite result, 2026-09-08
 
 `verified - MySQL`, `verified - ShardingSphere-JDBC 5.5.2`: one Java 17 /
 Maven 3.9.14 positive-only diagnostic against the retained reviewed `008e125`
@@ -78,17 +204,19 @@ Both lanes used the same pinned MySQL and Ryuk image manifests. This is maintain
 staged-byte evidence, not public consumption, independent adoption, or a completed
 A-24 matrix.
 
-The across-lane image-manifest guard was added after that run and directly checked
+The across-lane image-manifest guard was added after that diagnostic and directly checked
 against all four retained before/after manifests. Its rejection case has a focused
-unit test; the later harness revision has not rerun the full matrix. An earlier
+unit test; the later current-source matrix above exercised that guard in all four
+cells. An earlier
 diagnostic failed in the online mirror because its Python distribution lacked a
 usable CA store. The successful command used the bundled Python runtime and
 `SSL_CERT_FILE=/etc/ssl/cert.pem`; certificate verification remained enabled.
 
 At the end of this positive-only run, exact modified-core-JAR checksum rejection
 binding was still outstanding; the separate diagnostic below subsequently verified
-that control. Origin/graph negatives, all required Java/runtime/build-tool cells,
-and a complete run against the final newly reviewed staged source remain. This
+that control. Origin/graph negatives and a complete run against newly reviewed
+staging were still outstanding at that point; the current-source Maven result
+above now supplies them for its four cells. This
 positive diagnostic retains `diagnosticOnly=true` and `complete=false`.
 
 The no-pull behavior was checked against Testcontainers 1.21.4's public
@@ -115,8 +243,10 @@ sidecar, different checksum value, or a mismatch from another repository cannot
 prove this control. Retain the exact matching native rejection line and request
 records, together with hashes of the full raw log, request log and command record.
 
-One diagnostic against retained `008e125` staging may establish this behavior;
-it does not close the final-source matrix, other negative controls, or A-24.
+This control was first exercised in one historical diagnostic against retained
+`008e125` staging. That result does not close the final-source matrix, other
+negative controls, or A-24; the current-source matrix above records its own
+checksum execution in every cell.
 
 `verified - unit`: 16 focused harness tests passed, including rejection of unrelated
 POM checksum text plus a separate core mention, incorrect endpoints/digests,

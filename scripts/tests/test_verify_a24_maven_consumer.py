@@ -1,5 +1,8 @@
 import importlib.util
+from contextlib import redirect_stdout
 import hashlib
+import io
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -115,12 +118,195 @@ class A24MavenControlsTest(unittest.TestCase):
                 with self.subTest(mutation=mutation), self.assertRaises(h.VerificationError):
                     h.checksum_control(original, corrupted, receipt)
 
+    def test_checksum_copy_can_corrupt_a_disposable_copy_of_readonly_reviewed_staging(self):
+        h = self.helper
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            original, _, receipt = self.checksum_fixture(base)
+            for path in original.rglob('*'):
+                path.chmod(0o555 if path.is_dir() else 0o444)
+            original.chmod(0o555)
+            before = h.inventory(original)
+            changed = base/'readonly-source-copy'
+            control = h.prepare_checksum_copy(original, changed, receipt)
+            self.assertEqual(1, control['changedBytes'])
+            self.assertEqual(before, h.inventory(original))
+            original_jar = original/receipt['artifacts'][0]['relativePath']
+            self.assertEqual(0, original_jar.stat().st_mode & 0o222)
+
     def test_negative_graph_requires_exact_policy_rejection(self):
         h = self.helper
-        h.verify_failure(1, 'BannedDependencies failed shardingsphere-infra-common:jar:5.5.2',
-                         'graph', 'shardingsphere-infra-common:jar:5.5.2')
-        with self.assertRaises(h.VerificationError):
-            h.verify_failure(1, 'DependencyConvergence failed', 'graph', 'shardingsphere-infra-common')
+        coordinate = 'org.apache.shardingsphere:shardingsphere-infra-common:jar:5.5.2'
+        output = ('[INFO] BUILD FAILURE\n'
+                  '[ERROR] Rule 1: org.apache.maven.enforcer.rules.dependency.BannedDependencies failed with message:\n'
+                  f'[ERROR]    {coordinate}:test <--- banned via the exclude/include list\n')
+        h.verify_failure(1, output, 'graph', coordinate)
+        for invalid in ['DependencyConvergence failed', output.replace(':jar:5.5.2', ':jar:5.5.20'),
+                        output.replace(':jar:5.5.2', ':jar:5.5.2-SNAPSHOT'),
+                        output.replace(coordinate, 'other:library:jar:1')+'\n'+coordinate,
+                        output.replace('banned via the exclude/include list', 'mentioned separately'),
+                        output+'\nCould not transfer artifact another:library:jar:1']:
+            with self.subTest(output=invalid), self.assertRaises(h.VerificationError):
+                h.verify_failure(1, invalid, 'graph', coordinate)
+
+    def reviewed_fixture(self, root):
+        h = self.helper
+        repository = root/'staging'
+        for module in h.shared.MODULES:
+            for extension in ('jar', 'pom', 'module'):
+                path = repository/h.shared.GROUP_PATH/module/'0.2.0'/f'{module}-0.2.0.{extension}'
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(f'synthetic receipt verifier:{module}:{extension}'.encode())
+        receipt = root/'reviewed-receipt.json'
+        receipt.write_text(json.dumps(h.shared.repository_receipt(repository)))
+        return repository, receipt, h.shared.sha256(receipt)
+
+    def test_reviewed_inputs_require_explicit_hash_full_source_and_exact_nine_payloads(self):
+        h = self.helper
+        with tempfile.TemporaryDirectory() as temporary:
+            repository, receipt, reviewed = self.reviewed_fixture(Path(temporary))
+            source = '1'*40
+            binding = {'stagedSourceRevision': source, 'productionPublicationInputsIdentical': True}
+            with patch.object(h.source_support, 'source_binding', return_value=binding) as source_binding:
+                document, actual_binding = h.reviewed_inputs(repository, receipt, reviewed, source)
+                self.assertEqual(9, len(document['artifacts']))
+                self.assertEqual(binding, actual_binding)
+                source_binding.assert_called_once_with(source)
+                for expected, revision in [(None, source), ('', source), ('0'*64, source),
+                                           (reviewed, 'HEAD'), (reviewed, source[:7])]:
+                    with self.subTest(expected=expected, source=revision), self.assertRaises(h.VerificationError):
+                        h.reviewed_inputs(repository, receipt, expected, revision)
+                data = json.loads(receipt.read_text()); data['artifacts'].pop()
+                receipt.write_text(json.dumps(data))
+                with self.assertRaises(h.VerificationError):
+                    h.reviewed_inputs(repository, receipt, h.shared.sha256(receipt), source)
+
+    def test_reviewed_inputs_reject_changed_payload_source_or_receipt_symlink(self):
+        h = self.helper
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            repository, receipt, reviewed = self.reviewed_fixture(base)
+            with patch.object(h.source_support, 'source_binding', side_effect=h.source_support.ResolverError('source drift')):
+                with self.assertRaises(h.VerificationError):
+                    h.reviewed_inputs(repository, receipt, reviewed, '1'*40)
+            with patch.object(h.source_support, 'source_binding', return_value={}):
+                alias = base/'alias.json'; alias.symlink_to(receipt)
+                with self.assertRaises(h.VerificationError):
+                    h.reviewed_inputs(repository, alias, reviewed, '1'*40)
+                payload = next(repository.rglob('*.jar')); payload.write_bytes(b'changed')
+                with self.assertRaises(h.VerificationError):
+                    h.reviewed_inputs(repository, receipt, reviewed, '1'*40)
+
+    def test_negative_graph_requires_real_first_party_selection_and_three_correct_nonanchors(self):
+        h = self.helper
+        for runtime, adapter in h.shared.LANES.items():
+            wrong = '5.5.3' if runtime == '5.5.2' else '5.5.2'
+            database = 'shardingsphere-infra-database-core' if runtime == '5.5.2' else 'shardingsphere-database-connector-core'
+            for case, artifact in [('wrong-runtime', 'shardingsphere-infra-executor'),
+                                   ('wrong-non-anchor', 'shardingsphere-infra-common')]:
+                children = [{'groupId': h.shared.GROUP, 'artifactId': module, 'version': '0.2.0'}
+                            for module in ('routecontract-core', adapter)]
+                children += [{'groupId': h.maven_support.SS_GROUP, 'artifactId': anchor,
+                              'version': wrong if anchor == artifact else runtime}
+                             for anchor in ('shardingsphere-infra-executor', 'shardingsphere-infra-spi', database,
+                                            'shardingsphere-infra-common')]
+                tree = {'children': children}
+                with self.subTest(runtime=runtime, case=case):
+                    h.verify_negative_graph(tree, case, runtime, artifact, wrong, {'routeContractVersion': '0.2.0'})
+                    for removed in (0, 1):
+                        with self.assertRaises(h.VerificationError):
+                            h.verify_negative_graph({'children': children[:removed]+children[removed+1:]}, case,
+                                                    runtime, artifact, wrong, {'routeContractVersion': '0.2.0'})
+                    if case == 'wrong-non-anchor':
+                        children[2]['version'] = wrong
+                        with self.assertRaises(h.VerificationError):
+                            h.verify_negative_graph(tree, case, runtime, artifact, wrong, {'routeContractVersion': '0.2.0'})
+
+    def test_wrong_origin_records_require_exact_pinned_files_and_finalized_gets(self):
+        h = self.helper
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            repository, receipt_path, _ = self.reviewed_fixture(base)
+            receipt = h.receipts.load_consumer_receipt(receipt_path)
+            adapter = h.shared.LANES['5.5.2']
+            selected = [item for item in receipt['artifacts'] if item['module'] in ('routecontract-core', adapter)
+                        and item['name'].endswith(('.pom', '.jar'))]
+            for item in selected:
+                with ((repository/item['relativePath']).parent/'_remote.repositories').open('a') as stream:
+                    stream.write(item['name']+'>unintended=\n')
+            consumed = h.selected_files(repository, adapter, receipt, 'unintended')
+            self.assertEqual(4, len(consumed))
+            requests = [{'method':'GET', 'route':'staged', 'status':200, 'path':item['path']} for item in consumed]
+            self.assertEqual(4, len(h.verify_origin_requests(requests, consumed)))
+            for key, value in [('method', 'HEAD'), ('route', 'central'), ('status', 404), ('path', 'other.jar')]:
+                changed = [{**requests[0], key:value}, *requests[1:]]
+                with self.subTest(key=key), self.assertRaises(h.VerificationError):
+                    h.verify_origin_requests(changed, consumed)
+            with self.assertRaises(h.VerificationError):
+                h.selected_files(repository, adapter, receipt, h.maven_support.MIRROR_ID)
+            (repository/selected[0]['relativePath']).write_bytes(b'corrupted')
+            with self.assertRaises(h.VerificationError):
+                h.selected_files(repository, adapter, receipt, 'unintended')
+
+    def test_negative_work_starts_with_absent_cache_for_each_java_boundary(self):
+        h = self.helper
+        with tempfile.TemporaryDirectory() as temporary:
+            for java in (17, 21):
+                consumer, home, cache = h.prepare_negative(SCRIPT.parents[1], Path(temporary)/str(java), java)
+                self.assertTrue((consumer/'pom.xml').is_file())
+                self.assertTrue(home.is_dir())
+                self.assertFalse(cache.exists())
+                tree = ET.parse(consumer/'pom.xml')
+                self.assertEqual(str(java), tree.find(h.maven_support.N+'properties/'+h.maven_support.N+'maven.compiler.release').text)
+
+    def test_wrong_origin_settings_cannot_point_to_expected_or_another_repository(self):
+        h = self.helper
+        with tempfile.TemporaryDirectory() as temporary:
+            settings = Path(temporary)/'settings.xml'
+            url = 'http://127.0.0.1:12345/'
+            h.maven_support.write_settings(settings, url, 'unintended')
+            h.verify_settings(settings, url, 'unintended')
+            for endpoint, name in [(url, h.maven_support.MIRROR_ID), ('http://127.0.0.1:54321/', 'unintended'),
+                                   ('https://example.com/', 'unintended')]:
+                with self.assertRaises(h.VerificationError):
+                    h.verify_settings(settings, endpoint, name)
+
+    def test_main_completion_is_maven_only_and_rechecks_receipt_bytes_after_cells(self):
+        h = self.helper
+        # Stubbed cells test aggregation only; no Maven, Java, Docker or network
+        # work is executed and none of these synthetic outputs is real evidence.
+        for changed, positive_only in [(False, False), (True, False), (False, True)]:
+            with tempfile.TemporaryDirectory() as temporary, self.subTest(changed=changed, diagnostic=positive_only):
+                base = Path(temporary).resolve()
+                repository, receipt, reviewed = self.reviewed_fixture(base)
+                evidence = base/'evidence'
+                java17, java21 = base/'java17', base/'java21'
+                java17.mkdir(); java21.mkdir()
+                argv = ['--repository', str(repository), '--reviewed-receipt', str(receipt),
+                        '--reviewed-receipt-sha256', reviewed, '--staged-source-revision', '1'*40,
+                        '--evidence-directory', str(evidence), '--java17-home', str(java17),
+                        '--java21-home', str(java21), '--maven', '/usr/bin/true']
+                if positive_only:
+                    argv += ['--positive-only', '--java-feature', '17', '--runtime', '5.5.2']
+                binding = {'stagedSourceRevision': '1'*40, 'productionPublicationInputsIdentical': True}
+                def fake_cell(*args, **kwargs):
+                    if changed:
+                        receipt.write_bytes(receipt.read_bytes()+b' ')
+                    return {'javaFeature': args[6], 'runtime': args[7], 'unitStub': True}
+                with patch.object(h.source_support, 'source_binding', return_value=binding), \
+                     patch.object(h.network, 'prepare_barrier', return_value={}), \
+                     patch.object(h, 'cell', side_effect=fake_cell) as cell, redirect_stdout(io.StringIO()):
+                    if changed:
+                        with self.assertRaises(h.VerificationError):
+                            h.main(argv)
+                    else:
+                        self.assertEqual(0, h.main(argv))
+                summary = json.loads((evidence/'summary.json').read_text())
+                self.assertFalse(summary['complete'])
+                self.assertFalse(summary['fullA24Complete'])
+                self.assertEqual(not changed and not positive_only, summary['completeMavenA24Matrix'])
+                self.assertEqual(1 if positive_only else 4, cell.call_count)
+                self.assertEqual(positive_only, summary['diagnosticOnly'])
 
     def test_snapshot_clone_is_disposable_and_snapshot_detects_change(self):
         h = self.helper
