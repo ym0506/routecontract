@@ -41,9 +41,9 @@ versions are explicitly outside the v0.1 scope. Nothing in this ADR changes the 
 tag, Release, assets, or the meaning of
 `io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.2`.
 
-## Current candidate evidence — 2026-09-08
+## Retained staging evidence — 2026-09-08
 
-The current producer is `86a0be5d2e444f3b73925122fa448d9d1a324edd`. The following
+The latest reviewed staged producer is `86a0be5d2e444f3b73925122fa448d9d1a324edd`. The following
 separate executions use its reviewed unsigned payloads; the older `4e06694` records
 elsewhere in this ADR remain historical and do not contribute to these totals.
 
@@ -64,6 +64,15 @@ The [dual-resolver boundary](dual-resolver-boundary-acceptance.md) is complete w
 its documented scope. Remaining security/release evidence and human review retain
 their own requirements. These local results
 do not establish public 0.2 availability. The original A-28 failure remains disclosed.
+
+The completed CI for `4483fcf` passed 172 Java tests, 12 SBOM validations and the
+318-package inventory check, then failed while parsing multiple OSV fixed release
+branches. The [parser correction](osv-fixed-branches-acceptance.md) preserves all
+branches and still rejects every finding. A separate pinned local scan of that
+inventory found six vulnerable dependencies; correcting the parser does not fix them.
+The dependency repair is in progress. Its actual resolved graph, publication metadata
+and affected consumer checks require new evidence before release. The observations
+above retain their original producer and dependency inputs.
 
 ## 1. Context and observed facts
 
