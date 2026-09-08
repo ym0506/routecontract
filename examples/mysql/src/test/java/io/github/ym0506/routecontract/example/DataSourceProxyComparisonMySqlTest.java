@@ -4,7 +4,7 @@ import com.alibaba.ttl.TransmittableThreadLocal;
 import io.github.ym0506.routecontract.AttemptOutcome;
 import io.github.ym0506.routecontract.CaptureStatus;
 import io.github.ym0506.routecontract.CapturedResult;
-import io.github.ym0506.routecontract.RouteContract;
+import io.github.ym0506.routecontract.api.RouteContract;
 import io.github.ym0506.routecontract.RouteSnapshot;
 import io.github.ym0506.routecontract.manifest.DataSourceAliases;
 import io.github.ym0506.routecontract.manifest.ManifestAssertions;

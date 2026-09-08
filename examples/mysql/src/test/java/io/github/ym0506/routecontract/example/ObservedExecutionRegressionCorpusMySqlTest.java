@@ -5,7 +5,7 @@ import io.github.ym0506.routecontract.CaptureStatus;
 import io.github.ym0506.routecontract.CapturedResult;
 import io.github.ym0506.routecontract.PhysicalExecutionAttempt;
 import io.github.ym0506.routecontract.RouteAssertions;
-import io.github.ym0506.routecontract.RouteContract;
+import io.github.ym0506.routecontract.api.RouteContract;
 import io.github.ym0506.routecontract.RouteContractViolationException;
 import io.github.ym0506.routecontract.RouteSnapshot;
 import io.github.ym0506.routecontract.ShardingSphereRuntimeIdentity;

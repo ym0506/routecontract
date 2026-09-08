@@ -1,6 +1,6 @@
 package io.github.ym0506.routecontract.examples.split;
 
-import io.github.ym0506.routecontract.RouteContract;
+import io.github.ym0506.routecontract.api.RouteContract;
 import io.github.ym0506.routecontract.RouteSnapshot;
 
 /** Minimal classpath probe for one RouteContract 0.2 adapter and its exact runtime. */

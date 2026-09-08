@@ -1,6 +1,6 @@
 package io.github.ym0506.routecontract.examples.maven;
 
-import io.github.ym0506.routecontract.RouteContract;
+import io.github.ym0506.routecontract.api.RouteContract;
 import io.github.ym0506.routecontract.RouteSnapshot;
 import io.github.ym0506.routecontract.spi.RouteContractRuntimeAdapter;
 

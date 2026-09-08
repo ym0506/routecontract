@@ -1,5 +1,10 @@
 # Independent staged-artifact MySQL consumer
 
+The current 0.2 fixture uses `io.github.ym0506.routecontract.api.RouteContract`.
+See the [entry migration contract](../../docs/current-entry-migration-acceptance.md)
+for automatic collision checks and the clean-classpath compatibility facade.
+Use newly staged 0.2 bytes that include this entry; older staging does not contain it.
+
 Status: unreleased 0.2 development fixture. This checks supplied local staged bytes; it does not
 claim Maven Central availability, public anonymous consumption, external adoption, or release readiness.
 

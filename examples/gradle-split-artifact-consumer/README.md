@@ -1,5 +1,10 @@
 # Local Gradle consumer for the RouteContract 0.2 split
 
+The current 0.2 fixture uses `io.github.ym0506.routecontract.api.RouteContract`.
+See the [entry migration contract](../../docs/current-entry-migration-acceptance.md)
+for automatic collision checks and the clean-classpath compatibility facade.
+Use newly staged 0.2 bytes that include this entry; older staging does not contain it.
+
 This nested build is a local development fixture for the unpublished `0.2.0` split. It consumes
 `routecontract-core` plus exactly one exact-version adapter through composite substitution, so it
 does not publish snapshots to Maven Local, create a Central staging tree, or alter the immutable

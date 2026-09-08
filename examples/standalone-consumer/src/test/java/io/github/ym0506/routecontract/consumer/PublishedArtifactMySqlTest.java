@@ -2,7 +2,7 @@ package io.github.ym0506.routecontract.consumer;
 
 import io.github.ym0506.routecontract.CapturedResult;
 import io.github.ym0506.routecontract.RouteAssertions;
-import io.github.ym0506.routecontract.RouteContract;
+import io.github.ym0506.routecontract.api.RouteContract;
 import io.github.ym0506.routecontract.RouteSnapshot;
 import org.apache.shardingsphere.driver.api.yaml.YamlShardingSphereDataSourceFactory;
 import org.junit.jupiter.api.AfterAll;

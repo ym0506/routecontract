@@ -1,24 +1,26 @@
 package io.github.ym0506.routecontract;
 
-import io.github.ym0506.routecontract.internal.CaptureRegistry;
-import io.github.ym0506.routecontract.internal.CaptureScope;
-
-import java.util.Objects;
-
 /**
- * Entry point for operation-scoped observed physical JDBC execution captures.
+ * Compatibility entry point for operation-scoped observed physical JDBC execution captures.
  *
- * <p>The action must execute synchronously inside the call. RouteContract observes
- * ShardingSphere-JDBC 5.5.3 {@code SQLExecutionHook} callbacks; it does not expose a complete route
- * plan and does not infer transaction commit or business success from callback return.</p>
+ * <p>New 0.2 applications use {@link io.github.ym0506.routecontract.api.RouteContract}.
+ * Existing application bytecode may keep this entry on a clean split dependency graph. An
+ * immutable pre-0.2 JAR placed first on an invalid mixed classpath can shadow this class, so
+ * calls into that old bytecode cannot be guaranteed to expose current collision diagnostics.</p>
+ *
+ * <p>The action must execute synchronously inside the call. The exact installed 5.5.2 or 5.5.3
+ * adapter observes hook-reported physical JDBC execution attempts; it does not expose a complete
+ * route plan or infer transaction commit or business success.</p>
  */
 public final class RouteContract {
 
     /** Maximum physical attempts retained for one capture before it fails closed as incomplete. */
-    public static final int MAX_RETAINED_ATTEMPTS_PER_CAPTURE = 10_000;
+    public static final int MAX_RETAINED_ATTEMPTS_PER_CAPTURE =
+            io.github.ym0506.routecontract.api.RouteContract.MAX_RETAINED_ATTEMPTS_PER_CAPTURE;
 
     /** Maximum caller operation-ID length measured in Java UTF-16 code units. */
-    public static final int MAX_OPERATION_ID_UTF16_CODE_UNITS = 200;
+    public static final int MAX_OPERATION_ID_UTF16_CODE_UNITS =
+            io.github.ym0506.routecontract.api.RouteContract.MAX_OPERATION_ID_UTF16_CODE_UNITS;
 
     private RouteContract() {
     }
@@ -26,36 +28,23 @@ public final class RouteContract {
     /**
      * Runs an operation and returns its observed physical-execution evidence.
      *
-     * <p>If the action throws, its original exception or error is rethrown after best-effort
-     * collector cleanup, so no snapshot is returned.</p>
+     * <p>Action exceptions and errors are rethrown unchanged after best-effort collector cleanup.</p>
      *
      * @param operationId non-blank opaque identifier, at most 200 Java UTF-16 code units
      * @param action synchronous application operation to observe
      * @return immutable snapshot recorded while the action ran
      * @throws Exception when the action throws a checked or runtime exception
      * @throws IllegalArgumentException when {@code operationId} is blank or too long
-     * @throws IllegalStateException when the supported runtime/SPI preflight fails or a capture is nested
+     * @throws IllegalStateException when preflight fails or a capture is nested
      */
     public static RouteSnapshot capture(final String operationId, final ThrowingRunnable action) throws Exception {
-        Objects.requireNonNull(action, "action");
-        CaptureScope scope = CaptureRegistry.open(operationId);
-        try {
-            action.run();
-        } catch (Exception exception) {
-            scope.closeAfterFailure(exception);
-            throw exception;
-        } catch (Error error) {
-            scope.closeAfterFailure(error);
-            throw error;
-        }
-        return scope.close();
+        return io.github.ym0506.routecontract.api.RouteContract.capture(operationId, action);
     }
 
     /**
-     * Runs a value-producing operation and returns both its value and observed execution evidence.
+     * Runs a value-producing operation and returns its value and observed execution evidence.
      *
-     * <p>If the action throws, its original exception or error is rethrown after best-effort
-     * collector cleanup, so no partial result is returned.</p>
+     * <p>Action exceptions and errors are rethrown unchanged after best-effort collector cleanup.</p>
      *
      * @param operationId non-blank opaque identifier, at most 200 Java UTF-16 code units
      * @param action synchronous application operation to observe
@@ -63,23 +52,11 @@ public final class RouteContract {
      * @return application value paired with the immutable capture snapshot
      * @throws Exception when the action throws a checked or runtime exception
      * @throws IllegalArgumentException when {@code operationId} is blank or too long
-     * @throws IllegalStateException when the supported runtime/SPI preflight fails or a capture is nested
+     * @throws IllegalStateException when preflight fails or a capture is nested
      */
     public static <T> CapturedResult<T> captureResult(
             final String operationId,
             final ThrowingSupplier<T> action) throws Exception {
-        Objects.requireNonNull(action, "action");
-        CaptureScope scope = CaptureRegistry.open(operationId);
-        final T value;
-        try {
-            value = action.get();
-        } catch (Exception exception) {
-            scope.closeAfterFailure(exception);
-            throw exception;
-        } catch (Error error) {
-            scope.closeAfterFailure(error);
-            throw error;
-        }
-        return new CapturedResult<>(value, scope.close());
+        return io.github.ym0506.routecontract.api.RouteContract.captureResult(operationId, action);
     }
 }

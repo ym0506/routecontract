@@ -1,5 +1,10 @@
 # Maven split-artifact consumer fixture
 
+The current 0.2 fixture uses `io.github.ym0506.routecontract.api.RouteContract`.
+See the [entry migration contract](../../docs/current-entry-migration-acceptance.md)
+for automatic collision checks and the clean-classpath compatibility facade.
+Use newly staged 0.2 bytes that include this entry; older staging does not contain it.
+
 This local release-gate fixture resolves `routecontract-core:0.2.0` through exactly one exact-version
 adapter from a separately staged Maven repository. It verifies both configured exact-version lanes:
 

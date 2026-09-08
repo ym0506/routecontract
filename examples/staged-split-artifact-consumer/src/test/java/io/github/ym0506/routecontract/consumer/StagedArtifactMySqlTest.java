@@ -2,7 +2,7 @@ package io.github.ym0506.routecontract.consumer;
 
 import io.github.ym0506.routecontract.AttemptOutcome;
 import io.github.ym0506.routecontract.CaptureStatus;
-import io.github.ym0506.routecontract.RouteContract;
+import io.github.ym0506.routecontract.api.RouteContract;
 import io.github.ym0506.routecontract.RouteContractViolationException;
 import io.github.ym0506.routecontract.RouteSnapshot;
 import io.github.ym0506.routecontract.ShardingSphereRuntimeIdentity;

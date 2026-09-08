@@ -25,9 +25,12 @@ INTEGER_RE = re.compile(r"0|[1-9][0-9]*")
 MAX_XML_BYTES = 4 * 1024 * 1024
 
 EXPECTED_SUITES = {
+    "io.github.ym0506.routecontract.api.CurrentRouteContractTest": 15,
+    "io.github.ym0506.routecontract.internal.CurrentRuntimeGuardTest": 9,
     "io.github.ym0506.routecontract.internal.RuntimeAdapterRegistryTest": 7,
     "io.github.ym0506.routecontract.manifest.ManifestReviewReportTest": 13,
     "io.github.ym0506.routecontract.structure.CorePublicationStructureTest": 3,
+    "io.github.ym0506.routecontract.CurrentRouteContractCompatibilityTest": 4,
     "io.github.ym0506.routecontract.RouteContractTest": 19,
     "io.github.ym0506.routecontract.ShardingSphereRuntimeIdentityTest": 3,
     "io.github.ym0506.routecontract.manifest.ObservedExecutionManifestTest": 22,

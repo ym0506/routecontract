@@ -24,6 +24,13 @@ complete versioned MySQL corpus and independent Gradle staged-artifact consumer;
 recorded separately. Later Maven staged-consumer and A-26 checks have their own local evidence.
 These results do not complete every release row or establish a public release or external adoption.
 
+The original A-28 runtime-collision gate is now **FAILED**, with its observations retained
+[unchanged](evidence/legacy-runtime-collision-2026-09-08.md). Four legacy-first calls selected
+immutable old entry code before a new guard could execute. The candidate adopts the explicit
+[current-entry migration contract](current-entry-migration-acceptance.md) and the separate A-29
+successor gate below. Its eight focused regression cells and integrated-source MySQL checks passed;
+the full successor gate against final staged bytes remains pending.
+
 The current released contract remains exact ShardingSphere-JDBC 5.5.3. Multiple ShardingSphere
 versions are explicitly outside the v0.1 scope. Nothing in this ADR changes the immutable `v0.1.2`
 tag, Release, assets, or the meaning of
@@ -67,7 +74,7 @@ All three artifacts use group `io.github.ym0506.routecontract` and the coordinat
 
 | Gradle project / Maven artifactId | Exact role | Package ownership | Automatic module name (metadata only) |
 | --- | --- | --- | --- |
-| `routecontract-core` | ShardingSphere-neutral public API, capture registry, minimized model, manifest codec/verifier, and the narrow internal adapter bridge | `io.github.ym0506.routecontract`, `io.github.ym0506.routecontract.manifest`, `io.github.ym0506.routecontract.internal`, `io.github.ym0506.routecontract.spi` | `io.github.ym0506.routecontract.core` |
+| `routecontract-core` | ShardingSphere-neutral public API, capture registry, minimized model, manifest codec/verifier, and the narrow internal adapter bridge | `io.github.ym0506.routecontract`, `io.github.ym0506.routecontract.api`, `io.github.ym0506.routecontract.manifest`, `io.github.ym0506.routecontract.internal`, `io.github.ym0506.routecontract.spi` | `io.github.ym0506.routecontract.core` |
 | `routecontract-shardingsphere-5.5` | Existing GAV, still exact ShardingSphere 5.5.3; depends on core through an API/transitive edge | `io.github.ym0506.routecontract.shardingsphere553.internal` only | `io.github.ym0506.routecontract.shardingsphere55` |
 | `routecontract-shardingsphere-5.5.2` | New exact ShardingSphere 5.5.2 adapter; depends on core through an API/transitive edge | `io.github.ym0506.routecontract.shardingsphere552.internal` only | `io.github.ym0506.routecontract.shardingsphere552` |
 
@@ -80,7 +87,13 @@ release lane; 0.2.0 fails module-path execution closed instead of treating accid
 support.
 
 The documented public user API keeps its existing FQCNs and method descriptors in
-`routecontract-core`. This compatibility promise excludes every `.internal` FQCN, including the
+`routecontract-core` for clean split classpaths. New 0.2 applications use
+`io.github.ym0506.routecontract.api.RouteContract`; the existing entry remains a compatibility
+facade. Both current capture methods perform the early collision check automatically, and
+`verifyRuntime()` provides optional complete startup validation before datasource construction.
+An old-FQCN invocation on a manually assembled legacy-first classpath can still execute immutable
+old code and does not have the current entry's collision-diagnostic guarantee.
+This compatibility promise excludes every `.internal` FQCN, including the
 old public-at-the-bytecode-level
 `io.github.ym0506.routecontract.internal.RouteContractSqlExecutionHook`; service providers are
 implementation details and intentionally move to the version-specific packages.
@@ -93,8 +106,10 @@ not a supported user extension API. It contains only:
   callback-returned, callback-failure, and stable diagnostics without accessing core collector
   implementation classes directly.
 
-No ShardingSphere class may appear in a core signature, constant pool, dependency, or service
-descriptor. No `.class` path may occur in both adapter JARs. Shared implementation belongs in core,
+No symbolic ShardingSphere class, method or type-descriptor linkage may appear in core bytecode,
+public signatures or dependencies. Core declares no ShardingSphere provider service descriptor.
+JDK-only passive inspection may name a ShardingSphere service-resource path as a string; that
+resource name does not load or link a ShardingSphere class. No `.class` path may occur in both adapter JARs. Shared implementation belongs in core,
 not in a shared source set compiled into both adapters.
 
 ### 2.2 Exact providers and service graph
@@ -138,7 +153,15 @@ plugin container, or other unsupported topology does not make that topology supp
 also does not prove every non-anchor JAR in an arbitrary manual classpath; whole-group protection
 comes from the consumer resolver rule or the separately verified complete-graph tool.
 
-There are two non-recursive verification phases.
+There are three separate, non-recursive verification boundaries.
+
+**Current API entry guard.** Before collector initialization or service discovery, both capture
+methods on `io.github.ym0506.routecontract.api.RouteContract` passively inspect legacy resources
+and core origins using JDK APIs. Inspection is anchored to the new entry and guard, whose names
+are absent from audited legacy JARs. A legacy collision fails with
+`RC_LEGACY_ADAPTER_COLLISION` before action entry. This check has no successful-result cache and
+does not initialize the collector, discover a runtime adapter, or instantiate a hook.
+`verifyRuntime()` starts with the same guard, then performs the complete runtime preflight.
 
 **Hook-construction guard.** The version-specific hook constructor runs while ShardingSphere may be
 inside its own `ServiceLoader` initialization. It must not call the core runtime-adapter
@@ -480,6 +503,12 @@ version string. It fails with `RC_LEGACY_ADAPTER_COLLISION` before ordinary SQL 
 protections were bypassed. Both physical-JAR orders are mandatory black-box cases because an
 old-first classpath can otherwise shadow the new public API classes.
 
+The current public entry has its own passive pre-collector guard. The retained original A-28
+run proved that checking only after entering the old public FQCN cannot guarantee the new
+diagnostic when legacy bytes win class loading. A-29 therefore tests the distinct current entry
+in both JAR orders and preserves the ordinary-SQL constructor protection. Changing classpath
+order is not a supported migration remedy; remove old artifacts and restart with one exact adapter.
+
 ## 5. TCCL, classloader, shading, and JPMS boundary
 
 The supported 0.2.0 topology is the classpath, with one application classloader that can see
@@ -553,17 +582,28 @@ mocked service collection.
 | A-26 | Compare the documented public API of 0.1.2 `routecontract-shardingsphere-5.5` with 0.2.0 through that same GAV; exclude `.internal`/provider FQCNs. Run an old-bytecode consumer, source recompilation, reflection over record components, equality/`toString`, code-source checks, and the documented classpath/module migration examples separately. | Old documented method and legacy-constructor descriptors link through transitive core on the classpath. Source/reflection/record-shape/code-source changes are either compatible or called out explicitly; module-path migration is rejected with the documented 0.2.0 boundary rather than claimed compatible. [Local acceptance evidence](evidence/public-api-migration-2026-09-07.md) maps every requested category to its verified result and disclosed migration change. |
 | A-27 | Gradle and Maven resolver fixtures combine every released stable pre-0.2 all-in-one version with core alone and with the different-GAV 5.5.2 adapter in both declaration orders. Separately request each same-GA legacy version and 0.2.0 with ordinary mediation, then with strict dual-version requirements; audit any RC-tag/release layout against the same registry. Maven also tests explicit consumer dependency management separately. | Different-component combinations fail through the legacy-GAV/core-owner capability or consumer Enforcer. Gradle ordinary mediation selects only 0.2.0. Maven equal-depth ordinary mediation follows declaration order, and Enforcer 3.6.3 rejects the legacy request even when it loses selection; explicit dependency management aligns both requests and passes only with exact current adapter/core JARs and no legacy file. Strict incompatible requirements fail the respective resolver. |
 | A-28 | For each released stable pre-0.2 all-in-one version, manually assemble legacy + core-0.2.0 + adapter-0.2.0 classpaths with the legacy JAR first and last, for both new adapters; execute ordinary SQL before capture and a capture sentinel. | Every version and order fails with `RC_LEGACY_ADAPTER_COLLISION` before SQL/action; no old-class shadowing, double capture, `AbstractMethodError`, or silent success. A tag-only RC layout may be covered by a byte/layout-identity proof plus oldest/latest executable cases; any distributed RC artifact is executed directly. |
+| A-29 | Successor current-entry contract: execute every distributed legacy JAR, both physical JAR orders and both exact adapters through both new `capture` and `captureResult` methods in fresh JVMs. Independently exercise ordinary SQL, clean old/current capture controls, full startup validation and actual MySQL operations. | Collision cells produce `RC_LEGACY_ADAPTER_COLLISION` before action/SQL with no linkage failure. Clean controls retain business/capture behavior; startup validation rejects missing/wrong adapters. Final staged JAR origins, hashes and classpath observations bind every cell. Old-FQCN calls on manually mixed legacy-first graphs remain outside the new diagnostic guarantee and the original A-28 result stays FAILED. |
 
 The local Gradle portion of A-27 passed [37 actual resolver cases](evidence/gradle-legacy-resolver-2026-09-08.md)
 against four distributed legacy releases and reviewed 0.2 staging. The evidence includes the
 copyable core-ownership rule, both declaration orders and exact selected JAR hashes. The local
 Maven portion also passed [45 actual consumer cases](evidence/maven-legacy-resolver-2026-09-08.md),
 including declaration-order mediation, verbose Enforcer rejection and explicitly managed selection.
-These two runs supply A-27 resolver evidence for their reviewed staging inputs; A-28 runtime/classpath
-execution and the other outstanding lanes remain separate release gates.
+These two runs supply A-27 resolver evidence for their reviewed staging inputs. Changed final
+publication payloads require new evidence; the earlier receipt does not describe the new API JAR.
 
-Rows A-01 through A-28 are release gates, not an aspirational sample. Failures may not be waived by a
-narrower unit test or by relabeling the lane experimental in final release metadata.
+Original A-28 remains FAILED: 28 of 32 collision cells passed its exact diagnostic requirement,
+and four clean controls passed. The four failures all prevented action and SQL but exposed an old
+5.5.3-only preflight diagnostic. Their original inputs, runner and results remain preserved.
+The [feasibility finding](legacy-runtime-collision-feasibility.md) explains why new-only code cannot
+change an immutable class already selected through the old FQCN.
+
+The candidate explicitly changes the application-entry contract and requires A-29 as its successor.
+The [eight focused local regressions](evidence/current-entry-regression-2026-09-08.md) and
+[integrated-source verification](evidence/current-entry-root-integration-2026-09-08.md) do not
+complete A-29. Current release acceptance requires A-01 through A-27 and A-29 on final staged bytes,
+plus disclosure of the old-entry migration limit and original A-28 failure. Other failing gates
+cannot be waived by a narrower unit test or by relabeling a lane experimental.
 
 ## 7. Migration plan
 
@@ -586,6 +626,9 @@ Implementation follows the repository's specification-first workflow.
    intentional migrations and are verified/disclosed separately rather than called unchanged.
 5. **Add the isolated 5.5.2 adapter.** Add only the version-specific hook, runtime adapter,
    descriptors, literal dependencies/constraints, locks, and reviewed verification metadata.
+   New 0.2 installation examples use the guarded `api.RouteContract` entry; clean old-bytecode
+   compatibility tests and immutable v0.1 examples retain their original imports. Disclose the
+   old-entry limit and verify the separate A-29 migration contract before release.
 6. **Run the complete matrix.** Produce separate 5.5.2 and 5.5.3 raw evidence, including MySQL and
    external-build-tool fixtures. Baselines remain human-approved per exact runtime.
 7. **Update distribution surfaces.** Update compatibility tables, installer, direct-release
@@ -610,7 +653,9 @@ repository consumption, the complete route-risk corpus, and the remaining releas
 
 Publication is all-or-nothing for the 0.2.0 three-artifact graph. It is blocked unless:
 
-- every acceptance row passes on the exact staged bytes;
+- A-01 through A-27 and the current-entry successor A-29 pass on the exact staged bytes;
+- the release notes disclose the new recommended import and old-FQCN mixed-classpath limitation,
+  and retain original A-28 as FAILED rather than reporting it as a passing release result;
 - generated POMs and Gradle module metadata encode the graph in this ADR;
 - consumer fixtures prove whole-group exact ShardingSphere selection and every audited pre-0.2
   all-in-one collision is rejected rather than relying only on three anchor constraints;

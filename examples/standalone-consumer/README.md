@@ -1,5 +1,10 @@
 # Standalone generated-Maven-publication consumer
 
+The current 0.2 fixture uses `io.github.ym0506.routecontract.api.RouteContract`.
+See the [entry migration contract](../../docs/current-entry-migration-acceptance.md)
+for automatic collision checks and the clean-classpath compatibility facade.
+Use newly staged 0.2 bytes that include this entry; older staging does not contain it.
+
 This Gradle build is intentionally outside RouteContract's multi-project build. It has its own
 `settings.gradle`, resolves RouteContract only by the published Maven coordinate, and uses an
 exclusive repository rule for the RouteContract group. The test verifies that:
