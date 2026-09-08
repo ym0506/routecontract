@@ -1,0 +1,15 @@
+// Consumer-owned compatibility metadata for the audited pre-0.2 all-in-one
+// publications. Apply this script before resolving RouteContract dependencies.
+// It preserves ordinary same-GA version mediation: the rule is applied to
+// component metadata, never by rejecting a dependency request.
+ext.routeContractAppliedLegacyCapabilities = Collections.synchronizedSet(new TreeSet<String>())
+dependencies.components.withModule('io.github.ym0506.routecontract:routecontract-shardingsphere-5.5') { details ->
+    if (details.id.version ==~ /0\.[01]\.(0|[1-9][0-9]*)(-rc[1-9][0-9]*)?/) {
+        details.allVariants {
+            withCapabilities {
+                addCapability('io.github.ym0506.routecontract', 'routecontract-core-owner', '1')
+            }
+        }
+        routeContractAppliedLegacyCapabilities.add("${details.id}:io.github.ym0506.routecontract:routecontract-core-owner:1")
+    }
+}

@@ -1,0 +1,144 @@
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+import java.security.MessageDigest
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
+import org.gradle.api.artifacts.result.UnresolvedDependencyResult
+import org.gradle.api.attributes.Bundling
+import org.gradle.api.attributes.Category
+import org.gradle.api.attributes.LibraryElements
+import org.gradle.api.attributes.Usage
+import org.gradle.api.attributes.java.TargetJvmVersion
+
+// Install Gradle's JVM attribute compatibility/disambiguation rules, as a real
+// Java consumer does (Java 8 library bytecode is compatible with Java 17).
+plugins { id 'java' }
+
+def inputs = new JsonSlurper().parse(file('case-inputs.json'))
+def routeGroup = 'io.github.ym0506.routecontract'
+def legacyArtifact = 'routecontract-shardingsphere-5.5'
+def ownerCapability = 'routecontract-core-owner'
+if (inputs.ownershipRule) {
+    apply from: 'legacy-core-ownership.gradle'
+}
+def appliedRules = inputs.ownershipRule ? routeContractAppliedLegacyCapabilities : Collections.emptySet()
+
+repositories {
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'verifiedLegacyAndStagedBytes'
+                url = uri(inputs.repository)
+                metadataSources { gradleMetadata(); mavenPom() }
+            }
+        }
+        filter { includeGroup routeGroup }
+    }
+    mavenCentral { content { excludeGroup routeGroup } }
+}
+
+def candidate = configurations.create('legacyResolverCase') {
+    canBeResolved = true
+    canBeConsumed = false
+    attributes {
+        attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_RUNTIME))
+        attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category, Category.LIBRARY))
+        attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, LibraryElements.JAR))
+        attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling, Bundling.EXTERNAL))
+        attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 17)
+    }
+}
+
+inputs.requests.each { request ->
+    def dependency = dependencies.create("${routeGroup}:${request.module}:${request.version}")
+    if (request.strict) {
+        dependency.version { strictly(request.version) }
+    }
+    candidate.dependencies.add(dependency)
+}
+
+def hash = { file -> MessageDigest.getInstance('SHA-256').digest(file.bytes).encodeHex().toString() }
+def failureText = { Throwable error ->
+    def messages = []
+    for (def cause = error; cause != null; cause = cause.cause) {
+        messages.add(cause.message ?: cause.class.name)
+    }
+    messages.join('\n')
+}
+
+tasks.register('verifyLegacyResolution') {
+    doLast {
+        def result = candidate.incoming.resolutionResult
+        def components = result.allComponents.findAll { it.id instanceof ModuleComponentIdentifier }
+                .collect { [group: it.id.group, module: it.id.module, version: it.id.version] }
+                .sort { a, b -> "${a.group}:${a.module}:${a.version}" <=> "${b.group}:${b.module}:${b.version}" }
+        def unresolved = result.allDependencies.findAll { it instanceof UnresolvedDependencyResult }
+        def failures = unresolved.collect { failureText(it.failure) }.unique().sort()
+        def report = [caseId: inputs.caseId, requests: inputs.requests,
+                      ownershipRule: inputs.ownershipRule, appliedLegacyCapabilities: appliedRules.toList(),
+                      selectedComponents: components, expected: inputs.expected, expectedRuntime: inputs.runtime,
+                      unresolvedFailures: failures, selectedArtifacts: [], result: 'UNEXPECTED']
+        try {
+            if (inputs.expected == 'RESOLVED') {
+                if (!unresolved.empty) {
+                    throw new GradleException("Expected normal resolution: ${failures.join('\n')}")
+                }
+                def selected = candidate.incoming.artifactView {
+                    componentFilter { id -> id instanceof ModuleComponentIdentifier && id.group == routeGroup }
+                }.artifacts.artifacts.collect { artifact ->
+                    def id = artifact.id.componentIdentifier
+                    [module: id.module, version: id.version, name: artifact.file.name,
+                     sha256: hash(artifact.file), byteCount: artifact.file.length()]
+                }.sort { it.module }
+                report.selectedArtifacts = selected
+                def expected = inputs.expectedArtifacts.sort { it.module }
+                if (selected != expected) {
+                    throw new GradleException('Resolved first-party files differ from reviewed expected bytes')
+                }
+                def selectedCoordinates = components.findAll { it.group == routeGroup }
+                        .collect { "${it.module}:${it.version}" }.sort()
+                if (selectedCoordinates != expected.collect { "${it.module}:${it.version}" }.sort()) {
+                    throw new GradleException('Selected first-party graph contains an unexpected legacy/current component')
+                }
+                if (inputs.runtime != null) {
+                    def shardingSphere = components.findAll { it.group == 'org.apache.shardingsphere' }
+                    if (!shardingSphere.any { it.module == 'shardingsphere-infra-executor' }
+                            || shardingSphere.any { it.version != inputs.runtime }) {
+                        throw new GradleException('Selected ShardingSphere graph is not the exact adapter runtime')
+                    }
+                }
+                report.result = 'RESOLVED'
+            } else {
+                def messages = failures.join('\n')
+                if (unresolved.empty || messages.contains('Could not find ')
+                        || messages.contains('Could not GET ') || messages.contains('Dependency verification failed')) {
+                    throw new GradleException('Negative case did not fail solely through the required resolver boundary')
+                }
+                if (inputs.expected == 'CAPABILITY_CONFLICT') {
+                    if (!failures.every { failure -> failure.contains('conflict on capability')
+                            && (failure.contains("${routeGroup}:${ownerCapability}")
+                                 || failure.contains("${routeGroup}:${legacyArtifact}")) }
+                            || appliedRules.empty) {
+                        throw new GradleException("Expected real legacy capability conflict: ${messages}")
+                    }
+                } else if (inputs.expected == 'STRICT_VERSION_CONFLICT') {
+                    if (!failures.every { failure -> failure.contains('Cannot find a version of')
+                            && failure.contains("${routeGroup}:${legacyArtifact}")
+                            && failure.contains('strictly')
+                            && failure.contains(inputs.legacyVersion) && failure.contains(inputs.currentVersion) }) {
+                        throw new GradleException("Expected incompatible strict version constraints: ${messages}")
+                    }
+                } else {
+                    throw new GradleException('Unknown expected resolver outcome')
+                }
+                report.result = inputs.expected
+            }
+        } finally {
+            def destination = layout.buildDirectory.file('legacy-resolver-evidence.json').get().asFile
+            destination.parentFile.mkdirs()
+            destination.text = JsonOutput.prettyPrint(JsonOutput.toJson(report)) + '\n'
+        }
+        println "ROUTECONTRACT_LEGACY_RESOLVER_VERIFIED case=${inputs.caseId} result=${report.result}"
+    }
+}
+
+tasks.named('check') { dependsOn 'verifyLegacyResolution' }

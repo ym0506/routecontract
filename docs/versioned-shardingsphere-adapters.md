@@ -551,6 +551,11 @@ mocked service collection.
 | A-27 | Gradle and Maven resolver fixtures combine every released stable pre-0.2 all-in-one version with core alone and with the different-GAV 5.5.2 adapter in both declaration orders. Separately request each same-GA legacy version and 0.2.0 with ordinary mediation, then with strict dual-version requirements; audit any RC-tag/release layout against the same registry. | Different-component combinations fail through the legacy-GAV/core-owner capability or consumer Enforcer. Ordinary same-GA mediation passes only when exactly 0.2.0 is selected and no pre-0.2 file is present; strict incompatible requirements fail resolution. |
 | A-28 | For each released stable pre-0.2 all-in-one version, manually assemble legacy + core-0.2.0 + adapter-0.2.0 classpaths with the legacy JAR first and last, for both new adapters; execute ordinary SQL before capture and a capture sentinel. | Every version and order fails with `RC_LEGACY_ADAPTER_COLLISION` before SQL/action; no old-class shadowing, double capture, `AbstractMethodError`, or silent success. A tag-only RC layout may be covered by a byte/layout-identity proof plus oldest/latest executable cases; any distributed RC artifact is executed directly. |
 
+The local Gradle portion of A-27 passed [37 actual resolver cases](evidence/gradle-legacy-resolver-2026-09-08.md)
+against four distributed legacy releases and reviewed 0.2 staging. The evidence includes the
+copyable core-ownership rule, both declaration orders and exact selected JAR hashes. Maven A-27,
+A-28 runtime/classpath execution and the other outstanding lanes remain separate release gates.
+
 Rows A-01 through A-28 are release gates, not an aspirational sample. Failures may not be waived by a
 narrower unit test or by relabeling the lane experimental in final release metadata.
 
