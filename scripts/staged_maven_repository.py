@@ -277,7 +277,7 @@ def serve_repository(repository: Path, log: Path):
                     except OSError:
                         pass
                 with log_lock:
-                    log_stream.write(json.dumps({'route': route, 'status': status, 'path': path},
+                    log_stream.write(json.dumps({'method': self.command, 'route': route, 'status': status, 'path': path},
                                                 sort_keys=True, separators=(',', ':')) + '\n')
                     log_stream.flush()
 

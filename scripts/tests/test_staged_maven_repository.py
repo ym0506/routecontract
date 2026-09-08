@@ -66,9 +66,9 @@ class StagedMavenRepositoryTest(unittest.TestCase):
                 self.assertEqual(str(len(b'exact-staged-jar')), headers['Content-Length'])
                 self.assertEqual((200, b'fixture-checksum'), self.request(base, self.path + '.sha256')[:2])
             remote.assert_not_called()
-        self.assertEqual([{'path': self.path, 'route': 'staged', 'status': 200},
-                          {'path': self.path, 'route': 'staged', 'status': 200},
-                          {'path': self.path + '.sha256', 'route': 'staged', 'status': 200}], self.records())
+        self.assertEqual([{'method': 'GET', 'path': self.path, 'route': 'staged', 'status': 200},
+                          {'method': 'HEAD', 'path': self.path, 'route': 'staged', 'status': 200},
+                          {'method': 'GET', 'path': self.path + '.sha256', 'route': 'staged', 'status': 200}], self.records())
 
     def test_missing_first_party_never_falls_back_to_central(self):
         with patch.object(MODULE, '_open_central') as remote:
@@ -121,8 +121,8 @@ class StagedMavenRepositoryTest(unittest.TestCase):
             self.assertFalse(any(name.lower() in ('authorization', 'cookie', 'proxy-authorization')
                                  for name, _ in request.header_items()))
         self.assertNotIn('private-', self.log.read_text())
-        self.assertTrue(all(record == {'path': target, 'route': 'central', 'status': 200}
-                            for record in self.records()))
+        self.assertEqual([{'method': method, 'path': target, 'route': 'central', 'status': 200}
+                          for method in ('GET', 'HEAD')], self.records())
 
     def test_off_origin_redirect_and_response_url_are_rejected(self):
         handler = MODULE.CentralRedirectHandler()
@@ -192,7 +192,7 @@ class StagedMavenRepositoryTest(unittest.TestCase):
         with patch.object(MODULE, '_open_central', side_effect=failure):
             with MODULE.serve_repository(self.repository, self.log) as base:
                 self.assertEqual((404, b''), self.request(base, 'org/example/missing.jar')[:2])
-        self.assertEqual([{'path': 'org/example/missing.jar', 'route': 'central', 'status': 404}], self.records())
+        self.assertEqual([{'method': 'GET', 'path': 'org/example/missing.jar', 'route': 'central', 'status': 404}], self.records())
         self.assertNotIn('private', self.log.read_text())
 
     def test_request_log_survives_caller_failure_and_server_stops(self):
