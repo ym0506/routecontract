@@ -74,15 +74,18 @@ final class RuntimeAdapterRegistry {
                     "RC_UNSUPPORTED_ROUTE_CONTRACT_ADAPTER: exact 5.5.2 or 5.5.3 adapter required; observed "
                             + adapter.getClass().getName());
         }
-        verifyAdapterLayout(adapter);
+        verifyUnnamedModules(adapter.getClass());
         ShardingSphereRuntimeIdentity result;
         try {
+            // Exact adapters check passive resources before linking their hook, then validate
+            // the complete loaded layout before ShardingSphere provider discovery.
             result = adapter.verifyRuntime();
         } catch (LinkageError error) {
             throw new IllegalStateException(
                     "RC_ADAPTER_CLASSLOADER_MISMATCH: runtime adapter verification could not be linked",
                     error);
         }
+        verifyAdapterLayout(adapter);
         if (!expected.equals(result)) {
             throw new IllegalStateException(
                     "RC_ADAPTER_IDENTITY_MISMATCH: " + adapter.getClass().getName()

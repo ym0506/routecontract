@@ -26,7 +26,7 @@ PACKAGE_SPEC.loader.exec_module(package_submission)
 CURRENT_RELEASE_SUITES = {
     "io.github.ym0506.routecontract.api.CurrentRouteContractTest": 15,
     "io.github.ym0506.routecontract.internal.CurrentRuntimeGuardTest": 9,
-    "io.github.ym0506.routecontract.internal.RuntimeAdapterRegistryTest": 7,
+    "io.github.ym0506.routecontract.internal.RuntimeAdapterRegistryTest": 9,
     "io.github.ym0506.routecontract.manifest.ManifestReviewReportTest": 13,
     "io.github.ym0506.routecontract.structure.CorePublicationStructureTest": 3,
     "io.github.ym0506.routecontract.CurrentRouteContractCompatibilityTest": 4,
@@ -34,12 +34,13 @@ CURRENT_RELEASE_SUITES = {
     "io.github.ym0506.routecontract.ShardingSphereRuntimeIdentityTest": 3,
     "io.github.ym0506.routecontract.manifest.ObservedExecutionManifestTest": 22,
     "io.github.ym0506.routecontract.shardingsphere553.internal.FreshJvmGuardFailureTest": 2,
-    "io.github.ym0506.routecontract.shardingsphere553.internal.ShardingSphere553PreflightTest": 8,
+    "io.github.ym0506.routecontract.shardingsphere553.internal.ShardingSphere553PreflightTest": 10,
     "io.github.ym0506.routecontract.structure.ArtifactIsolationTest": 6,
-    "io.github.ym0506.routecontract.shardingsphere552.internal.FreshJvmCompatibilityFailureTest": 3,
+    "io.github.ym0506.routecontract.shardingsphere552.internal.FreshJvmCompatibilityFailureTest": 4,
     "io.github.ym0506.routecontract.shardingsphere552.internal.FreshJvmGuardFailureTest": 2,
+    "io.github.ym0506.routecontract.shardingsphere552.internal.FreshJvmMixedAnchorTest": 2,
     "io.github.ym0506.routecontract.shardingsphere552.internal.RouteContract552HookContainmentTest": 3,
-    "io.github.ym0506.routecontract.shardingsphere552.internal.ShardingSphere552PreflightTest": 8,
+    "io.github.ym0506.routecontract.shardingsphere552.internal.ShardingSphere552PreflightTest": 10,
     "io.github.ym0506.routecontract.structure.ArtifactIsolation552Test": 8,
     "io.github.ym0506.routecontract.example.DataSourceProxyComparisonMySqlTest": 1,
     "io.github.ym0506.routecontract.example.FailureBoundaryMySqlTest": 1,
@@ -123,8 +124,8 @@ class SummarizeTestResultsTest(unittest.TestCase):
             self.assertTrue(first.endswith("\n"))
             self.assertIn("format=routecontract-test-summary-v1\n", first)
             self.assertIn(f"revision={self.revision}\n", first)
-            self.assertIn("suite_count=23\n", first)
-            self.assertIn("test_count=163\n", first)
+            self.assertIn("suite_count=24\n", first)
+            self.assertIn("test_count=172\n", first)
             self.assertIn(
                 "suite=io.github.ym0506.routecontract.manifest.ManifestReviewReportTest"
                 "|tests=13|failures=0|errors=0|skipped=0\n",

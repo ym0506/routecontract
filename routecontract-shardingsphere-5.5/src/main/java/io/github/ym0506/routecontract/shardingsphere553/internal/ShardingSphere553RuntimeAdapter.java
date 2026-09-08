@@ -13,6 +13,7 @@ public final class ShardingSphere553RuntimeAdapter implements RouteContractRunti
     /** {@inheritDoc} */
     @Override
     public ShardingSphereRuntimeIdentity verifyRuntime() {
+        ShardingSphere553HookConstructionGuard.verifyRuntimeResources();
         return ShardingSphere553Preflight.verify();
     }
 }

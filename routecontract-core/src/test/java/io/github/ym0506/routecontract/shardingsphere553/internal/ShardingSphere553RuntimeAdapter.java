@@ -9,11 +9,25 @@ public final class ShardingSphere553RuntimeAdapter implements RouteContractRunti
     private static ShardingSphereRuntimeIdentity identity =
             ShardingSphereRuntimeIdentity.SHARDINGSPHERE_5_5_3;
     private static int verifications;
+    private static RuntimeException diagnostic;
+    private static LinkageError linkageFailure;
 
     /** Resets the deterministic test provider state. */
     public static void reset(final ShardingSphereRuntimeIdentity nextIdentity) {
         identity = nextIdentity;
         verifications = 0;
+        diagnostic = null;
+        linkageFailure = null;
+    }
+
+    /** Sets a deterministic guard diagnostic for the core boundary test. */
+    public static void rejectWith(final RuntimeException failure) {
+        diagnostic = failure;
+    }
+
+    /** Sets a deterministic linkage failure for the core boundary test. */
+    public static void failLinkageWith(final LinkageError failure) {
+        linkageFailure = failure;
     }
 
     /** Returns how many times the registry invoked the provider. */
@@ -25,6 +39,12 @@ public final class ShardingSphere553RuntimeAdapter implements RouteContractRunti
     @Override
     public ShardingSphereRuntimeIdentity verifyRuntime() {
         verifications++;
+        if (diagnostic != null) {
+            throw diagnostic;
+        }
+        if (linkageFailure != null) {
+            throw linkageFailure;
+        }
         return identity;
     }
 }

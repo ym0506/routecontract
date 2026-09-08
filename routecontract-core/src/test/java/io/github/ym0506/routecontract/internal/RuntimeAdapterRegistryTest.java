@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.ServiceConfigurationError;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -92,6 +93,40 @@ class RuntimeAdapterRegistryTest {
         assertTrue(mismatch.getMessage().startsWith("RC_ADAPTER_IDENTITY_MISMATCH:"));
         assertEquals(1, ShardingSphere553RuntimeAdapter.verifications());
         ShardingSphere553RuntimeAdapter.reset(ShardingSphereRuntimeIdentity.SHARDINGSPHERE_5_5_3);
+    }
+
+    @Test
+    void exactProviderGuardDiagnosticsRetainTheirPublicMessageAndCause() {
+        try {
+            for (String marker : List.of("RC_MIXED_SHARDINGSPHERE_RUNTIME", "RC_UNSUPPORTED_SHARDINGSPHERE_RUNTIME")) {
+                ShardingSphere553RuntimeAdapter.reset(ShardingSphereRuntimeIdentity.SHARDINGSPHERE_5_5_3);
+                IllegalStateException diagnostic = new IllegalStateException(marker + ": actual guard rejected input",
+                        new IllegalArgumentException("retained diagnostic detail"));
+                ShardingSphere553RuntimeAdapter.rejectWith(diagnostic);
+                IllegalStateException observed = assertThrows(IllegalStateException.class,
+                        () -> RuntimeAdapterRegistry.verifyDiscovered(List.of(new ShardingSphere553RuntimeAdapter())));
+                assertSame(diagnostic, observed);
+                assertSame(diagnostic.getCause(), observed.getCause());
+                assertEquals(1, ShardingSphere553RuntimeAdapter.verifications());
+            }
+        } finally {
+            ShardingSphere553RuntimeAdapter.reset(ShardingSphereRuntimeIdentity.SHARDINGSPHERE_5_5_3);
+        }
+    }
+
+    @Test
+    void exactProviderLinkageFailuresStillHaveTheClassloaderDiagnostic() {
+        try {
+            ShardingSphere553RuntimeAdapter.reset(ShardingSphereRuntimeIdentity.SHARDINGSPHERE_5_5_3);
+            LinkageError linkage = new NoClassDefFoundError("missing runtime dependency");
+            ShardingSphere553RuntimeAdapter.failLinkageWith(linkage);
+            IllegalStateException observed = assertThrows(IllegalStateException.class,
+                    () -> RuntimeAdapterRegistry.verifyDiscovered(List.of(new ShardingSphere553RuntimeAdapter())));
+            assertTrue(observed.getMessage().startsWith("RC_ADAPTER_CLASSLOADER_MISMATCH:"));
+            assertSame(linkage, observed.getCause());
+        } finally {
+            ShardingSphere553RuntimeAdapter.reset(ShardingSphereRuntimeIdentity.SHARDINGSPHERE_5_5_3);
+        }
     }
 
     @Test

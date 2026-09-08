@@ -5,7 +5,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.net.JarURLConnection;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.security.CodeSource;
 import java.util.ArrayList;
@@ -13,6 +15,9 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.jar.Attributes;
+import java.util.jar.JarFile;
+import java.util.jar.Manifest;
 
 /**
  * Non-recursive construction guard that runs before the 5.5.3 hook touches the core bridge.
@@ -67,7 +72,79 @@ final class ShardingSphere553HookConstructionGuard {
     private ShardingSphere553HookConstructionGuard() {
     }
 
+    /** Checks actual JAR identities before core can link the exact hook's ABI. */
+    static void verifyRuntimeResources() {
+        Class<?> runtimeProvider = ShardingSphere553RuntimeAdapter.class;
+        ClassLoader loader = runtimeProvider.getClassLoader();
+        if (loader == null) {
+            throw loaderMismatch("the exact adapter must have an application classloader", null);
+        }
+        verifyUnnamedModules(runtimeProvider);
+        verifyDescriptorLayout(loader);
+        Set<String> origins = new HashSet<>();
+        String executorVersion = runtimeResourceVersion(loader, binaryClassPath(EXECUTOR_ANCHOR_CLASS), origins);
+        // This resource exists in both exact SPI releases; reading it does not load the class.
+        String spiVersion = runtimeResourceVersion(loader,
+                binaryClassPath("org.apache.shardingsphere.infra.spi.ShardingSphereServiceLoader"), origins);
+        String databaseVersion = runtimeResourceVersion(loader, binaryClassPath(DATABASE_ANCHOR_CLASS), origins);
+        verifyAnchorVersions(executorVersion, spiVersion, databaseVersion);
+        if (origins.size() != 3) {
+            throw new IllegalStateException(
+                    "RC_MIXED_SHARDINGSPHERE_RUNTIME: exact runtime resources have overlapping JAR origins");
+        }
+    }
+
+    private static String runtimeResourceVersion(
+            final ClassLoader loader,
+            final String resourcePath,
+            final Set<String> origins) {
+        List<URL> definitions = resources(loader, resourcePath);
+        if (definitions.isEmpty()) {
+            throw new IllegalStateException(
+                    "RC_UNSUPPORTED_SHARDINGSPHERE_RUNTIME: required exact runtime resource unavailable: "
+                            + resourcePath);
+        }
+        if (definitions.size() != 1) {
+            throw new IllegalStateException(
+                    "RC_MIXED_SHARDINGSPHERE_RUNTIME: expected one visible runtime resource for "
+                            + resourcePath + "; found " + definitions.size());
+        }
+        try {
+            URLConnection connection = definitions.get(0).openConnection();
+            connection.setUseCaches(false);
+            if (!(connection instanceof JarURLConnection jarConnection)
+                    || !resourcePath.equals(jarConnection.getEntryName())) {
+                throw new IllegalStateException(
+                        "RC_UNSUPPORTED_SHARDINGSPHERE_RUNTIME: runtime resource has no exact JAR origin: "
+                                + resourcePath);
+            }
+            // Disable shared URL caching before opening; closing this handle must not close a loader's cached JAR.
+            try (JarFile jar = jarConnection.getJarFile()) {
+                if (jar.getJarEntry(resourcePath) == null) {
+                    throw new IOException("the selected JAR does not contain the requested runtime resource");
+                }
+                origins.add(jarConnection.getJarFileURL().toExternalForm());
+                Manifest manifest = jar.getManifest();
+                if (manifest == null) {
+                    return null;
+                }
+                String packagePath = resourcePath.substring(0, resourcePath.lastIndexOf('/') + 1);
+                Attributes packageAttributes = manifest.getAttributes(packagePath);
+                String packageVersion = packageAttributes == null ? null
+                        : packageAttributes.getValue(Attributes.Name.IMPLEMENTATION_VERSION);
+                return packageVersion != null ? packageVersion
+                        : manifest.getMainAttributes().getValue(Attributes.Name.IMPLEMENTATION_VERSION);
+            }
+        } catch (IOException exception) {
+            throw new IllegalStateException(
+                    "RC_UNSUPPORTED_SHARDINGSPHERE_RUNTIME: runtime resource identity could not be read: "
+                            + resourcePath,
+                    exception);
+        }
+    }
+
     static void verify() {
+        verifyUnnamedModules(RouteContract553SqlExecutionHook.class);
         VerificationStamp cachedStamp = verifiedStamp;
         if (cachedStamp != null) {
             VerificationContext cachedContext = verificationContext();
