@@ -3061,19 +3061,31 @@ def _published_inventory(
     resolved_by_gav = {
         _parse_maven_purl(resolved)[0]: resolved for resolved in resolved_inventory
     }
+    root_ref = _component_purl(
+        published_sbom["metadata"]["component"], "published SBOM metadata.component"
+    )
+    root_resolved, root_version = _sbom_root_identity(
+        published_sbom, expected_root_name, "published SBOM"
+    )
+
+    def is_pom_jar_dependency(resolved: str) -> bool:
+        _, group, name, version, qualifiers = _parse_maven_purl(resolved)
+        if group == FIRST_PARTY_GROUP:
+            return (
+                expected_root_name in {PUBLISHED_ROOT_NAME, ADAPTER_552_ROOT_NAME}
+                and name == CORE_ROOT_NAME
+                and version == root_version
+                and qualifiers == {"project_path": f":{CORE_ROOT_NAME}"}
+            )
+        return qualifiers == {"type": "jar"}
+
     for dependency in pom_dependencies:
         resolved = resolved_by_gav[dependency]
-        if _parse_maven_purl(resolved)[4] != {"type": "jar"}:
+        if not is_pom_jar_dependency(resolved):
             raise PolicyError(
                 "published POM default-jar dependency is not a resolved jar component: "
                 f"{dependency} -> {resolved}"
             )
-    root_ref = _component_purl(
-        published_sbom["metadata"]["component"], "published SBOM metadata.component"
-    )
-    root_resolved, _ = _sbom_root_identity(
-        published_sbom, expected_root_name, "published SBOM"
-    )
     exact_to_resolved: dict[str, str] = {root_ref: root_resolved}
     for component in published_sbom["components"]:
         purl = _component_purl(component, "published SBOM component")
@@ -3116,7 +3128,7 @@ def _published_inventory(
     direct_jar_dependencies = {
         _parse_maven_purl(exact_to_resolved[target])[0]
         for target in graph[root_ref]
-        if _parse_maven_purl(exact_to_resolved[target])[4] == {"type": "jar"}
+        if is_pom_jar_dependency(exact_to_resolved[target])
     }
     first_party_dependencies = {
         purl
