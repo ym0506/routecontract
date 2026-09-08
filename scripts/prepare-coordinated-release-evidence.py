@@ -302,6 +302,36 @@ def verify_toolchain(java_home):
         raise PreparationError('Release Javadoc module differs from pinned Linux toolchain')
     return {'runtime':'Temurin-17.0.20.1+1','releaseFileSha256':sha(release),'javadocJmodSha256':sha(jmod)}
 
+def verify_retained_policy(arguments, retained, captured_sboms):
+    # Recompute semantic SBOM/license/OSV evidence from the retained raw scan.
+    # No scanner invocation, download, signature or approval is performed here.
+    with tempfile.TemporaryDirectory(prefix='routecontract-preparation-policy-') as tmp:
+        private=Path(tmp).resolve()
+        output=private/'verified.json'
+        parsed=POLICY._parser().parse_args(arguments+['--output',str(output)])
+        for prefix in SBOM_ROLES.values():
+            for suffix in ('sbom','sbom-xml'):
+                attribute=(prefix+suffix).replace('-','_')
+                original=getattr(parsed,attribute)
+                if original is None:
+                    continue
+                if original not in captured_sboms or read(original)!=captured_sboms[original]:
+                    raise PreparationError('SBOM inputs changed after capture')
+                snapshot=private/(attribute+original.suffix)
+                snapshot.write_bytes(captured_sboms[original])
+                setattr(parsed,attribute,snapshot)
+        # The scan runner deliberately removes its derived inventory. Recreate
+        # it from the captured aggregate, never from OSV's reported package set.
+        parsed.inventory=private/'gradle.lockfile'
+        parsed.inventory.write_text(POLICY._inventory_content(
+            POLICY._osv_maven_inventory(POLICY._load_sbom(parsed.sbom))),encoding='utf-8')
+        with contextlib.redirect_stdout(io.StringIO()):
+            parsed.handler(parsed)
+        if read(output)!=retained:
+            raise PreparationError('Retained supply-chain summary differs from semantic recomputation')
+        if any(read(path)!=content for path,content in captured_sboms.items()):
+            raise PreparationError('SBOM inputs changed during verification')
+
 def evidence_inputs(source, version, revision, repository, java_home):
     identity = source_identity(source,revision)
     toolchain = verify_toolchain(java_home)
@@ -319,10 +349,12 @@ def evidence_inputs(source, version, revision, repository, java_home):
     if len(files[f'routecontract-{version}-source.zip'])>MAX_FILE:
         raise PreparationError('Source archive exceeds size bound')
     arguments = ['verify']
+    captured_sboms = {}
     for role,prefix in SBOM_ROLES.items():
         for ext in ('json','xml'):
             path=source/'build/reports/verified-sbom'/role/('bom.'+ext)
             files[f'{role}-cyclonedx.{ext}']=read(path)
+            captured_sboms[path]=files[f'{role}-cyclonedx.{ext}']
             arguments += ['--'+prefix+'sbom'+('-xml' if ext=='xml' else ''),str(path)]
     for module,prefix in zip(MODULES,('core','published','adapter552')):
         arguments += ['--'+prefix+'-pom',str(source/module/'build/publications/mavenJava/pom-default.xml'),
@@ -338,15 +370,7 @@ def evidence_inputs(source, version, revision, repository, java_home):
         '--scanner-platform',document['scanner']['platform'],
         '--inventory',str(security/'derived/gradle.lockfile'),'--raw-scan',str(security/'osv-raw.json'),
         '--revision',revision,'--source-tree',identity['tree']]
-    # Recompute semantic SBOM/license/OSV evidence from the retained raw scan.
-    # No scanner invocation, download, signature or approval is performed here.
-    with tempfile.TemporaryDirectory(prefix='routecontract-preparation-policy-') as tmp:
-        output=Path(tmp)/'verified.json'
-        parsed=POLICY._parser().parse_args(arguments+['--output',str(output)])
-        with contextlib.redirect_stdout(io.StringIO()):
-            parsed.handler(parsed)
-        if read(output)!=retained:
-            raise PreparationError('Retained supply-chain summary differs from semantic recomputation')
+    verify_retained_policy(arguments,retained,captured_sboms)
     files['supply-chain-evidence.json']=retained
     summary=SUMMARY.build_summary(revision,[source/x for x in RESULT_DIRS]).encode()
     files['test-summary.txt']=summary
@@ -354,6 +378,8 @@ def evidence_inputs(source, version, revision, repository, java_home):
     # Revalidate source and all supplied bytes after external readers complete.
     if source_identity(source,revision)!=identity or tree_files(repository)!=inspected['contents']:
         raise PreparationError('Source or artifact inputs changed during preparation')
+    if any(read(path)!=content for path,content in captured_sboms.items()):
+        raise PreparationError('SBOM inputs changed during preparation')
     return identity,toolchain,inspected,files
 
 def collection_document(identity,toolchain,inspected,files,version):

@@ -1,8 +1,8 @@
 # Coordinated 0.2 release preparation acceptance
 
 Status: preparation implementation with focused unit and local payload evidence;
-exact Release-toolchain execution remains pending. The specification preceded
-implementation. This adds preparation and inspection for
+complete preparation under the exact release toolchain remains pending. The
+specification preceded implementation. This adds preparation and inspection for
 one coordinated stable `0.2.x` candidate. The existing publication hold remains
 active. A preparation receipt never approves a payload, signs it, publishes it,
 closes the remaining adapter ADR rows, or approves a baseline.
@@ -91,11 +91,52 @@ turn a computed hash into approval. The candidate document is distinct from the
 strict approved schema-2 payload manifest accepted by the signing-bundle tool.
 
 Verification recomputes the existing six-role policy from the source checkout's
-retained raw scan and inventory, compares its sanitized result exactly, and
+retained raw scan and a private canonical inventory derived from the captured
+aggregate SBOM, compares its sanitized result exactly, and
 recomputes the strict summary from raw JUnit. Those raw inputs remain outside
 the uploaded preparation set. A downloaded candidate without the required
 source/raw evidence cannot claim that full revalidation passed. Reinspection
 rejects changed inputs, missing/extra output and a receipt relabeled as approved.
+
+### Successful scan cleanup
+
+The scan runner intentionally removes its temporary `derived/gradle.lockfile`
+after verification. Collection must work after that cleanup without recreating
+the file in the source checkout. Derive the exact inventory with the existing
+policy helpers from the captured aggregate SBOM inside a canonical private
+temporary directory. The full policy handler must validate private copies of
+the same captured SBOM bytes that collection retains, and compare the resulting
+summary byte for byte with the existing exact-source summary. Recheck the
+captured source SBOMs before and after validation; altered inputs must fail.
+Temporary copies and the derived inventory are removed on success and failure.
+The runner's cleanup, six-role checks, package-set equality, vulnerability and
+license policy, source binding, and publication hold stay unchanged.
+
+The regression must cover absent cleaned inventory, a caller-supplied stale
+inventory, raw-package mismatch, JSON/XML disagreement, changed retained summary,
+and source SBOM mutation during verification. Portable tests exercise the real
+policy handler with its existing small fixture; a separate read-only check uses
+the retained actual six-role inputs. Neither test substitutes for a completed
+CI preparation or invokes a scanner.
+
+CI run `34237577811` on 2026-09-08 tested PR merge
+`52a8ebb6c22bfca28618a8512eb8dbaff8c7ceab` for head `f32884d` with the pinned
+Temurin release JDK. Its 24 JUnit suites / 174 tests passed without failures,
+errors or skips; all twelve SBOM documents passed and the exact scan verified
+306 Maven packages with zero findings. Unsigned staging succeeded, but collection
+failed because the cleaned derived inventory was absent; candidate upload was
+skipped. This cleanup correction has seven real-policy regression cases and a
+separate policy-phase check over the unchanged retained `cef11a1` six-role inputs:
+12 documents, 306 packages, zero findings, identical sanitized summary bytes.
+That retained check uses the earlier Homebrew-origin inputs and does not claim
+successful Temurin collection, a new scanner execution or a produced candidate.
+
+Run the portable collector checks from the repository root:
+
+```sh
+python3 -B -m unittest discover -s scripts/tests \
+  -p test_coordinated_release_evidence.py -v
+```
 
 For a deliberately narrower local unsigned inspection:
 
@@ -114,7 +155,8 @@ left the requested output absent. No release Javadoc, full release preparation,
 new MySQL execution, signature, publication, or external use is claimed from
 that narrower inspection. The workflow will run the existing independent staged
 Gradle and Maven MySQL consumers against the retained candidate repository and
-reinspect it afterward; this new workflow path has not yet executed in public CI.
+reinspect it afterward; complete preparation and these downstream release-workflow
+consumers have not yet succeeded in public CI.
 
 ## CI execution before a release tag
 

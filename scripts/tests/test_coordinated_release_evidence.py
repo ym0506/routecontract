@@ -280,5 +280,105 @@ class SplitJavadocBoundaryTest(unittest.TestCase):
                         tool.ARCHIVE.validate_javadoc_classifier_contents(archive)
 
 
+class RetainedPolicyCleanupTest(unittest.TestCase):
+    """Real small three-role policy fixture; no scanner or policy-handler stub.
+
+    The production caller still requires all six roles and schema 3. These tests
+    isolate byte capture, canonical derivation and cleanup with the same handler.
+    """
+    def setUp(self):
+        import test_verify_supply_chain_policy as policy_fixture
+        self.fixture = policy_fixture.SupplyChainPolicyTest()
+        self.fixture.setUp()
+        self.addCleanup(self.fixture.tearDown)
+        self.tool = module()
+        for result in (self.fixture.prepare_inventory(), self.fixture.verify()):
+            self.assertEqual(0, result.returncode, result.stderr)
+        self.retained = self.fixture.evidence.read_bytes()
+        self.inventory = self.fixture.inventory.read_bytes()
+        with mock.patch.object(self.fixture, 'run_checker') as capture:
+            self.fixture.verify()
+        self.arguments = list(capture.call_args.args[:-2])
+        self.captured = {getattr(self.fixture, name): getattr(self.fixture, name).read_bytes()
+                         for name in ('sbom', 'sbom_xml', 'published_sbom',
+                                      'published_sbom_xml', 'example_sbom', 'example_sbom_xml')}
+        self.fixture.inventory.unlink()  # Successful scan runner cleanup.
+
+    def verify(self, retained=None):
+        self.tool.verify_retained_policy(
+            self.arguments, self.retained if retained is None else retained, self.captured)
+
+    def observe_real_handler(self, callback):
+        original = self.tool.POLICY._verify_command
+        def wrapped(arguments):
+            callback(arguments)
+            return original(arguments)
+        return mock.patch.object(self.tool.POLICY, '_verify_command', side_effect=wrapped)
+
+    def test_cleaned_inventory_is_reconstructed_privately_and_removed(self):
+        observed = []
+        def inspect(arguments):
+            self.assertEqual(self.inventory, arguments.inventory.read_bytes())
+            self.assertNotEqual(self.fixture.inventory, arguments.inventory)
+            self.assertEqual(self.captured[self.fixture.sbom], arguments.sbom.read_bytes())
+            self.assertNotEqual(self.fixture.sbom, arguments.sbom)
+            observed.extend((arguments.inventory, arguments.sbom, arguments.sbom_xml))
+        with self.observe_real_handler(inspect):
+            self.verify()
+        self.assertTrue(observed)
+        self.assertTrue(all(not path.parent.exists() for path in observed))
+        self.assertFalse(self.fixture.inventory.exists())
+        self.assertEqual(self.retained, self.fixture.evidence.read_bytes())
+
+    def test_stale_source_inventory_is_not_used_or_overwritten(self):
+        self.fixture.inventory.write_bytes(b'stale derived file must be ignored\n')
+        self.verify()
+        self.assertEqual(b'stale derived file must be ignored\n', self.fixture.inventory.read_bytes())
+
+    def test_raw_package_omission_remains_rejected_and_private_files_removed(self):
+        document = json.loads(self.fixture.raw_scan.read_bytes())
+        document['results'][0]['packages'].pop()
+        self.fixture.raw_scan.write_text(json.dumps(document))
+        observed = []
+        with self.observe_real_handler(lambda args: observed.append(args.inventory)):
+            with self.assertRaisesRegex(self.tool.POLICY.PolicyError, 'package|inventory'):
+                self.verify()
+        self.assertTrue(observed)
+        self.assertTrue(all(not path.parent.exists() for path in observed))
+        self.assertFalse(self.fixture.inventory.exists())
+
+    def test_json_xml_disagreement_remains_rejected(self):
+        path = self.fixture.sbom_xml
+        content = self.captured[path].replace(b'<name>safe</name>', b'<name>different</name>')
+        self.assertNotEqual(content, self.captured[path])
+        path.write_bytes(content)
+        self.captured[path] = content
+        with self.assertRaisesRegex(self.tool.POLICY.PolicyError, 'XML|xml|purl'):
+            self.verify()
+
+    def test_retained_summary_inventory_digest_drift_remains_rejected(self):
+        document = json.loads(self.retained)
+        document['sbom']['inventorySha256'] = '0' * 64
+        with self.assertRaisesRegex(self.tool.PreparationError, 'semantic recomputation'):
+            self.verify((json.dumps(document, indent=2, sort_keys=True) + '\n').encode())
+
+    def test_source_sbom_change_after_capture_is_rejected(self):
+        self.fixture.sbom.write_bytes(self.captured[self.fixture.sbom] + b'\n')
+        with self.assertRaisesRegex(self.tool.PreparationError, 'SBOM inputs changed'):
+            self.verify()
+
+    def test_during_verification_mutation_cannot_replace_captured_bytes(self):
+        observed = []
+        def mutate(arguments):
+            observed.append(arguments.sbom)
+            self.fixture.sbom.write_bytes(b'not the captured JSON')
+            self.assertEqual(self.captured[self.fixture.sbom], arguments.sbom.read_bytes())
+        with self.observe_real_handler(mutate):
+            with self.assertRaisesRegex(self.tool.PreparationError, 'SBOM inputs changed'):
+                self.verify()
+        self.assertTrue(observed)
+        self.assertTrue(all(not path.parent.exists() for path in observed))
+
+
 if __name__ == '__main__':
     unittest.main()
