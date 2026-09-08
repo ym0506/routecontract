@@ -1,4 +1,4 @@
-package example;
+package io.github.ym0506.routecontract.examples.firstproject;
 
 import org.apache.shardingsphere.driver.api.yaml.YamlShardingSphereDataSourceFactory;
 import org.testcontainers.containers.MySQLContainer;

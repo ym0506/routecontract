@@ -42,10 +42,10 @@ That build is supposed to fail. A dependency, Docker or compilation error is not
 
 ## Adapt the test
 
-- [OrderContractTest.java](src/test/java/example/OrderContractTest.java) shows the integration:
+- [OrderContractTest.java](src/test/java/io/github/ym0506/routecontract/examples/firstproject/OrderContractTest.java) shows the integration:
   capture the return value, keep the business assertion, write a candidate, render reports, assert match.
-- [OrderRepository.java](src/test/java/example/OrderRepository.java) contains the equality/range query.
-- [OrderFixture.java](src/test/java/example/OrderFixture.java) and
+- [OrderRepository.java](src/test/java/io/github/ym0506/routecontract/examples/firstproject/OrderRepository.java) contains the equality/range query.
+- [OrderFixture.java](src/test/java/io/github/ym0506/routecontract/examples/firstproject/OrderFixture.java) and
   [sharding.yaml](src/test/resources/sharding.yaml) provision this demonstration's disposable databases.
   Keep your own application's existing setup when adapting the test.
 

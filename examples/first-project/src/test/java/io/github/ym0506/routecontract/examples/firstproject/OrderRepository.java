@@ -1,4 +1,4 @@
-package example;
+package io.github.ym0506.routecontract.examples.firstproject;
 
 import javax.sql.DataSource;
 import java.sql.Connection;

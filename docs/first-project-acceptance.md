@@ -28,6 +28,9 @@ baseline, and understand a failing CI check when a query change increases observ
    a candidate. Maven and Gradle produce equivalent candidate/report content.
 7. A normal CI job runs check mode and retains Markdown/JSON when the test fails. Missing
    baseline and invalid mode/query must produce actionable errors, never silently capture.
+8. Example Java classes use the repository's `io.github.ym0506.routecontract.*` namespace so the
+   existing source-archive installer contract accepts a normal archive of the repository. Package
+   alignment must preserve operation IDs, SQL, baseline bytes and native Maven/Gradle results.
 
 ## Verification record
 
@@ -41,7 +44,7 @@ This example observes hook-reported physical JDBC execution attempts. It does no
 route plan, physical table count, transaction commit, business success from callbacks, performance,
 or independent external adoption. Business success is asserted separately in the test.
 
-## Local verification — 2026-09-08
+## Initial local verification — 2026-09-08 (before namespace alignment)
 
 **verified - MySQL; verified - ShardingSphere-JDBC 5.5.3.** Maintainer-owned synthetic
 fixture execution on macOS 26.4.1/aarch64, Homebrew Java 17.0.15, Docker Desktop engine 29.2.1,
@@ -110,3 +113,42 @@ Limitations: this is one deterministic synthetic MySQL fixture, not general comp
 performance or external adoption evidence. Reports are cleared when JUnit setup runs; dependency
 or compiler failures occur before that cleanup. CI starts from a clean checkout, and local users
 must not treat earlier report files as evidence for a build that failed before tests started.
+
+
+## Namespace alignment verification — 2026-09-08
+
+**verified - MySQL; verified - ShardingSphere-JDBC 5.5.3.** PR #69's legacy source-archive
+installer test rejected the example's initial `example` package. The example now follows the
+repository namespace convention: `io.github.ym0506.routecontract.examples.firstproject`.
+The installer check remains unchanged. A byte comparison against the previous commit confirmed
+that all three Java sources changed only their package declaration and path; SQL, operation IDs,
+policies and the baseline remained unchanged.
+
+The initial evidence above remains historical evidence for the previous namespace. The final
+namespace was compiled from clean test output and executed again against the same public dependency
+caches, Java 17.0.15, MySQL 8.4.11 and ShardingSphere-JDBC 5.5.3:
+
+| Final namespace command | Maven 3.9.14 | Gradle 8.14.4 | Result |
+| --- | --- | --- | --- |
+| `clean test` | exit 0 | exit 0 | One test; exact business row; 1 attempt; MATCH |
+| `test` with the range query option | exit 1 | exit 1 | One route assertion failure; same exact business row; 2 attempts; RCM201/RCM202 |
+| `test` without the range option | exit 0 | exit 0 | One test executed again; MATCH restored |
+
+Exact final JUnit class:
+`io.github.ym0506.routecontract.examples.firstproject.OrderContractTest`.
+Both range JUnit files report one test, one failure, zero errors and zero skips, with failure type
+`io.github.ym0506.routecontract.RouteContractViolationException`. Every equality/range candidate,
+Markdown report and JSON report was byte-for-byte identical to the corresponding earlier namespace
+result. The shipped baseline retained SHA-256
+`a082ca797ebe40be5b8c9409893de7d9a861086d8d4b760cbc00e925b2436a60`.
+
+The six final-namespace runs are retained separately at
+`/private/tmp/routecontract-first-project-evidence-20260908/namespace-aligned/`.
+Its `run-records.json` records exact commands, cache locations, Java home, build exits, durations
+and observed statuses/counts. Each run directory retains `run.log`, the final-class JUnit XML,
+`candidate.json`, `review.md` and `review.json`; `summary.json` records the namespace and byte-parity
+checks, and `source-files.json` identifies the reviewed final source files. Maven reused the
+recorded public Maven cache. Gradle reused the recorded public Gradle cache with
+`--no-daemon --console=plain --rerun-tasks`; each tool began with `clean test` to remove old compiled
+classes. Historical raw evidence was preserved. The source-archive installer regression is a
+separate repository check; these database runs do not substitute for it.

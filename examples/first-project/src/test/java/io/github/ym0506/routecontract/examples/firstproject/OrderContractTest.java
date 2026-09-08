@@ -1,4 +1,4 @@
-package example;
+package io.github.ym0506.routecontract.examples.firstproject;
 
 import io.github.ym0506.routecontract.RouteAssertions;
 import io.github.ym0506.routecontract.RouteContract;

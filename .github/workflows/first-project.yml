@@ -135,7 +135,7 @@ jobs:
           assert report['candidate']['observedPhysicalAttemptCount'] == 2
           assert report['candidate']['captureStatus'] == 'COMPLETE'
           junit = Path('target/surefire-reports' if os.environ['BUILD_TOOL'] == 'Maven'
-                       else 'build/test-results/test') / 'TEST-example.OrderContractTest.xml'
+                       else 'build/test-results/test') / 'TEST-io.github.ym0506.routecontract.examples.firstproject.OrderContractTest.xml'
           suite = ET.parse(junit).getroot()
           assert (suite.get('tests'), suite.get('failures'), suite.get('errors'), suite.get('skipped')) == ('1', '1', '0', '0')
           cases = suite.findall('testcase')
