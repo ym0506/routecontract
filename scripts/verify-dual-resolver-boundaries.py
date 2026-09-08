@@ -794,12 +794,21 @@ def execute_case(case, directory, repository, receipt, java_home, mvn, gradle_zi
             a24.verify_settings(settings, url, MIRROR_ID)
             command = maven_command(mvn, settings, cache, directory / 'home', consumer)
             output, _ = native([*command, maven.DEPENDENCY_TREE, '-DoutputType=json',
-                                 f'-DoutputFile={graph_file}', a24.DEPENDENCY_RESOLVE],
-                                consumer, environment, directory, 'actual-selected-graph-and-payloads')
+                                 f'-DoutputFile={graph_file}'],
+                                consumer, environment, directory, 'actual-selected-graph')
             if any(marker in output for marker in ('--- enforcer:', '--- compiler:', '--- surefire:')):
                 raise BoundaryError('Graph collection must not enter compilation, test or Enforcer lifecycle')
-            tree = json.loads(regular(graph_file).read_text())
+            graph_bytes = regular(graph_file).read_bytes()
+            tree = json.loads(graph_bytes)
             graph_coordinates(tree, case)
+            # Both plugin goals bind outputFile; a combined invocation overwrites the JSON.
+            output, _ = native([*command, a24.DEPENDENCY_RESOLVE,
+                                 f'-DoutputFile={directory / "resolved-payloads.txt"}'],
+                                consumer, environment, directory, 'actual-resolved-payloads')
+            if any(marker in output for marker in ('--- enforcer:', '--- compiler:', '--- surefire:')):
+                raise BoundaryError('Artifact resolution must not enter compilation, test or Enforcer lifecycle')
+            if regular(graph_file).read_bytes() != graph_bytes:
+                raise BoundaryError('Selected graph bytes changed during artifact resolution')
             if case['kind'] == 'dual':
                 output, process = native([*command, 'validate'], consumer, environment, directory,
                                           'native-enforcer-rejection', expected_exit=1)

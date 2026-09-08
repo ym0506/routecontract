@@ -3,8 +3,10 @@
 Status: four Gradle cases against the reviewed `86a0be5` candidate passed and
 their raw evidence has been audited. The third native attempt then stopped in
 the first Maven download because the disposable repository omitted checksum
-sidecars. No Maven boundary case has completed; all six remain pending the
-reviewed fixture correction. Earlier failed attempts remain failed. Existing
+sidecars. After that correction, the first Maven download succeeded, but a shared
+`outputFile` caused `dependency:resolve` to overwrite the JSON written by
+`dependency:tree`. No Maven boundary case has completed; all six remain pending
+the reviewed command separation. Earlier failed attempts remain failed. Existing
 audited A-24 anchor and non-anchor controls remain separate evidence; positive
 MySQL cases are not repeated here.
 
@@ -81,7 +83,11 @@ does not reclassify that attempt as passing. A corrected fixture needs new froze
 fingerprints, review and a new evidence directory before any native rerun.
 
 Maven dual-adapter cases first resolve and retain their actual dependency graph
-without entering the lifecycle. The same generated POM then reaches `validate`
+without entering the lifecycle. Record `dependency:tree` JSON generation and
+`dependency:resolve` artifact downloading as separate strict-checksum commands,
+with separate output files. Parse and retain the JSON bytes before resolution, then
+require those graph bytes to remain unchanged afterward. Both commands must succeed
+without Enforcer, compilation or tests. The same generated POM then reaches `validate`
 and fails specifically through Enforcer 3.6.3 `BannedDependencies`, naming the
 opposite adapter. Both ordinary adapter declarations and their order, both resolved
 adapter JARs, transitive core, and coherent exact ShardingSphere anchors must be

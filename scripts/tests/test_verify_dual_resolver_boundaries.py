@@ -4,7 +4,7 @@ No Gradle, Maven, Java, network, Docker or MySQL process is launched here. These
 tests exercise finite planning, input rendering and rejection-evidence parsing.
 """
 import copy
-from contextlib import ExitStack, redirect_stderr, redirect_stdout
+from contextlib import ExitStack, nullcontext, redirect_stderr, redirect_stdout
 import hashlib
 import importlib.util
 import io
@@ -729,6 +729,70 @@ class RuntimeGuardReportTest(unittest.TestCase):
         for invalid in invalids:
             with self.subTest(report=invalid), self.assertRaises(MODULE.BoundaryError):
                 MODULE.verify_guard_report(case, invalid, expected)
+
+
+class MavenGraphRetentionTest(unittest.TestCase):
+    def collect_until_enforcer(self, root, *, overwrite_graph=False):
+        case = MODULE.fixed_plan()[4]
+        _, tree, _ = maven_fixture(case)
+        directory = root / case['id']
+        consumer = MODULE.prepare_case(directory, case)
+        graph = consumer / 'negative-graph.json'
+        calls = []
+
+        class ReachedEnforcer(Exception):
+            pass
+
+        def native(command, cwd, environment, evidence, name, **kwargs):
+            calls.append((list(command), name))
+            if command[-1] == 'validate':
+                raise ReachedEnforcer()
+            output_file = next((Path(arg.split('=', 1)[1]) for arg in command
+                                if arg.startswith('-DoutputFile=')), None)
+            # Actual plugin 3.11.0 tree/resolve both bind ${outputFile}, with
+            # appendOutput=false. Retained overwritten output SHA-256:
+            # 6cbaf86647e6756a986e64b4d697ba76267f6b769b367075a620e2c82c65f91d.
+            for goal in command:
+                if goal == MODULE.maven.DEPENDENCY_TREE:
+                    output_file.write_text(json.dumps(tree))
+                elif goal == MODULE.a24.DEPENDENCY_RESOLVE:
+                    if output_file:
+                        output_file.write_text('The following files have been resolved:\n')
+                    if overwrite_graph:
+                        graph.write_text('The following files have been resolved:\n')
+            return '[INFO] BUILD SUCCESS\n', {'exitCode': 0}
+
+        with mock.patch.object(MODULE.a24.mirror, 'serve_repository',
+                               return_value=nullcontext('http://127.0.0.1:12345/')), \
+                mock.patch.object(MODULE, 'native', side_effect=native):
+            expected = MODULE.BoundaryError if overwrite_graph else ReachedEnforcer
+            with self.assertRaises(expected):
+                MODULE.execute_case(case, directory, root / 'unused-repository', None,
+                                    root / 'unused-java17', root / 'unused-maven', None)
+        return calls, graph, tree
+
+    def test_tree_and_resolve_cannot_share_an_invocation_or_overwrite_json(self):
+        with tempfile.TemporaryDirectory(prefix='routecontract-dual-graph-unit-') as temporary:
+            calls, graph, tree = self.collect_until_enforcer(Path(temporary).resolve())
+            self.assertEqual(3, len(calls))  # two collection commands, then the untouched Enforcer boundary
+            tree_command, resolve_command = calls[0][0], calls[1][0]
+            self.assertIn(MODULE.maven.DEPENDENCY_TREE, tree_command)
+            self.assertNotIn(MODULE.a24.DEPENDENCY_RESOLVE, tree_command)
+            self.assertIn(MODULE.a24.DEPENDENCY_RESOLVE, resolve_command)
+            self.assertNotIn(MODULE.maven.DEPENDENCY_TREE, resolve_command)
+            self.assertIn('--strict-checksums', tree_command)
+            self.assertIn('--strict-checksums', resolve_command)
+            self.assertNotEqual(calls[0][1], calls[1][1])
+            tree_output = next(arg for arg in tree_command if arg.startswith('-DoutputFile='))
+            resolve_output = next(arg for arg in resolve_command if arg.startswith('-DoutputFile='))
+            self.assertNotEqual(tree_output, resolve_output)
+            self.assertEqual(tree, json.loads(graph.read_text()))
+
+    def test_graph_mutation_during_separate_resolution_stops_before_enforcer(self):
+        with tempfile.TemporaryDirectory(prefix='routecontract-dual-graph-unit-') as temporary:
+            calls, _, _ = self.collect_until_enforcer(Path(temporary).resolve(), overwrite_graph=True)
+            self.assertEqual(2, len(calls))
+            self.assertTrue(all(command[-1] != 'validate' for command, _ in calls))
 
 
 class ReviewedRepositoryCopyTest(unittest.TestCase):
