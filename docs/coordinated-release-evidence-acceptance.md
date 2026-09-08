@@ -34,8 +34,10 @@ consumer receipt remains a separately reviewed nine-primary-payload shape.
   existing Linux Javadoc module SHA-256. Local Homebrew payload inspection cannot
   satisfy this release-toolchain gate.
 - All three exact publication graphs and all four Gradle variants agree with
-  the existing split metadata/signing-bundle contract. No signer rewrite or
-  mutation of a shared verifier is part of this work.
+  the existing split metadata/signing-bundle contract. The historical installer
+  keeps its default validation boundary; split Javadoc validation explicitly uses
+  the Java packages in the exact module source inventory. Shared pinned doclet
+  and legal-file checks remain active.
 - Every SBOM and POM is bound to the existing supply-chain policy's exact
   revision/tree, locks, scanner/database identity and result. Reuse its semantic
   verification; merely seeing a successful string or hashing a report is not
@@ -140,3 +142,47 @@ upload, PR merge/head provenance and unchanged existing jobs. These local checks
 are implementation evidence only. Full pinned-Temurin preparation remains
 unverified until this CI path actually completes; no signature, publication,
 human baseline approval or complete A-25 claim follows from adding the workflow.
+
+## CI summary and split Javadoc corrections — 2026-09-08
+
+The [CI run for PR head `9a15d7f`](https://github.com/ym0506/routecontract/actions/runs/34233812330)
+tested merge `0e378fb59558931b33eca2f1afb87d0f9266ef27`. Its retained 24 JUnit
+suites contain **174 passing tests**, including all 28 MySQL tests, with no
+failures, errors or skips; all 12 official SBOM validations also passed.
+The following summary step failed because `ArtifactIsolation552Test` still
+expected eight tests after two publication/dependency checks raised its actual
+count to ten. All other 23 suite counts matched. The exact-source scan,
+coordinated collection and candidate upload were skipped; this run produced no
+coordinated candidate or context sidecar.
+
+The correction requires all ten tests. A regression first demonstrated that the
+old summary rejected complete ten-test results and accepted incomplete eight-test
+results. All nine summary tests then passed. Reprocessing the retained CI XML
+with the corrected script produced 24/174/0 failures/0 errors/0 skips locally;
+this is a local replay of existing results, not a successful CI rerun.
+
+Separately, a read-only inventory check reproduced rejection of the existing
+three split Javadocs by the historical package allowlist. The coordinated path
+now derives its permitted HTML package paths and ancestor directories from the
+exact module's Java sources. Foreign modules, undeclared nested packages and
+non-HTML payloads remain rejected; the historical default boundary and pinned
+standard-doclet/legal checks are unchanged. This was not the failed CI step.
+
+**`verified - unit`**, local Python 3.13: 22 coordinated preparation tests, eight
+CI wiring tests and nine summary tests passed. The installer suite passed 69
+tests and retained its one opt-in real-MySQL/Temurin skip. An earlier installer
+run was interrupted while Git waited for an iCloud file; the completed run used
+an independent local checkout. These tests use synthetic doclet fixtures and do
+not replace successful collection on the pinned release JDK.
+
+```sh
+python3 -m unittest discover -s submission/tools/tests -p test_summarize_test_results.py -v
+python3 -m unittest discover -s scripts/tests -p test_coordinated_release_evidence.py -v
+python3 -m unittest discover -s scripts/tests -p test_coordinated_ci_preparation.py -v
+python3 -m unittest discover -s scripts/tests -p test_install_release_assets.py -v
+```
+
+The three retained Javadoc inventories pass the corrected package check without
+changing their bytes. Full release-doclet validation and coordinated collection
+remain pending actual new CI execution. No new stage, packaged-consumer result,
+human approval or public 0.2 release is established by these corrections.

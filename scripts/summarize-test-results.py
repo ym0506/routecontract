@@ -42,7 +42,7 @@ EXPECTED_SUITES = {
     "io.github.ym0506.routecontract.shardingsphere552.internal.FreshJvmMixedAnchorTest": 2,
     "io.github.ym0506.routecontract.shardingsphere552.internal.RouteContract552HookContainmentTest": 3,
     "io.github.ym0506.routecontract.shardingsphere552.internal.ShardingSphere552PreflightTest": 10,
-    "io.github.ym0506.routecontract.structure.ArtifactIsolation552Test": 8,
+    "io.github.ym0506.routecontract.structure.ArtifactIsolation552Test": 10,
     "io.github.ym0506.routecontract.example.DataSourceProxyComparisonMySqlTest": 1,
     "io.github.ym0506.routecontract.example.FailureBoundaryMySqlTest": 1,
     "io.github.ym0506.routecontract.example.ObservedExecutionRegressionCorpusMySqlTest": 7,

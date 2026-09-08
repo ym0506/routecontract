@@ -193,7 +193,10 @@ def inspect_jar(path, module, source, classifier, release_javadoc):
         elif classifier == '-javadoc':
             ARCHIVE.validate_thin_first_party_jar_inventory(set(data), label)
             if release_javadoc:
-                ARCHIVE.validate_javadoc_classifier_contents(archive)
+                api_packages = {name.rsplit('/', 1)[0]
+                                for name in expected_source_files(source, module)
+                                if name.startswith(SOURCE_PREFIX) and name.endswith('.java')}
+                ARCHIVE.validate_javadoc_classifier_contents(archive, api_packages=api_packages)
     for name in ('LICENSE', 'NOTICE'):
         if data['META-INF/' + name] != read(source / name):
             raise PreparationError('Embedded legal file differs from source revision')

@@ -41,7 +41,7 @@ CURRENT_RELEASE_SUITES = {
     "io.github.ym0506.routecontract.shardingsphere552.internal.FreshJvmMixedAnchorTest": 2,
     "io.github.ym0506.routecontract.shardingsphere552.internal.RouteContract552HookContainmentTest": 3,
     "io.github.ym0506.routecontract.shardingsphere552.internal.ShardingSphere552PreflightTest": 10,
-    "io.github.ym0506.routecontract.structure.ArtifactIsolation552Test": 8,
+    "io.github.ym0506.routecontract.structure.ArtifactIsolation552Test": 10,
     "io.github.ym0506.routecontract.example.DataSourceProxyComparisonMySqlTest": 1,
     "io.github.ym0506.routecontract.example.FailureBoundaryMySqlTest": 1,
     "io.github.ym0506.routecontract.example.ObservedExecutionRegressionCorpusMySqlTest": 7,
@@ -125,7 +125,7 @@ class SummarizeTestResultsTest(unittest.TestCase):
             self.assertIn("format=routecontract-test-summary-v1\n", first)
             self.assertIn(f"revision={self.revision}\n", first)
             self.assertIn("suite_count=24\n", first)
-            self.assertIn("test_count=172\n", first)
+            self.assertIn("test_count=174\n", first)
             self.assertIn(
                 "suite=io.github.ym0506.routecontract.manifest.ManifestReviewReportTest"
                 "|tests=13|failures=0|errors=0|skipped=0\n",
@@ -191,6 +191,18 @@ class SummarizeTestResultsTest(unittest.TestCase):
 
             with self.assertRaisesRegex(
                 summarize_test_results.SummaryError, "test count changed"
+            ):
+                summarize_test_results.build_summary(self.revision, directories)
+
+    def test_rejects_adapter552_results_missing_the_two_publication_checks(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            directories = self.complete_results(Path(raw))
+            suite = "io.github.ym0506.routecontract.structure.ArtifactIsolation552Test"
+            self.write_suite(directories[0], suite, 8)
+
+            with self.assertRaisesRegex(
+                summarize_test_results.SummaryError,
+                r"ArtifactIsolation552Test test count changed: expected 10, found 8",
             ):
                 summarize_test_results.build_summary(self.revision, directories)
 

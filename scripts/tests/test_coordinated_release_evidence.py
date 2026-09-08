@@ -201,5 +201,84 @@ class CoordinatedReleaseAcceptanceTest(unittest.TestCase):
                 inputs.assert_not_called()
             self.assertFalse((root/'nested').exists())
 
+class SplitJavadocBoundaryTest(unittest.TestCase):
+    """Synthetic doclet payloads exercise packaging, not a JDK or runtime claim."""
+
+    def write_javadoc(self, directory, tool, module_name, *, extra=None, overrides=None,
+                      legacy=False):
+        fixture_path = ROOT / 'scripts/tests/test_install_release_assets.py'
+        spec = importlib.util.spec_from_file_location('javadoc_fixture_data', fixture_path)
+        fixture = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(fixture)
+        content = dict(fixture.JAVADOC_ENTRY_CONTENT)
+        content.update({'META-INF/LICENSE': (ROOT / 'LICENSE').read_bytes(),
+                        'META-INF/NOTICE': (ROOT / 'NOTICE').read_bytes()})
+        sources = tool.expected_source_files(ROOT, module_name)
+        html_paths = ({'io/github/ym0506/routecontract/RouteContract.html'} if legacy else
+                      {name[:-5] + '.html' for name in sources
+                       if name.startswith(tool.SOURCE_PREFIX) and name.endswith('.java')})
+        for name in html_paths:
+            content[name] = '<html>synthetic API documentation</html>'
+            package = Path(name).parent
+            content[package.as_posix() + '/package-summary.html'] = 'synthetic package'
+            content[package.as_posix() + '/package-tree.html'] = 'synthetic tree'
+            for parent in (package, *package.parents):
+                if parent.as_posix() != '.':
+                    content[parent.as_posix() + '/'] = b''
+        content.update(extra or {})
+        content.update(overrides or {})
+        path = directory.resolve() / 'synthetic-javadoc.jar'
+        with zipfile.ZipFile(path, 'w') as archive:
+            for name, value in sorted(content.items()):
+                archive.writestr(name, value)
+        return path
+
+    def test_split_collector_accepts_each_exact_module_api_package(self):
+        tool = module()
+        for name in tool.MODULES:
+            with self.subTest(module=name), tempfile.TemporaryDirectory() as raw:
+                path = self.write_javadoc(Path(raw), tool, name)
+                tool.inspect_jar(path, name, ROOT, '-javadoc', release_javadoc=True)
+
+    def test_split_collector_rejects_foreign_packages_and_non_html_payloads(self):
+        tool = module()
+        cases = [
+            (tool.MODULES[0], 'io/github/ym0506/routecontract/shardingsphere552/internal/Hook.html'),
+            (tool.MODULES[1], 'io/github/ym0506/routecontract/shardingsphere552/internal/Hook.html'),
+            (tool.MODULES[2], 'io/github/ym0506/routecontract/api/RouteContract.html'),
+            (tool.MODULES[0], 'io/github/ym0506/routecontract/api/undeclared/Hidden.html'),
+            (tool.MODULES[0], 'io/github/ym0506/routecontract/api/Unexpected.js'),
+            (tool.MODULES[0], 'io/github/ym0506/routecontract/api/Unexpected.class'),
+            (tool.MODULES[0], 'org/example/Unexpected.html'),
+        ]
+        for name, entry in cases:
+            with self.subTest(entry=entry), tempfile.TemporaryDirectory() as raw:
+                path = self.write_javadoc(Path(raw), tool, name, extra={entry: 'unexpected'})
+                with self.assertRaisesRegex(tool.ARCHIVE.InstallError, 'undeclared classifier entry'):
+                    tool.inspect_jar(path, name, ROOT, '-javadoc', release_javadoc=True)
+
+    def test_split_api_packages_do_not_bypass_pinned_doclet_markers(self):
+        tool = module()
+        for entry in ('legal/LICENSE', 'script-dir/jquery-3.7.1.min.js', 'resources/glass.png'):
+            with self.subTest(entry=entry), tempfile.TemporaryDirectory() as raw:
+                path = self.write_javadoc(Path(raw), tool, tool.MODULES[0],
+                                           overrides={entry: b'invalid doclet payload'})
+                with self.assertRaisesRegex(tool.ARCHIVE.InstallError, 'invalid'):
+                    tool.inspect_jar(path, tool.MODULES[0], ROOT, '-javadoc', release_javadoc=True)
+
+    def test_legacy_javadoc_boundary_is_unchanged(self):
+        tool = module()
+        with tempfile.TemporaryDirectory() as raw:
+            path = self.write_javadoc(Path(raw), tool, tool.MODULES[0], legacy=True)
+            with zipfile.ZipFile(path) as archive:
+                tool.ARCHIVE.validate_javadoc_classifier_contents(archive)
+        for name in tool.MODULES:
+            with self.subTest(module=name), tempfile.TemporaryDirectory() as raw:
+                path = self.write_javadoc(Path(raw), tool, name)
+                with zipfile.ZipFile(path) as archive:
+                    with self.assertRaisesRegex(tool.ARCHIVE.InstallError, 'undeclared classifier entry'):
+                        tool.ARCHIVE.validate_javadoc_classifier_contents(archive)
+
+
 if __name__ == '__main__':
     unittest.main()
