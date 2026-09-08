@@ -1,11 +1,13 @@
 # Real legacy resolver acceptance for the 0.2 candidate
 
-Status: the local Gradle portion passed all 37 cases on 2026-09-08; see the
-[execution evidence](evidence/gradle-legacy-resolver-2026-09-08.md). Maven and
-A-28 remain separate pending gates. This file
-narrows the work item, not the release requirement in
-`versioned-shardingsphere-adapters.md`. It makes no public 0.2, MySQL, manual
-classpath, or adoption claim.
+Status: the final-candidate local Gradle 37-case and Maven 45-case runs passed
+on 2026-09-08 against reviewed source `4e06694`; see the
+[execution evidence](evidence/legacy-resolver-4e06694-2026-09-08.md).
+This file specifies the resolver work item, not the whole release requirement
+in `versioned-shardingsphere-adapters.md`. It makes no public 0.2, MySQL,
+manual-classpath or adoption claim. Original A-28 remains FAILED; the separate
+[A-29 current-entry contract](current-entry-migration-acceptance.md) addresses
+the changed application entry and preserves that historical failure.
 
 The fixture must consume the actual published all-in-one JAR/POM bytes of
 `0.1.0`, `0.1.2`, `0.1.3`, and distributed `0.1.0-rc2`. The public `0.1.3`
@@ -16,7 +18,7 @@ evidence; a tag is not evidence that a binary was distributed.
 
 Current core and adapters are supplied as one reviewed nine-payload staged
 receipt. The runner must compare every supplied byte with that receipt and
-record its source revision. When reusing the retained `008e125` staging, the
+record its source revision. When reusing any retained staging, the
 production/publication inputs must be identical to the checkout under test;
 otherwise prepare and review a new staged input. The runner must not rebuild
 first-party artifacts or substitute source projects.
@@ -53,5 +55,6 @@ Retain the registry/staged receipt digests, input-source binding, exact Java and
 Gradle versions, per-case request order, applied metadata rules, selected
 components, materialized first-party file hashes, and expected failure reasons.
 Every case must have its own command/log and result. A partial run must not
-produce a complete summary. Maven equivalents and A-28 fresh-JVM ordinary SQL /
-capture-sentinel tests remain separate gates using the same legacy inputs.
+produce a complete summary. Maven equivalents and the A-29 fresh-JVM ordinary
+SQL/capture tests remain separate runners using the same legacy inputs. The
+original A-28 failure must not be relabeled as passing.

@@ -1,0 +1,268 @@
+{
+  "formatVersion": 1,
+  "status": "PASSED_BOUNDED_LOCAL_A26",
+  "evidenceLabels": [
+    "verified - unit",
+    "verified - MySQL",
+    "verified - ShardingSphere-JDBC 5.5.3"
+  ],
+  "scope": "One unchanged public API migration runner execution: clean public 0.1.2 old bytecode on reviewed staged 0.2.0, exact ShardingSphere-JDBC 5.5.3. This is a distinct current-candidate follow-up to the historical 2026-09-07 evidence.",
+  "execution": {
+    "startedAt": "2026-09-08T07:18:28.335692+00:00",
+    "finishedAt": "2026-09-08T07:20:46.589221+00:00",
+    "elapsedSeconds": 138.25,
+    "runnerExitCode": 0,
+    "runnerExecutionCount": 1,
+    "commandArgvWithLocationPlaceholders": [
+      "python3",
+      "-I",
+      "scripts/verify-public-api-migration.py",
+      "--legacy-repository",
+      "${LEGACY_REPOSITORY}",
+      "--repository",
+      "${STAGED_REPOSITORY}",
+      "--evidence-directory",
+      "${NEW_EVIDENCE_DIRECTORY}"
+    ],
+    "workingDirectory": "${SOURCE_ROOT}",
+    "commandNormalization": "Machine-specific executable and directory prefixes are replaced with placeholders; arguments and options are unchanged. The exact original argv is retained in the hashed local wrapper record.",
+    "environment": {
+      "os": "macOS 26.4.1",
+      "architecture": "arm64",
+      "jdk": "OpenJDK Homebrew 17.0.15+0",
+      "javac": "17.0.15",
+      "python": "3.12.14",
+      "gradle": "8.14.4",
+      "gradleDistributionSha256": "f1771298a70f6db5a29daf62378c4e18a17fc33c9ba6b14362e0cdf40610380d",
+      "dockerEngine": "29.2.1",
+      "testcontainers": "1.21.4",
+      "shardingSphereJdbc": "5.5.3",
+      "mysqlImage": "mysql:8.4.11@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb",
+      "explicitEnvironment": {
+        "JAVA_HOME": "${JAVA17_HOME}",
+        "PATH": "${JAVA17_HOME}/bin followed by the existing PATH"
+      },
+      "removedOverrides": [
+        "ORG_GRADLE_PROJECT_*",
+        "GRADLE_OPTS",
+        "JAVA_OPTS",
+        "JAVA_TOOL_OPTIONS",
+        "JDK_JAVA_OPTIONS",
+        "_JAVA_OPTIONS"
+      ],
+      "cachePolicy": "A distinct initially empty Gradle user home for each old/current online consumer; strict dependency verification and locks. Gradle uses --no-daemon --no-build-cache --no-configuration-cache. This is not an offline or hermetic-network claim."
+    }
+  },
+  "source": {
+    "commit": "4e066942f6e244345fe908970b81446f9e08f64e",
+    "tree": "f17de63b49275b6a35dde7e54e8c893dcef70280",
+    "cleanBeforeAfter": true,
+    "runner": "scripts/verify-public-api-migration.py",
+    "runnerSha256": "b1893cd2171a458bfd5253a27a0ca6935499f2d2adddd13a94a6b13f4be7835d",
+    "boundHarnessInputCount": 21,
+    "harnessInputMapCanonicalSha256": "616f005a39e416492dedc879e0ce5013e261dad3f170d44ac3a8ddd2f31b57bd",
+    "inputsUnchanged": true
+  },
+  "reviewedStaging": {
+    "routeContractVersion": "0.2.0",
+    "receiptSha256": "38b2269eca162f121fd3996c56df8b894ae2f43cedeb08fcc627032cf70eaa43",
+    "allNinePayloadsBoundBeforeAfter": true,
+    "artifacts": [
+      {
+        "relativePath": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.jar",
+        "size": 95408,
+        "sha256": "1863b422179b0447035642bfa5a679ffa0f75201ac3bf6c261558f32849ba598"
+      },
+      {
+        "relativePath": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.pom",
+        "size": 2043,
+        "sha256": "ccf3a3854e9f369facb1fe63eabc7303c507a7df2a6438372fc77259428519ce"
+      },
+      {
+        "relativePath": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.module",
+        "size": 4564,
+        "sha256": "e55bb3827ac2898db74cd2277d7c6d46fbd9bebe207688bd3e9377b6a8afadc2"
+      },
+      {
+        "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.jar",
+        "size": 28997,
+        "sha256": "6d139b136e714cb3dfd033aa47dfcbfedffd3e87f6f5aaa2c7762975a714f64e"
+      },
+      {
+        "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.pom",
+        "size": 2864,
+        "sha256": "d6a5232c2d43ec109fc04924635af245b930c99e449c13bd7949c8f62a518945"
+      },
+      {
+        "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.module",
+        "size": 6086,
+        "sha256": "fec11718c25ed03ebc2209039ce5fc351bf73d175bd4d8e72483e9a5f01ceb2e"
+      },
+      {
+        "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.jar",
+        "size": 29010,
+        "sha256": "752090d09ac287c5a21c2118b9c79f4077efc72a7d624b72ed5690303fdf2c18"
+      },
+      {
+        "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.pom",
+        "size": 2862,
+        "sha256": "baa1a36766d63969f38a90d6ba3c6b9f3d6004e230ed42f2a8778053bc172a3f"
+      },
+      {
+        "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.module",
+        "size": 6418,
+        "sha256": "9be237af25dd3d2b8fbe5c09561d7e6a194cc493bdda23413d5de6ed486417c7"
+      }
+    ],
+    "a26ConsumedModules": [
+      "routecontract-shardingsphere-5.5",
+      "routecontract-core"
+    ],
+    "scopeNote": "A26 consumes the 5.5.3 adapter and transitive core through POM-only resolution. All nine reviewed JAR/POM/module payloads are bound before/after, including the unused 5.5.2 lane; this does not mean A26 exercised that lane."
+  },
+  "legacyPublicInput": {
+    "version": "0.1.2",
+    "tagObject": "6adacbe04d60b3af83d9067a14a878d26a6c90f5",
+    "releaseCommit": "fc4fdd16c21574afa1150654ce354cf8004b138b",
+    "artifactSha256": {
+      "routecontract-shardingsphere-5.5-0.1.2.jar": "d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc",
+      "routecontract-shardingsphere-5.5-0.1.2.pom": "70b5d4161d1532e9f9cb699071790a7806d87658511d931477544fa06037b85d"
+    },
+    "baselineSha256": "a082ca797ebe40be5b8c9409893de7d9a861086d8d4b760cbc00e925b2436a60",
+    "repositoryLayout": "A new Maven layout containing only copied pinned 0.1.2 JAR and POM. Original retained release inputs were not modified.",
+    "originBoundary": "Previously authenticated public release bytes supplied locally; no fresh public download or public repository consumption was performed by this run."
+  },
+  "results": {
+    "mysqlJunit": {
+      "0.1.2": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "0.2.0": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    "oldMySqlBytecodeClassesUnchanged": 3,
+    "publicApiProbes": {
+      "publicTypes": 26,
+      "preservedMemberDescriptors": 167,
+      "oldBytecodeClasses": 4,
+      "schema1CodecBytesEqual": true,
+      "sourceConstantRejections": 2,
+      "enumNewValuesRejectedByOldBytecode": 2,
+      "enumBinaryAndSourceChangesObserved": true,
+      "unchangedMySqlSourceRecompiled": true,
+      "explicitIdentitySourcePassed": true,
+      "moduleCaptureRejectedBeforeAction": true
+    },
+    "businessFixture": {
+      "synthetic": true,
+      "sameExactRows": true,
+      "expectedRows": [
+        {
+          "orderId": 201,
+          "userId": 3,
+          "status": "PAID"
+        }
+      ],
+      "equality": {
+        "physicalJdbcExecutionAttempts": 1,
+        "verification": "MATCH"
+      },
+      "range": {
+        "physicalJdbcExecutionAttempts": 2,
+        "verification": "POLICY_VIOLATION",
+        "codes": [
+          "RCM201",
+          "RCM202"
+        ]
+      },
+      "actualCaptureSchemas": {
+        "0.1.2": 1,
+        "0.2.0": 2
+      }
+    },
+    "migrationChanges": [
+      "Recompiled schema constants use 2; legacy constructors still accept only schema 1, and both affected probes reject as documented.",
+      "Record components gain runtimeIdentity and equality/hashCode/toString semantics reflect it; no cross-version hash-value stability claim.",
+      "Old exhaustive enum-switch bytecode rejects each of the two new values; unchanged exhaustive source requires migration.",
+      "Public API code sources move from the all-in-one adapter to transitive core.",
+      "Module-path capture is rejected with RC_UNSUPPORTED_MODULE_PATH before action; ordinary classpath is the supported boundary."
+    ]
+  },
+  "retainedLocalEvidence": {
+    "distribution": "Raw logs, graphs and JUnit remain local; only names, byte counts and hashes are included here. They are not public download links.",
+    "files": {
+      "wrapper-record.json": {
+        "sha256": "2e84ad29663ad4a3c9a8121094a99c11ae0988281c4300bf274ef8443dde5f00",
+        "size": 27830
+      },
+      "runner.log": {
+        "sha256": "691234a8b2b7482c59bf07a2d0eaa727e79428421ea8d6397698a79ade90f410",
+        "size": 1887
+      },
+      "run-bound-a26.py": {
+        "sha256": "795a583f2e04f48cce39d37859184575859267eed364149433b20233da80beb6",
+        "size": 9017
+      },
+      "independent-result-review.json": {
+        "sha256": "a7cd87ac5a69438c41e8818882987a846cb39e0b47999f7ebdeb0412e5b92fae",
+        "size": 2190
+      },
+      "evidence/summary.json": {
+        "sha256": "86821cb23e22444894cb415128bce214dc8f1b6e24047542af7d35fe3e57a0c3",
+        "size": 983
+      },
+      "evidence/artifact-receipts.json": {
+        "sha256": "691310b8733eac5ad8b0d792d823e4cd9370930eed3f15da37e55181c805f249",
+        "size": 2321
+      },
+      "evidence/old-mysql-bytecode.json": {
+        "sha256": "d567ab996c753a5e9567151b137e75953ced2ff7372719080a06874bfb044316",
+        "size": 448
+      },
+      "evidence/probes/old-bytecode.json": {
+        "sha256": "4e04366e1e35b1d1fb2f5cef84827031d0c87b1c87f0d4e6732889b3be951027",
+        "size": 402
+      },
+      "evidence/0.1.2/junit/TEST-io.github.ym0506.routecontract.consumer.OldBytecodeMySqlTest.xml": {
+        "sha256": "9eb1ec538e30fec865147970495b83a38dbe8e6131c026080ba5c5ffd5e3d879",
+        "size": 6399
+      },
+      "evidence/0.2.0/junit/TEST-io.github.ym0506.routecontract.consumer.OldBytecodeMySqlTest.xml": {
+        "sha256": "b5ee4b26d92eaaac0e0a1ffe4774ceb394d0b40fe9ceadd475d2469c40e1736d",
+        "size": 6398
+      },
+      "evidence/0.1.2/resolved-graph.json": {
+        "sha256": "f0ae2cd8c9f2f5df16b04b954861cfe427c8dd1f7d250f2312eeb120031c91b9",
+        "size": 148322
+      },
+      "evidence/0.2.0/resolved-graph.json": {
+        "sha256": "8839962a3df16243d99db039cb73708ab666c9abbe251f02defe648774d651f1",
+        "size": 149075
+      }
+    },
+    "allRetainedEvidenceFilesIndependentlyHashChecked": 75
+  },
+  "limitations": {
+    "completeBehavioralCompatibility": false,
+    "publicRepositoryConsumption": false,
+    "firstPartyRebuildPerformed": false,
+    "runnerEdited": false,
+    "releasePublication": false,
+    "externalAdoption": false,
+    "notes": [
+      "A26 permits explicitly disclosed source, schema, reflection, enum, record, code-source and module-path changes; passing A26 is not universal drop-in compatibility.",
+      "This run covers Java 17, exact ShardingSphere-JDBC 5.5.3 and one synchronous non-batch synthetic operation. It is not 5.5.2 coverage, A29 collision acceptance, the whole release matrix, or a performance result.",
+      "The intentional range rejection is asserted inside this migration suite; the A26 harness itself exits 0 when all required outcomes hold.",
+      "A hash identifies retained bytes, not signature ownership, independent publisher approval or public availability.",
+      "If staged payloads or required harness inputs change, this record does not bind the changed candidate.",
+      "Raw runtime output contains environment information and synthetic connection details; it is intentionally omitted from this minimized record."
+    ]
+  }
+}
