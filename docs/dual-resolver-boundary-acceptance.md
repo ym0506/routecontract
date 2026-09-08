@@ -1,10 +1,12 @@
 # Remaining A-15 / A-17 resolver and runtime boundaries
 
-Status: implementation and preparation under review. The final ten cases require
-the newly reviewed candidate containing the A-09 guard correction. No execution
-against older staged bytes can complete this plan. Existing audited A-24 anchor
-and non-anchor controls remain separate evidence; positive MySQL cases are not
-repeated here.
+Status: four Gradle cases against the reviewed `86a0be5` candidate passed and
+their raw evidence has been audited. The third native attempt then stopped in
+the first Maven download because the disposable repository omitted checksum
+sidecars. No Maven boundary case has completed; all six remain pending the
+reviewed fixture correction. Earlier failed attempts remain failed. Existing
+audited A-24 anchor and non-anchor controls remain separate evidence; positive
+MySQL cases are not repeated here.
 
 The finite plan contains exactly ten Java 17 cases:
 
@@ -23,7 +25,15 @@ options and use the exact selected Java 17 runtime with trusted IPv4 settings.
 Before execution, require an independently reviewed nine-payload staging receipt,
 its separately supplied SHA-256, the exact production source revision, and a
 reviewed fingerprint map of every executed fixture/helper. Preserve the original
-staging and copy only receipt-pinned files into disposable evidence. All first-party
+staging and copy only the nine receipt-pinned payloads and their existing `md5`,
+`sha1`, `sha256` and `sha512` sidecars into disposable evidence. First verify each
+payload against the reviewed receipt, independently calculate each algorithm's
+digest from those bytes, and require the existing sidecar to contain that exact
+digest. Reject missing, malformed, mismatched or symlinked sidecars; do not derive
+replacements or change the original staging. Record each copied sidecar's exact
+bytes hash, size, algorithm, digest and receipt-pinned payload identity in a
+separate inventory. Keep the nine-payload inventory and Gradle verification
+metadata unchanged. Maven `--strict-checksums` remains mandatory. All first-party
 requests use a controlled repository; retain its finalized method/path/status
 log, the exact generated build/POM, native command and exit, selected or unresolved
 dependency graph, actual consumed-file hashes and origin records. A different
@@ -108,7 +118,7 @@ python3 scripts/verify-dual-resolver-boundaries.py \
 It writes `summary.json`, `explicit-case-plan.json`, `fixture-inputs.json`,
 `prepared-case-inputs.json` and the ten generated consumer inputs. It launches no
 Gradle, Maven or Java process. Supplying one or more `--case-id` arguments selects
-only those existing identities; a subset cannot complete the native ten-case matrix.
+only those existing identities; a subset cannot complete a native ten-case run.
 
 Execution additionally requires all four independently reviewed staging arguments
 (`--repository`, `--reviewed-receipt`, `--reviewed-receipt-sha256`,
@@ -124,3 +134,14 @@ identities. `completeBoundaryMatrix` and `independentlyAudited` remain false in 
 runner output until a separate review establishes the raw-evidence audit. Unit
 parser/preparation checks are labeled `verified - unit`; configuration-only or
 synthetic Java compilation checks never stand in for staged native execution.
+
+A separate aggregate audit may close the ten obligations using the four retained
+Gradle passes and a later run of exactly the six pending Maven identities. Before
+reuse, bind the Gradle commands, generated inputs, actual graph and native causes,
+consumed metadata bytes, request origins, reviewed receipt and original staging
+inventory. Show that the sidecar correction changes neither those nine payloads
+nor the effective Gradle configuration, command construction or cause validation.
+The aggregate must name both executions and their distinct runner/input hashes,
+account for each identity exactly once, and retain all failed-attempt summaries.
+It must report four plus six completed cases across executions, never a single
+successful ten-case invocation or a successful Maven case from the failed attempt.

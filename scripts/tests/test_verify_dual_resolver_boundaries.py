@@ -731,6 +731,116 @@ class RuntimeGuardReportTest(unittest.TestCase):
                 MODULE.verify_guard_report(case, invalid, expected)
 
 
+class ReviewedRepositoryCopyTest(unittest.TestCase):
+    algorithms = ('md5', 'sha1', 'sha256', 'sha512')
+
+    def repository(self, root):
+        repository = root / 'original'
+        for module in ('routecontract-core', 'routecontract-shardingsphere-5.5',
+                       'routecontract-shardingsphere-5.5.2'):
+            for extension in ('jar', 'pom', 'module'):
+                path = repository / 'io/github/ym0506/routecontract' / module / '0.2.0' / f'{module}-0.2.0.{extension}'
+                path.parent.mkdir(parents=True, exist_ok=True)
+                payload = f'Synthetic receipt-pinned {module}.{extension}\n'.encode()
+                path.write_bytes(payload)
+                for index, algorithm in enumerate(self.algorithms):
+                    # Existing sidecar bytes, including a final newline, must be copied verbatim.
+                    sidecar = hashlib.new(algorithm, payload).hexdigest().encode() + (b'\n' if index % 2 else b'')
+                    Path(str(path) + '.' + algorithm).write_bytes(sidecar)
+        return repository, MODULE.staged.repository_receipt(repository)
+
+    def test_copy_retains_exact_verified_sidecars_needed_by_strict_maven(self):
+        # Actual failed Maven log SHA-256:
+        # 786949d10506c8c2d09cfabd03c19d220114e2a89bd8bae33d33efbe5421411d.
+        # Both adapter POM GETs were 200; their .sha1/.md5 GETs were 404, causing
+        # "Checksum validation failed, no checksums available" before Enforcer.
+        with tempfile.TemporaryDirectory(prefix='routecontract-dual-copy-unit-') as temporary:
+            root = Path(temporary).resolve()
+            repository, receipt = self.repository(root)
+            extra = repository / 'unreviewed-sources.jar'
+            extra.write_bytes(b'not in the reviewed receipt')
+            Path(str(extra) + '.sha1').write_text(hashlib.sha1(extra.read_bytes()).hexdigest())
+            before = MODULE.a24.inventory(repository)
+            destination = root / 'copy'
+            copied = MODULE.copy_reviewed_repository(repository, receipt, destination)
+            for module in ADAPTERS.values():
+                pom = f'io/github/ym0506/routecontract/{module}/0.2.0/{module}-0.2.0.pom'
+                for algorithm in ('sha1', 'md5'):
+                    self.assertTrue((destination / (pom + '.' + algorithm)).is_file(),
+                                    'Strict Maven must receive the previously omitted checksum URL')
+            payloads, sidecars = copied
+            self.assertEqual(9, len(payloads))
+            self.assertEqual(36, len(sidecars))
+            expected_paths = {item['relativePath'] for item in receipt['artifacts']}
+            expected_paths.update(item['relativePath'] + '.' + algorithm
+                                  for item in receipt['artifacts'] for algorithm in self.algorithms)
+            self.assertEqual(expected_paths, {item['path'] for item in MODULE.a24.inventory(destination)})
+            for item in receipt['artifacts']:
+                payload = (repository / item['relativePath']).read_bytes()
+                self.assertIn(dict(item, byteCount=len(payload)), payloads)
+                self.assertEqual(payload, (destination / item['relativePath']).read_bytes())
+                for algorithm in self.algorithms:
+                    relative = item['relativePath'] + '.' + algorithm
+                    source = (repository / relative).read_bytes()
+                    self.assertEqual(source, (destination / relative).read_bytes())
+                    self.assertIn({'relativePath': relative, 'sha256': hashlib.sha256(source).hexdigest(),
+                                   'byteCount': len(source), 'algorithm': algorithm,
+                                   'digest': hashlib.new(algorithm, payload).hexdigest(),
+                                   'payloadRelativePath': item['relativePath'], 'payloadSha256': item['sha256'],
+                                   'origin': 'copied-existing-staging-sidecar'}, sidecars)
+            self.assertEqual(before, MODULE.a24.inventory(repository))
+            self.assertIn('--strict-checksums', MODULE.maven_command(
+                root / 'mvn', root / 'settings', root / 'cache', root / 'home', root / 'consumer'))
+
+    def test_missing_malformed_and_wrong_digests_fail_before_creating_a_copy(self):
+        for algorithm in self.algorithms:
+            for defect in ('missing', 'wrong-digest', 'wrong-length', 'non-hex', 'filename', 'two-lines'):
+                with self.subTest(algorithm=algorithm, defect=defect), tempfile.TemporaryDirectory(
+                        prefix='routecontract-dual-copy-unit-') as temporary:
+                    root = Path(temporary).resolve()
+                    repository, receipt = self.repository(root)
+                    item = receipt['artifacts'][-1]
+                    sidecar = repository / (item['relativePath'] + '.' + algorithm)
+                    valid = sidecar.read_bytes().strip()
+                    values = {'wrong-digest': b'0' * len(valid), 'wrong-length': valid[:-1],
+                              'non-hex': b'z' * len(valid), 'filename': valid + b'  artifact.jar',
+                              'two-lines': valid + b'\n' + valid}
+                    if defect == 'missing':
+                        sidecar.unlink()
+                    else:
+                        sidecar.write_bytes(values[defect])
+                    before = MODULE.a24.inventory(repository)
+                    with self.assertRaises(MODULE.BoundaryError):
+                        MODULE.copy_reviewed_repository(repository, receipt, root / 'never-created')
+                    self.assertFalse((root / 'never-created').exists())
+                    self.assertEqual(before, MODULE.a24.inventory(repository))
+
+    def test_symlink_sidecar_is_rejected_without_creating_a_copy(self):
+        with tempfile.TemporaryDirectory(prefix='routecontract-dual-copy-unit-') as temporary:
+            root = Path(temporary).resolve()
+            repository, receipt = self.repository(root)
+            sidecar = repository / (receipt['artifacts'][0]['relativePath'] + '.sha1')
+            outside = root / 'external-checksum'
+            outside.write_bytes(sidecar.read_bytes())
+            sidecar.unlink()
+            sidecar.symlink_to(outside)
+            with self.assertRaises(MODULE.a24.VerificationError):
+                MODULE.copy_reviewed_repository(repository, receipt, root / 'never-created')
+            self.assertFalse((root / 'never-created').exists())
+
+    def test_matching_sidecar_cannot_replace_the_reviewed_payload_digest(self):
+        with tempfile.TemporaryDirectory(prefix='routecontract-dual-copy-unit-') as temporary:
+            root = Path(temporary).resolve()
+            repository, receipt = self.repository(root)
+            path = repository / receipt['artifacts'][0]['relativePath']
+            path.write_bytes(b'changed payload with matching untrusted checksums')
+            for algorithm in self.algorithms:
+                Path(str(path) + '.' + algorithm).write_text(hashlib.new(algorithm, path.read_bytes()).hexdigest())
+            with self.assertRaises(MODULE.staged.VerificationError):
+                MODULE.copy_reviewed_repository(repository, receipt, root / 'never-created')
+            self.assertFalse((root / 'never-created').exists())
+
+
 class BoundaryPreparationTest(unittest.TestCase):
     def no_execution(self):
         stack = ExitStack()

@@ -534,19 +534,40 @@ def native(command, cwd, environment, evidence, name, *, expected_exit=0):
 def copy_reviewed_repository(repository, receipt, destination):
     a24.inventory(repository)  # Reject symlink ancestors and special files before any copying.
     staged.verify_receipt(repository, receipt)
-    destination.mkdir()
     pins = []
+    sidecars = []
+    copies = {}
     for item in receipt['artifacts']:
         source = regular(repository / item['relativePath'])
         payload = source.read_bytes()
         if hashlib.sha256(payload).hexdigest() != item['sha256']:
             raise BoundaryError('Reviewed staging changed before copying')
-        target = destination / item['relativePath']
+        copies[item['relativePath']] = payload
+        pins.append(dict(item, byteCount=len(payload)))
+        for algorithm in ('md5', 'sha1', 'sha256', 'sha512'):
+            relative = item['relativePath'] + '.' + algorithm
+            checksum = regular(repository / relative).read_bytes()
+            digest = hashlib.new(algorithm, payload).hexdigest()
+            pattern = rb'[0-9a-fA-F]{' + str(len(digest)).encode() + rb'}(?:\r?\n)?'
+            if not re.fullmatch(pattern, checksum) or checksum.rstrip(b'\r\n').lower() != digest.encode():
+                raise BoundaryError('Existing staging checksum does not match receipt-verified payload: ' + relative)
+            copies[relative] = checksum
+            sidecars.append({'relativePath': relative, 'sha256': hashlib.sha256(checksum).hexdigest(),
+                             'byteCount': len(checksum), 'algorithm': algorithm, 'digest': digest,
+                             'payloadRelativePath': item['relativePath'], 'payloadSha256': item['sha256'],
+                             'origin': 'copied-existing-staging-sidecar'})
+    # Validate all existing sidecars before creating the disposable copy; never derive a replacement.
+    destination.mkdir()
+    for relative, payload in copies.items():
+        target = destination / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(payload)
-        pins.append(dict(item, byteCount=len(payload)))
     staged.verify_receipt(destination, receipt)
-    return pins
+    if sorted(a24.inventory(destination), key=lambda item: item['path']) != [
+            {'path': path, 'size': len(copies[path]), 'sha256': hashlib.sha256(copies[path]).hexdigest()}
+            for path in sorted(copies)]:
+        raise BoundaryError('Disposable payload/checksum inventory differs from verified source bytes')
+    return pins, sidecars
 
 
 def maven_command(executable, settings, cache, private_home, consumer):
@@ -905,7 +926,11 @@ def main(argv=None):
             write_json(evidence / 'source-binding.json', binding)
             write_json(evidence / 'original-staging-inventory.json', repository_before)
             disposable = evidence / 'repository'
-            write_json(evidence / 'receipt-pinned-payloads.json', copy_reviewed_repository(repository, receipt, disposable))
+            payload_pins, checksum_pins = copy_reviewed_repository(repository, receipt, disposable)
+            write_json(evidence / 'receipt-pinned-payloads.json', payload_pins)
+            write_json(evidence / 'verified-checksum-sidecars.json', checksum_pins)
+            disposable_before = a24.inventory(disposable)
+            write_json(evidence / 'disposable-staging-inventory.json', disposable_before)
         for case in plan:
             prepare_case(evidence / case['id'], case, receipt)
         write_json(evidence / 'prepared-case-inputs.json', {case['id']: json.loads(
@@ -928,6 +953,8 @@ def main(argv=None):
                     raise BoundaryError('Frozen executable inputs changed while the matrix was running')
                 staged.verify_receipt(disposable, receipt)
                 staged.verify_receipt(repository, receipt)
+                if a24.inventory(disposable) != disposable_before:
+                    raise BoundaryError('Disposable payload/checksum bytes changed during execution')
                 write_json(evidence / 'summary.json', summary)
             if (source_snapshot() != inputs or a24.inventory(repository) != repository_before
                     or regular(args.reviewed_receipt).read_bytes() != receipt_before
