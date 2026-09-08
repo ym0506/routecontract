@@ -24,17 +24,53 @@ RouteContract는 [ShardingSphere-JDBC](https://github.com/apache/shardingsphere)
 | 먼저 동작 보기 | [2분 54초 시연 영상 보기](https://www.youtube.com/watch?v=pcgvNNxd1mM) · [실제 비교 결과](examples/manifests/README.md) — 설치 불필요 |
 | CI에서 읽을 리포트 확인 | [Markdown 미리보기](docs/evidence/ci-review-report-example.md) · [v0.1.3으로 직접 생성](docs/ci-review-report.md#try-the-released-report-without-docker) — Git·Java 17, Docker 불필요 |
 | 같은 결과인데 실행이 달라지는 사례 재현 | [아래 Quick Start](#quick-start) — Git, Java 17, Docker 필요 |
-| 내 프로젝트의 테스트 한 개에 적용 | [짧은 설치 명령](docs/install-local.md) · [버전·빌드 경로 선택](docs/start-here.md) · [Maven starter](examples/maven-pilot/README.md#review-only-starter-bundle) |
+| 내 프로젝트의 테스트 한 개에 적용 | [Maven Central에서 0.1.3 설치](#install-013) — 기존 Java 17 · ShardingSphere-JDBC 5.5.3 테스트 |
 | 적용 가능성 질문·경험 공유 | [짧은 피드백](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml) — 설치나 공개 저장소 없이 참여 가능 |
 
 최신 [정식 `v0.1.3`](https://github.com/ym0506/routecontract/releases/tag/v0.1.3)은
-Markdown·JSON [CI 리포트](docs/ci-review-report.md)를 포함하며 GitHub Release로 공개됐습니다.
-Maven Central 배포는 준비 중입니다. 아래 MySQL Quick Start와 기존 짧은 설치 명령·통합 가이드는
-검증된 `v0.1.2` 경로에 고정되어 있고, 새 리포트는 위의 `v0.1.3` 체험 경로를 사용합니다.
+Markdown·JSON [CI 리포트](docs/ci-review-report.md)와 `ManifestReviewCli`를 포함하며
+GitHub Release와 Maven Central에서 사용할 수 있습니다. 아래 MySQL Quick Start와 기존
+로컬 설치기·통합 가이드는 검증된 `v0.1.2` 경로에 고정되어 있습니다.
+새 리포트는 위의 `v0.1.3` 체험 경로로 확인할 수 있습니다.
 비공개 프로젝트도 자신의 환경에서 사용할 수 있습니다. 공개 피드백에는 SQL·바인딩 값·접속 정보·전체 로그를 넣지 마세요.
 [도움받는 방법과 사용 사례 기록 기준](docs/user-feedback.md)을 확인할 수 있습니다.
 
 ![같은 업무 결과에서 승인본과 candidate의 관측 실행 시도 및 data-source alias가 1에서 2로 달라져 RCM201과 RCM202가 발생한 실제 MySQL 검증](submission/assets/baseline-candidate.png)
+
+## Install 0.1.3
+
+[공개 파일 검증과 Gradle·Maven 설치 결과](docs/evidence/release-0.1.3-central.md)를 확인할 수 있습니다.
+
+기존 **Java 17 · ShardingSphere-JDBC 5.5.3** 테스트에 의존성을 추가하세요.
+기존 ShardingSphere·데이터 소스 설정과 업무 결과 assertion은 유지합니다.
+
+Gradle Groovy / Kotlin DSL:
+
+```kotlin
+repositories { mavenCentral() }
+
+dependencies {
+    testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.3")
+}
+```
+
+Maven (`pom.xml`의 `<dependencies>` 안에 추가):
+
+```xml
+<dependency>
+  <groupId>io.github.ym0506.routecontract</groupId>
+  <artifactId>routecontract-shardingsphere-5.5</artifactId>
+  <version>0.1.3</version>
+  <scope>test</scope>
+</dependency>
+```
+
+동기식·비배치 `PreparedStatement` 작업 하나를 감싸는 [아래 사용 예](#가장-작은-사용-예)를 참고하세요.
+RouteContract가 ShardingSphere를 설치하거나 전체 모듈의 버전을 강제하지는 않습니다.
+테스트 runtime의 ShardingSphere 모듈은 모두 정확히 5.5.3이어야 합니다.
+
+아래 v0.1.2 Quick Start·로컬 설치기·Maven starter는 해당 버전에 고정된 재현 경로입니다.
+0.1.3 의존성 설치에 그 설치기를 실행하거나 이 저장소를 clone할 필요는 없습니다.
 
 ## Quick Start
 
@@ -78,7 +114,7 @@ SQL·parameter·connection 정보가 섞일 수 있는 하위 프로세스 원�
 </details>
 
 <details>
-<summary>기존 프로젝트에 통합하기: Gradle·Maven 상세 절차</summary>
+<summary>v0.1.2 통합 경로: Gradle·Maven 상세 절차</summary>
 
 ## 다음 단계: 첫 통합 가능성 검토하기
 
@@ -338,7 +374,7 @@ adoption으로 승격하지 않습니다.
 </details>
 
 <details>
-<summary>Maven Central 배포 전 Release 자산을 설치하는 상세 절차</summary>
+<summary>v0.1.2 GitHub Release 자산을 설치하는 상세 절차</summary>
 
 ## 공개 Release 자산을 registry 없이 사용하기
 

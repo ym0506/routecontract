@@ -1,8 +1,9 @@
 # v0.1.3 GitHub release verification
 
 Verified on 2026-09-07 UTC. [GitHub v0.1.3](https://github.com/ym0506/routecontract/releases/tag/v0.1.3)
-is a published, immutable, non-prerelease release. Maven Central publication is pending;
-this record does not establish Central installation or external project use.
+is a published, immutable, non-prerelease release. Maven Central publication was pending
+at this September 7 verification; this record does not establish Central installation or external project use.
+See the separate [September 8 Central publication and consumer evidence](release-0.1.3-central.md).
 
 ## Source and release files
 

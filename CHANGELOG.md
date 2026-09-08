@@ -6,9 +6,9 @@ RouteContract follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) a
 ## [0.1.3] - 2026-09-07
 
 Published as an immutable [GitHub Release](https://github.com/ym0506/routecontract/releases/tag/v0.1.3)
-for exact ShardingSphere-JDBC 5.5.3. Maven Central publication remains pending.
+for exact ShardingSphere-JDBC 5.5.3, and now available as a Maven Central test dependency.
 See the [GitHub release verification](docs/evidence/release-0.1.3-github.md) and
-[remaining Central steps](docs/release-0.1.3-candidate.md).
+[Central publication and consumer evidence](docs/evidence/release-0.1.3-central.md).
 
 ### Added
 
