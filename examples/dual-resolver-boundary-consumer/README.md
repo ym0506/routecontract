@@ -39,9 +39,11 @@ published capabilities. The core must remain transitive from the adapters.
 
 `DATABASE_ANCHOR` follows `RUNTIME` for both dual-adapter templates, and
 `OPPOSITE_RUNTIME` for the guard template. Each template directly declares the
-executor, SPI and database anchors. Actual resolution must establish the complete
-coherent selected ShardingSphere set; the templates do not assume Maven nearest
-selection succeeds and do not claim the larger JDBC/MySQL fixture's component counts.
+executor, SPI and database anchors. Maven resolution must establish the complete
+coherent selected ShardingSphere set; its templates do not assume nearest selection
+succeeds. The rejected Gradle graph retains its actual partial selections and
+intrinsic strict collisions. Neither fixture claims the larger JDBC/MySQL fixture's
+component counts.
 
 ## Gradle native conflict
 
@@ -52,34 +54,58 @@ dependency cache. Supply the controlled URL through
 URL forms; only the first-party group can use that repository. The runner owns the
 controlled HTTP server and its finalized request log.
 
-The only fixture task is `resolveDualAdapters`. It first writes
+The fixture applies `java-base` for the standard JVM attribute compatibility
+schema, including Java 8 dependency variants under Java 17. The only fixture task
+is `resolveDualAdapters`. It first writes
 `negative-graph.json` from `ResolutionResult` and then accesses the same
-configuration's files without catching the native failure. No Java plugin,
-compilation task, test task, dependency substitution, explicit capability request,
+configuration's files without catching the native failure. No `java` plugin,
+source sets, compilation task, test task, dependency substitution, explicit capability request,
 capability selection rule or fabricated rejection marker is installed.
 
 The graph has this schema:
 
 ```text
-schemaVersion: 1
+schemaVersion: 2
 tool: "gradle"
 configuration: "dualAdapterRuntime"
 requestedRuntime: exact runtime
 routeContractVersion: "0.2.0"
 declaredAdapters: [first GAV, second GAV]
 declaredRuntimeAnchors: [executor GAV, SPI GAV, database GAV]
+rootDependencies: [{requested, from, constraint, resolved, selected}]
 selectedComponents: [{coordinate, selectionReasons: [{cause, description}]}]
 unresolved: [{requested, attempted, from, failureMessages: [{exceptionType, message}]}]
 ```
 
-Module coordinates and selectors are Gradle's actual display names. Selected
+`rootDependencies` comes from the actual resolution root. It must contain exactly
+five ordinary requests in their declaration order: both adapters and the three
+selected-runtime anchors. Each row records its actual origin, constraint flag,
+resolution state and selected destination where available. Module coordinates
+and selectors are Gradle's actual display names. Selected
 components are sorted by coordinate; unresolved records by requested selector,
 attempted selector and origin. Failure messages include each actual nested cause,
 multi-cause and suppressed exception once by object identity. The runner must bind
 the native error and both actual adapter selectors to an exact capability published
-by both reviewed modules. A native legacy-GAV capability conflict retains that
-identity; it is not described as a shared hook-slot conflict. A different dependency
-failure does not pass.
+by both reviewed modules. Both native module rejection sections must name the exact
+counterpart GAV and `runtimeElements` variant. A native legacy-GAV capability conflict
+retains that identity; it is not described as a shared hook-slot conflict.
+
+The graph may also retain the intrinsic executor/SPI strict-version collisions
+published by the two adapters. The runner permits only native two-cause chains for
+those modules at 5.5.2/5.5.3, with both adapter paths, strict versions, declaration
+kinds and reasons matched to the receipt-pinned runtime metadata. Native contributing
+paths must start at a directly requested anchor module, contain only ShardingSphere
+coordinates at those two versions, and end at the same conflicting executor/SPI
+module. These are retained paths through a partially rejected graph, not evidence
+of a coherent executable runtime. Missing or foreign paths, duplicate edges, extra
+causes, Guava/variant errors, transport failures and checksum failures still fail.
+
+Results distinguish `NATIVE_CAPABILITY_REJECTED` from
+`NATIVE_CAPABILITY_AND_INTRINSIC_STRICT_REJECTED` and retain every intrinsic
+collision with its source metadata hash. Neither outcome can omit one of the two
+actual adapter capability causes. The preserved first failed attempt is not
+reclassified: its unrelated Java-variant errors remain a failure. The correction
+requires fresh reviewed fingerprints and a new native run before completion.
 
 ## Maven native policy and runtime controls
 

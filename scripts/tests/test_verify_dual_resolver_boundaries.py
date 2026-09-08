@@ -57,9 +57,12 @@ def gradle_fixture(case, capability):
         ]
         failures.append({'requested': own, 'attempted': own, 'from': 'root project :',
                          'failureMessages': messages})
-    graph = {'schemaVersion': 1, 'tool': 'gradle', 'configuration': 'dualAdapterRuntime',
+    graph = {'schemaVersion': 2, 'tool': 'gradle', 'configuration': 'dualAdapterRuntime',
              'requestedRuntime': case['runtime'], 'routeContractVersion': '0.2.0',
              'declaredAdapters': declared, 'declaredRuntimeAnchors': anchors(case['runtime']),
+             'rootDependencies': [dict(requested=gav, constraint=False, resolved=gav not in declared,
+                                       selected=None if gav in declared else gav, **{'from': 'root project :'})
+                                  for gav in declared + anchors(case['runtime'])],
              'selectedComponents': [{'coordinate': coordinate,
                                      'selectionReasons': [{'cause': 'REQUESTED', 'description': 'requested'}]}
                                     for coordinate in anchors(case['runtime'])],
@@ -234,11 +237,11 @@ class GradleDualCauseTest(unittest.TestCase):
             with self.subTest(code=code, output=text), self.assertRaises(MODULE.BoundaryError):
                 self.verify(case, text, graph, code)
 
-    def test_report_must_describe_the_requested_case_and_three_coherent_runtime_anchors(self):
+    def test_report_must_bind_the_case_and_actual_direct_anchor_destinations(self):
         case = self.cases()[0]
         output, graph = gradle_fixture(case, self.capabilities[0])
         mutations = [
-            ('schemaVersion', 2), ('tool', 'maven'), ('configuration', 'unrelatedRuntime'),
+            ('schemaVersion', 1), ('tool', 'maven'), ('configuration', 'unrelatedRuntime'),
             ('requestedRuntime', opposite(case['runtime'])), ('routeContractVersion', '0.1.2'),
             ('declaredAdapters', graph['declaredAdapters'][::-1]),
             ('declaredRuntimeAnchors', anchors(opposite(case['runtime']))),
@@ -331,6 +334,221 @@ class GradleDualCauseTest(unittest.TestCase):
         with self.assertRaises(MODULE.BoundaryError):
             self.verify(case, output, invalid)
 
+
+# Exact native cause strings retained from the FAILED first Gradle attempt.
+# This bounded unit projection is not a rerun or a passing reclassification.
+# Raw graph SHA256 and audit identity make the source independently inspectable.
+RETAINED_FAILED_GRAPH_SHA256 = "b2c02597509be0160c565d475970cf0a9f796b523a8ad345de528e5862b8167d"
+RETAINED_STRICT_EDGES = json.loads(r'''
+[
+  {
+    "requested": "org.apache.shardingsphere:shardingsphere-infra-executor:5.5.2",
+    "attempted": "org.apache.shardingsphere:shardingsphere-infra-executor:5.5.2",
+    "from": "root project :",
+    "failureMessages": [
+      {
+        "exceptionType": "org.gradle.internal.resolve.ModuleVersionResolveException",
+        "message": "Could not resolve org.apache.shardingsphere:shardingsphere-infra-executor:5.5.2."
+      },
+      {
+        "exceptionType": "org.gradle.api.GradleException",
+        "message": "Cannot find a version of 'org.apache.shardingsphere:shardingsphere-infra-executor' that satisfies the version constraints:\n   Dependency path: 'root project :' (dualAdapterRuntime) --> 'org.apache.shardingsphere:shardingsphere-infra-executor:5.5.2'\n   Dependency path: 'root project :' (dualAdapterRuntime) --> 'io.github.ym0506.routecontract:routecontract-shardingsphere-5.5.2:0.2.0' (runtimeElements) --> 'org.apache.shardingsphere:shardingsphere-infra-executor:{strictly 5.5.2}' because of the following reason: SQLExecutionHook has an exact 5.5.2 binary descriptor\n   Dependency path: 'root project :' (dualAdapterRuntime) --> 'io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.2.0' (runtimeElements) --> 'org.apache.shardingsphere:shardingsphere-infra-executor:{strictly 5.5.3}' because of the following reason: SQLExecutionHook has an exact 5.5.3 binary descriptor\n"
+      }
+    ]
+  },
+  {
+    "requested": "org.apache.shardingsphere:shardingsphere-infra-spi:5.5.2",
+    "attempted": "org.apache.shardingsphere:shardingsphere-infra-spi:5.5.2",
+    "from": "root project :",
+    "failureMessages": [
+      {
+        "exceptionType": "org.gradle.internal.resolve.ModuleVersionResolveException",
+        "message": "Could not resolve org.apache.shardingsphere:shardingsphere-infra-spi:5.5.2."
+      },
+      {
+        "exceptionType": "org.gradle.api.GradleException",
+        "message": "Cannot find a version of 'org.apache.shardingsphere:shardingsphere-infra-spi' that satisfies the version constraints:\n   Dependency path: 'root project :' (dualAdapterRuntime) --> 'org.apache.shardingsphere:shardingsphere-infra-spi:5.5.2'\n   Constraint path: 'root project :' (dualAdapterRuntime) --> 'io.github.ym0506.routecontract:routecontract-shardingsphere-5.5.2:0.2.0' (runtimeElements) --> 'org.apache.shardingsphere:shardingsphere-infra-spi:{strictly 5.5.2}' because of the following reason: the runtime-adapter preflight requires the exact 5.5.2 SPI anchor\n   Constraint path: 'root project :' (dualAdapterRuntime) --> 'io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.2.0' (runtimeElements) --> 'org.apache.shardingsphere:shardingsphere-infra-spi:{strictly 5.5.3}' because of the following reason: the runtime-adapter preflight requires the exact 5.5.3 SPI anchor\n   Dependency path: 'root project :' (dualAdapterRuntime) --> 'org.apache.shardingsphere:shardingsphere-infra-database-core:5.5.2' (default) --> 'org.apache.shardingsphere:shardingsphere-infra-util:5.5.3' (default) --> 'org.apache.shardingsphere:shardingsphere-infra-spi:5.5.3'\n   Dependency path: 'root project :' (dualAdapterRuntime) --> 'org.apache.shardingsphere:shardingsphere-infra-executor:5.5.3' (default) --> 'org.apache.shardingsphere:shardingsphere-infra-rewrite-core:5.5.3' (default) --> 'org.apache.shardingsphere:shardingsphere-infra-route-core:5.5.3' (default) --> 'org.apache.shardingsphere:shardingsphere-infra-session:5.5.3' (default) --> 'org.apache.shardingsphere:shardingsphere-infra-binder-core:5.5.3' (default) --> 'org.apache.shardingsphere:shardingsphere-parser-sql-engine-core:5.5.3' (default) --> 'org.apache.shardingsphere:shardingsphere-parser-sql-spi:5.5.3' (default) --> 'org.apache.shardingsphere:shardingsphere-infra-spi:5.5.3'\n   Dependency path: 'root project :' (dualAdapterRuntime) --> 'org.apache.shardingsphere:shardingsphere-infra-executor:5.5.3' (default) --> 'org.apache.shardingsphere:shardingsphere-infra-rewrite-core:5.5.3' (default) --> 'org.apache.shardingsphere:shardingsphere-sql-translator-core:5.5.3' (default) --> 'org.apache.shardingsphere:shardingsphere-mode-node:5.5.3' (default) --> 'org.apache.shardingsphere:shardingsphere-infra-common:5.5.3' (default) --> 'org.apache.shardingsphere:shardingsphere-infra-data-source-pool-core:5.5.3' (default) --> 'org.apache.shardingsphere:shardingsphere-database-connector-core:5.5.3' (default) --> 'org.apache.shardingsphere:shardingsphere-infra-spi:5.5.3'\n"
+      }
+    ]
+  },
+  {
+    "requested": "org.apache.shardingsphere:shardingsphere-infra-spi:5.5.3",
+    "attempted": "org.apache.shardingsphere:shardingsphere-infra-spi:5.5.3",
+    "from": "org.apache.shardingsphere:shardingsphere-infra-util:5.5.3",
+    "failureMessages": [
+      {
+        "exceptionType": "org.gradle.internal.resolve.ModuleVersionResolveException",
+        "message": "Could not resolve org.apache.shardingsphere:shardingsphere-infra-spi:5.5.3."
+      },
+      {
+        "exceptionType": "org.gradle.api.GradleException",
+        "message": "Cannot find a version of 'org.apache.shardingsphere:shardingsphere-infra-spi' that satisfies the version constraints:\n   Dependency path: 'root project :' (dualAdapterRuntime) --> 'org.apache.shardingsphere:shardingsphere-infra-spi:5.5.2'\n   Constraint path: 'root project :' (dualAdapterRuntime) --> 'io.github.ym0506.routecontract:routecontract-shardingsphere-5.5.2:0.2.0' (runtimeElements) --> 'org.apache.shardingsphere:shardingsphere-infra-spi:{strictly 5.5.2}' because of the following reason: the runtime-adapter preflight requires the exact 5.5.2 SPI anchor\n   Constraint path: 'root project :' (dualAdapterRuntime) --> 'io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.2.0' (runtimeElements) --> 'org.apache.shardingsphere:shardingsphere-infra-spi:{strictly 5.5.3}' because of the following reason: the runtime-adapter preflight requires the exact 5.5.3 SPI anchor\n   Dependency path: 'root project :' (dualAdapterRuntime) --> 'org.apache.shardingsphere:shardingsphere-infra-database-core:5.5.2' (default) --> 'org.apache.shardingsphere:shardingsphere-infra-util:5.5.3' (default) --> 'org.apache.shardingsphere:shardingsphere-infra-spi:5.5.3'\n   Dependency path: 'root project :' (dualAdapterRuntime) --> 'org.apache.shardingsphere:shardingsphere-infra-executor:5.5.3' (default) --> 'org.apache.shardingsphere:shardingsphere-infra-rewrite-core:5.5.3' (default) --> 'org.apache.shardingsphere:shardingsphere-infra-route-core:5.5.3' (default) --> 'org.apache.shardingsphere:shardingsphere-infra-session:5.5.3' (default) --> 'org.apache.shardingsphere:shardingsphere-infra-binder-core:5.5.3' (default) --> 'org.apache.shardingsphere:shardingsphere-parser-sql-engine-core:5.5.3' (default) --> 'org.apache.shardingsphere:shardingsphere-parser-sql-spi:5.5.3' (default) --> 'org.apache.shardingsphere:shardingsphere-infra-spi:5.5.3'\n   Dependency path: 'root project :' (dualAdapterRuntime) --> 'org.apache.shardingsphere:shardingsphere-infra-executor:5.5.3' (default) --> 'org.apache.shardingsphere:shardingsphere-infra-rewrite-core:5.5.3' (default) --> 'org.apache.shardingsphere:shardingsphere-sql-translator-core:5.5.3' (default) --> 'org.apache.shardingsphere:shardingsphere-mode-node:5.5.3' (default) --> 'org.apache.shardingsphere:shardingsphere-infra-common:5.5.3' (default) --> 'org.apache.shardingsphere:shardingsphere-infra-data-source-pool-core:5.5.3' (default) --> 'org.apache.shardingsphere:shardingsphere-database-connector-core:5.5.3' (default) --> 'org.apache.shardingsphere:shardingsphere-infra-spi:5.5.3'\n"
+      }
+    ]
+  }
+]
+''')
+RETAINED_GUAVA_EDGE = json.loads(r'''
+{
+  "requested": "com.google.guava:guava:32.1.2-jre",
+  "attempted": "com.google.guava:guava:32.1.2-jre",
+  "from": "org.apache.shardingsphere:shardingsphere-infra-database-core:5.5.2",
+  "failureMessages": [
+    {
+      "exceptionType": "org.gradle.internal.resolve.ModuleVersionResolveException",
+      "message": "Could not resolve com.google.guava:guava:32.1.2-jre."
+    },
+    {
+      "exceptionType": "org.gradle.internal.component.resolution.failure.exception.VariantSelectionByAttributesException",
+      "message": "No matching variant of com.google.guava:guava:33.4.6-jre was found. The consumer was configured to find attribute 'org.gradle.category' with value 'library', attribute 'org.gradle.dependency.bundling' with value 'external', attribute 'org.gradle.jvm.version' with value '17', attribute 'org.gradle.libraryelements' with value 'jar', attribute 'org.gradle.usage' with value 'java-runtime' but:\n  - Variant 'androidApiElements' declares attribute 'org.gradle.category' with value 'library', attribute 'org.gradle.dependency.bundling' with value 'external', attribute 'org.gradle.libraryelements' with value 'jar':\n      - Incompatible because this component declares attribute 'org.gradle.jvm.version' with value '8', attribute 'org.gradle.usage' with value 'java-api' and the consumer needed attribute 'org.gradle.jvm.version' with value '17', attribute 'org.gradle.usage' with value 'java-runtime'\n  - Variant 'androidRuntimeElements' declares attribute 'org.gradle.category' with value 'library', attribute 'org.gradle.dependency.bundling' with value 'external', attribute 'org.gradle.libraryelements' with value 'jar', attribute 'org.gradle.usage' with value 'java-runtime':\n      - Incompatible because this component declares attribute 'org.gradle.jvm.version' with value '8' and the consumer needed attribute 'org.gradle.jvm.version' with value '17'\n  - Variant 'jreApiElements' declares attribute 'org.gradle.category' with value 'library', attribute 'org.gradle.dependency.bundling' with value 'external', attribute 'org.gradle.libraryelements' with value 'jar':\n      - Incompatible because this component declares attribute 'org.gradle.jvm.version' with value '8', attribute 'org.gradle.usage' with value 'java-api' and the consumer needed attribute 'org.gradle.jvm.version' with value '17', attribute 'org.gradle.usage' with value 'java-runtime'\n  - Variant 'jreRuntimeElements' declares attribute 'org.gradle.category' with value 'library', attribute 'org.gradle.dependency.bundling' with value 'external', attribute 'org.gradle.libraryelements' with value 'jar', attribute 'org.gradle.usage' with value 'java-runtime':\n      - Incompatible because this component declares attribute 'org.gradle.jvm.version' with value '8' and the consumer needed attribute 'org.gradle.jvm.version' with value '17'"
+    }
+  ]
+}
+''')
+RETAINED_REVIEWED_CONSTRAINTS = json.loads(r'''
+{
+  "org.apache.shardingsphere:shardingsphere-infra-executor": [
+    {
+      "adapter": "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5.2:0.2.0",
+      "version": "5.5.2",
+      "kind": "Dependency",
+      "reason": "SQLExecutionHook has an exact 5.5.2 binary descriptor",
+      "sourceMetadataSha256": "b3dd0230824a5bf442069e183074ca24e610e0c3eebbac7dc968557205cc8dac"
+    },
+    {
+      "adapter": "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.2.0",
+      "version": "5.5.3",
+      "kind": "Dependency",
+      "reason": "SQLExecutionHook has an exact 5.5.3 binary descriptor",
+      "sourceMetadataSha256": "dca55d4f57ef7b8b9d577abc37858ba3a53b901d617086640b50befcd1a1ac96"
+    }
+  ],
+  "org.apache.shardingsphere:shardingsphere-infra-spi": [
+    {
+      "adapter": "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5.2:0.2.0",
+      "version": "5.5.2",
+      "kind": "Constraint",
+      "reason": "the runtime-adapter preflight requires the exact 5.5.2 SPI anchor",
+      "sourceMetadataSha256": "b3dd0230824a5bf442069e183074ca24e610e0c3eebbac7dc968557205cc8dac"
+    },
+    {
+      "adapter": "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.2.0",
+      "version": "5.5.3",
+      "kind": "Constraint",
+      "reason": "the runtime-adapter preflight requires the exact 5.5.3 SPI anchor",
+      "sourceMetadataSha256": "dca55d4f57ef7b8b9d577abc37858ba3a53b901d617086640b50befcd1a1ac96"
+    }
+  ]
+}
+''')
+
+
+def intrinsic_fixture():
+    case = next(c for c in MODULE.fixed_plan() if c['id'] == 'gradle-5.5.2-selected-first')
+    output, graph = gradle_fixture(case, f'{GROUP}:routecontract-shardingsphere-5.5:0.2.0')
+    graph['unresolved'] += copy.deepcopy(RETAINED_STRICT_EDGES)
+    graph['selectedComponents'] = [
+        {'coordinate': f'{SS_GROUP}:shardingsphere-infra-database-core:5.5.2', 'selectionReasons': []},
+        {'coordinate': f'{SS_GROUP}:shardingsphere-infra-util:5.5.3', 'selectionReasons': []}]
+    for edge in graph['rootDependencies']:
+        if any(edge['requested'] == item['requested'] for item in RETAINED_STRICT_EDGES):
+            edge.update(resolved=False, selected=None)
+    raw_causes = '\n'.join(message['message'] for edge in RETAINED_STRICT_EDGES
+                           for message in edge['failureMessages'])
+    output = output.replace('BUILD FAILED in 1s', raw_causes + '\nBUILD FAILED in 1s')
+    return case, output, graph, copy.deepcopy(RETAINED_REVIEWED_CONSTRAINTS)
+
+
+class GradleIntrinsicCollisionTest(unittest.TestCase):
+    def verify(self, case, output, graph, metadata):
+        return MODULE.verify_gradle_dual(case, 1, output, graph,
+            [f'{GROUP}:routecontract-shardingsphere-5.5:0.2.0'], published_constraints=metadata)
+
+    def test_retained_intrinsic_causes_are_separate_from_both_required_capability_causes(self):
+        case, output, graph, metadata = intrinsic_fixture()
+        proof = self.verify(case, output, graph, metadata)
+        self.assertEqual('NATIVE_CAPABILITY_AND_INTRINSIC_STRICT_REJECTED', proof['result'])
+        self.assertEqual(3, len(proof['intrinsicStrictCollisions']))
+        self.assertEqual(2, len(proof['capabilityUnresolvedSelectors']))
+        self.assertEqual(5, len(proof['actualRootRequests']))
+        self.assertIs(False, proof['coherentResolvedRuntimeClaimed'])
+
+    def test_retained_guava_failure_still_prevents_acceptance(self):
+        case, output, graph, metadata = intrinsic_fixture()
+        graph['unresolved'].append(copy.deepcopy(RETAINED_GUAVA_EDGE))
+        output += '\n'.join(m['message'] for m in RETAINED_GUAVA_EDGE['failureMessages'])
+        with self.assertRaises(MODULE.BoundaryError):
+            self.verify(case, output, graph, metadata)
+
+    def test_strict_rejection_cannot_replace_either_adapter_capability(self):
+        case, output, graph, metadata = intrinsic_fixture()
+        graph['unresolved'] = [e for e in graph['unresolved'] if e['requested'] != graph['declaredAdapters'][0]]
+        with self.assertRaises(MODULE.BoundaryError):
+            self.verify(case, output, graph, metadata)
+
+    def test_only_the_two_reviewed_anchor_modules_versions_and_reasons_are_allowed(self):
+        case, output, graph, metadata = intrinsic_fixture()
+        for old, new in (('shardingsphere-infra-executor', 'shardingsphere-infra-common'),
+                         ('5.5.2', '5.5.20'),
+                         ('SQLExecutionHook has an exact 5.5.2 binary descriptor', 'unreviewed reason')):
+            changed = json.loads(json.dumps(graph).replace(old, new))
+            text = output.replace(old, new)
+            with self.subTest(change=(old, new)), self.assertRaises(MODULE.BoundaryError):
+                self.verify(case, text, changed, metadata)
+
+    def test_both_exact_metadata_paths_are_required_in_each_strict_cause(self):
+        case, output, graph, metadata = intrinsic_fixture()
+        for adapter in ADAPTERS.values():
+            bad = copy.deepcopy(graph)
+            edge = next(e for e in bad['unresolved'] if e['requested'].startswith(SS_GROUP + ':'))
+            edge['failureMessages'][1]['message'] = '\n'.join(
+                line for line in edge['failureMessages'][1]['message'].splitlines()
+                if f"'{GROUP}:{adapter}:0.2.0'" not in line) + '\n'
+            with self.subTest(adapter=adapter), self.assertRaises(MODULE.BoundaryError):
+                self.verify(case, output, bad, metadata)
+        for changed_metadata in ({}, {key: values[:1] for key, values in metadata.items()}):
+            with self.assertRaises(MODULE.BoundaryError):
+                self.verify(case, output, graph, changed_metadata)
+
+    def test_extra_or_duplicate_strict_cause_and_foreign_paths_are_rejected(self):
+        case, output, graph, metadata = intrinsic_fixture()
+        invalids = []
+        duplicate = copy.deepcopy(graph); duplicate['unresolved'].append(copy.deepcopy(duplicate['unresolved'][-1])); invalids.append(duplicate)
+        cause = copy.deepcopy(graph)
+        cause['unresolved'][-1]['failureMessages'].append({'exceptionType':'java.lang.NullPointerException','message':'unrelated cause'})
+        invalids.append(cause)
+        path = copy.deepcopy(graph)
+        path['unresolved'][-1]['failureMessages'][1]['message'] += "   Dependency path: 'root project :' (dualAdapterRuntime) --> 'other:foreign:5.5.3' --> 'org.apache.shardingsphere:shardingsphere-infra-spi:5.5.3'\n"
+        invalids.append(path)
+        parent = copy.deepcopy(graph)
+        parent['unresolved'][-1]['from'] = 'com.google.guava:guava:33.4.6-jre'
+        parent['selectedComponents'].append({'coordinate':'com.google.guava:guava:33.4.6-jre','selectionReasons':[]})
+        invalids.append(parent)
+        cap = copy.deepcopy(graph)
+        cap['unresolved'][0]['failureMessages'][1]['message'] += '\n   another unbound rejection'
+        invalids.append(cap)
+        for invalid in invalids:
+            with self.subTest(invalid=invalid), self.assertRaises(MODULE.BoundaryError):
+                self.verify(case, output, invalid, metadata)
+
+    def test_actual_five_direct_requests_are_required_and_cannot_be_constraints(self):
+        case, output, graph, metadata = intrinsic_fixture()
+        for mutation in ('missing', 'extra', 'constraint', 'wrong-version', 'resolved-adapter', 'unbound-selected'):
+            invalid=copy.deepcopy(graph); edges=invalid['rootDependencies']
+            if mutation=='missing': edges.pop()
+            elif mutation=='extra': edges.append(copy.deepcopy(edges[-1]))
+            elif mutation=='constraint': edges[0]['constraint']=True
+            elif mutation=='wrong-version': edges[-1]['requested']=edges[-1]['requested'].replace('5.5.2','5.5.3')
+            elif mutation=='resolved-adapter': edges[0].update(resolved=True,selected=edges[0]['requested'])
+            else: edges[-1]['selected']='other:foreign:1'
+            with self.subTest(mutation=mutation), self.assertRaises(MODULE.BoundaryError):
+                self.verify(case, output, invalid, metadata)
+
+    def test_java_base_schema_does_not_enable_source_sets_or_change_ordinary_edges(self):
+        text=(ROOT/'examples/dual-resolver-boundary-consumer/gradle/build.gradle.template').read_text()
+        self.assertIn("id 'java-base'", text)
+        for forbidden in ("id 'java'", 'sourceSets', 'isTransitive = false', 'transitive = false', 'dependencySubstitution', 'requireCapability'):
+            self.assertNotIn(forbidden, text)
 
 class MavenDualCauseTest(unittest.TestCase):
     def cases(self):

@@ -30,14 +30,45 @@ dependency graph, actual consumed-file hashes and origin records. A different
 receipt or resolver-relevant metadata cannot be silently substituted.
 
 Gradle must fail natively while resolving the configuration containing both
-ordinary 0.2.0 adapter requests and the selected exact runtime. The captured graph
-must identify both requests and their actual unresolved selectors. Bind a native
-capability conflict to both adapter coordinates and an exact capability published
-by both reviewed modules. A legacy-GAV capability conflict is not relabeled as a
-shared hook-slot conflict. Missing artifacts, incompatible runtime constraints,
-checksum failures or unrelated resolution errors cannot count. The module metadata
-requests and cached metadata bytes must match the receipt. No consumer source is
-compiled and no test runs in these four cases.
+ordinary 0.2.0 adapter requests and three direct anchors requesting the selected
+exact runtime. Retain the actual five root dependency requests, their constraint
+flags and resolved or unresolved destinations, in addition to every selected
+component and unresolved edge. The two adapter edges must remain ordinary,
+transitive declarations. No published dependency or capability may be rewritten.
+
+Require exactly two first-party unresolved edges and both native module rejection
+sections. Each must name its exact counterpart GAV and `runtimeElements` variant,
+and an exact capability published by both reviewed modules. A legacy-GAV conflict
+is not relabeled as a shared hook-slot conflict. Capability-only and capability
+with intrinsic strict-anchor collisions are distinct reported outcomes; a strict
+collision never substitutes for either adapter capability cause.
+
+The ordinary rejected graph can also contain executor/SPI version failures:
+both adapters publish contradictory strict 5.5.2 and 5.5.3 requirements for those
+two modules. Permit only these additional unresolved coordinates and native
+exception chains, with both adapter paths, strict versions, dependency-versus-
+constraint kind and reasons matched to the receipt-pinned `runtimeElements`
+metadata. Every other native contributing path must start at a directly requested
+anchor module and contain only ShardingSphere coordinates at 5.5.2/5.5.3, ending
+at that same executor/SPI module. Its native path can describe intermediate
+selections that are absent from the partially rejected component set. Reject duplicated
+edges, foreign versions/modules, extra causes, missing paths and unbound reasons.
+Retain these intrinsic failures explicitly. A partially rejected graph is not a
+coherent or executable ShardingSphere runtime; normal runtime-coherence evidence
+remains in the separate existing A-24 checks.
+
+Apply only `java-base` to register the standard JVM attribute compatibility rules,
+so dependencies targeting Java 8 remain eligible under Java 17. Do not apply the
+`java` plugin, create source sets, compile sources or run tests. Missing artifacts,
+Guava/variant failures, transport errors, checksum failures and any other unrelated
+resolution cause still fail this verification. Module metadata requests and cached
+bytes must match the separately reviewed receipt.
+
+The first native attempt is preserved as failed: it contains both exact adapter
+capability causes, intrinsic executor/SPI collisions, and unrelated Java-variant
+failures from the prior base-only fixture. Reusing its raw messages in unit tests
+does not reclassify that attempt as passing. A corrected fixture needs new frozen
+fingerprints, review and a new evidence directory before any native rerun.
 
 Maven dual-adapter cases first resolve and retain their actual dependency graph
 without entering the lifecycle. The same generated POM then reaches `validate`

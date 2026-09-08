@@ -127,7 +127,98 @@ def capability_provider(providers):
     return match.group(1)
 
 
-def verify_gradle_dual(case, exit_code, output, graph, published_capabilities):
+def normalize_native_cause(text):
+    return '\n'.join(re.sub(r'^\s*(?:>\s*)?', '', line).rstrip()
+                     for line in text.splitlines() if line.strip())
+
+
+def verify_root_requests(case, graph, selected, unresolved):
+    expected = [coordinate(module) for module in case['order']] + [
+        f'{SS}:{module}:{case["runtime"]}' for module in anchors(case['runtime'])]
+    edges = graph.get('rootDependencies', [])
+    if (len(edges) != 5 or [e.get('requested') for e in edges] != expected
+            or any(e.get('from') != 'root project :' or e.get('constraint') is not False for e in edges)):
+        raise BoundaryError('Actual five ordinary direct requests and their declaration order must match the fixture')
+    for edge in edges:
+        requested = edge['requested']
+        root_failure = [e for e in unresolved if e.get('from') == 'root project :' and e.get('requested') == requested]
+        if edge.get('resolved') is True:
+            if (requested.startswith(GROUP + ':') or root_failure
+                    or edge.get('selected') != requested or requested not in selected):
+                raise BoundaryError('A direct resolved destination is not bound to its actual requested runtime anchor')
+        elif edge.get('resolved') is False:
+            if edge.get('selected') is not None or len(root_failure) != 1:
+                raise BoundaryError('Every unresolved direct request must have exactly one matching actual root edge')
+        else:
+            raise BoundaryError('Root edge resolution state must be an actual JSON Boolean')
+    return expected
+
+
+def verify_intrinsic_strict(node, case, selected, metadata):
+    own = node['requested']
+    fields = own.split(':')
+    modules = ('shardingsphere-infra-executor', 'shardingsphere-infra-spi')
+    if (len(fields) != 3 or fields[0] != SS or fields[1] not in modules or fields[2] not in ADAPTERS
+            or node['attempted'] != own or (node['from'] != 'root project :'
+                and (node['from'] not in selected or not node['from'].startswith(SS + ':')))):
+        raise BoundaryError('Only actual executor/SPI edges at exact5.5.2/5.5.3 may have intrinsic strict collisions')
+    module_coordinate = ':'.join(fields[:2])
+    pins = metadata.get(module_coordinate, [])
+    if (len(pins) != 2 or {p.get('adapter') for p in pins} != {coordinate(m) for m in ADAPTERS.values()}
+            or {p.get('version') for p in pins} != set(ADAPTERS)
+            or any(p.get('kind') != ('Dependency' if fields[1] == modules[0] else 'Constraint')
+                   or not isinstance(p.get('reason'), str) or not p['reason']
+                   or not re.fullmatch(r'[0-9a-f]{64}', p.get('sourceMetadataSha256', ''))
+                   or p['adapter'] != coordinate(ADAPTERS[p['version']]) for p in pins)):
+        raise BoundaryError('Require both contradictory strict edges from the receipt-pinned published runtime metadata')
+    messages = node.get('failureMessages', [])
+    if (len(messages) != 2 or messages[0] != {
+            'exceptionType': 'org.gradle.internal.resolve.ModuleVersionResolveException', 'message': f'Could not resolve {own}.'}
+            or messages[1].get('exceptionType') != 'org.gradle.api.GradleException'
+            or not isinstance(messages[1].get('message'), str)):
+        raise BoundaryError('An intrinsic collision must have only its actual two native exception causes')
+    leaf = messages[1]['message']
+    lines = [line.strip() for line in leaf.splitlines() if line.strip()]
+    header = f"Cannot find a version of '{module_coordinate}' that satisfies the version constraints:"
+    if not lines or lines[0] != header or any(marker in leaf for marker in UNRELATED if marker != 'Cannot find a version'):
+        raise BoundaryError('The intrinsic strict cause names a foreign module or another failure')
+    found = []
+    for line in lines[1:]:
+        path = re.fullmatch(r'(Dependency|Constraint) path: (.+?)(?: because of the following reason: (.+))?', line)
+        if path is None:
+            raise BoundaryError('An unrecognized line appears inside the intrinsic strict failure')
+        kind, description, reason = path.groups()
+        segments = [re.fullmatch(r"'([^']+)'(?: \(([^)]+)\))?", segment) for segment in description.split(' --> ')]
+        if (len(segments) < 2 or any(segment is None for segment in segments)
+                or segments[0].groups() != ('root project :', 'dualAdapterRuntime')):
+            raise BoundaryError('Intrinsic failure paths must start at the actual consumer configuration')
+        coordinates = [segment.group(1) for segment in segments]
+        variants = [segment.group(2) for segment in segments]
+        strict = re.fullmatch(re.escape(module_coordinate) + r':\{strictly (5[.]5[.][23])\}', coordinates[-1])
+        if strict:
+            matching = [pin for pin in pins if pin['adapter'] == coordinates[1] and pin['version'] == strict.group(1)]
+            if (len(segments) != 3 or variants != ['dualAdapterRuntime', 'runtimeElements', None]
+                    or len(matching) != 1 or kind != matching[0]['kind'] or reason != matching[0]['reason']):
+                raise BoundaryError('The strict adapter path, kind, version or reason differs from reviewed module metadata')
+            found.append(matching[0]['adapter'])
+        else:
+            # These are Gradle's retained contributing paths through a partially rejected graph.
+            # They do not establish a coherent or executable runtime.
+            if (kind != 'Dependency' or reason is not None
+                    or any(v not in (None, 'default', 'runtimeElements') for v in variants[1:])
+                    or any(not re.fullmatch(re.escape(SS) + r':shardingsphere-[a-z0-9.-]+:5[.]5[.][23]', c)
+                           for c in coordinates[1:])
+                    or coordinates[1].split(':')[1] not in anchors(case['runtime'])
+                    or coordinates[-1].rsplit(':', 1)[0] != module_coordinate):
+                raise BoundaryError('A contributing strict-failure path is not an actual requested ShardingSphere anchor path')
+    if len(found) != 2 or set(found) != {pin['adapter'] for pin in pins}:
+        raise BoundaryError('Each intrinsic collision must show exactly both published contradictory adapter paths')
+    return {'requested': own, 'from': node['from'], 'module': module_coordinate,
+            'nativeCauseSha256': hashlib.sha256(leaf.encode()).hexdigest(),
+            'publishedStrictRequirements': sorted(pins, key=lambda p: p['adapter'])}
+
+
+def verify_gradle_dual(case, exit_code, output, graph, published_capabilities, *, published_constraints=None):
     require_case(case, 'dual', 'gradle')
     expected = [coordinate(module) for module in case['order']]
     allowed = set(published_capabilities)
@@ -135,75 +226,82 @@ def verify_gradle_dual(case, exit_code, output, graph, published_capabilities):
              f'{GROUP}:routecontract-shardingsphere-5.5:{VERSION}'}
     if not allowed or not allowed <= known:
         raise BoundaryError('Require the exact collision capabilities published by both modules')
-    if (exit_code != 1 or 'BUILD FAILED' not in output or any(x in output for x in UNRELATED)
-            or set(UNRESOLVED.findall(output)) != set(expected)):
-        raise BoundaryError('Native Gradle failure is not exclusively the two requested adapters')
-    if (graph.get('schemaVersion') != 1 or graph.get('tool') != 'gradle'
+    if (exit_code != 1 or 'BUILD FAILED' not in output
+            or any(x in output for x in UNRELATED if x != 'Cannot find a version')):
+        raise BoundaryError('Native Gradle failure contains an unrelated transport, variant, checksum or runtime-policy cause')
+    if (graph.get('schemaVersion') != 2 or graph.get('tool') != 'gradle'
             or graph.get('configuration') != 'dualAdapterRuntime'
             or graph.get('requestedRuntime') != case['runtime']
             or graph.get('routeContractVersion') != VERSION
             or graph.get('declaredAdapters') != expected
-            or sorted(graph.get('declaredRuntimeAnchors', [])) != sorted(
-                f'{SS}:{name}:{case["runtime"]}' for name in anchors(case['runtime']))):
+            or graph.get('declaredRuntimeAnchors') != [f'{SS}:{name}:{case["runtime"]}' for name in anchors(case['runtime'])]):
         raise BoundaryError('Observed Gradle graph does not bind the requested order and runtime')
     unresolved = graph.get('unresolved', [])
-    if (len(unresolved) != 2 or {n.get('requested') for n in unresolved} != set(expected)
-            or {n.get('attempted') for n in unresolved} != set(expected)):
-        raise BoundaryError('The actual unresolved selectors must be exactly both adapters')
+    identities = [(n.get('requested'), n.get('attempted'), n.get('from')) for n in unresolved]
+    if len(set(identities)) != len(identities) or any(a != b for a, b, _ in identities):
+        raise BoundaryError('Unresolved graph contains duplicated edges or changed attempted selectors')
+    selected = [item.get('coordinate', '') for item in graph.get('selectedComponents', [])]
+    if (len(set(selected)) != len(selected)
+            or any(c.startswith(SS + ':') and not re.fullmatch(re.escape(SS) + r':shardingsphere-[a-z0-9.-]+:5[.]5[.][23]', c) for c in selected)
+            or any(c.startswith(GROUP + ':') and c != coordinate('routecontract-core') for c in selected)):
+        raise BoundaryError('The retained partial graph contains a foreign version, duplicate or conflicting first-party selection')
+    root_requests = verify_root_requests(case, graph, selected, unresolved)
+    adapter_nodes = [n for n in unresolved if n.get('requested', '').startswith(GROUP + ':')]
+    if (len(adapter_nodes) != 2 or {n.get('requested') for n in adapter_nodes} != set(expected)
+            or any(n.get('from') != 'root project :' for n in adapter_nodes)):
+        raise BoundaryError('The actual first-party unresolved selectors must be exactly both direct adapters')
+    intrinsic_nodes = [n for n in unresolved if n not in adapter_nodes]
+    intrinsic = [verify_intrinsic_strict(node, case, selected, published_constraints or {}) for node in intrinsic_nodes]
+    native_unresolved = set(UNRESOLVED.findall(output))
+    if not set(expected) <= native_unresolved or not native_unresolved <= {n['requested'] for n in unresolved}:
+        raise BoundaryError('Native Gradle unresolved selectors differ from the actual retained rejected graph')
+    strict_headers = re.findall(r"Cannot find a version of '([^']+)' that satisfies the version constraints:", output)
+    if (output.count('Cannot find a version') != len(strict_headers)
+            or set(strict_headers) != {item['module'] for item in intrinsic}):
+        raise BoundaryError('Native output contains a missing or unbound strict-constraint failure section')
+    normalized = normalize_native_cause(output)
+    for node in intrinsic_nodes:
+        if normalize_native_cause(node['failureMessages'][1]['message']) not in normalized:
+            raise BoundaryError('Actual intrinsic exception text is not retained in native Gradle output')
     observed = set()
-    for node in unresolved:
-        if node.get('requested') != node.get('attempted'):
-            raise BoundaryError('Requested and attempted selectors differ')
-        messages = node.get('failureMessages', [])
-        if not messages or any(not isinstance(m, dict) or not isinstance(m.get('message'), str) for m in messages):
-            raise BoundaryError('Retain the actual native exception chain')
-        causal = '\n'.join(m['message'] for m in messages)
+    for node in adapter_nodes:
         own = node['requested']
         other = next(value for value in expected if value != own)
-        for message in messages:
-            if not ((message.get('exceptionType') == 'org.gradle.internal.resolve.ModuleVersionResolveException'
-                     and message['message'] == f'Could not resolve {own}.')
-                    or (message.get('exceptionType') == 'org.gradle.api.GradleException'
-                        and message['message'].startswith(f"Module '{own.rsplit(':', 1)[0]}' has been rejected:")
-                        and CAPABILITY.search(message['message']))):
-                raise BoundaryError('An unrelated native exception appears in the capability cause chain')
+        messages = node.get('failureMessages', [])
+        if (len(messages) != 2 or messages[0] != {
+                'exceptionType': 'org.gradle.internal.resolve.ModuleVersionResolveException', 'message': f'Could not resolve {own}.'}
+                or messages[1].get('exceptionType') != 'org.gradle.api.GradleException'
+                or not isinstance(messages[1].get('message'), str)):
+            raise BoundaryError('An unrelated native exception appears in the capability cause chain')
+        causal = messages[1]['message']
         conflicts = CAPABILITY.findall(causal)
-        if (set(UNRESOLVED.findall(causal)) != {own} or any(x in causal for x in UNRELATED)
-                or not conflicts or any(cap not in allowed or capability_provider(providers) != other
-                                        for cap, providers in conflicts)
-                or f"Module '{own.rsplit(':', 1)[0]}' has been rejected" not in causal):
-            raise BoundaryError('Each native cause must bind its own adapter to the other published capability')
+        leaf_lines = [line.strip() for line in causal.splitlines() if line.strip()]
+        capability_lines = [re.fullmatch(r"Cannot select module with conflict on capability '([^']+)' "
+                                          r"also provided by \[([^\]]+)\]", line) for line in leaf_lines[1:]]
+        if (not causal.startswith(f"Module '{own.rsplit(':', 1)[0]}' has been rejected:")
+                or any(x in causal for x in UNRELATED) or not conflicts
+                or not capability_lines or any(line is None for line in capability_lines)
+                or any(cap not in allowed or capability_provider(providers) != other for cap, providers in conflicts)):
+            raise BoundaryError('Each native capability cause must bind its own adapter to the exact opposite provider')
         observed.update(cap for cap, _providers in conflicts)
     native_conflicts = CAPABILITY.findall(output)
     if not native_conflicts or {cap for cap, _providers in native_conflicts} != observed:
         raise BoundaryError('Structured and native capability identities differ')
-    for cap, providers in native_conflicts:
-        if cap not in allowed or capability_provider(providers) not in expected:
-            raise BoundaryError('Native capability section refers to an unrelated module')
     rejection_headers = list(re.finditer(r"Module '([^']+)' has been rejected:", output))
     if len(rejection_headers) != 2 or {m.group(1) for m in rejection_headers} != {c.rsplit(':', 1)[0] for c in expected}:
-        raise BoundaryError('Native Gradle output must retain exactly both actual module rejection sections')
+        raise BoundaryError('Native Gradle output must retain exactly both actual adapter rejection sections')
     for index, match in enumerate(rejection_headers):
         end = rejection_headers[index + 1].start() if index + 1 < len(rejection_headers) else len(output)
-        section = output[match.end():end]
-        own = match.group(1) + ':' + VERSION
-        other = next(value for value in expected if value != own)
-        conflicts = CAPABILITY.findall(section)
-        if not conflicts or any(cap not in allowed or capability_provider(providers) != other
-                                for cap, providers in conflicts):
+        other = next(value for value in expected if value != match.group(1) + ':' + VERSION)
+        conflicts = CAPABILITY.findall(output[match.end():end])
+        if not conflicts or any(cap not in allowed or capability_provider(providers) != other for cap, providers in conflicts):
             raise BoundaryError('Each native module rejection must name exactly its opposite adapter provider')
-    selected_coordinates = [item.get('coordinate', '') for item in graph.get('selectedComponents', [])]
-    if (len(set(selected_coordinates)) != len(selected_coordinates)
-            or not set(graph['declaredRuntimeAnchors']) <= set(selected_coordinates)):
-        raise BoundaryError('All three exact selected runtime anchors must be retained once')
-    for item in graph.get('selectedComponents', []):
-        selected = item.get('coordinate', '')
-        if selected.startswith(SS + ':') and selected.split(':')[-1] != case['runtime']:
-            raise BoundaryError('An unrelated selected ShardingSphere version appeared')
-        if selected.startswith(GROUP + ':') and selected != coordinate('routecontract-core'):
-            raise BoundaryError('A conflicting or foreign first-party module was selected')
-    return {'result': 'NATIVE_CAPABILITY_REJECTED', 'capabilities': sorted(observed),
-            'declaredAdapters': expected, 'unresolvedSelectors': sorted(expected)}
+    return {'result': 'NATIVE_CAPABILITY_AND_INTRINSIC_STRICT_REJECTED' if intrinsic else 'NATIVE_CAPABILITY_REJECTED',
+            'capabilities': sorted(observed), 'declaredAdapters': expected,
+            'capabilityUnresolvedSelectors': sorted(expected),
+            'unresolvedSelectors': sorted({node['requested'] for node in unresolved}),
+            'actualRootRequests': root_requests, 'intrinsicStrictCollisions': intrinsic,
+            'coherentResolvedRuntimeClaimed': False}
 
 
 def graph_coordinates(tree, case):
@@ -484,6 +582,28 @@ def published_capabilities(repository, receipt):
     return sorted(allowed)
 
 
+def published_strict_requirements(repository, receipt):
+    result = {f'{SS}:shardingsphere-infra-executor': [], f'{SS}:shardingsphere-infra-spi': []}
+    for runtime, adapter in ADAPTERS.items():
+        pin = next(item for item in receipt['artifacts'] if item['module'] == adapter and item['name'].endswith('.module'))
+        path = regular(repository / pin['relativePath'])
+        if sha(path) != pin['sha256']:
+            raise BoundaryError('Intrinsic strict requirements must come from unchanged receipt-pinned module bytes')
+        metadata = json.loads(path.read_text())
+        variants = [v for v in metadata['variants'] if v['name'] == 'runtimeElements']
+        if len(variants) != 1:
+            raise BoundaryError('Require one reviewed runtimeElements variant for intrinsic collisions')
+        for module, section, kind in (('shardingsphere-infra-executor', 'dependencies', 'Dependency'),
+                                      ('shardingsphere-infra-spi', 'dependencyConstraints', 'Constraint')):
+            entries = [item for item in variants[0].get(section, []) if item.get('group') == SS and item.get('module') == module]
+            if (len(entries) != 1 or entries[0].get('version') != {'requires': runtime, 'strictly': runtime}
+                    or not isinstance(entries[0].get('reason'), str) or not entries[0]['reason']):
+                raise BoundaryError('Reviewed metadata does not prove the exact intrinsic executor/SPI strict requirement')
+            result[f'{SS}:{module}'].append({'adapter': coordinate(adapter), 'version': runtime,
+                'kind': kind, 'reason': entries[0]['reason'], 'sourceMetadataSha256': pin['sha256']})
+    return result
+
+
 def cached_gradle_metadata(cache, receipt, case):
     a24.inventory(cache)
     result = []
@@ -642,7 +762,8 @@ def execute_case(case, directory, repository, receipt, java_home, mvn, gradle_zi
             output, process = native(command, consumer, environment, directory, 'native-capability-rejection', expected_exit=1)
             graph = json.loads(regular(graph_file).read_text())
             proof = verify_gradle_dual(case, process['exitCode'], output, graph,
-                                       published_capabilities(repository, receipt))
+                                       published_capabilities(repository, receipt),
+                                       published_constraints=published_strict_requirements(repository, receipt))
             consumed = cached_gradle_metadata(cache, receipt, case)
             if (consumer / 'build/classes').exists() or (consumer / 'build/test-results').exists():
                 raise BoundaryError('Native Gradle conflict fixtures may not compile or execute tests')

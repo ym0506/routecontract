@@ -1,6 +1,7 @@
 import groovy.json.JsonOutput
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 import org.gradle.api.artifacts.result.UnresolvedDependencyResult
+import org.gradle.api.artifacts.result.ResolvedDependencyResult
 import org.gradle.api.attributes.Bundling
 import org.gradle.api.attributes.Category
 import org.gradle.api.attributes.LibraryElements
@@ -9,7 +10,7 @@ import org.gradle.api.attributes.java.TargetJvmVersion
 import org.gradle.internal.exceptions.MultiCauseException
 
 plugins {
-    id 'base'
+    id 'java-base'
 }
 
 def routeGroup = 'io.github.ym0506.routecontract'
@@ -105,6 +106,11 @@ tasks.register('resolveDualAdapters') {
     description = 'Retain the actual unresolved graph, then require native dependency resolution'
     doLast {
         def graph = dualRuntime.incoming.resolutionResult
+        def rootDependencies = graph.root.dependencies.collect {
+            [requested: it.requested.displayName, from: it.from.id.displayName,
+             constraint: it.constraint, resolved: it instanceof ResolvedDependencyResult,
+             selected: it instanceof ResolvedDependencyResult ? it.selected.id.displayName : null]
+        }
         def selected = graph.allComponents.findAll { it.id instanceof ModuleComponentIdentifier }.collect {
             [coordinate: it.id.displayName, selectionReasons: it.selectionReason.descriptions.collect { reason ->
                 [cause: reason.cause.toString(), description: reason.description]
@@ -117,12 +123,13 @@ tasks.register('resolveDualAdapters') {
             [left.requested, left.attempted, left.from].join('\n') <=>
                     [right.requested, right.attempted, right.from].join('\n')
         }
-        def report = [schemaVersion: 1, tool: 'gradle', configuration: dualRuntime.name,
+        def report = [schemaVersion: 2, tool: 'gradle', configuration: dualRuntime.name,
                       requestedRuntime: requestedRuntime, routeContractVersion: routeVersion,
                       declaredAdapters: declaredAdapters.collect { "${routeGroup}:${it}:${routeVersion}".toString() },
                       declaredRuntimeAnchors: runtimeAnchors.collect {
                           "org.apache.shardingsphere:${it}:${requestedRuntime}".toString()
-                      }, selectedComponents: selected, unresolved: unresolved]
+                      }, rootDependencies: rootDependencies,
+                      selectedComponents: selected, unresolved: unresolved]
         file('negative-graph.json').setText(JsonOutput.prettyPrint(JsonOutput.toJson(report)) + '\n', 'UTF-8')
         // This is deliberately uncaught: native Gradle failure, not a fixture-written rejection, is evidence.
         dualRuntime.files
