@@ -1,7 +1,7 @@
 # CI review reports
 
 Available in v0.1.3 through [GitHub Release assets](https://github.com/ym0506/routecontract/releases/tag/v0.1.3)
-and a [Maven Central test dependency](../README.en.md#install-013); see the
+and a [Maven Central test dependency](../README.md#install-013); see the
 [Central verification record](evidence/release-0.1.3-central.md).
 The v0.1.2 local installer does not include these APIs.
 
@@ -56,11 +56,14 @@ To see a passing unchanged-input comparison, run this from the cloned directory:
 This command exits successfully and writes `MATCH`. It compares the same committed
 fixture on both sides; your own project's baseline still needs its normal review.
 
-This path uses the immutable v0.1.3 source tag. The [v0.1.2 MySQL Quick Start](../README.en.md#quick-start)
+This path uses the immutable v0.1.3 source tag. The [v0.1.2 MySQL Quick Start](reference-guide.md#quick-start)
 remains a separate database demonstration. The [release verification record](evidence/release-0.1.3-github.md)
 identifies the published binaries and the tagged CI run.
 
 ## Use in an application test
+
+The [first-project guide](first-project.md) connects the published dependency, one MySQL test,
+candidate capture, baseline review and a failing CI comparison with Maven or Gradle.
 
 With the v0.1.3 library on the test classpath, call
 `ManifestReviewReport.compare(approved, candidate)`, then `toMarkdown()` or `toJson()`.

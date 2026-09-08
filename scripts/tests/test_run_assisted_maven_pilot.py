@@ -1086,8 +1086,8 @@ class AssistedMavenPilotWrapperTest(unittest.TestCase):
             "setsid`/`setpgid",
         ):
             self.assertIn(required, fixture_readme)
-        for readme in ("README.md", "README.en.md"):
-            text = (REPOSITORY_ROOT / readme).read_text(encoding="utf-8")
+        for guide in ("docs/reference-guide.ko.md", "docs/reference-guide.md"):
+            text = (REPOSITORY_ROOT / guide).read_text(encoding="utf-8")
             self.assertIn(
                 "examples/maven-pilot/assisted-pilot.example.json", text
             )

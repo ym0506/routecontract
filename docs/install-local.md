@@ -1,7 +1,7 @@
 # Install v0.1.2 in an existing test project
 
 This historical v0.1.2 path uses a small local Maven repository. For current installation,
-use the [v0.1.3 Maven Central test dependency](../README.en.md#install-013), backed by the
+use the [v0.1.3 Maven Central test dependency](../README.md#install-013), backed by the
 [public verification record](evidence/release-0.1.3-central.md).
 The same repository works with Gradle Groovy, Gradle Kotlin DSL and Maven. This
 installs the released **v0.1.2** library. The newer **v0.1.3** GitHub release adds
@@ -82,7 +82,7 @@ operation and review its expected count. Import `RouteContract`, `RouteSnapshot`
 and `RouteAssertions` from `io.github.ym0506.routecontract`.
 
 For a stored baseline and comparison on subsequent changes, continue with
-[the manifest example](../README.en.md#approved-manifests-and-structural-manifest-diffs)
+[the manifest example](reference-guide.md#approved-manifests-and-structural-manifest-diffs)
 or the [integration reference](first-integration.md). Baseline review remains
 explicit; installing the library does not approve an observed execution shape.
 Framework-specific test classloaders may need their own dependency visibility configuration;

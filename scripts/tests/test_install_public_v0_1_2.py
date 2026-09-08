@@ -176,8 +176,8 @@ class PublicV012InstallerTest(unittest.TestCase):
         )
 
         for relative_path in (
-            "README.md",
-            "README.en.md",
+            "docs/reference-guide.ko.md",
+            "docs/reference-guide.md",
             "docs/first-integration.md",
         ):
             with self.subTest(relative_path=relative_path):

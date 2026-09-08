@@ -31,7 +31,7 @@ ShardingSphere-JDBC 5.5.2를 사용하고 있습니다.
    raw SQL, bind values, connection details, full logs or screenshots in public feedback.
 2. **Try the demo if useful.** The [start page](start-here.md) offers a video, checked-in comparison
    and a real-MySQL Quick Start. A demo run helps explain the tool; it is not a project integration.
-3. **Use one existing test.** Follow the [integration guide](first-integration.md) in a repository
+3. **Use one existing test.** Follow the [v0.1.3 first-project guide](first-project.md) ([한국어](first-project.ko.md)) in a repository
    you are authorized to modify. Keep its business assertion. The supported released boundary is
    Java 17, exact ShardingSphere-JDBC 5.5.3 and synchronous non-batch `PreparedStatement` operations.
    A valid first candidate establishes a pilot; the target's authorized owner or maintainer must
