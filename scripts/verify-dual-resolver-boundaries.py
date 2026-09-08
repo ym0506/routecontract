@@ -328,7 +328,7 @@ def graph_coordinates(tree, case):
     return sorted(coordinates)
 
 
-def verify_maven_dual(case, exit_code, output, tree):
+def verify_maven_dual(case, exit_code, output, tree, *, published_opposite_executor=None):
     require_case(case, 'dual', 'maven')
     selected = graph_coordinates(tree, case)
     banned = coordinate(ADAPTERS[opposite(case['runtime'])])
@@ -341,16 +341,66 @@ def verify_maven_dual(case, exit_code, output, tree):
     if (exit_code != 1 or 'BUILD FAILURE' not in output
             or 'org.apache.maven.plugins:maven-enforcer-plugin:3.6.3:enforce (reject-opposite-adapter)' not in output
             or rules != ['org.apache.maven.enforcer.rules.dependency.BannedDependencies']
-            or len(banned_lines) != 1 or native not in banned_lines[0]
-            or section is None or banned_lines[0] not in section.group(1)
+            or len(banned_lines) not in (1, 2) or section is None
             or any(marker in output for marker in UNRELATED)
             or any(marker in output for marker in ('Could not resolve ', 'Could not transfer ',
                        'Failed to collect dependencies', '--- compiler:', '--- surefire:'))):
-        raise BoundaryError('Require the unique native BannedDependencies cause naming only the opposite adapter')
-    if re.findall(r'[A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+:jar:[A-Za-z0-9_.+-]+', banned_lines[0]) != [native]:
-        raise BoundaryError('Banned dependency line contains another coordinate')
-    return {'result': 'NATIVE_ENFORCER_REJECTED', 'bannedCoordinate': banned,
-            'selectedCoordinates': selected}
+        raise BoundaryError('Require the unique native BannedDependencies rule with the opposite adapter primary cause')
+    if not re.fullmatch(r'\[ERROR\] {4}' + re.escape(native)
+                        + r'(?::compile)? <--- banned via the exclude/include list', banned_lines[0]):
+        raise BoundaryError('The primary banned node must be exactly the opposite adapter at the root dependency level')
+    intrinsic = []
+    if len(banned_lines) == 2:
+        adapter = ADAPTERS[opposite(case['runtime'])]
+        expected = {'parentCoordinate': banned,
+                    'coordinate': f'{SS}:shardingsphere-infra-executor:{opposite(case["runtime"])}',
+                    'scope': 'runtime',
+                    'sourcePomRelativePath': f'io/github/ym0506/routecontract/{adapter}/{VERSION}/{adapter}-{VERSION}.pom'}
+        if (not isinstance(published_opposite_executor, dict)
+                or set(published_opposite_executor) != set(expected) | {'sourcePomSha256'}
+                or any(published_opposite_executor.get(key) != value for key, value in expected.items())
+                or not re.fullmatch(r'[0-9a-f]{64}', published_opposite_executor.get('sourcePomSha256', ''))):
+            raise BoundaryError('Additional banned executor requires the exact receipt-verified opposite adapter POM dependency')
+        child = expected['coordinate'].rsplit(':', 1)
+        expected_line = f'[ERROR]       {child[0]}:jar:{child[1]} <--- banned via the exclude/include list'
+        if banned_lines[1] != expected_line:
+            raise BoundaryError('Only the bound direct executor child at its exact native subtree depth is permitted')
+        intrinsic.append(dict(published_opposite_executor))
+    root_line = f'[ERROR] {tree["groupId"]}:{tree["artifactId"]}:jar:{tree["version"]}'
+    section_lines = [line.rstrip() for line in section.group(1).splitlines() if line.strip() != '[ERROR]']
+    if section_lines != [root_line, *banned_lines]:
+        raise BoundaryError('Native banned nodes must form only the exact project/opposite-adapter/optional-executor path')
+    return {'result': 'NATIVE_ENFORCER_WITH_INTRINSIC_EXECUTOR_REJECTED' if intrinsic else 'NATIVE_ENFORCER_REJECTED',
+            'bannedCoordinate': banned, 'selectedCoordinates': selected, 'intrinsicBannedChildren': intrinsic,
+            'nativeFailureSectionSha256': hashlib.sha256(section.group(0).encode()).hexdigest(),
+            'rejectedSubtreeRepresentsResolvedRuntime': False}
+
+
+def published_maven_executor_dependency(repository, receipt, case):
+    require_case(case, 'dual', 'maven')
+    adapter = ADAPTERS[opposite(case['runtime'])]
+    relative = f'io/github/ym0506/routecontract/{adapter}/{VERSION}/{adapter}-{VERSION}.pom'
+    pins = [item for item in receipt['artifacts'] if item['relativePath'] == relative]
+    payload = regular(repository / relative).read_bytes()
+    if len(pins) != 1 or hashlib.sha256(payload).hexdigest() != pins[0]['sha256']:
+        raise BoundaryError('Intrinsic Maven dependency must come from the receipt-verified opposite adapter POM')
+    root = ET.fromstring(payload)
+    ns = {'m': 'http://maven.apache.org/POM/4.0.0'}
+    if [root.findtext('m:' + key, namespaces=ns) for key in ('groupId', 'artifactId', 'version')] != [GROUP, adapter, VERSION]:
+        raise BoundaryError('Reviewed POM does not identify the exact opposite adapter')
+    dependencies = [dep for dep in root.findall('m:dependencies/m:dependency', ns)
+                    if dep.findtext('m:groupId', namespaces=ns) == SS
+                    and dep.findtext('m:artifactId', namespaces=ns) == 'shardingsphere-infra-executor']
+    if (len(dependencies) != 1
+            or dependencies[0].findtext('m:version', namespaces=ns) != opposite(case['runtime'])
+            or dependencies[0].findtext('m:scope', namespaces=ns) != 'runtime'
+            or dependencies[0].findtext('m:type', default='jar', namespaces=ns) != 'jar'
+            or dependencies[0].find('m:classifier', ns) is not None
+            or dependencies[0].findtext('m:optional', default='false', namespaces=ns) != 'false'):
+        raise BoundaryError('Reviewed POM must declare one exact ordinary runtime executor dependency')
+    return {'parentCoordinate': coordinate(adapter),
+            'coordinate': f'{SS}:shardingsphere-infra-executor:{opposite(case["runtime"])}',
+            'scope': 'runtime', 'sourcePomRelativePath': relative, 'sourcePomSha256': pins[0]['sha256']}
 
 
 def anchor_classes(runtime):
@@ -812,7 +862,8 @@ def execute_case(case, directory, repository, receipt, java_home, mvn, gradle_zi
             if case['kind'] == 'dual':
                 output, process = native([*command, 'validate'], consumer, environment, directory,
                                           'native-enforcer-rejection', expected_exit=1)
-                proof = verify_maven_dual(case, process['exitCode'], output, tree)
+                proof = verify_maven_dual(case, process['exitCode'], output, tree,
+                    published_opposite_executor=published_maven_executor_dependency(repository, receipt, case))
                 consumed = cached_maven_payloads(cache, receipt, case)
                 if (consumer / 'target/classes').exists() or (consumer / 'target/test-classes').exists():
                     raise BoundaryError('Maven dual-adapter fixtures may not compile or execute tests')

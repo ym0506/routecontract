@@ -578,6 +578,94 @@ class MavenDualCauseTest(unittest.TestCase):
         return [case for case in MODULE.fixed_plan()
                 if case['tool'] == 'maven' and case['kind'] == 'dual']
 
+    def intrinsic_fixture(self, case):
+        output, tree, primary = maven_fixture(case)
+        output = output.replace(primary + ':compile', primary)
+        child = f'{SS_GROUP}:shardingsphere-infra-executor:jar:{opposite(case["runtime"])}'
+        primary_line = f'[ERROR]    {primary} <--- banned via the exclude/include list\n'
+        child_line = f'[ERROR]       {child} <--- banned via the exclude/include list\n'
+        output = output.replace(primary_line, primary_line + child_line).replace('[ERROR]\n[ERROR] ->', '[ERROR] ->')
+        adapter = ADAPTERS[opposite(case['runtime'])]
+        binding = {'parentCoordinate': f'{GROUP}:{adapter}:0.2.0',
+                   'coordinate': child.replace(':jar:', ':'), 'scope': 'runtime',
+                   'sourcePomRelativePath': f'io/github/ym0506/routecontract/{adapter}/0.2.0/{adapter}-0.2.0.pom',
+                   'sourcePomSha256': 'a' * 64}
+        return output, tree, binding, primary_line, child_line
+
+    def test_retained_native_child_is_distinct_from_the_coherent_selected_graph(self):
+        for case in self.cases():
+            output, tree, binding, _, _ = self.intrinsic_fixture(case)
+            if case['id'] == 'maven-5.5.2-selected-first':
+                section = output[output.index('[ERROR] Rule 1:'):output.index('[ERROR] -> [Help 1]')]
+                # Exact four-line failure section from the retained native 3.6.3 output.
+                self.assertEqual('e3e001c2f2f67bd1c8327c68b46652ba21620347a5aa0cea90cd4ed719f0d9b3',
+                                 hashlib.sha256(section.encode()).hexdigest())
+            proof = MODULE.verify_maven_dual(case, 1, output, tree, published_opposite_executor=binding)
+            self.assertEqual('NATIVE_ENFORCER_WITH_INTRINSIC_EXECUTOR_REJECTED', proof['result'])
+            self.assertEqual([binding], proof['intrinsicBannedChildren'])
+            self.assertNotIn(binding['coordinate'], proof['selectedCoordinates'])
+            self.assertFalse(proof['rejectedSubtreeRepresentsResolvedRuntime'])
+
+    def test_intrinsic_child_requires_exact_bound_parent_version_scope_and_pom_identity(self):
+        case = self.cases()[0]
+        output, tree, binding, _, _ = self.intrinsic_fixture(case)
+        invalids = [None, {}]
+        for field, value in (('parentCoordinate', f'{GROUP}:{case["adapter"]}:0.2.0'),
+                             ('coordinate', f'{SS_GROUP}:shardingsphere-infra-executor:{case["runtime"]}'),
+                             ('scope', 'compile'), ('sourcePomRelativePath', 'other.pom'), ('sourcePomSha256', 'invalid')):
+            invalid = dict(binding); invalid[field] = value; invalids.append(invalid)
+        for invalid in invalids:
+            with self.subTest(binding=invalid), self.assertRaises(MODULE.BoundaryError):
+                MODULE.verify_maven_dual(case, 1, output, tree, published_opposite_executor=invalid)
+
+    def test_extra_or_unrelated_native_children_and_missing_primary_are_rejected(self):
+        case = self.cases()[0]
+        output, tree, binding, parent, child = self.intrinsic_fixture(case)
+        invalids = [output.replace(parent, ''), output.replace(child, child + child),
+                    output.replace(child, child.replace('       ', '    ')),
+                    output.replace(child, child.replace('5.5.3', '5.5.2')),
+                    output.replace(child, child.replace('infra-executor', 'infra-spi')),
+                    output.replace(child, child.replace(SS_GROUP, 'unrelated.group')),
+                    output.replace(child, child.replace(':jar:5.5.3', ':jar:5.5.3:compile')),
+                    output.replace(child, child + '[ERROR]       other:library:jar:1 <--- banned via the exclude/include list\n'),
+                    output.replace(child, '[ERROR]       other:unbanned-parent:jar:1\n' + child),
+                    output + '[ERROR] Rule 2: other.Rule failed with message:\n']
+        for invalid in invalids:
+            with self.subTest(output=invalid), self.assertRaises(MODULE.BoundaryError):
+                MODULE.verify_maven_dual(case, 1, invalid, tree, published_opposite_executor=binding)
+        mixed = copy.deepcopy(tree); mixed['children'][2]['version'] = opposite(case['runtime'])
+        with self.assertRaises(MODULE.BoundaryError):
+            MODULE.verify_maven_dual(case, 1, output, mixed, published_opposite_executor=binding)
+
+    def test_published_executor_binding_requires_receipt_bytes_and_exact_runtime_dependency(self):
+        case = self.cases()[0]
+        _, _, binding, _, _ = self.intrinsic_fixture(case)
+        adapter = ADAPTERS[opposite(case['runtime'])]
+        xml = ('<project xmlns="http://maven.apache.org/POM/4.0.0"><groupId>' + GROUP + '</groupId>'
+               '<artifactId>' + adapter + '</artifactId><version>0.2.0</version><dependencies>'
+               '<dependency><groupId>' + SS_GROUP + '</groupId><artifactId>shardingsphere-infra-executor</artifactId>'
+               '<version>5.5.3</version><scope>runtime</scope></dependency></dependencies></project>')
+        with tempfile.TemporaryDirectory(prefix='routecontract-dual-pom-unit-') as temporary:
+            repository = Path(temporary).resolve()
+            pom = repository / binding['sourcePomRelativePath']; pom.parent.mkdir(parents=True)
+            def receipt(text):
+                pom.write_text(text)
+                return {'artifacts': [{'module': adapter, 'name': pom.name,
+                                      'relativePath': binding['sourcePomRelativePath'],
+                                      'sha256': hashlib.sha256(pom.read_bytes()).hexdigest()}]}
+            pin = receipt(xml)
+            expected = dict(binding, sourcePomSha256=pin['artifacts'][0]['sha256'])
+            self.assertEqual(expected, MODULE.published_maven_executor_dependency(repository, pin, case))
+            pom.write_text(xml + '\n')
+            with self.assertRaises(MODULE.BoundaryError):
+                MODULE.published_maven_executor_dependency(repository, pin, case)
+            for invalid in (xml.replace('5.5.3</version>', '5.5.2</version>'),
+                            xml.replace('<scope>runtime</scope>', '<scope>compile</scope>'),
+                            xml.replace('infra-executor', 'infra-spi'),
+                            xml.replace('</dependencies>', xml[xml.index('<dependency>'):xml.index('</dependencies>')] + '</dependencies>')):
+                with self.subTest(pom=invalid), self.assertRaises(MODULE.BoundaryError):
+                    MODULE.published_maven_executor_dependency(repository, receipt(invalid), case)
+
     def test_each_order_and_runtime_retains_exact_banned_adapter_and_selected_graph(self):
         for case in self.cases():
             with self.subTest(case=case['id']):

@@ -5,8 +5,10 @@ their raw evidence has been audited. The third native attempt then stopped in
 the first Maven download because the disposable repository omitted checksum
 sidecars. After that correction, the first Maven download succeeded, but a shared
 `outputFile` caused `dependency:resolve` to overwrite the JSON written by
-`dependency:tree`. No Maven boundary case has completed; all six remain pending
-the reviewed command separation. Earlier failed attempts remain failed. Existing
+`dependency:tree`. With separate commands, graph and artifact resolution succeeded,
+but the first Enforcer result also printed the opposite adapter's declared executor
+child, exceeding the prior one-line parser. No Maven boundary case has completed;
+all six remain pending the reviewed subtree validation. Earlier failed attempts remain failed. Existing
 audited A-24 anchor and non-anchor controls remain separate evidence; positive
 MySQL cases are not repeated here.
 
@@ -93,6 +95,17 @@ opposite adapter. Both ordinary adapter declarations and their order, both resol
 adapter JARs, transitive core, and coherent exact ShardingSphere anchors must be
 verified. Retain the raw rejection and selected graph; a summary label alone is
 insufficient. No consumer compilation or test execution is allowed.
+
+The native `BannedDependencies` section must contain the exact opposite adapter
+as its primary banned node. It may additionally print that adapter's one directly
+declared `shardingsphere-infra-executor` child at the opposite version. Accept that
+child only with the exact native parent/child indentation and an independently
+receipt-verified opposite adapter POM proving its GAV and `runtime` scope. Record
+the POM hash and native section hash, and distinguish primary-only rejection from
+rejection with this intrinsic child. Require the same coherent selected graph and
+actual receipt-pinned JARs separately: a printed rejected subtree does not identify
+the resolved runtime. Missing primary causes, unrelated or duplicate children,
+wrong versions, any other failed rule and incoherent graphs remain failures.
 
 The two runtime-guard controls use a separate POM intentionally containing no
 Enforcer execution. Maven must actually compile a fixture against the current
