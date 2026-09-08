@@ -144,6 +144,112 @@ jobs:
             --results-dir examples/mysql-5.5.2/build/test-results/test \
             --output build/ci-evidence/test-summary.txt
 
+      - name: Select stable coordinated CI preparation
+        id: coordinated_ci_version
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          import re
+
+          versions = re.findall(r"^version = '([^'\n]+)'$", Path('build.gradle').read_text(), re.MULTILINE)
+          if len(versions) != 1:
+              raise SystemExit('Expected one literal source version for CI preparation dispatch')
+          version = versions[0]
+          enabled = re.fullmatch(r'0\.2\.(0|[1-9][0-9]*)', version) is not None
+          with Path(os.environ['GITHUB_OUTPUT']).open('a') as output:
+              output.write('enabled=' + str(enabled).lower() + '\n')
+              if enabled:
+                  output.write('version=' + version + '\n')
+          PY
+
+      - name: Scan exact source for coordinated CI preparation
+        if: steps.coordinated_ci_version.outputs.enabled == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse --verify HEAD)" = "${GITHUB_SHA}"
+          test -z "$(git status --porcelain=v1 --untracked-files=all --ignore-submodules=none)"
+          ./scripts/run-final-supply-chain-scan.sh --revision "${GITHUB_SHA}"
+
+      - name: Collect and verify coordinated unsigned CI preparation
+        if: steps.coordinated_ci_version.outputs.enabled == 'true'
+        id: coordinated_ci_candidate
+        shell: bash
+        env:
+          COORDINATED_CI_VERSION: ${{ steps.coordinated_ci_version.outputs.version }}
+        run: |
+          set -euo pipefail
+          staging_root="${RUNNER_TEMP}/routecontract-coordinated-ci-staging"
+          test ! -e "${staging_root}"
+          test ! -L "${staging_root}"
+          mkdir -m 700 "${staging_root}"
+          unsigned_repository="${staging_root}/repository"
+          test ! -e "${unsigned_repository}"
+          test ! -L "${unsigned_repository}"
+          ./gradlew --no-daemon --no-build-cache --no-configuration-cache publishRouteContractCentralStaging \
+            -ProutecontractCentralSigning=false \
+            -ProutecontractCentralStagingDirectory="${unsigned_repository}"
+          python3 scripts/prepare-coordinated-release-evidence.py collect \
+            --repository "${unsigned_repository}" --source-root "$PWD" \
+            --version "${COORDINATED_CI_VERSION}" --revision "${GITHUB_SHA}" \
+            --java-home "${JAVA_HOME}" --output "$PWD/build/coordinated-ci-preparation"
+          python3 scripts/prepare-coordinated-release-evidence.py verify \
+            --source-root "$PWD" --version "${COORDINATED_CI_VERSION}" \
+            --revision "${GITHUB_SHA}" --java-home "${JAVA_HOME}" \
+            --output "$PWD/build/coordinated-ci-preparation"
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          manifest = Path('build/coordinated-ci-preparation/candidate-payloads.json')
+          payload = manifest.read_bytes()
+          candidate = json.loads(payload)
+          if candidate['sourceRevision'] != os.environ['GITHUB_SHA']:
+              raise SystemExit('CI context must match the verified candidate revision')
+          event_name = os.environ['GITHUB_EVENT_NAME']
+          is_pull_request = event_name == 'pull_request'
+          event = json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_text()) if is_pull_request else {}
+          context = {
+              'formatVersion': 1,
+              'kind': 'routecontract-ci-preparation-context',
+              'eventName': event_name,
+              'testedRevision': candidate['sourceRevision'],
+              'sourceTree': candidate['sourceTree'],
+              'testedRevisionRole': 'pull-request-merge' if is_pull_request else 'checked-out-commit',
+              'pullRequestHeadRevision': event['pull_request']['head']['sha'] if is_pull_request else None,
+              'runId': os.environ['GITHUB_RUN_ID'],
+              'runAttempt': os.environ['GITHUB_RUN_ATTEMPT'],
+              'candidateArtifactName': 'routecontract-coordinated-ci-preparation-' + candidate['sourceRevision'],
+              'candidateManifestSha256': hashlib.sha256(payload).hexdigest(),
+              'reviewed': candidate['reviewed'],
+              'signed': candidate['signed'],
+              'published': candidate['published'],
+              'publicationHeld': candidate['publicationHeld'],
+              'humanReview': None,
+              'boundary': 'Unsigned CI preparation for the checked-out commit; a PR merge SHA is not a release tag or approval.',
+          }
+          output = Path('build/ci-evidence/coordinated-preparation-context.json')
+          output.parent.mkdir(parents=True, exist_ok=True)
+          with output.open('x') as stream:
+              json.dump(context, stream, indent=2, sort_keys=True)
+              stream.write('\n')
+          PY
+          echo 'available=true' >> "${GITHUB_OUTPUT}"
+
+      - name: Upload coordinated unsigned CI preparation
+        if: steps.coordinated_ci_candidate.outputs.available == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: routecontract-coordinated-ci-preparation-${{ github.sha }}
+          path: build/coordinated-ci-preparation/
+          if-no-files-found: error
+          retention-days: 90
+
       - name: Verify printed Gradle and Maven installation configuration
         shell: bash
         timeout-minutes: 12
@@ -627,6 +733,7 @@ jobs:
             build/ci-evidence/environment.txt
             build/ci-evidence/maven-pilot-summary.txt
             build/ci-evidence/test-summary.txt
+            build/ci-evidence/coordinated-preparation-context.json
             build/ci-evidence/gradle-split-consumer-summary.txt
             build/ci-evidence/maven-split-consumer-summary.txt
           if-no-files-found: warn

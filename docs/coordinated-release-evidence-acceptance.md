@@ -113,3 +113,30 @@ new MySQL execution, signature, publication, or external use is claimed from
 that narrower inspection. The workflow will run the existing independent staged
 Gradle and Maven MySQL consumers against the retained candidate repository and
 reinspect it afterward; this new workflow path has not yet executed in public CI.
+
+## CI execution before a release tag
+
+For a literal stable `0.2.x` source version, the existing Java 17 CI job must run
+coordinated unsigned preparation after its root `clean check assemble`, twelve
+SBOM validations and strict JUnit summary. Run the existing final supply-chain
+scanner at exact `GITHUB_SHA`, then stage all three modules from that same clean
+checkout and its generated build outputs. The scanner refreshes its existing
+twelve SBOM and three POM inputs; it does not repeat the MySQL matrix. The signing
+smoke's separate archive with a changed version cannot supply this candidate.
+Create an absent private staging parent for the aggregate's existing filesystem
+contract in both CI and tag preparation; leave the shared runner temporary
+directory permissions unchanged.
+
+Collect and verify the closed candidate with the already pinned Temurin runtime,
+then upload it under a distinct CI preparation artifact name. Keep run context
+outside the closed candidate inventory and bind it to the candidate manifest
+hash. For pull requests, explicitly record the tested merge SHA and the distinct
+PR head SHA; neither represents a release tag. Other version families skip these
+new preparation steps. Historical CI steps and all publication holds remain.
+
+Focused workflow checks must first fail for missing wiring, then prove stable
+version dispatch, exact-source/scan/staging order, successful-verification-only
+upload, PR merge/head provenance and unchanged existing jobs. These local checks
+are implementation evidence only. Full pinned-Temurin preparation remains
+unverified until this CI path actually completes; no signature, publication,
+human baseline approval or complete A-25 claim follows from adding the workflow.

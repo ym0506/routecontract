@@ -301,8 +301,13 @@ jobs:
         run: |
           set -euo pipefail
           project_version='${{ steps.release_family.outputs.version }}'
-          unsigned_repository="${RUNNER_TEMP}/routecontract-release-unsigned"
+          staging_root="${RUNNER_TEMP}/routecontract-release-staging"
+          test ! -e "${staging_root}"
+          test ! -L "${staging_root}"
+          mkdir -m 700 "${staging_root}"
+          unsigned_repository="${staging_root}/repository"
           test ! -e "${unsigned_repository}"
+          test ! -L "${unsigned_repository}"
           ./gradlew --no-daemon --no-build-cache publishRouteContractCentralStaging \
             -ProutecontractCentralSigning=false \
             -ProutecontractCentralStagingDirectory="${unsigned_repository}"
