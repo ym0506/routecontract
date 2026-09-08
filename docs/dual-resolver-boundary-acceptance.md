@@ -1,16 +1,20 @@
 # Remaining A-15 / A-17 resolver and runtime boundaries
 
 Status: four Gradle cases against the reviewed `86a0be5` candidate passed and
-their raw evidence has been audited. The third native attempt then stopped in
-the first Maven download because the disposable repository omitted checksum
-sidecars. After that correction, the first Maven download succeeded, but a shared
-`outputFile` caused `dependency:resolve` to overwrite the JSON written by
-`dependency:tree`. With separate commands, graph and artifact resolution succeeded,
-but the first Enforcer result also printed the opposite adapter's declared executor
-child, exceeding the prior one-line parser. No Maven boundary case has completed;
-all six remain pending the reviewed subtree validation. Earlier failed attempts remain failed. Existing
-audited A-24 anchor and non-anchor controls remain separate evidence; positive
-MySQL cases are not repeated here.
+their raw evidence has been audited. A later Maven execution passed all four
+dual-adapter declaration-order cases with the reviewed native Enforcer subtree
+validator. Its first opposite-runtime control then failed: the current API
+rejected the call before action entry with
+`RC_UNSUPPORTED_SHARDINGSPHERE_RUNTIME`, identifying the exact adapter's missing
+version-specific database resource. The fixture required a different, exact
+adapter/observed-version message. The second runtime control was not launched;
+the ten-case gate remains incomplete while this diagnostic contract is reviewed.
+
+Earlier failed attempts remain failed: missing copied checksum sidecars,
+dependency resolution overwriting tree JSON, and the original Enforcer parser
+rejecting the banned adapter's declared executor child are retained separately.
+Existing audited A-24 anchor and non-anchor controls remain separate evidence;
+positive MySQL cases are not repeated here.
 
 The finite plan contains exactly ten Java 17 cases:
 
