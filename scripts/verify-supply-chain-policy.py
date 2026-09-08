@@ -3625,7 +3625,7 @@ def _scanner_purl(entry: dict[str, Any]) -> str:
     return canonical
 
 
-def _fixed_version(vulnerability: dict[str, Any], package_name: str) -> str | None:
+def _fixed_versions(vulnerability: dict[str, Any], package_name: str) -> list[str]:
     affected = vulnerability.get("affected")
     if not isinstance(affected, list):
         raise PolicyError("OSV vulnerability affected list is missing")
@@ -3635,7 +3635,11 @@ def _fixed_version(vulnerability: dict[str, Any], package_name: str) -> str | No
         if not isinstance(record, dict):
             raise PolicyError("OSV affected record must be an object")
         package = record.get("package")
-        if not isinstance(package, dict) or package.get("name") != package_name:
+        if (
+            not isinstance(package, dict)
+            or package.get("ecosystem") != "Maven"
+            or package.get("name") != package_name
+        ):
             continue
         matched = True
         ranges = record.get("ranges", [])
@@ -3644,6 +3648,9 @@ def _fixed_version(vulnerability: dict[str, Any], package_name: str) -> str | No
         for range_value in ranges:
             if not isinstance(range_value, dict):
                 raise PolicyError("OSV affected range must be an object")
+            range_type = range_value.get("type")
+            if range_type not in ("ECOSYSTEM", "SEMVER", "GIT"):
+                raise PolicyError("OSV range type must be ECOSYSTEM, SEMVER, or GIT")
             events = range_value.get("events", [])
             if not isinstance(events, list):
                 raise PolicyError("OSV range events must be an array")
@@ -3651,15 +3658,16 @@ def _fixed_version(vulnerability: dict[str, Any], package_name: str) -> str | No
                 if not isinstance(event, dict):
                     raise PolicyError("OSV range event must be an object")
                 if "fixed" in event:
-                    fixed.add(_nonempty_string(event["fixed"], "OSV fixed version"))
+                    value = _nonempty_string(event["fixed"], "OSV fixed event")
+                    if not value.strip():
+                        raise PolicyError("OSV fixed event must not be blank")
+                    # Git fixes are commits retained in the raw scan, not Maven releases.
+                    if range_type in ("ECOSYSTEM", "SEMVER"):
+                        fixed.add(value)
     if not matched:
         raise PolicyError(f"OSV vulnerability has no affected record for {package_name}")
-    if len(fixed) > 1:
-        raise PolicyError(
-            "OSV vulnerability has ambiguous fixed versions for "
-            f"{package_name}: {sorted(fixed)}"
-        )
-    return next(iter(fixed), None)
+    # Lexical order stabilizes output; it does not rank ecosystem versions.
+    return sorted(fixed)
 
 
 def _findings(
@@ -3701,7 +3709,7 @@ def _findings(
             findings.append(
                 {
                     "advisory": advisory,
-                    "fixedVersion": _fixed_version(vulnerability, package_name),
+                    "fixedVersions": _fixed_versions(vulnerability, package_name),
                     "purl": purl,
                     "severity": severity,
                 }
@@ -3722,10 +3730,12 @@ def _apply_vulnerability_policy(
     findings: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
     if findings:
-        finding = findings[0]
         raise PolicyError(
             "vulnerability findings are forbidden by the pinned policy: "
-            f"{finding['purl']} {finding['advisory']}"
+            + json.dumps(
+                sorted(findings, key=lambda item: (item["purl"], item["advisory"])),
+                sort_keys=True,
+            )
         )
     return []
 
