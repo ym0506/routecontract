@@ -186,7 +186,10 @@ REVIEWED_SPDX_LICENSE_IDS = {
     "GPL-3.0-only",
     "LGPL-2.1-or-later",
     "MIT",
+    "MPL-2.0",
 }
+H2_LICENSE_PURL = "pkg:maven/com.h2database/h2@2.2.224"
+H2_LICENSE_EXPRESSION = "MPL-2.0 OR EPL-1.0"
 REVIEWED_SPDX_EXCEPTION_IDS = {
     "Classpath-exception-2.0",
     "Universal-FOSS-exception-1.0",
@@ -1923,6 +1926,19 @@ def _validate_licenses(
             raise PolicyError(
                 f"licensed component must not carry reserved license review status: {purl}"
             )
+        if policy_purl == H2_LICENSE_PURL:
+            exception_key = (policy_purl, "expression", H2_LICENSE_EXPRESSION, "")
+            if (
+                purl != f"{policy_purl}?type=jar"
+                or records != [("expression", H2_LICENSE_EXPRESSION, "")]
+                or exception_key not in exceptions
+            ):
+                raise PolicyError(
+                    f"H2 component {policy_purl} must use its exact reviewed SPDX expression"
+                )
+            _prove_component_scope(component, "test-runtime", f"H2 component {policy_purl}")
+            used_exceptions.add(exception_key)
+            continue
         if all(
             kind in {"expression", "id"} and value in allowed
             for kind, value, _ in records

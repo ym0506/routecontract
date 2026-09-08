@@ -34,6 +34,13 @@ MYSQL_CONNECTOR_VERSION = "26.7.0"
 MYSQL_CONNECTOR_LICENSE_EXPRESSION = (
     "GPL-2.0-only WITH Universal-FOSS-exception-1.0"
 )
+H2_MAVEN_COORDINATE = ("com.h2database", "h2", "2.2.224")
+H2_LICENSE_EXPRESSION = "MPL-2.0 OR EPL-1.0"
+# Exact producer records reviewed against H2 2.2.224's pinned publisher license.
+H2_PRODUCER_LICENSE_RECORDS = (
+    ("id", "MPL-2.0", ""),
+    ("name", "EPL 1.0", "https://opensource.org/licenses/eclipse-1.0.php"),
+)
 REVIEWED_MAVEN_LICENSE_EXPRESSIONS = {
     ("jakarta.transaction", "jakarta.transaction-api", "1.3.3"):
         "EPL-2.0 OR (GPL-2.0-only WITH Classpath-exception-2.0)",
@@ -41,6 +48,7 @@ REVIEWED_MAVEN_LICENSE_EXPRESSIONS = {
         "(Apache-2.0 OR LGPL-2.1-or-later) AND MIT",
     ("org.locationtech.jts", "jts-core", "1.19.0"):
         "EPL-2.0 OR BSD-3-Clause",
+    H2_MAVEN_COORDINATE: H2_LICENSE_EXPRESSION,
 }
 LICENSE_OVERRIDE_MAVEN_COORDINATES = (
     *REVIEWED_MAVEN_LICENSE_EXPRESSIONS.keys(),
@@ -753,6 +761,18 @@ def _json_license_override_coordinates(
     return present
 
 
+def _validate_h2_license_override(
+    record: dict[str, object], *, finalized: bool = False
+) -> None:
+    if ("cdx:maven:package:test", "true") not in record["properties"]:
+        raise SbomError("H2 license override requires test-runtime scope")
+    canonical = (("expression", H2_LICENSE_EXPRESSION, ""),)
+    if record["licenses"] != canonical and (
+        finalized or record["licenses"] != H2_PRODUCER_LICENSE_RECORDS
+    ):
+        raise SbomError("H2 license choices differ from the reviewed input")
+
+
 def _set_json_reviewed_maven_licenses(document: dict[str, object]) -> None:
     for (group, name, expected_version), expression in (
         REVIEWED_MAVEN_LICENSE_EXPRESSIONS.items()
@@ -765,6 +785,8 @@ def _set_json_reviewed_maven_licenses(document: dict[str, object]) -> None:
         if not components:
             continue
         component = components[0]
+        if (group, name, expected_version) == H2_MAVEN_COORDINATE:
+            _validate_h2_license_override(_json_component_record(component, "H2"))
         component["licenses"] = [{"expression": expression}]
 
 
@@ -780,6 +802,10 @@ def _verify_json_reviewed_maven_licenses(document: dict[str, object]) -> None:
         if not components:
             continue
         component = components[0]
+        if (group, name, expected_version) == H2_MAVEN_COORDINATE:
+            _validate_h2_license_override(
+                _json_component_record(component, "H2"), finalized=True
+            )
         if component.get("licenses") != [{"expression": expression}]:
             raise SbomError(f"Reviewed license metadata is missing for {group}:{name}")
 
@@ -1912,6 +1938,8 @@ def _set_xml_reviewed_maven_licenses(root: ET.Element) -> None:
         if not components:
             continue
         component = components[0]
+        if (group, name, expected_version) == H2_MAVEN_COORDINATE:
+            _validate_h2_license_override(_xml_component_record(component, "H2")[1])
         _set_xml_license_expression(component, expression)
 
 
@@ -1946,6 +1974,10 @@ def _verify_xml_reviewed_maven_licenses(root: ET.Element) -> None:
         if not components:
             continue
         component = components[0]
+        if (group, name, expected_version) == H2_MAVEN_COORDINATE:
+            _validate_h2_license_override(
+                _xml_component_record(component, "H2")[1], finalized=True
+            )
         if not _xml_has_exact_license_expression(component, expression):
             raise SbomError(f"Reviewed license metadata is missing for {group}:{name}")
 

@@ -25,6 +25,16 @@ JNA_EXPRESSION = "(Apache-2.0 OR LGPL-2.1-or-later) AND MIT"
 JTS_EXPRESSIONS = {
     "jts-core": "EPL-2.0 OR BSD-3-Clause",
 }
+H2_EXPRESSION = "MPL-2.0 OR EPL-1.0"
+H2_LICENSE_CHOICES = [
+    {"license": {"id": "MPL-2.0"}},
+    {
+        "license": {
+            "name": "EPL 1.0",
+            "url": "https://opensource.org/licenses/eclipse-1.0.php",
+        }
+    },
+]
 REQUIRED_EXAMPLE_COORDINATES = (
     ("org.apache.shardingsphere", "shardingsphere-jdbc", "5.5.3"),
     ("org.apache.calcite", "calcite-core", "1.42.0"),
@@ -76,7 +86,17 @@ def append_xml_component(parent: ET.Element, component: dict[str, object]) -> No
                 ET.SubElement(license_element, qname(identifier)).text = str(
                     license_value[identifier]
                 )
+                if "url" in license_value:
+                    ET.SubElement(license_element, qname("url")).text = str(
+                        license_value["url"]
+                    )
     ET.SubElement(element, qname("purl")).text = str(component["purl"])
+    if "properties" in component:
+        properties = ET.SubElement(element, qname("properties"))
+        for item in component["properties"]:
+            ET.SubElement(
+                properties, qname("property"), {"name": str(item["name"])}
+            ).text = str(item["value"])
 
 
 class FinalizeSbomTest(unittest.TestCase):
@@ -319,6 +339,176 @@ class FinalizeSbomTest(unittest.TestCase):
             str(self.output_json),
             str(self.output_xml),
         )
+
+    def add_h2_component(self) -> dict[str, object]:
+        component = maven_component(
+            "com.h2database", "h2", "2.2.224", copy.deepcopy(H2_LICENSE_CHOICES)
+        )
+        component["properties"] = [
+            {"name": "cdx:maven:package:test", "value": "true"}
+        ]
+        self.components.append(component)
+        return component
+
+    def test_normalizes_exact_h2_test_licenses_in_both_formats(self) -> None:
+        h2 = self.add_h2_component()
+        for choices in (
+            H2_LICENSE_CHOICES,
+            list(reversed(H2_LICENSE_CHOICES)),
+            [{"expression": H2_EXPRESSION}],
+        ):
+            with self.subTest(choices=choices):
+                h2["licenses"] = copy.deepcopy(choices)
+                self.write_sources()
+                result = self.finalize()
+                self.assertEqual(0, result.returncode, result.stderr)
+                document = json.loads(self.output_json.read_text(encoding="utf-8"))
+                finalized = next(
+                    item for item in document["components"] if item["purl"] == h2["purl"]
+                )
+                self.assertEqual([{"expression": H2_EXPRESSION}], finalized["licenses"])
+                self.assertEqual(h2["properties"], finalized["properties"])
+                qname = lambda name: f"{{{NAMESPACE}}}{name}"
+                component = next(
+                    item for item in ET.parse(self.output_xml).getroot().findall(
+                        f"{qname('components')}/{qname('component')}"
+                    ) if item.get("bom-ref") == h2["purl"]
+                )
+                licenses = component.find(qname("licenses"))
+                self.assertIsNotNone(licenses)
+                self.assertEqual(1, len(licenses))
+                self.assertEqual(qname("expression"), licenses[0].tag)
+                self.assertEqual(H2_EXPRESSION, licenses[0].text)
+                verification = self.run_finalizer(
+                    "--verify-pair", str(self.output_json), str(self.output_xml)
+                )
+                self.assertEqual(0, verification.returncode, verification.stderr)
+
+    def test_rejects_h2_license_override_for_another_version(self) -> None:
+        h2 = self.add_h2_component()
+        h2.update(maven_component(
+            "com.h2database", "h2", "2.2.220", copy.deepcopy(H2_LICENSE_CHOICES)
+        ))
+        self.write_sources()
+        result = self.finalize()
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("Reviewed Maven component identity differs", result.stderr)
+        self.assertFalse(self.output_json.exists())
+        self.assertFalse(self.output_xml.exists())
+
+    def test_rejects_h2_license_override_without_exact_test_scope(self) -> None:
+        h2 = self.add_h2_component()
+        for properties in (
+            [],
+            [{"name": "cdx:maven:package:test", "value": "false"}],
+            [{"name": "cdx:maven:package:test", "value": "TRUE"}],
+        ):
+            with self.subTest(properties=properties):
+                h2["properties"] = properties
+                self.write_sources()
+                result = self.finalize()
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn("H2 license override requires test-runtime scope", result.stderr)
+                self.assertFalse(self.output_json.exists())
+                self.assertFalse(self.output_xml.exists())
+
+    def test_rejects_unreviewed_h2_license_choices(self) -> None:
+        h2 = self.add_h2_component()
+        for choices in (
+            None,
+            [{"license": {"id": "MPL-2.0"}}],
+            [{"license": {"id": "EPL-1.0"}}],
+            [{"expression": "MPL-2.0 AND EPL-1.0"}],
+            [{"expression": "MPL-2.0 OR LicenseRef-Unreviewed"}],
+            [H2_LICENSE_CHOICES[0], {"license": {"name": "EPL 1.0"}}],
+            [H2_LICENSE_CHOICES[0], {
+                "license": {"name": "EPL 1.0", "url": "https://example.com/license"}
+            }],
+        ):
+            with self.subTest(choices=choices):
+                if choices is None:
+                    h2.pop("licenses", None)
+                else:
+                    h2["licenses"] = copy.deepcopy(choices)
+                self.write_sources()
+                result = self.finalize()
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn("H2 license choices differ from the reviewed input", result.stderr)
+                self.assertFalse(self.output_json.exists())
+                self.assertFalse(self.output_xml.exists())
+
+    def test_rejects_contradictory_h2_xml_before_normalization(self) -> None:
+        h2 = self.add_h2_component()
+        qname = lambda name: f"{{{NAMESPACE}}}{name}"
+        for field in ("licenses", "properties"):
+            with self.subTest(field=field):
+                self.write_sources()
+                tree = ET.parse(self.source_xml)
+                component = next(
+                    item for item in tree.getroot().findall(
+                        f"{qname('components')}/{qname('component')}"
+                    ) if item.get("bom-ref") == h2["purl"]
+                )
+                if field == "licenses":
+                    component.find(f"{qname('licenses')}/{qname('license')}/{qname('id')}").text = "MIT"
+                    expected = "H2 license choices differ from the reviewed input"
+                else:
+                    component.find(f"{qname('properties')}/{qname('property')}").text = "false"
+                    expected = "H2 license override requires test-runtime scope"
+                tree.write(self.source_xml, encoding="utf-8", xml_declaration=True)
+                result = self.finalize()
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn(expected, result.stderr)
+                self.assertFalse(self.output_json.exists())
+                self.assertFalse(self.output_xml.exists())
+
+    def test_verifier_rejects_h2_scope_and_license_tampering_in_both_formats(self) -> None:
+        h2 = self.add_h2_component()
+        h2["licenses"] = [{"expression": H2_EXPRESSION}]
+        qname = lambda name: f"{{{NAMESPACE}}}{name}"
+        for field in ("licenses", "properties"):
+            with self.subTest(field=field):
+                self.write_sources()
+                result = self.finalize()
+                self.assertEqual(0, result.returncode, result.stderr)
+                document = json.loads(self.output_json.read_text(encoding="utf-8"))
+                component = next(
+                    item for item in document["components"] if item["purl"] == h2["purl"]
+                )
+                tree = ET.parse(self.output_xml)
+                xml_component = next(
+                    item for item in tree.getroot().findall(
+                        f"{qname('components')}/{qname('component')}"
+                    ) if item.get("bom-ref") == h2["purl"]
+                )
+                if field == "licenses":
+                    expression = "MPL-2.0 AND EPL-1.0"
+                    component["licenses"] = [{"expression": expression}]
+                    xml_component.find(f"{qname('licenses')}/{qname('expression')}").text = expression
+                else:
+                    component["properties"][0]["value"] = "false"
+                    xml_component.find(f"{qname('properties')}/{qname('property')}").text = "false"
+                self.output_json.write_text(json.dumps(document) + "\n", encoding="utf-8")
+                tree.write(self.output_xml, encoding="utf-8", xml_declaration=True)
+                verification = self.run_finalizer(
+                    "--verify-pair", str(self.output_json), str(self.output_xml)
+                )
+                self.assertNotEqual(0, verification.returncode)
+                self.assertIn("H2", verification.stderr)
+
+    def test_does_not_normalize_h2_named_artifact_from_another_group(self) -> None:
+        component = maven_component(
+            "com.example", "h2", "2.2.224", copy.deepcopy(H2_LICENSE_CHOICES)
+        )
+        self.components.append(component)
+        self.write_sources()
+        result = self.finalize()
+        self.assertEqual(0, result.returncode, result.stderr)
+        document = json.loads(self.output_json.read_text(encoding="utf-8"))
+        finalized = next(
+            item for item in document["components"] if item["purl"] == component["purl"]
+        )
+        self.assertEqual(H2_LICENSE_CHOICES, finalized["licenses"])
 
     def test_normalizes_reviewed_test_artifact_licenses_in_both_formats(self) -> None:
         result = self.finalize()

@@ -1665,6 +1665,96 @@ empty=
         self.assertNotEqual(0, result.returncode)
         self.assertIn("reviewed SPDX license-id set", result.stderr)
 
+    def add_reviewed_h2_fixture(self) -> None:
+        component = apache_component(
+            "pkg:maven/com.h2database/h2@2.2.224?type=jar",
+            "com.h2database", "h2", "2.2.224",
+        )
+        component["licenses"] = [{"expression": "MPL-2.0 OR EPL-1.0"}]
+        component["properties"] = [
+            {"name": "cdx:maven:package:test", "value": "true"}
+        ]
+        for document in (self.sbom_document, self.example_sbom_document):
+            document["components"].append(copy.deepcopy(component))
+            root_ref = document["metadata"]["component"]["bom-ref"]
+            next(item for item in document["dependencies"] if item["ref"] == root_ref)[
+                "dependsOn"
+            ].append(component["purl"])
+            document["dependencies"].append({"ref": component["purl"], "dependsOn": []})
+        self.policy_document["licenseExceptions"].append({
+            "kind": "expression", "license": "MPL-2.0 OR EPL-1.0",
+            "purl": "pkg:maven/com.h2database/h2@2.2.224",
+            "scope": "test-runtime", "url": None,
+        })
+
+    def test_accepts_only_reviewed_h2_dual_expression_in_test_runtime(self) -> None:
+        self.add_reviewed_h2_fixture()
+        self.write_fixture()
+        result = self.prepare_inventory()
+        self.assertEqual(0, result.returncode, result.stderr)
+
+    def test_repository_h2_exception_does_not_globally_allow_mpl(self) -> None:
+        policy = json.loads((REPOSITORY_ROOT / "security/supply-chain-policy.json").read_text())
+        self.assertNotIn("MPL-2.0", policy["allowedLicenseIds"])
+        self.assertEqual([{
+            "kind": "expression", "license": "MPL-2.0 OR EPL-1.0",
+            "purl": "pkg:maven/com.h2database/h2@2.2.224",
+            "scope": "test-runtime", "url": None,
+        }], [item for item in policy["licenseExceptions"] if "com.h2database" in item["purl"]])
+
+    def test_rejects_h2_without_proven_test_scope(self) -> None:
+        self.add_reviewed_h2_fixture()
+        for properties in ([], [{"name": "cdx:maven:package:test", "value": "false"}]):
+            with self.subTest(properties=properties):
+                for document in (self.sbom_document, self.example_sbom_document):
+                    document["components"][-1]["properties"] = properties
+                self.write_fixture()
+                result = self.prepare_inventory()
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn("test", result.stderr)
+
+    def test_rejects_h2_version_outside_exact_exception(self) -> None:
+        self.add_reviewed_h2_fixture()
+        for document in (self.sbom_document, self.example_sbom_document):
+            document["components"][-1]["version"] = "2.2.225"
+            replace_component_purl(document, "pkg:maven/com.h2database/h2@2.2.224?type=jar",
+                                   "pkg:maven/com.h2database/h2@2.2.225?type=jar")
+        self.write_fixture()
+        result = self.prepare_inventory()
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("unapproved license", result.stderr)
+
+    def test_rejects_h2_license_override_with_allowed_single_id(self) -> None:
+        self.add_reviewed_h2_fixture()
+        self.policy_document["allowedLicenseIds"].append("EPL-1.0")
+        self.policy_document["allowedLicenseIds"].sort()
+        for document in (self.sbom_document, self.example_sbom_document):
+            document["components"][-1]["licenses"] = [{"license": {"id": "EPL-1.0"}}]
+        self.write_fixture()
+        result = self.prepare_inventory()
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("exact reviewed SPDX expression", result.stderr)
+
+    def test_h2_exception_does_not_accept_unknown_license_identifier(self) -> None:
+        self.add_reviewed_h2_fixture()
+        for document in (self.sbom_document, self.example_sbom_document):
+            document["components"][-1]["licenses"] = [{"expression": "MPL-2.0 OR Unknown-9.9"}]
+        self.write_fixture()
+        result = self.prepare_inventory()
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("reviewed SPDX license-id set", result.stderr)
+
+    def test_h2_exception_does_not_allow_mpl_for_another_component(self) -> None:
+        self.add_reviewed_h2_fixture()
+        for document in (self.sbom_document, self.example_sbom_document):
+            next(item for item in document["components"] if item["name"] == "json-smart")[
+                "licenses"
+            ] = [{"license": {"id": "MPL-2.0"}}]
+        self.write_fixture()
+        result = self.prepare_inventory()
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("unapproved license", result.stderr)
+
     def test_rejects_unknown_spdx_exception_id(self) -> None:
         unknown = "GPL-2.0-only WITH Unknown-exception-9.9"
         self.policy_document["licenseExceptions"][0]["license"] = unknown

@@ -126,9 +126,15 @@ component's own `licenses`. `scripts/finalize-sbom.py` therefore:
   `EPL-2.0 OR (GPL-2.0-only WITH Classpath-exception-2.0)`;
 - records JNA 5.13.0 as `(Apache-2.0 OR LGPL-2.1-or-later) AND MIT`;
 - records JTS Core 1.19.0 as `EPL-2.0 OR BSD-3-Clause`;
+- records test-only H2 2.2.224 as `MPL-2.0 OR EPL-1.0`, with an exact
+  coordinate/version exception rather than adding MPL to the global allowlist;
 - rejects `org.locationtech.jts.io:jts-io-common` if it reappears;
 - binds the digest-pinned MySQL 8.4.11 test container to the aggregate and the
   two MySQL example profiles that use it.
+
+The [H2 acceptance record](h2-license-acceptance.md) binds the publisher's
+dual-license statement and exact JAR/POM hashes. Unknown licenses, other H2
+versions and components without proven test scope do not gain this exception.
 
 The MySQL container is an `excluded` CycloneDX component with
 `routecontract:usage=test-only`. RouteContract does not assert an image-wide
