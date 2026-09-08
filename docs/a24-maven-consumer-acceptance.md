@@ -44,6 +44,48 @@ and final byte verification. Every online/negative Maven consumer still fetches
 into its own absent cache with strict checksums. The receipt records response
 reuse separately from consumed artifact identity.
 
+## Final86 Maven result, 2026-09-08
+
+All four existing Maven Java 17/21 × ShardingSphere 5.5.2/5.5.3 profiles passed
+against reviewed local unsigned source `86a0be5d2e444f3b73925122fa448d9d1a324edd`,
+using independently supplied receipt SHA-256
+`1f4bb21b430a03a44d89e6daddc1fbdede1886250637ef83cecedfd71e350c7e`.
+The [final packaged-consumer evidence](evidence/a24-maven-final-86a0be5-2026-09-08.md)
+and [machine-readable receipt](evidence/a24-maven-final-86a0be5-2026-09-08.json)
+record this new execution separately from the historical `4e06694` records below.
+
+One sequential run finished with exit 0 and full EOF: **24 actual MySQL test
+executions, 16 negative controls**, zero failures/errors/skips and no uncaught
+thread exception in the complete retained logs. Each of the four profiles passed
+three online and three offline tests plus exact checksum, wrong-origin,
+wrong-anchor and wrong-non-anchor controls. Actual JVM/classfile boundaries,
+closed prime endpoints, OS egress denial, same local images and invoked no-pull
+controls were independently checked. The existing CLI assertions invoke
+`ManifestReviewCli.run` in-process.
+
+Independent audit rechecked 56 commands, 40 compiled classfile occurrences,
+9,064 frozen cache entries, 3,380 offline cloned JAR/POM/module payload
+occurrences and 2,320 repository response bodies. All 14 executed fixture/helper
+inputs matched their prefreeze and retained copied consumer inputs; the runner
+does not create separate executed-harness copies. The shared Gradle build was
+recorded at SHA-256 `7f465d3ed2bf656853bf1afe913468e5aaa5c1505e9f8cabf9bc248411dc835f`;
+Maven copies its own POM and the shared source without executing that Gradle
+build. All 69 production/publication files, 90 staged files, nine primary
+payloads, tools, certificate, receipt and review decision remained unchanged.
+
+Raw aggregate SHA-256:
+`230340c7063cb2bd49540038bdfe1b4f55c4d32dfa3e5a96ab6f6b7a6a4b7f40`.
+Independent retained audit SHA-256:
+`34527b53575710699f91210679ec8e0812994d345a5b8c8f9f681e70a376a306`.
+
+The result records `completeMavenA24Matrix=true`, `finalInputsUnchanged=true`,
+`complete=false`, `fullA24Complete=false`, and `publicConsumption=false`.
+It establishes the finite Maven component only; independent Gradle lanes,
+Gradle Java 21, public release and external adoption are not established here.
+The final86 matrix ran once without a retry and reuses none of the historical
+executions in its totals. No source, staging, baseline or workload changes were
+needed for this final-byte execution.
+
 ## Current-source invocation
 
 Use an independently reviewed receipt and expected hash supplied together with
@@ -70,18 +112,18 @@ pair and cannot complete the Maven matrix. Even a full Maven run leaves top-leve
 become true after all four cells and final input rechecks. This does not establish
 Gradle/Java 21 support or complete the independent Gradle A-24 lanes.
 
-Current harness evidence label `verified - unit`: 24 focused tests cover explicit
+Historical unit evidence for the unchanged harness (`verified - unit`): 24 focused tests cover explicit
 review-input validation, exact graph/origin rejection, empty negative caches,
 both Java compilation boundaries, and final receipt-change rejection. Stubbed
-cell aggregation tests make no Maven/MySQL claim. The first current-source
+cell aggregation tests make no Maven/MySQL claim. The first historical `4e06694`
 matrix attempt passed the Java 17 / 5.5.2 online and offline runs, three MySQL
 tests each, then stopped before native checksum validation because the copied
 reviewed JAR retained read-only permissions. The regression fix makes only the
 disposable checksum target writable; original staging and copied sidecars remain
 unchanged. That failed partial run is preserved and excluded from the successful
-four-cell result below.
+historical four-cell `4e06694` result below; neither contributes to final86 totals.
 
-## Current-source Maven result, 2026-09-08
+## Historical 4e06694 Maven result, 2026-09-08
 
 `verified - MySQL`, `verified - ShardingSphere-JDBC 5.5.2`, and
 `verified - ShardingSphere-JDBC 5.5.3`: all four Maven cells passed against the
@@ -174,8 +216,8 @@ arbitrary Docker workload or protection against an unrelated host loopback proxy
 These prerequisites were first exercised in a positive Java 17 / 5.5.2
 online/offline diagnostic against retained reviewed `008e125` staging. That
 historical result remains diagnostic-only and leaves A-24 incomplete. It does
-not substitute for the checksum/origin/graph controls or the newly reviewed
-current-source matrix above. The original failed receipts are preserved.
+not substitute for the checksum/origin/graph controls or the historical
+`4e06694` matrix above. The original failed receipts are preserved.
 
 Every cell also requires actual negative executions in separate disposable consumers:
 
@@ -206,7 +248,7 @@ A-24 matrix.
 
 The across-lane image-manifest guard was added after that diagnostic and directly checked
 against all four retained before/after manifests. Its rejection case has a focused
-unit test; the later current-source matrix above exercised that guard in all four
+unit test; the later historical `4e06694` matrix above exercised that guard in all four
 cells. An earlier
 diagnostic failed in the online mirror because its Python distribution lacked a
 usable CA store. The successful command used the bundled Python runtime and
@@ -215,7 +257,7 @@ usable CA store. The successful command used the bundled Python runtime and
 At the end of this positive-only run, exact modified-core-JAR checksum rejection
 binding was still outstanding; the separate diagnostic below subsequently verified
 that control. Origin/graph negatives and a complete run against newly reviewed
-staging were still outstanding at that point; the current-source Maven result
+staging were still outstanding at that point; the historical `4e06694` Maven result
 above now supplies them for its four cells. This
 positive diagnostic retains `diagnosticOnly=true` and `complete=false`.
 
@@ -245,7 +287,7 @@ records, together with hashes of the full raw log, request log and command recor
 
 This control was first exercised in one historical diagnostic against retained
 `008e125` staging. That result does not close the final-source matrix, other
-negative controls, or A-24; the current-source matrix above records its own
+negative controls, or A-24; the historical `4e06694` matrix above records its own
 checksum execution in every cell.
 
 `verified - unit`: 16 focused harness tests passed, including rejection of unrelated

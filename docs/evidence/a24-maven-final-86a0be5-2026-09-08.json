@@ -1,0 +1,1955 @@
+{
+  "boundary": [
+    "Unreleased 0.2.0 unsigned maintainer staging; no signing, publication, or external adoption evidence.",
+    "Exact synchronous non-batch PreparedStatement MySQL fixture; hook-reported physical JDBC execution attempts only.",
+    "CLI checks invoke ManifestReviewCli.run in-process; they are not standalone Java process CLI acceptance.",
+    "Maven Java 21 is limited to these two fixture cells; no Gradle Java 21 support claim.",
+    "All A-24 completion still requires its independent non-Maven lanes.",
+    "OS egress denial applies to harness processes; fixed fixture no-pull controls do not sandbox arbitrary Docker workloads.",
+    "Nine staged payloads rechecked globally; Maven consumes JAR/POMs, not Gradle module metadata.",
+    "Old 008e125 diagnostics, the failed first4e attempt and the successful4e matrix remain historical and are excluded from final86 totals.",
+    "Raw evidence is retained privately; this receipt publishes only minimized outcomes, relative artifact names, and hashes."
+  ],
+  "cells": [
+    {
+      "cellSummarySha256": "68de4525a621fc9c5a08663cb61e38994096f7772c435cb5f3ce8f14d19a5ac1",
+      "closedPrimeEndpoint": "REFUSED",
+      "complete": true,
+      "frozenCache": {
+        "afterOfflineSha256": "08a78a7256efc37d50d04adbf7d8c57097febb03fa571c650c9f131cad26a919",
+        "entries": 2453,
+        "inventorySha256": "08a78a7256efc37d50d04adbf7d8c57097febb03fa571c650c9f131cad26a919",
+        "unchanged": true
+      },
+      "javaFeature": 17,
+      "negativeControls": [
+        {
+          "actualDigest": "abcff8965ea7d9411565978b35164cd3914b338e",
+          "actualModifiedArtifact": true,
+          "algorithm": "sha1",
+          "case": "checksum",
+          "coordinate": "io.github.ym0506.routecontract:routecontract-core:jar:0.2.0",
+          "corruptedSha256": "e3fd94d25a7f2bfa6ed531493c14d0bad43c8267736136a38ef6acf838d60c2f",
+          "dependencyCacheInitiallyAbsent": true,
+          "evidenceSha256": {
+            "commands.jsonl": "3678dfc58407d69efb918a7c43760b5058ef5d4070ded8623f082d27a9276c14",
+            "corruption.json": "c1230fa6410809c658e75000f45bc8d83ae4d9350a2797247dda464140154956",
+            "initial-cache.json": "a9f4af779f87ae6d827c73bc26414dc6bac1f63a2720981d6c1ee9daf2231a23",
+            "rejection-exit.json": "01614b0e7bf86220a2287c6fd76f9b3a5c06913c2e0762c9eb3958c397f0bbee",
+            "rejection.log": "fd6816789eeaa951eb259b5eac6a8b4d9cb3fc6de91527824e8b03fb2984a175",
+            "repository-requests.jsonl": "02b45fc4640c2136f01a91246a4333729a0863d5f670b6ff8c880591d29a2721",
+            "settings.xml": "7efe90b310f24b07f8d5f63760e00d1290fb9fc6810d6f03a2d77d4aa805a8e4"
+          },
+          "expectedDigest": "3aa42ff16da32efdfc4c4663d937321e79a73097",
+          "nativeExitCode": 1,
+          "rejection": "MAVEN_STRICT_CHECKSUM",
+          "repositoryId": "routecontract-controlled",
+          "reviewedSha256": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac",
+          "successfulGet200Counts": {
+            "jar": 2,
+            "sidecar": 2
+          }
+        },
+        {
+          "actualOrigin": "routecontract-unintended-a24",
+          "case": "wrong-origin",
+          "consumedFirstPartyFiles": [
+            {
+              "origin": "routecontract-unintended-a24",
+              "originMarkerSha256": "812ee230c82a53881be8b6c533da23145d887ecef5de6f9f9c9fb9cb503f4dc6",
+              "path": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.jar",
+              "sha256": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac"
+            },
+            {
+              "origin": "routecontract-unintended-a24",
+              "originMarkerSha256": "812ee230c82a53881be8b6c533da23145d887ecef5de6f9f9c9fb9cb503f4dc6",
+              "path": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.pom",
+              "sha256": "ccf3a3854e9f369facb1fe63eabc7303c507a7df2a6438372fc77259428519ce"
+            },
+            {
+              "origin": "routecontract-unintended-a24",
+              "originMarkerSha256": "63476a39cb49480664d4ac7bbc0a843297e3320bf8c7d519e754190bceefc081",
+              "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.jar",
+              "sha256": "d5e73f86004fc5a00ebdf3069440d16f8eaf2e033e8b57a7d096ace26630fbe4"
+            },
+            {
+              "origin": "routecontract-unintended-a24",
+              "originMarkerSha256": "63476a39cb49480664d4ac7bbc0a843297e3320bf8c7d519e754190bceefc081",
+              "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.pom",
+              "sha256": "baa1a36766d63969f38a90d6ba3c6b9f3d6004e230ed42f2a8778053bc172a3f"
+            }
+          ],
+          "correctReviewedBytes": true,
+          "dependencyCacheInitiallyAbsent": true,
+          "evidenceSha256": {
+            "commands.jsonl": "808378ef6e0e60425396fded9eb289ac2d00e1da0921397f01bbbc157e627723",
+            "initial-cache.json": "a9f4af779f87ae6d827c73bc26414dc6bac1f63a2720981d6c1ee9daf2231a23",
+            "repository-requests.jsonl": "d10dd2ae3981e44020a83c2b2ffc27fd378c9bb5f3ce21dfbff4413dcea2f6a0",
+            "resolve-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "resolve.log": "6a787e78b151ebb05152793d9495917ab15fbf28b27390fe86eaf89b3a0131c7",
+            "selected-graph.json": "9a53a607fb7ab229655f6863552b5fa031df87c6e7204fc323b3e63e8e6ba4aa",
+            "settings.xml": "dc42b711a194f93e4172421cdd82df1562a0626ba9a81d3d9399936448bc7669"
+          },
+          "expectedOrigin": "routecontract-controlled",
+          "rejection": "UNEXPECTED_REPOSITORY_ORIGIN",
+          "successfulGet200Counts": {
+            "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.jar": 1,
+            "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.pom": 1,
+            "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.jar": 1,
+            "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.pom": 1
+          }
+        },
+        {
+          "artifact": "shardingsphere-infra-executor",
+          "case": "wrong-runtime",
+          "consumedFirstPartyFiles": [
+            {
+              "origin": "routecontract-controlled",
+              "originMarkerSha256": "42bd2c7286d33a6fb51e2c274dbe25cfa58339cfaf9760a522ee2ea8b7dad22f",
+              "path": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.jar",
+              "sha256": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac"
+            },
+            {
+              "origin": "routecontract-controlled",
+              "originMarkerSha256": "42bd2c7286d33a6fb51e2c274dbe25cfa58339cfaf9760a522ee2ea8b7dad22f",
+              "path": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.pom",
+              "sha256": "ccf3a3854e9f369facb1fe63eabc7303c507a7df2a6438372fc77259428519ce"
+            },
+            {
+              "origin": "routecontract-controlled",
+              "originMarkerSha256": "714c02f6c410d7b5c32b2cf0c4d78df40e1cbce1a1dedb52b429ed218e6d0bb5",
+              "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.jar",
+              "sha256": "d5e73f86004fc5a00ebdf3069440d16f8eaf2e033e8b57a7d096ace26630fbe4"
+            },
+            {
+              "origin": "routecontract-controlled",
+              "originMarkerSha256": "714c02f6c410d7b5c32b2cf0c4d78df40e1cbce1a1dedb52b429ed218e6d0bb5",
+              "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.pom",
+              "sha256": "baa1a36766d63969f38a90d6ba3c6b9f3d6004e230ed42f2a8778053bc172a3f"
+            }
+          ],
+          "correctAnchorsRetained": false,
+          "dependencyCacheInitiallyAbsent": true,
+          "evidenceSha256": {
+            "commands.jsonl": "e6e2ede4dd849884fa9018dcfa2e2fcd9735f2215b88d464c0126179b65b8d9d",
+            "graph-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "graph.log": "71beb105a21a8acc447fab81202a44bc9ccc9b5acd4f0cd062cc93f2430a25b9",
+            "initial-cache.json": "a9f4af779f87ae6d827c73bc26414dc6bac1f63a2720981d6c1ee9daf2231a23",
+            "rejection-exit.json": "01614b0e7bf86220a2287c6fd76f9b3a5c06913c2e0762c9eb3958c397f0bbee",
+            "rejection.log": "10fa2fa7f12a30b59189af70651265a4f24d7e947a3c05caee7fc821eea8fed2",
+            "repository-requests.jsonl": "729eeaf023db906e2ad389ce173714100c06e24665d4b60e86ce95119cd2101b",
+            "selected-graph.json": "28a64466e64015732feb71f168d57684b36a8dcdb55f6d9594bd24b31585709c",
+            "settings.xml": "ddfdf342450527be636467d3e54b8c893e2d62545f5464b998f5f6ee36faf43d"
+          },
+          "negativePomSha256": "06c6702ac0d1f8ee99ad111dfce4f91cd55e67ecfe30b5eab15fa9ef0a02e9be",
+          "rejectedVersion": "5.5.3",
+          "rejection": "BannedDependencies",
+          "selectedFirstParty": [
+            {
+              "module": "routecontract-core",
+              "version": "0.2.0"
+            },
+            {
+              "module": "routecontract-shardingsphere-5.5.2",
+              "version": "0.2.0"
+            }
+          ],
+          "successfulGet200Counts": {
+            "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.jar": 1,
+            "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.pom": 1,
+            "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.jar": 1,
+            "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.pom": 1
+          }
+        },
+        {
+          "artifact": "shardingsphere-infra-common",
+          "case": "wrong-non-anchor",
+          "consumedFirstPartyFiles": [
+            {
+              "origin": "routecontract-controlled",
+              "originMarkerSha256": "4ddb8fb8e372dae5078ff7bdb0d9dcb1024f5a149f3ecef6a9daefc761ed6b97",
+              "path": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.jar",
+              "sha256": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac"
+            },
+            {
+              "origin": "routecontract-controlled",
+              "originMarkerSha256": "4ddb8fb8e372dae5078ff7bdb0d9dcb1024f5a149f3ecef6a9daefc761ed6b97",
+              "path": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.pom",
+              "sha256": "ccf3a3854e9f369facb1fe63eabc7303c507a7df2a6438372fc77259428519ce"
+            },
+            {
+              "origin": "routecontract-controlled",
+              "originMarkerSha256": "6c1162464b0806b3840d74cc4477e45eb54c4e5a3f3ca760b064f0d09ebdb557",
+              "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.jar",
+              "sha256": "d5e73f86004fc5a00ebdf3069440d16f8eaf2e033e8b57a7d096ace26630fbe4"
+            },
+            {
+              "origin": "routecontract-controlled",
+              "originMarkerSha256": "6c1162464b0806b3840d74cc4477e45eb54c4e5a3f3ca760b064f0d09ebdb557",
+              "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.pom",
+              "sha256": "baa1a36766d63969f38a90d6ba3c6b9f3d6004e230ed42f2a8778053bc172a3f"
+            }
+          ],
+          "correctAnchorsRetained": true,
+          "dependencyCacheInitiallyAbsent": true,
+          "evidenceSha256": {
+            "commands.jsonl": "1813877bef6dc88baf7467dbc64dd9e830d143e72fedbb32127ad3b4595c6489",
+            "graph-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "graph.log": "e6b7bdc1d8e998d11ff129496794a4884b9b5748b60a1fb061197a61305dc955",
+            "initial-cache.json": "a9f4af779f87ae6d827c73bc26414dc6bac1f63a2720981d6c1ee9daf2231a23",
+            "rejection-exit.json": "01614b0e7bf86220a2287c6fd76f9b3a5c06913c2e0762c9eb3958c397f0bbee",
+            "rejection.log": "0079fffc646dc7fbf5afd9c220b07e22b196f0d7cfd6fb657b14deed90f0b957",
+            "repository-requests.jsonl": "8daa0b8c3b6fb7e46d63a929751a26f9d18a6300e7978f9b026a6bd99fd71ac4",
+            "selected-graph.json": "d63d1730da8c6f46a2fdfaf6093e0756e4b9b0e509c34d8ad4ef854f521eb5c7",
+            "settings.xml": "d0f33844dfeb59b8bf4168430c6c4915f586af49e3a6ce7f864871078b19f0b3"
+          },
+          "negativePomSha256": "6cc274d2b6283e67f54ec3e82797c6b95a1837cfeb0a2cc68224d253fe93e1b7",
+          "rejectedVersion": "5.5.3",
+          "rejection": "BannedDependencies",
+          "selectedFirstParty": [
+            {
+              "module": "routecontract-core",
+              "version": "0.2.0"
+            },
+            {
+              "module": "routecontract-shardingsphere-5.5.2",
+              "version": "0.2.0"
+            }
+          ],
+          "successfulGet200Counts": {
+            "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.jar": 1,
+            "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.pom": 1,
+            "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.jar": 1,
+            "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.pom": 1
+          }
+        }
+      ],
+      "positiveExecutions": [
+        {
+          "approvedBaselineUnchanged": true,
+          "attempts": [
+            1,
+            2
+          ],
+          "classfiles": [
+            {
+              "major": 61,
+              "path": "classes/io/github/ym0506/routecontract/a24/A24JavaBoundary.class",
+              "sha256": "ef42e546e5d93baa7d0f5c87f8de2c44f5b898a3d44ee7478b49f612dacdea77"
+            },
+            {
+              "major": 61,
+              "path": "test-classes/io/github/ym0506/routecontract/a24/OfflineImagePullPolicy.class",
+              "sha256": "663a62f4aa1b246fb9143bed7e5e8d5e9a2e76dc397a50fb303b995e8bc2b320"
+            },
+            {
+              "major": 61,
+              "path": "test-classes/io/github/ym0506/routecontract/consumer/StagedArtifactMySqlTest$OrderRow.class",
+              "sha256": "494744d899daa61b7e7d23eb1e44e1db5825048f2e8aab660573425dd6271cf6"
+            },
+            {
+              "major": 61,
+              "path": "test-classes/io/github/ym0506/routecontract/consumer/StagedArtifactMySqlTest$StatementBinder.class",
+              "sha256": "37488095a4722bf32f772ca8a5faa677a6aa3bf1eefa566063d3a402e780153c"
+            },
+            {
+              "major": 61,
+              "path": "test-classes/io/github/ym0506/routecontract/consumer/StagedArtifactMySqlTest.class",
+              "sha256": "f81ff8c0136c454a4a1743eadfb08b4c35b5f6439c99ceb048ad32f70922bc7f"
+            }
+          ],
+          "cliExecutionMode": "in-process ManifestReviewCli.run assertions",
+          "cliRegressionReturnCodes": {
+            "json": 1,
+            "markdown": 1
+          },
+          "containerControls": {
+            "actualInvocations": [
+              "mysql@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb",
+              "testcontainers/ryuk@sha256:dd3f023a6ed7015b3f95a49ccd65a2daf0c56e681422c12952b19a810dfa6298"
+            ],
+            "javaTestIpv4Property": true,
+            "policyClass": "io.github.ym0506.routecontract.a24.OfflineImagePullPolicy"
+          },
+          "coreResolvedTransitively": true,
+          "evidenceSha256": {
+            "commands.jsonl": "4ef3254a6591c907fb01b344658ea89a78e2ee5408017a851dae42404f761e11",
+            "consumer-pom.xml": "8bc06611010406fd39838eb595283d61f9383e19f32f5699b8d67c26b24d595e",
+            "controlled-environment.json": "26c7b18426b52dbff5b18e70b8b9adc810ed316b38313b6f523ceac743deab0a",
+            "graph-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "graph.log": "019f4965d564475a4a33ed97ebe695baa52f86017443470f4e0703da70ee6095",
+            "image-reference-normalization.json": "474ad6e1613c0ce16b3177eb07fb057ca2bf4bc317dff60975344fc72340523c",
+            "inputs/src/main/java/io/github/ym0506/routecontract/a24/A24JavaBoundary.java": "9e8726ba99071f4cbe6656c4185deb8c946fb005f58b13d6bb1c0d74710bb291",
+            "inputs/src/test/java/io/github/ym0506/routecontract/a24/OfflineImagePullPolicy.java": "3c339497c8500891bb7de709742a1cbf7b5f8e919204887c0ed5aba5215ee7ef",
+            "inputs/src/test/java/io/github/ym0506/routecontract/consumer/StagedArtifactMySqlTest.java": "2057a8665d7971cdd9fb3e609a6f9c07ec0178eac3750246694ba320d5877342",
+            "inputs/src/test/resources/manifests/find-paid-orders-by-user.shardingsphere-5.5.2.schema2.approved.json": "ea8c434dafeb74fea2eb9cce2da46516286d166c55fbaa8fb6cdd20f4c8ffad1",
+            "inputs/src/test/resources/manifests/find-paid-orders-by-user.shardingsphere-5.5.3.schema2.approved.json": "9145302eaef634225c9253f8355c564612c06e3bf660e150f464f7beccfd944e",
+            "java-boundary-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "java-boundary.log": "fe0d457c409b1044504203975e336b76bf4a5232594d6572aaf8f53766f30c86",
+            "junit/TEST-io.github.ym0506.routecontract.consumer.StagedArtifactMySqlTest.xml": "845aa584f7207ca5daa93d7de29fe12a5671330b3d87582d631bb5800731fad9",
+            "junit/io.github.ym0506.routecontract.consumer.StagedArtifactMySqlTest.txt": "2c5767e6f18cfd524e0db6dde7ab988d1ab1690e55b2b01a108ad86457e2c016",
+            "local-images-after.json": "4663b0291996b82dac23700175daca3ca9f7f1ebf267c02c1aa24c67338fa614",
+            "local-images-before.json": "4663b0291996b82dac23700175daca3ca9f7f1ebf267c02c1aa24c67338fa614",
+            "maven-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "maven.log": "05dc13344cb3098025eb2aaaf614623ae6ae0cac0c0a5f3dc8946782e75879a2",
+            "reports/5.5.2/candidate.json": "53494d8f0a95311d9fe5e13ceab8452037851052c3717a58fa05efebf9015fb9",
+            "reports/5.5.2/review.json": "cf5fcec4a9d63f7ac3b9917461ed3a8ab8c69fec43b9b0b129ddd383bc90fe80",
+            "reports/5.5.2/review.md": "e656c943ccb666dcc92553f2d3e9216c69ea8897f7912144d7dd190525445b34",
+            "reports/5.5.2/reviewed-baseline.json": "ea8c434dafeb74fea2eb9cce2da46516286d166c55fbaa8fb6cdd20f4c8ffad1",
+            "repository-requests.jsonl": "c68efb8f245570f346a67ab8cf2136d8763a5c16025b76a4f0e025b2a821c207",
+            "resolved-first-party/routecontract-core/0.2.0/_remote.repositories": "6fe4f5cd3b6b3d6701eed8713eb6a591bd6e5b5cf3cf34567deca4dba985061d",
+            "resolved-first-party/routecontract-core/0.2.0/routecontract-core-0.2.0.jar": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac",
+            "resolved-first-party/routecontract-core/0.2.0/routecontract-core-0.2.0.jar.sha1": "8f372cfb48e6b356f4bb2b61601a75bed833011543fbeffd48e247692580e248",
+            "resolved-first-party/routecontract-core/0.2.0/routecontract-core-0.2.0.pom": "ccf3a3854e9f369facb1fe63eabc7303c507a7df2a6438372fc77259428519ce",
+            "resolved-first-party/routecontract-core/0.2.0/routecontract-core-0.2.0.pom.sha1": "e4b6d843172a50bc6e8c77a780e1099ad574d2a8aaeb45bd60cdf33bcc2d7fda",
+            "resolved-first-party/routecontract-shardingsphere-5.5.2/0.2.0/_remote.repositories": "d9c611b1aca0cc7919042ef7af3f7a23b9f1c2a451c59e6c010e5017184000b8",
+            "resolved-first-party/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.jar": "d5e73f86004fc5a00ebdf3069440d16f8eaf2e033e8b57a7d096ace26630fbe4",
+            "resolved-first-party/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.jar.sha1": "b08b55667975488651877321d372a267d247e5c72538fb135cef70f097efb14e",
+            "resolved-first-party/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.pom": "baa1a36766d63969f38a90d6ba3c6b9f3d6004e230ed42f2a8778053bc172a3f",
+            "resolved-first-party/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.pom.sha1": "e33e2da3e77258df0da74a76c1419ab234251bdd2b5cedff9b8024c421b43b88",
+            "resolved-graph.json": "9a53a607fb7ab229655f6863552b5fa031df87c6e7204fc323b3e63e8e6ba4aa",
+            "settings.xml": "f3c4d0fc7c5fb4a3cc44582bf5bdc1de20b2304c3ca5a630c662bef18ca183ea",
+            "summary.json": "effdc0dedcfac62338553057ff940d2d1b68505bb3471a8eb7b8e70704823fe8",
+            "toolchain-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "toolchain.log": "8355d27c47756fa0cf809d01b41bdf3d72def0371ef969558259f1fea271b232"
+          },
+          "firstPartyArtifacts": 2,
+          "junit": {
+            "errors": 0,
+            "failures": 0,
+            "skipped": 0,
+            "tests": 3
+          },
+          "localImageIdentitiesUnchanged": true,
+          "minimizedReportsVerified": true,
+          "offline": false,
+          "phase": "online",
+          "privateBindAssertionPassed": true,
+          "sameExpectedBusinessRow": true,
+          "shardingSphereComponents": 122,
+          "testMethods": [
+            "loadedCoreAndAutoDiscoveredHookAreTheExpectedStagedJarBytes",
+            "sameBusinessRowWithExpandedExecutionFailsAssertionsAndBothCliReportFormats",
+            "unchangedRealMySqlCaptureMatchesTheExistingReviewedSchemaTwoBaseline"
+          ]
+        },
+        {
+          "approvedBaselineUnchanged": true,
+          "attempts": [
+            1,
+            2
+          ],
+          "classfiles": [
+            {
+              "major": 61,
+              "path": "classes/io/github/ym0506/routecontract/a24/A24JavaBoundary.class",
+              "sha256": "ef42e546e5d93baa7d0f5c87f8de2c44f5b898a3d44ee7478b49f612dacdea77"
+            },
+            {
+              "major": 61,
+              "path": "test-classes/io/github/ym0506/routecontract/a24/OfflineImagePullPolicy.class",
+              "sha256": "663a62f4aa1b246fb9143bed7e5e8d5e9a2e76dc397a50fb303b995e8bc2b320"
+            },
+            {
+              "major": 61,
+              "path": "test-classes/io/github/ym0506/routecontract/consumer/StagedArtifactMySqlTest$OrderRow.class",
+              "sha256": "494744d899daa61b7e7d23eb1e44e1db5825048f2e8aab660573425dd6271cf6"
+            },
+            {
+              "major": 61,
+              "path": "test-classes/io/github/ym0506/routecontract/consumer/StagedArtifactMySqlTest$StatementBinder.class",
+              "sha256": "37488095a4722bf32f772ca8a5faa677a6aa3bf1eefa566063d3a402e780153c"
+            },
+            {
+              "major": 61,
+              "path": "test-classes/io/github/ym0506/routecontract/consumer/StagedArtifactMySqlTest.class",
+              "sha256": "f81ff8c0136c454a4a1743eadfb08b4c35b5f6439c99ceb048ad32f70922bc7f"
+            }
+          ],
+          "cliExecutionMode": "in-process ManifestReviewCli.run assertions",
+          "cliRegressionReturnCodes": {
+            "json": 1,
+            "markdown": 1
+          },
+          "containerControls": {
+            "actualInvocations": [
+              "mysql@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb",
+              "testcontainers/ryuk@sha256:dd3f023a6ed7015b3f95a49ccd65a2daf0c56e681422c12952b19a810dfa6298"
+            ],
+            "javaTestIpv4Property": true,
+            "policyClass": "io.github.ym0506.routecontract.a24.OfflineImagePullPolicy"
+          },
+          "coreResolvedTransitively": true,
+          "evidenceSha256": {
+            "commands.jsonl": "5a7b648a65553e12ed264972d2b99e9c91874938bbd43c8c7ecc71c76ccdb3da",
+            "consumer-pom.xml": "8bc06611010406fd39838eb595283d61f9383e19f32f5699b8d67c26b24d595e",
+            "controlled-environment.json": "26c7b18426b52dbff5b18e70b8b9adc810ed316b38313b6f523ceac743deab0a",
+            "graph-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "graph.log": "fdff2b0acded7a8d817654f4ac6f26a55a9ae72519c6bf3b7bba52197831c5be",
+            "image-reference-normalization.json": "474ad6e1613c0ce16b3177eb07fb057ca2bf4bc317dff60975344fc72340523c",
+            "inputs/src/main/java/io/github/ym0506/routecontract/a24/A24JavaBoundary.java": "9e8726ba99071f4cbe6656c4185deb8c946fb005f58b13d6bb1c0d74710bb291",
+            "inputs/src/test/java/io/github/ym0506/routecontract/a24/OfflineImagePullPolicy.java": "3c339497c8500891bb7de709742a1cbf7b5f8e919204887c0ed5aba5215ee7ef",
+            "inputs/src/test/java/io/github/ym0506/routecontract/consumer/StagedArtifactMySqlTest.java": "2057a8665d7971cdd9fb3e609a6f9c07ec0178eac3750246694ba320d5877342",
+            "inputs/src/test/resources/manifests/find-paid-orders-by-user.shardingsphere-5.5.2.schema2.approved.json": "ea8c434dafeb74fea2eb9cce2da46516286d166c55fbaa8fb6cdd20f4c8ffad1",
+            "inputs/src/test/resources/manifests/find-paid-orders-by-user.shardingsphere-5.5.3.schema2.approved.json": "9145302eaef634225c9253f8355c564612c06e3bf660e150f464f7beccfd944e",
+            "java-boundary-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "java-boundary.log": "fe0d457c409b1044504203975e336b76bf4a5232594d6572aaf8f53766f30c86",
+            "junit/TEST-io.github.ym0506.routecontract.consumer.StagedArtifactMySqlTest.xml": "fb188a6bce09d4f80ecdfea97ec991edb66d7a8db943b7eea432d4fe0faa660f",
+            "junit/io.github.ym0506.routecontract.consumer.StagedArtifactMySqlTest.txt": "ca308097be57fe929b546a40eb9aa6c83f87225361d22b36d10c6b200b4a8fdc",
+            "local-images-after.json": "4663b0291996b82dac23700175daca3ca9f7f1ebf267c02c1aa24c67338fa614",
+            "local-images-before.json": "4663b0291996b82dac23700175daca3ca9f7f1ebf267c02c1aa24c67338fa614",
+            "maven-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "maven.log": "b4bbbc824c697ee4cad43a7120f67ae2caa343509401313606236051bbb95127",
+            "reports/5.5.2/candidate.json": "53494d8f0a95311d9fe5e13ceab8452037851052c3717a58fa05efebf9015fb9",
+            "reports/5.5.2/review.json": "cf5fcec4a9d63f7ac3b9917461ed3a8ab8c69fec43b9b0b129ddd383bc90fe80",
+            "reports/5.5.2/review.md": "e656c943ccb666dcc92553f2d3e9216c69ea8897f7912144d7dd190525445b34",
+            "reports/5.5.2/reviewed-baseline.json": "ea8c434dafeb74fea2eb9cce2da46516286d166c55fbaa8fb6cdd20f4c8ffad1",
+            "resolved-first-party/routecontract-core/0.2.0/_remote.repositories": "6fe4f5cd3b6b3d6701eed8713eb6a591bd6e5b5cf3cf34567deca4dba985061d",
+            "resolved-first-party/routecontract-core/0.2.0/routecontract-core-0.2.0.jar": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac",
+            "resolved-first-party/routecontract-core/0.2.0/routecontract-core-0.2.0.jar.sha1": "8f372cfb48e6b356f4bb2b61601a75bed833011543fbeffd48e247692580e248",
+            "resolved-first-party/routecontract-core/0.2.0/routecontract-core-0.2.0.pom": "ccf3a3854e9f369facb1fe63eabc7303c507a7df2a6438372fc77259428519ce",
+            "resolved-first-party/routecontract-core/0.2.0/routecontract-core-0.2.0.pom.sha1": "e4b6d843172a50bc6e8c77a780e1099ad574d2a8aaeb45bd60cdf33bcc2d7fda",
+            "resolved-first-party/routecontract-shardingsphere-5.5.2/0.2.0/_remote.repositories": "d9c611b1aca0cc7919042ef7af3f7a23b9f1c2a451c59e6c010e5017184000b8",
+            "resolved-first-party/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.jar": "d5e73f86004fc5a00ebdf3069440d16f8eaf2e033e8b57a7d096ace26630fbe4",
+            "resolved-first-party/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.jar.sha1": "b08b55667975488651877321d372a267d247e5c72538fb135cef70f097efb14e",
+            "resolved-first-party/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.pom": "baa1a36766d63969f38a90d6ba3c6b9f3d6004e230ed42f2a8778053bc172a3f",
+            "resolved-first-party/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.pom.sha1": "e33e2da3e77258df0da74a76c1419ab234251bdd2b5cedff9b8024c421b43b88",
+            "resolved-graph.json": "9a53a607fb7ab229655f6863552b5fa031df87c6e7204fc323b3e63e8e6ba4aa",
+            "summary.json": "b3b72c75cda2db04a1403b1bb515d06e1ca2a944e78bdf98bce87146e14a6ddc",
+            "toolchain-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "toolchain.log": "8355d27c47756fa0cf809d01b41bdf3d72def0371ef969558259f1fea271b232"
+          },
+          "firstPartyArtifacts": 2,
+          "junit": {
+            "errors": 0,
+            "failures": 0,
+            "skipped": 0,
+            "tests": 3
+          },
+          "localImageIdentitiesUnchanged": true,
+          "minimizedReportsVerified": true,
+          "offline": true,
+          "phase": "offline",
+          "privateBindAssertionPassed": true,
+          "sameExpectedBusinessRow": true,
+          "shardingSphereComponents": 122,
+          "testMethods": [
+            "loadedCoreAndAutoDiscoveredHookAreTheExpectedStagedJarBytes",
+            "sameBusinessRowWithExpandedExecutionFailsAssertionsAndBothCliReportFormats",
+            "unchangedRealMySqlCaptureMatchesTheExistingReviewedSchemaTwoBaseline"
+          ]
+        }
+      ],
+      "runtime": "5.5.2"
+    },
+    {
+      "cellSummarySha256": "15b4970bbd54df43abf4fdda468c4413b73e86b30e80e22f04ef81171a108a09",
+      "closedPrimeEndpoint": "REFUSED",
+      "complete": true,
+      "frozenCache": {
+        "afterOfflineSha256": "c3365e036479c1fc01416324a11d9fa1ac77fb084e5ce8b075b13f13cf759171",
+        "entries": 2079,
+        "inventorySha256": "c3365e036479c1fc01416324a11d9fa1ac77fb084e5ce8b075b13f13cf759171",
+        "unchanged": true
+      },
+      "javaFeature": 17,
+      "negativeControls": [
+        {
+          "actualDigest": "abcff8965ea7d9411565978b35164cd3914b338e",
+          "actualModifiedArtifact": true,
+          "algorithm": "sha1",
+          "case": "checksum",
+          "coordinate": "io.github.ym0506.routecontract:routecontract-core:jar:0.2.0",
+          "corruptedSha256": "e3fd94d25a7f2bfa6ed531493c14d0bad43c8267736136a38ef6acf838d60c2f",
+          "dependencyCacheInitiallyAbsent": true,
+          "evidenceSha256": {
+            "commands.jsonl": "0ea18627a4661b564735dd9ece9f3976c1a9c3a120ba17e9ff0c1093754b20e6",
+            "corruption.json": "c1230fa6410809c658e75000f45bc8d83ae4d9350a2797247dda464140154956",
+            "initial-cache.json": "a9f4af779f87ae6d827c73bc26414dc6bac1f63a2720981d6c1ee9daf2231a23",
+            "rejection-exit.json": "01614b0e7bf86220a2287c6fd76f9b3a5c06913c2e0762c9eb3958c397f0bbee",
+            "rejection.log": "3c86781ffc9c6437d39465c21807b09f63f3753f2bbc61443e8a533010acbc84",
+            "repository-requests.jsonl": "09e6bdd56d5b25b2fbad9ef17e3f919930467ac6d50ea50d3f58af3751d8c73c",
+            "settings.xml": "6ef6df79a0ab6927523c6ef9db0a23dc4dfe4f0ca23fd2e218c31bfa523f197b"
+          },
+          "expectedDigest": "3aa42ff16da32efdfc4c4663d937321e79a73097",
+          "nativeExitCode": 1,
+          "rejection": "MAVEN_STRICT_CHECKSUM",
+          "repositoryId": "routecontract-controlled",
+          "reviewedSha256": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac",
+          "successfulGet200Counts": {
+            "jar": 2,
+            "sidecar": 2
+          }
+        },
+        {
+          "actualOrigin": "routecontract-unintended-a24",
+          "case": "wrong-origin",
+          "consumedFirstPartyFiles": [
+            {
+              "origin": "routecontract-unintended-a24",
+              "originMarkerSha256": "112db22dd5e5ab60fb572e9fb309c097c7e6df73d9f630e6d165ad249f6278ac",
+              "path": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.jar",
+              "sha256": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac"
+            },
+            {
+              "origin": "routecontract-unintended-a24",
+              "originMarkerSha256": "112db22dd5e5ab60fb572e9fb309c097c7e6df73d9f630e6d165ad249f6278ac",
+              "path": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.pom",
+              "sha256": "ccf3a3854e9f369facb1fe63eabc7303c507a7df2a6438372fc77259428519ce"
+            },
+            {
+              "origin": "routecontract-unintended-a24",
+              "originMarkerSha256": "8b971e49af9f99cbc225426f7f70d024025986073cd2814a064563adee4e7d80",
+              "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.jar",
+              "sha256": "e48e67b2ce2c5d75d60d6794fe93c34d34697daff810a7b1f9c977095c5a02e5"
+            },
+            {
+              "origin": "routecontract-unintended-a24",
+              "originMarkerSha256": "8b971e49af9f99cbc225426f7f70d024025986073cd2814a064563adee4e7d80",
+              "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.pom",
+              "sha256": "d6a5232c2d43ec109fc04924635af245b930c99e449c13bd7949c8f62a518945"
+            }
+          ],
+          "correctReviewedBytes": true,
+          "dependencyCacheInitiallyAbsent": true,
+          "evidenceSha256": {
+            "commands.jsonl": "39ff0386a43e330c898af172ed1023e7679ac13368c9d6a1709c1e5dc04fe604",
+            "initial-cache.json": "a9f4af779f87ae6d827c73bc26414dc6bac1f63a2720981d6c1ee9daf2231a23",
+            "repository-requests.jsonl": "9588b3643291bbdfbd93db7a9e670ff7833e901144e481f18f2a82acbf679dce",
+            "resolve-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "resolve.log": "1c1c2c163f7b249cfca2df743d407c062e87fa0852aa74521874bcf831227e5e",
+            "selected-graph.json": "aefedddd7ad256ad8e45fd1170568ca9b3e749723455245cf73a8e1b407f2bd1",
+            "settings.xml": "af8875eb15d6e0056e1ad1d5f4faa4f06a682148aefdc1f639b6a465959beee5"
+          },
+          "expectedOrigin": "routecontract-controlled",
+          "rejection": "UNEXPECTED_REPOSITORY_ORIGIN",
+          "successfulGet200Counts": {
+            "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.jar": 1,
+            "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.pom": 1,
+            "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.jar": 1,
+            "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.pom": 1
+          }
+        },
+        {
+          "artifact": "shardingsphere-infra-executor",
+          "case": "wrong-runtime",
+          "consumedFirstPartyFiles": [
+            {
+              "origin": "routecontract-controlled",
+              "originMarkerSha256": "6a30d08161e528800ba8f9faa4e35ba1bb9a502decb81b3fb3485b5b06a80f29",
+              "path": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.jar",
+              "sha256": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac"
+            },
+            {
+              "origin": "routecontract-controlled",
+              "originMarkerSha256": "6a30d08161e528800ba8f9faa4e35ba1bb9a502decb81b3fb3485b5b06a80f29",
+              "path": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.pom",
+              "sha256": "ccf3a3854e9f369facb1fe63eabc7303c507a7df2a6438372fc77259428519ce"
+            },
+            {
+              "origin": "routecontract-controlled",
+              "originMarkerSha256": "9405bc443264a1ea5f75de0697d352c80b413787f80539f148e9483bacf3da6d",
+              "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.jar",
+              "sha256": "e48e67b2ce2c5d75d60d6794fe93c34d34697daff810a7b1f9c977095c5a02e5"
+            },
+            {
+              "origin": "routecontract-controlled",
+              "originMarkerSha256": "9405bc443264a1ea5f75de0697d352c80b413787f80539f148e9483bacf3da6d",
+              "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.pom",
+              "sha256": "d6a5232c2d43ec109fc04924635af245b930c99e449c13bd7949c8f62a518945"
+            }
+          ],
+          "correctAnchorsRetained": false,
+          "dependencyCacheInitiallyAbsent": true,
+          "evidenceSha256": {
+            "commands.jsonl": "b25686c335c137751e7274592d110c2fde846eb97a709a478f6d45db2c1b56c0",
+            "graph-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "graph.log": "e52bb23cd875671d1c498ad94ea04c673e3de967d1c37045d6760a527f81acce",
+            "initial-cache.json": "a9f4af779f87ae6d827c73bc26414dc6bac1f63a2720981d6c1ee9daf2231a23",
+            "rejection-exit.json": "01614b0e7bf86220a2287c6fd76f9b3a5c06913c2e0762c9eb3958c397f0bbee",
+            "rejection.log": "8359c1975fe4205dca149c35b32d5974a63e2b72e1b2dacc101cd9e53f8e4b5a",
+            "repository-requests.jsonl": "edc06dbaacef870240129b1de6f9ad990158734ff3457e6d039a259d2d7533ba",
+            "selected-graph.json": "9cef9f515cff8ecf6e7c852933cce7c8ef42255c5c2d20da12b9a7cc4878e13b",
+            "settings.xml": "645b9dca3517e171f26d782c038df81cb4cc4e90861b406ad27856404484aeab"
+          },
+          "negativePomSha256": "9e1874f1ed305310d2f35cb5aef785e5a458d1786bbeeb7dc1737e998cbd5823",
+          "rejectedVersion": "5.5.2",
+          "rejection": "BannedDependencies",
+          "selectedFirstParty": [
+            {
+              "module": "routecontract-core",
+              "version": "0.2.0"
+            },
+            {
+              "module": "routecontract-shardingsphere-5.5",
+              "version": "0.2.0"
+            }
+          ],
+          "successfulGet200Counts": {
+            "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.jar": 1,
+            "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.pom": 1,
+            "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.jar": 1,
+            "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.pom": 1
+          }
+        },
+        {
+          "artifact": "shardingsphere-infra-common",
+          "case": "wrong-non-anchor",
+          "consumedFirstPartyFiles": [
+            {
+              "origin": "routecontract-controlled",
+              "originMarkerSha256": "0f1d70047029cadb8a92051f5c42ba8d35e10cfe013cfbc6e82b7ebc5365abab",
+              "path": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.jar",
+              "sha256": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac"
+            },
+            {
+              "origin": "routecontract-controlled",
+              "originMarkerSha256": "0f1d70047029cadb8a92051f5c42ba8d35e10cfe013cfbc6e82b7ebc5365abab",
+              "path": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.pom",
+              "sha256": "ccf3a3854e9f369facb1fe63eabc7303c507a7df2a6438372fc77259428519ce"
+            },
+            {
+              "origin": "routecontract-controlled",
+              "originMarkerSha256": "297f9bf26955d1a2338057c1aa538292c3cf4d4c371add265da9c904c3c7b287",
+              "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.jar",
+              "sha256": "e48e67b2ce2c5d75d60d6794fe93c34d34697daff810a7b1f9c977095c5a02e5"
+            },
+            {
+              "origin": "routecontract-controlled",
+              "originMarkerSha256": "297f9bf26955d1a2338057c1aa538292c3cf4d4c371add265da9c904c3c7b287",
+              "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.pom",
+              "sha256": "d6a5232c2d43ec109fc04924635af245b930c99e449c13bd7949c8f62a518945"
+            }
+          ],
+          "correctAnchorsRetained": true,
+          "dependencyCacheInitiallyAbsent": true,
+          "evidenceSha256": {
+            "commands.jsonl": "81f6120f040d74f57dbbacc051dcf7e4cd4d83e4754b5301c8f0c726438cf43c",
+            "graph-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "graph.log": "21c54287d5e3c6e32b29ec0edda3a87c0e1ab07177785fd7e43f50c5d1d5dbfb",
+            "initial-cache.json": "a9f4af779f87ae6d827c73bc26414dc6bac1f63a2720981d6c1ee9daf2231a23",
+            "rejection-exit.json": "01614b0e7bf86220a2287c6fd76f9b3a5c06913c2e0762c9eb3958c397f0bbee",
+            "rejection.log": "27d3377504e3ad18bf0f0aed4ba76bc427d36cfd6d4b88b279208e17fda9e2cd",
+            "repository-requests.jsonl": "96a5280484df5cf6c1f1755b14893481ef121f412c2a17e69de26e3340595efb",
+            "selected-graph.json": "571c34e1d24de6d11b4a1e35fb884492059c35e0dd73bcceaba0b3a8855c9586",
+            "settings.xml": "41af950bbd94411c62b3e295430b3952f49794c6f696145430bbb0a526a1643d"
+          },
+          "negativePomSha256": "59bef0371719b1b8dcd0da31a4232e336c94d54a5cb041f057ddcf64e2b2a509",
+          "rejectedVersion": "5.5.2",
+          "rejection": "BannedDependencies",
+          "selectedFirstParty": [
+            {
+              "module": "routecontract-core",
+              "version": "0.2.0"
+            },
+            {
+              "module": "routecontract-shardingsphere-5.5",
+              "version": "0.2.0"
+            }
+          ],
+          "successfulGet200Counts": {
+            "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.jar": 1,
+            "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.pom": 1,
+            "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.jar": 1,
+            "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.pom": 1
+          }
+        }
+      ],
+      "positiveExecutions": [
+        {
+          "approvedBaselineUnchanged": true,
+          "attempts": [
+            1,
+            2
+          ],
+          "classfiles": [
+            {
+              "major": 61,
+              "path": "classes/io/github/ym0506/routecontract/a24/A24JavaBoundary.class",
+              "sha256": "ef42e546e5d93baa7d0f5c87f8de2c44f5b898a3d44ee7478b49f612dacdea77"
+            },
+            {
+              "major": 61,
+              "path": "test-classes/io/github/ym0506/routecontract/a24/OfflineImagePullPolicy.class",
+              "sha256": "663a62f4aa1b246fb9143bed7e5e8d5e9a2e76dc397a50fb303b995e8bc2b320"
+            },
+            {
+              "major": 61,
+              "path": "test-classes/io/github/ym0506/routecontract/consumer/StagedArtifactMySqlTest$OrderRow.class",
+              "sha256": "494744d899daa61b7e7d23eb1e44e1db5825048f2e8aab660573425dd6271cf6"
+            },
+            {
+              "major": 61,
+              "path": "test-classes/io/github/ym0506/routecontract/consumer/StagedArtifactMySqlTest$StatementBinder.class",
+              "sha256": "37488095a4722bf32f772ca8a5faa677a6aa3bf1eefa566063d3a402e780153c"
+            },
+            {
+              "major": 61,
+              "path": "test-classes/io/github/ym0506/routecontract/consumer/StagedArtifactMySqlTest.class",
+              "sha256": "f81ff8c0136c454a4a1743eadfb08b4c35b5f6439c99ceb048ad32f70922bc7f"
+            }
+          ],
+          "cliExecutionMode": "in-process ManifestReviewCli.run assertions",
+          "cliRegressionReturnCodes": {
+            "json": 1,
+            "markdown": 1
+          },
+          "containerControls": {
+            "actualInvocations": [
+              "mysql@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb",
+              "testcontainers/ryuk@sha256:dd3f023a6ed7015b3f95a49ccd65a2daf0c56e681422c12952b19a810dfa6298"
+            ],
+            "javaTestIpv4Property": true,
+            "policyClass": "io.github.ym0506.routecontract.a24.OfflineImagePullPolicy"
+          },
+          "coreResolvedTransitively": true,
+          "evidenceSha256": {
+            "commands.jsonl": "e1e572dff0b188c6be9e58cda7cde2904fb2b4aa591c825c699703f180af3b02",
+            "consumer-pom.xml": "8bc06611010406fd39838eb595283d61f9383e19f32f5699b8d67c26b24d595e",
+            "controlled-environment.json": "26c7b18426b52dbff5b18e70b8b9adc810ed316b38313b6f523ceac743deab0a",
+            "graph-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "graph.log": "43eb1051154dffbb773d28adad40b056629e20ba7567f9fb148f02915b756fd9",
+            "image-reference-normalization.json": "474ad6e1613c0ce16b3177eb07fb057ca2bf4bc317dff60975344fc72340523c",
+            "inputs/src/main/java/io/github/ym0506/routecontract/a24/A24JavaBoundary.java": "9e8726ba99071f4cbe6656c4185deb8c946fb005f58b13d6bb1c0d74710bb291",
+            "inputs/src/test/java/io/github/ym0506/routecontract/a24/OfflineImagePullPolicy.java": "3c339497c8500891bb7de709742a1cbf7b5f8e919204887c0ed5aba5215ee7ef",
+            "inputs/src/test/java/io/github/ym0506/routecontract/consumer/StagedArtifactMySqlTest.java": "2057a8665d7971cdd9fb3e609a6f9c07ec0178eac3750246694ba320d5877342",
+            "inputs/src/test/resources/manifests/find-paid-orders-by-user.shardingsphere-5.5.2.schema2.approved.json": "ea8c434dafeb74fea2eb9cce2da46516286d166c55fbaa8fb6cdd20f4c8ffad1",
+            "inputs/src/test/resources/manifests/find-paid-orders-by-user.shardingsphere-5.5.3.schema2.approved.json": "9145302eaef634225c9253f8355c564612c06e3bf660e150f464f7beccfd944e",
+            "java-boundary-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "java-boundary.log": "fe0d457c409b1044504203975e336b76bf4a5232594d6572aaf8f53766f30c86",
+            "junit/TEST-io.github.ym0506.routecontract.consumer.StagedArtifactMySqlTest.xml": "22b1414edb40c2d97c0dd0b3e59491d2b121cb8916275a6e88dd8c3a46728541",
+            "junit/io.github.ym0506.routecontract.consumer.StagedArtifactMySqlTest.txt": "19cb750da7f24e108cfc35ca8c816b29ff0ad6ab054ee6c7aea8321831e8d892",
+            "local-images-after.json": "4663b0291996b82dac23700175daca3ca9f7f1ebf267c02c1aa24c67338fa614",
+            "local-images-before.json": "4663b0291996b82dac23700175daca3ca9f7f1ebf267c02c1aa24c67338fa614",
+            "maven-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "maven.log": "d8563754cf44e497037c1785ebc52a8bf92090a9f9aca33a7373312ad230ca99",
+            "reports/5.5.3/candidate.json": "5ab31f011765dfee7546aa5e96be31302f8d38905d4641f2d69b8c8aee3287b1",
+            "reports/5.5.3/review.json": "008c070b18596983c1d4011133bad41b4636d6e34eab3d1a7f04f21909353919",
+            "reports/5.5.3/review.md": "18030c136a7d416b1e5d313c84ec1164b805ff66c7ffdad22da80616a9d38197",
+            "reports/5.5.3/reviewed-baseline.json": "9145302eaef634225c9253f8355c564612c06e3bf660e150f464f7beccfd944e",
+            "repository-requests.jsonl": "11380a4ad044e63f96b4f61eb2a05e1a2be8bc9f695dafdbc022c5ae0983b4e9",
+            "resolved-first-party/routecontract-core/0.2.0/_remote.repositories": "38278aa726d92783a4b8f80657bd53dc58ced0f55380893076babd9a850e9f93",
+            "resolved-first-party/routecontract-core/0.2.0/routecontract-core-0.2.0.jar": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac",
+            "resolved-first-party/routecontract-core/0.2.0/routecontract-core-0.2.0.jar.sha1": "8f372cfb48e6b356f4bb2b61601a75bed833011543fbeffd48e247692580e248",
+            "resolved-first-party/routecontract-core/0.2.0/routecontract-core-0.2.0.pom": "ccf3a3854e9f369facb1fe63eabc7303c507a7df2a6438372fc77259428519ce",
+            "resolved-first-party/routecontract-core/0.2.0/routecontract-core-0.2.0.pom.sha1": "e4b6d843172a50bc6e8c77a780e1099ad574d2a8aaeb45bd60cdf33bcc2d7fda",
+            "resolved-first-party/routecontract-shardingsphere-5.5/0.2.0/_remote.repositories": "ad37f47d1f6544f1a3c8aa42b040e9556af7273aefed184030b8b5d5d3e5dad0",
+            "resolved-first-party/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.jar": "e48e67b2ce2c5d75d60d6794fe93c34d34697daff810a7b1f9c977095c5a02e5",
+            "resolved-first-party/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.jar.sha1": "46b8cb0d2ce8e6220935844d47ef21042097e44f7d937d0929bb13266579d12e",
+            "resolved-first-party/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.pom": "d6a5232c2d43ec109fc04924635af245b930c99e449c13bd7949c8f62a518945",
+            "resolved-first-party/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.pom.sha1": "7370c3f0bcefc733fb094e5c0b87f7ded1be2a4928e105f3f9866dc479b06710",
+            "resolved-graph.json": "aefedddd7ad256ad8e45fd1170568ca9b3e749723455245cf73a8e1b407f2bd1",
+            "settings.xml": "e7ef54974a4d446d5d4d36faef496e65b5f108e2c3cd81d556f7cea716fcdad5",
+            "summary.json": "c8f8b9958e22e2d27ddb330ce6035991e8101b0ad3e7908c3df94195ec9b31ff",
+            "toolchain-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "toolchain.log": "8355d27c47756fa0cf809d01b41bdf3d72def0371ef969558259f1fea271b232"
+          },
+          "firstPartyArtifacts": 2,
+          "junit": {
+            "errors": 0,
+            "failures": 0,
+            "skipped": 0,
+            "tests": 3
+          },
+          "localImageIdentitiesUnchanged": true,
+          "minimizedReportsVerified": true,
+          "offline": false,
+          "phase": "online",
+          "privateBindAssertionPassed": true,
+          "sameExpectedBusinessRow": true,
+          "shardingSphereComponents": 75,
+          "testMethods": [
+            "loadedCoreAndAutoDiscoveredHookAreTheExpectedStagedJarBytes",
+            "sameBusinessRowWithExpandedExecutionFailsAssertionsAndBothCliReportFormats",
+            "unchangedRealMySqlCaptureMatchesTheExistingReviewedSchemaTwoBaseline"
+          ]
+        },
+        {
+          "approvedBaselineUnchanged": true,
+          "attempts": [
+            1,
+            2
+          ],
+          "classfiles": [
+            {
+              "major": 61,
+              "path": "classes/io/github/ym0506/routecontract/a24/A24JavaBoundary.class",
+              "sha256": "ef42e546e5d93baa7d0f5c87f8de2c44f5b898a3d44ee7478b49f612dacdea77"
+            },
+            {
+              "major": 61,
+              "path": "test-classes/io/github/ym0506/routecontract/a24/OfflineImagePullPolicy.class",
+              "sha256": "663a62f4aa1b246fb9143bed7e5e8d5e9a2e76dc397a50fb303b995e8bc2b320"
+            },
+            {
+              "major": 61,
+              "path": "test-classes/io/github/ym0506/routecontract/consumer/StagedArtifactMySqlTest$OrderRow.class",
+              "sha256": "494744d899daa61b7e7d23eb1e44e1db5825048f2e8aab660573425dd6271cf6"
+            },
+            {
+              "major": 61,
+              "path": "test-classes/io/github/ym0506/routecontract/consumer/StagedArtifactMySqlTest$StatementBinder.class",
+              "sha256": "37488095a4722bf32f772ca8a5faa677a6aa3bf1eefa566063d3a402e780153c"
+            },
+            {
+              "major": 61,
+              "path": "test-classes/io/github/ym0506/routecontract/consumer/StagedArtifactMySqlTest.class",
+              "sha256": "f81ff8c0136c454a4a1743eadfb08b4c35b5f6439c99ceb048ad32f70922bc7f"
+            }
+          ],
+          "cliExecutionMode": "in-process ManifestReviewCli.run assertions",
+          "cliRegressionReturnCodes": {
+            "json": 1,
+            "markdown": 1
+          },
+          "containerControls": {
+            "actualInvocations": [
+              "mysql@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb",
+              "testcontainers/ryuk@sha256:dd3f023a6ed7015b3f95a49ccd65a2daf0c56e681422c12952b19a810dfa6298"
+            ],
+            "javaTestIpv4Property": true,
+            "policyClass": "io.github.ym0506.routecontract.a24.OfflineImagePullPolicy"
+          },
+          "coreResolvedTransitively": true,
+          "evidenceSha256": {
+            "commands.jsonl": "4dea42e32642bb55343cd58d047173c18e2fef6930eed2ded58656ac1ffd82d8",
+            "consumer-pom.xml": "8bc06611010406fd39838eb595283d61f9383e19f32f5699b8d67c26b24d595e",
+            "controlled-environment.json": "26c7b18426b52dbff5b18e70b8b9adc810ed316b38313b6f523ceac743deab0a",
+            "graph-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "graph.log": "cdfe1dd928907275b659e0b9f284b029e0c2fc0c6e33bc8fae68fafe7fdbf7fa",
+            "image-reference-normalization.json": "474ad6e1613c0ce16b3177eb07fb057ca2bf4bc317dff60975344fc72340523c",
+            "inputs/src/main/java/io/github/ym0506/routecontract/a24/A24JavaBoundary.java": "9e8726ba99071f4cbe6656c4185deb8c946fb005f58b13d6bb1c0d74710bb291",
+            "inputs/src/test/java/io/github/ym0506/routecontract/a24/OfflineImagePullPolicy.java": "3c339497c8500891bb7de709742a1cbf7b5f8e919204887c0ed5aba5215ee7ef",
+            "inputs/src/test/java/io/github/ym0506/routecontract/consumer/StagedArtifactMySqlTest.java": "2057a8665d7971cdd9fb3e609a6f9c07ec0178eac3750246694ba320d5877342",
+            "inputs/src/test/resources/manifests/find-paid-orders-by-user.shardingsphere-5.5.2.schema2.approved.json": "ea8c434dafeb74fea2eb9cce2da46516286d166c55fbaa8fb6cdd20f4c8ffad1",
+            "inputs/src/test/resources/manifests/find-paid-orders-by-user.shardingsphere-5.5.3.schema2.approved.json": "9145302eaef634225c9253f8355c564612c06e3bf660e150f464f7beccfd944e",
+            "java-boundary-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "java-boundary.log": "fe0d457c409b1044504203975e336b76bf4a5232594d6572aaf8f53766f30c86",
+            "junit/TEST-io.github.ym0506.routecontract.consumer.StagedArtifactMySqlTest.xml": "eac1ba2d0b76d26310e44cd73bc0d77f387216e0f3d8beaad6474dd7f86e142a",
+            "junit/io.github.ym0506.routecontract.consumer.StagedArtifactMySqlTest.txt": "67e039b88585de2d58be32ec28d18ae145a050d67ed7c4b3d51b4a7d7500d052",
+            "local-images-after.json": "4663b0291996b82dac23700175daca3ca9f7f1ebf267c02c1aa24c67338fa614",
+            "local-images-before.json": "4663b0291996b82dac23700175daca3ca9f7f1ebf267c02c1aa24c67338fa614",
+            "maven-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "maven.log": "8d9c030a59a4561ee93b89c5586f6ba59d6fadd5cdbb4ae33f1d11ea2f287a66",
+            "reports/5.5.3/candidate.json": "5ab31f011765dfee7546aa5e96be31302f8d38905d4641f2d69b8c8aee3287b1",
+            "reports/5.5.3/review.json": "008c070b18596983c1d4011133bad41b4636d6e34eab3d1a7f04f21909353919",
+            "reports/5.5.3/review.md": "18030c136a7d416b1e5d313c84ec1164b805ff66c7ffdad22da80616a9d38197",
+            "reports/5.5.3/reviewed-baseline.json": "9145302eaef634225c9253f8355c564612c06e3bf660e150f464f7beccfd944e",
+            "resolved-first-party/routecontract-core/0.2.0/_remote.repositories": "38278aa726d92783a4b8f80657bd53dc58ced0f55380893076babd9a850e9f93",
+            "resolved-first-party/routecontract-core/0.2.0/routecontract-core-0.2.0.jar": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac",
+            "resolved-first-party/routecontract-core/0.2.0/routecontract-core-0.2.0.jar.sha1": "8f372cfb48e6b356f4bb2b61601a75bed833011543fbeffd48e247692580e248",
+            "resolved-first-party/routecontract-core/0.2.0/routecontract-core-0.2.0.pom": "ccf3a3854e9f369facb1fe63eabc7303c507a7df2a6438372fc77259428519ce",
+            "resolved-first-party/routecontract-core/0.2.0/routecontract-core-0.2.0.pom.sha1": "e4b6d843172a50bc6e8c77a780e1099ad574d2a8aaeb45bd60cdf33bcc2d7fda",
+            "resolved-first-party/routecontract-shardingsphere-5.5/0.2.0/_remote.repositories": "ad37f47d1f6544f1a3c8aa42b040e9556af7273aefed184030b8b5d5d3e5dad0",
+            "resolved-first-party/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.jar": "e48e67b2ce2c5d75d60d6794fe93c34d34697daff810a7b1f9c977095c5a02e5",
+            "resolved-first-party/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.jar.sha1": "46b8cb0d2ce8e6220935844d47ef21042097e44f7d937d0929bb13266579d12e",
+            "resolved-first-party/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.pom": "d6a5232c2d43ec109fc04924635af245b930c99e449c13bd7949c8f62a518945",
+            "resolved-first-party/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.pom.sha1": "7370c3f0bcefc733fb094e5c0b87f7ded1be2a4928e105f3f9866dc479b06710",
+            "resolved-graph.json": "aefedddd7ad256ad8e45fd1170568ca9b3e749723455245cf73a8e1b407f2bd1",
+            "summary.json": "d649bc29ec9f0b756468d88aba536940ba06d0e11871d4af6bc2388371b36d53",
+            "toolchain-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "toolchain.log": "8355d27c47756fa0cf809d01b41bdf3d72def0371ef969558259f1fea271b232"
+          },
+          "firstPartyArtifacts": 2,
+          "junit": {
+            "errors": 0,
+            "failures": 0,
+            "skipped": 0,
+            "tests": 3
+          },
+          "localImageIdentitiesUnchanged": true,
+          "minimizedReportsVerified": true,
+          "offline": true,
+          "phase": "offline",
+          "privateBindAssertionPassed": true,
+          "sameExpectedBusinessRow": true,
+          "shardingSphereComponents": 75,
+          "testMethods": [
+            "loadedCoreAndAutoDiscoveredHookAreTheExpectedStagedJarBytes",
+            "sameBusinessRowWithExpandedExecutionFailsAssertionsAndBothCliReportFormats",
+            "unchangedRealMySqlCaptureMatchesTheExistingReviewedSchemaTwoBaseline"
+          ]
+        }
+      ],
+      "runtime": "5.5.3"
+    },
+    {
+      "cellSummarySha256": "892b1d7adba1bc11046303c5960088777b2efeade7a52ee2366fc5ee9f0d66be",
+      "closedPrimeEndpoint": "REFUSED",
+      "complete": true,
+      "frozenCache": {
+        "afterOfflineSha256": "c8ba541380ca92ef92401eea781f5161f13b0305880acdd7bc6c11860c6c1f6c",
+        "entries": 2453,
+        "inventorySha256": "c8ba541380ca92ef92401eea781f5161f13b0305880acdd7bc6c11860c6c1f6c",
+        "unchanged": true
+      },
+      "javaFeature": 21,
+      "negativeControls": [
+        {
+          "actualDigest": "abcff8965ea7d9411565978b35164cd3914b338e",
+          "actualModifiedArtifact": true,
+          "algorithm": "sha1",
+          "case": "checksum",
+          "coordinate": "io.github.ym0506.routecontract:routecontract-core:jar:0.2.0",
+          "corruptedSha256": "e3fd94d25a7f2bfa6ed531493c14d0bad43c8267736136a38ef6acf838d60c2f",
+          "dependencyCacheInitiallyAbsent": true,
+          "evidenceSha256": {
+            "commands.jsonl": "a0a9b1736c8eb776e6cdbeda1911f1a0e00f69aaa6f719968ce1dab26e1cc0e2",
+            "corruption.json": "c1230fa6410809c658e75000f45bc8d83ae4d9350a2797247dda464140154956",
+            "initial-cache.json": "a9f4af779f87ae6d827c73bc26414dc6bac1f63a2720981d6c1ee9daf2231a23",
+            "rejection-exit.json": "01614b0e7bf86220a2287c6fd76f9b3a5c06913c2e0762c9eb3958c397f0bbee",
+            "rejection.log": "e619ff2d84c48eaa77ed2cd73b5a69963fd551a9d90c7eb0b8ce2a43bd144a06",
+            "repository-requests.jsonl": "02eccb47653bb7036ec497e7e2c18d68fdf76b92526b6dbfaa95d4373073b5c8",
+            "settings.xml": "fdbe08a501322d6b073bf5977e51e717cfeebab9d784656473c126080a89a04e"
+          },
+          "expectedDigest": "3aa42ff16da32efdfc4c4663d937321e79a73097",
+          "nativeExitCode": 1,
+          "rejection": "MAVEN_STRICT_CHECKSUM",
+          "repositoryId": "routecontract-controlled",
+          "reviewedSha256": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac",
+          "successfulGet200Counts": {
+            "jar": 2,
+            "sidecar": 2
+          }
+        },
+        {
+          "actualOrigin": "routecontract-unintended-a24",
+          "case": "wrong-origin",
+          "consumedFirstPartyFiles": [
+            {
+              "origin": "routecontract-unintended-a24",
+              "originMarkerSha256": "ec748bad336bf89b8e2e1fef089cff53f71b51e889e718d4403b15a3508af402",
+              "path": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.jar",
+              "sha256": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac"
+            },
+            {
+              "origin": "routecontract-unintended-a24",
+              "originMarkerSha256": "ec748bad336bf89b8e2e1fef089cff53f71b51e889e718d4403b15a3508af402",
+              "path": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.pom",
+              "sha256": "ccf3a3854e9f369facb1fe63eabc7303c507a7df2a6438372fc77259428519ce"
+            },
+            {
+              "origin": "routecontract-unintended-a24",
+              "originMarkerSha256": "e0538f255d7a37d8563ea8c89b06a739e06ffd14f2f760ac8a8d4c716982b608",
+              "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.jar",
+              "sha256": "d5e73f86004fc5a00ebdf3069440d16f8eaf2e033e8b57a7d096ace26630fbe4"
+            },
+            {
+              "origin": "routecontract-unintended-a24",
+              "originMarkerSha256": "e0538f255d7a37d8563ea8c89b06a739e06ffd14f2f760ac8a8d4c716982b608",
+              "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.pom",
+              "sha256": "baa1a36766d63969f38a90d6ba3c6b9f3d6004e230ed42f2a8778053bc172a3f"
+            }
+          ],
+          "correctReviewedBytes": true,
+          "dependencyCacheInitiallyAbsent": true,
+          "evidenceSha256": {
+            "commands.jsonl": "de3cad372694782b5b0fa3570beb10dcaab94637a200892e09a428baf07860cc",
+            "initial-cache.json": "a9f4af779f87ae6d827c73bc26414dc6bac1f63a2720981d6c1ee9daf2231a23",
+            "repository-requests.jsonl": "cc1a13076c233d92b19c7b93ff05e50cd22af7c2e058064a76304821f5c69835",
+            "resolve-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "resolve.log": "57e1aa9a9204ee0dc94b9172ad33eac8e37eda1fd77bc935627417a5ee605a88",
+            "selected-graph.json": "9a53a607fb7ab229655f6863552b5fa031df87c6e7204fc323b3e63e8e6ba4aa",
+            "settings.xml": "ab5a84cb5cd6295fd100ea8a5c3f9f4e53ade75b9e59b833388e9ab8abf53448"
+          },
+          "expectedOrigin": "routecontract-controlled",
+          "rejection": "UNEXPECTED_REPOSITORY_ORIGIN",
+          "successfulGet200Counts": {
+            "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.jar": 1,
+            "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.pom": 1,
+            "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.jar": 1,
+            "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.pom": 1
+          }
+        },
+        {
+          "artifact": "shardingsphere-infra-executor",
+          "case": "wrong-runtime",
+          "consumedFirstPartyFiles": [
+            {
+              "origin": "routecontract-controlled",
+              "originMarkerSha256": "527280987b86672377e2b5781d53f628bf7f8badb54daf5f940dc5ec84746dae",
+              "path": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.jar",
+              "sha256": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac"
+            },
+            {
+              "origin": "routecontract-controlled",
+              "originMarkerSha256": "527280987b86672377e2b5781d53f628bf7f8badb54daf5f940dc5ec84746dae",
+              "path": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.pom",
+              "sha256": "ccf3a3854e9f369facb1fe63eabc7303c507a7df2a6438372fc77259428519ce"
+            },
+            {
+              "origin": "routecontract-controlled",
+              "originMarkerSha256": "c43dbf1ef86a880bbc74d8f7b82acc4be8bb47a7b63b36ed0129c232d3c08f54",
+              "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.jar",
+              "sha256": "d5e73f86004fc5a00ebdf3069440d16f8eaf2e033e8b57a7d096ace26630fbe4"
+            },
+            {
+              "origin": "routecontract-controlled",
+              "originMarkerSha256": "c43dbf1ef86a880bbc74d8f7b82acc4be8bb47a7b63b36ed0129c232d3c08f54",
+              "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.pom",
+              "sha256": "baa1a36766d63969f38a90d6ba3c6b9f3d6004e230ed42f2a8778053bc172a3f"
+            }
+          ],
+          "correctAnchorsRetained": false,
+          "dependencyCacheInitiallyAbsent": true,
+          "evidenceSha256": {
+            "commands.jsonl": "cc6605d6bc5d248db4080ba3d961dd05fd0680aa14f171b1bd894279463ac688",
+            "graph-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "graph.log": "59698d04d52129c4f447f110cdda4838f7bb37add17e76dd1d6209afbb9a67fa",
+            "initial-cache.json": "a9f4af779f87ae6d827c73bc26414dc6bac1f63a2720981d6c1ee9daf2231a23",
+            "rejection-exit.json": "01614b0e7bf86220a2287c6fd76f9b3a5c06913c2e0762c9eb3958c397f0bbee",
+            "rejection.log": "9b55777257cd5284f0ffe6d43f79ddc0049ed3705fd0f4cc11c0579d6b45b693",
+            "repository-requests.jsonl": "79adf45758643a6aa43666b224a0ea11a98fc29854160518c230e7533773e8e5",
+            "selected-graph.json": "28a64466e64015732feb71f168d57684b36a8dcdb55f6d9594bd24b31585709c",
+            "settings.xml": "00842b97377277e4279bb8e172163ee17522bd47efd3c37e39215fb4ebc1dc20"
+          },
+          "negativePomSha256": "51f2e0b307bfc1d684923af4c3cbc413d76c219d24e0db18e93bcd102184df9e",
+          "rejectedVersion": "5.5.3",
+          "rejection": "BannedDependencies",
+          "selectedFirstParty": [
+            {
+              "module": "routecontract-core",
+              "version": "0.2.0"
+            },
+            {
+              "module": "routecontract-shardingsphere-5.5.2",
+              "version": "0.2.0"
+            }
+          ],
+          "successfulGet200Counts": {
+            "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.jar": 1,
+            "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.pom": 1,
+            "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.jar": 1,
+            "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.pom": 1
+          }
+        },
+        {
+          "artifact": "shardingsphere-infra-common",
+          "case": "wrong-non-anchor",
+          "consumedFirstPartyFiles": [
+            {
+              "origin": "routecontract-controlled",
+              "originMarkerSha256": "eaceed7dd5fa870195dc392ee76eee6ada90892fa41af5b253664f520e7e5fa7",
+              "path": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.jar",
+              "sha256": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac"
+            },
+            {
+              "origin": "routecontract-controlled",
+              "originMarkerSha256": "eaceed7dd5fa870195dc392ee76eee6ada90892fa41af5b253664f520e7e5fa7",
+              "path": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.pom",
+              "sha256": "ccf3a3854e9f369facb1fe63eabc7303c507a7df2a6438372fc77259428519ce"
+            },
+            {
+              "origin": "routecontract-controlled",
+              "originMarkerSha256": "69e198797e01ce7ddd71b38ad42fba44e997f9e6fc7aeb0feb7d35a18f88aae9",
+              "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.jar",
+              "sha256": "d5e73f86004fc5a00ebdf3069440d16f8eaf2e033e8b57a7d096ace26630fbe4"
+            },
+            {
+              "origin": "routecontract-controlled",
+              "originMarkerSha256": "69e198797e01ce7ddd71b38ad42fba44e997f9e6fc7aeb0feb7d35a18f88aae9",
+              "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.pom",
+              "sha256": "baa1a36766d63969f38a90d6ba3c6b9f3d6004e230ed42f2a8778053bc172a3f"
+            }
+          ],
+          "correctAnchorsRetained": true,
+          "dependencyCacheInitiallyAbsent": true,
+          "evidenceSha256": {
+            "commands.jsonl": "73145bead8b41f9ca6cfaa2eeda77b604f1acb8986004597ee97995a03b3d8eb",
+            "graph-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "graph.log": "b1cb8c7b62e451e2b8f8ae9674416beeb5ff4aa5f0a2e3cd7318b1c7fcf62da9",
+            "initial-cache.json": "a9f4af779f87ae6d827c73bc26414dc6bac1f63a2720981d6c1ee9daf2231a23",
+            "rejection-exit.json": "01614b0e7bf86220a2287c6fd76f9b3a5c06913c2e0762c9eb3958c397f0bbee",
+            "rejection.log": "2026372ca33e703a41d4e927998e4d88855dcca5391ba79d8aff3f5a33583bc9",
+            "repository-requests.jsonl": "9727405a2951cbfbd2f42d177a48b81f0a8837dfa6e5b1357934bd03d3895ccd",
+            "selected-graph.json": "d63d1730da8c6f46a2fdfaf6093e0756e4b9b0e509c34d8ad4ef854f521eb5c7",
+            "settings.xml": "32641aada967091f88c528a0f56ff97d2c4a98f3b1ba1d5693d37ad78fe651ed"
+          },
+          "negativePomSha256": "5b5983b5f717e51b8046da6afd0055f676b4d74be0516539afdef0c110ca298a",
+          "rejectedVersion": "5.5.3",
+          "rejection": "BannedDependencies",
+          "selectedFirstParty": [
+            {
+              "module": "routecontract-core",
+              "version": "0.2.0"
+            },
+            {
+              "module": "routecontract-shardingsphere-5.5.2",
+              "version": "0.2.0"
+            }
+          ],
+          "successfulGet200Counts": {
+            "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.jar": 1,
+            "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.pom": 1,
+            "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.jar": 1,
+            "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.pom": 1
+          }
+        }
+      ],
+      "positiveExecutions": [
+        {
+          "approvedBaselineUnchanged": true,
+          "attempts": [
+            1,
+            2
+          ],
+          "classfiles": [
+            {
+              "major": 65,
+              "path": "classes/io/github/ym0506/routecontract/a24/A24JavaBoundary.class",
+              "sha256": "c44423c87d21a9811f4ac5c76c2437cc15bd88d6bfe480567c68ae953b96757f"
+            },
+            {
+              "major": 65,
+              "path": "test-classes/io/github/ym0506/routecontract/a24/OfflineImagePullPolicy.class",
+              "sha256": "5b94c2fb3f558e99e14ba89f45924ccbb0d3a10b694c611afb97cde91a18b503"
+            },
+            {
+              "major": 65,
+              "path": "test-classes/io/github/ym0506/routecontract/consumer/StagedArtifactMySqlTest$OrderRow.class",
+              "sha256": "fa77fd0d8d3ac8e0e259272550760ae2418ee03d359a145500ad5db64f809d57"
+            },
+            {
+              "major": 65,
+              "path": "test-classes/io/github/ym0506/routecontract/consumer/StagedArtifactMySqlTest$StatementBinder.class",
+              "sha256": "7de54fdbeb3a965f317104c1883626cee3c1b60de37f08ac9700c88da3f4c70d"
+            },
+            {
+              "major": 65,
+              "path": "test-classes/io/github/ym0506/routecontract/consumer/StagedArtifactMySqlTest.class",
+              "sha256": "f3decd0654b6ec22c115dddc7d530a5bf4e734db9e0b37d338e01fa785c65a26"
+            }
+          ],
+          "cliExecutionMode": "in-process ManifestReviewCli.run assertions",
+          "cliRegressionReturnCodes": {
+            "json": 1,
+            "markdown": 1
+          },
+          "containerControls": {
+            "actualInvocations": [
+              "mysql@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb",
+              "testcontainers/ryuk@sha256:dd3f023a6ed7015b3f95a49ccd65a2daf0c56e681422c12952b19a810dfa6298"
+            ],
+            "javaTestIpv4Property": true,
+            "policyClass": "io.github.ym0506.routecontract.a24.OfflineImagePullPolicy"
+          },
+          "coreResolvedTransitively": true,
+          "evidenceSha256": {
+            "commands.jsonl": "64c30f2cf2ecbac1e5b20a8f4b2e4c27b5736927a7b22a2ac643582439423858",
+            "consumer-pom.xml": "06eb976621c61f252e9cbcc9bc7ae65d0f791b640b4a20c52a472427f75b3c8e",
+            "controlled-environment.json": "26c7b18426b52dbff5b18e70b8b9adc810ed316b38313b6f523ceac743deab0a",
+            "graph-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "graph.log": "09febd4ae11d584770763473e9a2d9643d80ad040c4c6203d690769f5ffd9f5e",
+            "image-reference-normalization.json": "474ad6e1613c0ce16b3177eb07fb057ca2bf4bc317dff60975344fc72340523c",
+            "inputs/src/main/java/io/github/ym0506/routecontract/a24/A24JavaBoundary.java": "9e8726ba99071f4cbe6656c4185deb8c946fb005f58b13d6bb1c0d74710bb291",
+            "inputs/src/test/java/io/github/ym0506/routecontract/a24/OfflineImagePullPolicy.java": "3c339497c8500891bb7de709742a1cbf7b5f8e919204887c0ed5aba5215ee7ef",
+            "inputs/src/test/java/io/github/ym0506/routecontract/consumer/StagedArtifactMySqlTest.java": "2057a8665d7971cdd9fb3e609a6f9c07ec0178eac3750246694ba320d5877342",
+            "inputs/src/test/resources/manifests/find-paid-orders-by-user.shardingsphere-5.5.2.schema2.approved.json": "ea8c434dafeb74fea2eb9cce2da46516286d166c55fbaa8fb6cdd20f4c8ffad1",
+            "inputs/src/test/resources/manifests/find-paid-orders-by-user.shardingsphere-5.5.3.schema2.approved.json": "9145302eaef634225c9253f8355c564612c06e3bf660e150f464f7beccfd944e",
+            "java-boundary-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "java-boundary.log": "021377dd31847088d6442550316c5d961debc14377c415b9f18309101cbae33f",
+            "junit/TEST-io.github.ym0506.routecontract.consumer.StagedArtifactMySqlTest.xml": "9a83be8f48726c6e78e468ad395f2725b7d1191033b0ce42201b1d19192b9046",
+            "junit/io.github.ym0506.routecontract.consumer.StagedArtifactMySqlTest.txt": "9de22ddf886d51f5224a6c6e1eb89075bc8a25135cdebef9fbbc4676e8a866e4",
+            "local-images-after.json": "4663b0291996b82dac23700175daca3ca9f7f1ebf267c02c1aa24c67338fa614",
+            "local-images-before.json": "4663b0291996b82dac23700175daca3ca9f7f1ebf267c02c1aa24c67338fa614",
+            "maven-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "maven.log": "784e61ca7b258533538513b6b524d6c2f3f12bb710b8cd7352f6c7cb53f8e906",
+            "reports/5.5.2/candidate.json": "53494d8f0a95311d9fe5e13ceab8452037851052c3717a58fa05efebf9015fb9",
+            "reports/5.5.2/review.json": "cf5fcec4a9d63f7ac3b9917461ed3a8ab8c69fec43b9b0b129ddd383bc90fe80",
+            "reports/5.5.2/review.md": "e656c943ccb666dcc92553f2d3e9216c69ea8897f7912144d7dd190525445b34",
+            "reports/5.5.2/reviewed-baseline.json": "ea8c434dafeb74fea2eb9cce2da46516286d166c55fbaa8fb6cdd20f4c8ffad1",
+            "repository-requests.jsonl": "056994c48293c99bbc3c2ccda66be911d45252ef16e4bd2d0998597acee80019",
+            "resolved-first-party/routecontract-core/0.2.0/_remote.repositories": "41daaf7ecd725a3d44c5c71ba674eec768e49d90edea1ad45d7a24073eda1d38",
+            "resolved-first-party/routecontract-core/0.2.0/routecontract-core-0.2.0.jar": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac",
+            "resolved-first-party/routecontract-core/0.2.0/routecontract-core-0.2.0.jar.sha1": "8f372cfb48e6b356f4bb2b61601a75bed833011543fbeffd48e247692580e248",
+            "resolved-first-party/routecontract-core/0.2.0/routecontract-core-0.2.0.pom": "ccf3a3854e9f369facb1fe63eabc7303c507a7df2a6438372fc77259428519ce",
+            "resolved-first-party/routecontract-core/0.2.0/routecontract-core-0.2.0.pom.sha1": "e4b6d843172a50bc6e8c77a780e1099ad574d2a8aaeb45bd60cdf33bcc2d7fda",
+            "resolved-first-party/routecontract-shardingsphere-5.5.2/0.2.0/_remote.repositories": "709ac80992748c8640f9301885ae69753155dbcc591ed88439d5f67f0f161c5d",
+            "resolved-first-party/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.jar": "d5e73f86004fc5a00ebdf3069440d16f8eaf2e033e8b57a7d096ace26630fbe4",
+            "resolved-first-party/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.jar.sha1": "b08b55667975488651877321d372a267d247e5c72538fb135cef70f097efb14e",
+            "resolved-first-party/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.pom": "baa1a36766d63969f38a90d6ba3c6b9f3d6004e230ed42f2a8778053bc172a3f",
+            "resolved-first-party/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.pom.sha1": "e33e2da3e77258df0da74a76c1419ab234251bdd2b5cedff9b8024c421b43b88",
+            "resolved-graph.json": "9a53a607fb7ab229655f6863552b5fa031df87c6e7204fc323b3e63e8e6ba4aa",
+            "settings.xml": "0ccd1d6dc5e25bb00de6e18c2d3639d3e98a90865002b83cca662a57423699fa",
+            "summary.json": "2f5fd124b0ec1934c36ca8afa3b6f818c146255b8100542f2d5fb6f1397b961c",
+            "toolchain-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "toolchain.log": "15465ab4f901807a5392f390c782b3fad28c3adb41dea9c7a888a2416a659bc0"
+          },
+          "firstPartyArtifacts": 2,
+          "junit": {
+            "errors": 0,
+            "failures": 0,
+            "skipped": 0,
+            "tests": 3
+          },
+          "localImageIdentitiesUnchanged": true,
+          "minimizedReportsVerified": true,
+          "offline": false,
+          "phase": "online",
+          "privateBindAssertionPassed": true,
+          "sameExpectedBusinessRow": true,
+          "shardingSphereComponents": 122,
+          "testMethods": [
+            "loadedCoreAndAutoDiscoveredHookAreTheExpectedStagedJarBytes",
+            "sameBusinessRowWithExpandedExecutionFailsAssertionsAndBothCliReportFormats",
+            "unchangedRealMySqlCaptureMatchesTheExistingReviewedSchemaTwoBaseline"
+          ]
+        },
+        {
+          "approvedBaselineUnchanged": true,
+          "attempts": [
+            1,
+            2
+          ],
+          "classfiles": [
+            {
+              "major": 65,
+              "path": "classes/io/github/ym0506/routecontract/a24/A24JavaBoundary.class",
+              "sha256": "c44423c87d21a9811f4ac5c76c2437cc15bd88d6bfe480567c68ae953b96757f"
+            },
+            {
+              "major": 65,
+              "path": "test-classes/io/github/ym0506/routecontract/a24/OfflineImagePullPolicy.class",
+              "sha256": "5b94c2fb3f558e99e14ba89f45924ccbb0d3a10b694c611afb97cde91a18b503"
+            },
+            {
+              "major": 65,
+              "path": "test-classes/io/github/ym0506/routecontract/consumer/StagedArtifactMySqlTest$OrderRow.class",
+              "sha256": "fa77fd0d8d3ac8e0e259272550760ae2418ee03d359a145500ad5db64f809d57"
+            },
+            {
+              "major": 65,
+              "path": "test-classes/io/github/ym0506/routecontract/consumer/StagedArtifactMySqlTest$StatementBinder.class",
+              "sha256": "7de54fdbeb3a965f317104c1883626cee3c1b60de37f08ac9700c88da3f4c70d"
+            },
+            {
+              "major": 65,
+              "path": "test-classes/io/github/ym0506/routecontract/consumer/StagedArtifactMySqlTest.class",
+              "sha256": "f3decd0654b6ec22c115dddc7d530a5bf4e734db9e0b37d338e01fa785c65a26"
+            }
+          ],
+          "cliExecutionMode": "in-process ManifestReviewCli.run assertions",
+          "cliRegressionReturnCodes": {
+            "json": 1,
+            "markdown": 1
+          },
+          "containerControls": {
+            "actualInvocations": [
+              "mysql@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb",
+              "testcontainers/ryuk@sha256:dd3f023a6ed7015b3f95a49ccd65a2daf0c56e681422c12952b19a810dfa6298"
+            ],
+            "javaTestIpv4Property": true,
+            "policyClass": "io.github.ym0506.routecontract.a24.OfflineImagePullPolicy"
+          },
+          "coreResolvedTransitively": true,
+          "evidenceSha256": {
+            "commands.jsonl": "3e27b8cb6279544060634b240bb37b4ed336dfa17fb993b2697764a06b7ffdc9",
+            "consumer-pom.xml": "06eb976621c61f252e9cbcc9bc7ae65d0f791b640b4a20c52a472427f75b3c8e",
+            "controlled-environment.json": "26c7b18426b52dbff5b18e70b8b9adc810ed316b38313b6f523ceac743deab0a",
+            "graph-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "graph.log": "6b948513a08ebd209b3d064f9603cf9a8be2bc954306affb789c374f7d36d6c1",
+            "image-reference-normalization.json": "474ad6e1613c0ce16b3177eb07fb057ca2bf4bc317dff60975344fc72340523c",
+            "inputs/src/main/java/io/github/ym0506/routecontract/a24/A24JavaBoundary.java": "9e8726ba99071f4cbe6656c4185deb8c946fb005f58b13d6bb1c0d74710bb291",
+            "inputs/src/test/java/io/github/ym0506/routecontract/a24/OfflineImagePullPolicy.java": "3c339497c8500891bb7de709742a1cbf7b5f8e919204887c0ed5aba5215ee7ef",
+            "inputs/src/test/java/io/github/ym0506/routecontract/consumer/StagedArtifactMySqlTest.java": "2057a8665d7971cdd9fb3e609a6f9c07ec0178eac3750246694ba320d5877342",
+            "inputs/src/test/resources/manifests/find-paid-orders-by-user.shardingsphere-5.5.2.schema2.approved.json": "ea8c434dafeb74fea2eb9cce2da46516286d166c55fbaa8fb6cdd20f4c8ffad1",
+            "inputs/src/test/resources/manifests/find-paid-orders-by-user.shardingsphere-5.5.3.schema2.approved.json": "9145302eaef634225c9253f8355c564612c06e3bf660e150f464f7beccfd944e",
+            "java-boundary-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "java-boundary.log": "021377dd31847088d6442550316c5d961debc14377c415b9f18309101cbae33f",
+            "junit/TEST-io.github.ym0506.routecontract.consumer.StagedArtifactMySqlTest.xml": "f7495b76aa1124559c7fe8b4b8219d8aa5640357ea39bcf2753f72ad14c86bc9",
+            "junit/io.github.ym0506.routecontract.consumer.StagedArtifactMySqlTest.txt": "72ce26163b7d8d025f2fe0d77606738a7065e0079da0a83688ef9cbd0986d02f",
+            "local-images-after.json": "4663b0291996b82dac23700175daca3ca9f7f1ebf267c02c1aa24c67338fa614",
+            "local-images-before.json": "4663b0291996b82dac23700175daca3ca9f7f1ebf267c02c1aa24c67338fa614",
+            "maven-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "maven.log": "c1156b158c2b7b1a65c66df0744a4b4578d10bf4e31c9f69299bda75344e90db",
+            "reports/5.5.2/candidate.json": "53494d8f0a95311d9fe5e13ceab8452037851052c3717a58fa05efebf9015fb9",
+            "reports/5.5.2/review.json": "cf5fcec4a9d63f7ac3b9917461ed3a8ab8c69fec43b9b0b129ddd383bc90fe80",
+            "reports/5.5.2/review.md": "e656c943ccb666dcc92553f2d3e9216c69ea8897f7912144d7dd190525445b34",
+            "reports/5.5.2/reviewed-baseline.json": "ea8c434dafeb74fea2eb9cce2da46516286d166c55fbaa8fb6cdd20f4c8ffad1",
+            "resolved-first-party/routecontract-core/0.2.0/_remote.repositories": "41daaf7ecd725a3d44c5c71ba674eec768e49d90edea1ad45d7a24073eda1d38",
+            "resolved-first-party/routecontract-core/0.2.0/routecontract-core-0.2.0.jar": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac",
+            "resolved-first-party/routecontract-core/0.2.0/routecontract-core-0.2.0.jar.sha1": "8f372cfb48e6b356f4bb2b61601a75bed833011543fbeffd48e247692580e248",
+            "resolved-first-party/routecontract-core/0.2.0/routecontract-core-0.2.0.pom": "ccf3a3854e9f369facb1fe63eabc7303c507a7df2a6438372fc77259428519ce",
+            "resolved-first-party/routecontract-core/0.2.0/routecontract-core-0.2.0.pom.sha1": "e4b6d843172a50bc6e8c77a780e1099ad574d2a8aaeb45bd60cdf33bcc2d7fda",
+            "resolved-first-party/routecontract-shardingsphere-5.5.2/0.2.0/_remote.repositories": "709ac80992748c8640f9301885ae69753155dbcc591ed88439d5f67f0f161c5d",
+            "resolved-first-party/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.jar": "d5e73f86004fc5a00ebdf3069440d16f8eaf2e033e8b57a7d096ace26630fbe4",
+            "resolved-first-party/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.jar.sha1": "b08b55667975488651877321d372a267d247e5c72538fb135cef70f097efb14e",
+            "resolved-first-party/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.pom": "baa1a36766d63969f38a90d6ba3c6b9f3d6004e230ed42f2a8778053bc172a3f",
+            "resolved-first-party/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.pom.sha1": "e33e2da3e77258df0da74a76c1419ab234251bdd2b5cedff9b8024c421b43b88",
+            "resolved-graph.json": "9a53a607fb7ab229655f6863552b5fa031df87c6e7204fc323b3e63e8e6ba4aa",
+            "summary.json": "8a354589a4ebbf1f2a175d5fa9a88111a9ff032d5e55edad47b10721e1a78bbe",
+            "toolchain-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "toolchain.log": "15465ab4f901807a5392f390c782b3fad28c3adb41dea9c7a888a2416a659bc0"
+          },
+          "firstPartyArtifacts": 2,
+          "junit": {
+            "errors": 0,
+            "failures": 0,
+            "skipped": 0,
+            "tests": 3
+          },
+          "localImageIdentitiesUnchanged": true,
+          "minimizedReportsVerified": true,
+          "offline": true,
+          "phase": "offline",
+          "privateBindAssertionPassed": true,
+          "sameExpectedBusinessRow": true,
+          "shardingSphereComponents": 122,
+          "testMethods": [
+            "loadedCoreAndAutoDiscoveredHookAreTheExpectedStagedJarBytes",
+            "sameBusinessRowWithExpandedExecutionFailsAssertionsAndBothCliReportFormats",
+            "unchangedRealMySqlCaptureMatchesTheExistingReviewedSchemaTwoBaseline"
+          ]
+        }
+      ],
+      "runtime": "5.5.2"
+    },
+    {
+      "cellSummarySha256": "ca8e78b23b0b58f5ed19e198228b1c296ed5e9116d675d3ac9050ea328c43150",
+      "closedPrimeEndpoint": "REFUSED",
+      "complete": true,
+      "frozenCache": {
+        "afterOfflineSha256": "81999ff92dcfd9265b0cf8419aa44cfca8ada67aa335e6e7e89c27c5470fecb5",
+        "entries": 2079,
+        "inventorySha256": "81999ff92dcfd9265b0cf8419aa44cfca8ada67aa335e6e7e89c27c5470fecb5",
+        "unchanged": true
+      },
+      "javaFeature": 21,
+      "negativeControls": [
+        {
+          "actualDigest": "abcff8965ea7d9411565978b35164cd3914b338e",
+          "actualModifiedArtifact": true,
+          "algorithm": "sha1",
+          "case": "checksum",
+          "coordinate": "io.github.ym0506.routecontract:routecontract-core:jar:0.2.0",
+          "corruptedSha256": "e3fd94d25a7f2bfa6ed531493c14d0bad43c8267736136a38ef6acf838d60c2f",
+          "dependencyCacheInitiallyAbsent": true,
+          "evidenceSha256": {
+            "commands.jsonl": "b8bcfda21cc978cf1e4d788cc24c3c2e95b2217d2f1f2360f8438aba9e2e3ad9",
+            "corruption.json": "c1230fa6410809c658e75000f45bc8d83ae4d9350a2797247dda464140154956",
+            "initial-cache.json": "a9f4af779f87ae6d827c73bc26414dc6bac1f63a2720981d6c1ee9daf2231a23",
+            "rejection-exit.json": "01614b0e7bf86220a2287c6fd76f9b3a5c06913c2e0762c9eb3958c397f0bbee",
+            "rejection.log": "6fe0a7fbdef29a81d625a5d90cd74b04ccf8263601dff864558a742f1e228525",
+            "repository-requests.jsonl": "2ca3cf770b49efaff782ba0ad94593c43ea6bf712b2064077a730b6488234a39",
+            "settings.xml": "aa4c6cf59e760e1d92a3b3b49157c256f0d48c2cac28b57445416da16820dc20"
+          },
+          "expectedDigest": "3aa42ff16da32efdfc4c4663d937321e79a73097",
+          "nativeExitCode": 1,
+          "rejection": "MAVEN_STRICT_CHECKSUM",
+          "repositoryId": "routecontract-controlled",
+          "reviewedSha256": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac",
+          "successfulGet200Counts": {
+            "jar": 2,
+            "sidecar": 2
+          }
+        },
+        {
+          "actualOrigin": "routecontract-unintended-a24",
+          "case": "wrong-origin",
+          "consumedFirstPartyFiles": [
+            {
+              "origin": "routecontract-unintended-a24",
+              "originMarkerSha256": "c28079cb15e2d01f403cb2fcdaae8e3b50723b9e6731e647e2262ebcb5b37f64",
+              "path": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.jar",
+              "sha256": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac"
+            },
+            {
+              "origin": "routecontract-unintended-a24",
+              "originMarkerSha256": "c28079cb15e2d01f403cb2fcdaae8e3b50723b9e6731e647e2262ebcb5b37f64",
+              "path": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.pom",
+              "sha256": "ccf3a3854e9f369facb1fe63eabc7303c507a7df2a6438372fc77259428519ce"
+            },
+            {
+              "origin": "routecontract-unintended-a24",
+              "originMarkerSha256": "ca96ba4dd93701f56544221e87bfccd83e2ed39800368971ea4fa028bd014857",
+              "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.jar",
+              "sha256": "e48e67b2ce2c5d75d60d6794fe93c34d34697daff810a7b1f9c977095c5a02e5"
+            },
+            {
+              "origin": "routecontract-unintended-a24",
+              "originMarkerSha256": "ca96ba4dd93701f56544221e87bfccd83e2ed39800368971ea4fa028bd014857",
+              "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.pom",
+              "sha256": "d6a5232c2d43ec109fc04924635af245b930c99e449c13bd7949c8f62a518945"
+            }
+          ],
+          "correctReviewedBytes": true,
+          "dependencyCacheInitiallyAbsent": true,
+          "evidenceSha256": {
+            "commands.jsonl": "86b5e7eab8e76093fa234eb5cf24bf7164bd392d7ed15fee21dc8d116647c90b",
+            "initial-cache.json": "a9f4af779f87ae6d827c73bc26414dc6bac1f63a2720981d6c1ee9daf2231a23",
+            "repository-requests.jsonl": "a27ad91613c7127d3a4c35ec0d6bf69379b666fdc5adb4bbff03252165740791",
+            "resolve-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "resolve.log": "3c54161c3d6047e57edc4263800a9706da2f7546c14944d67606c95005906236",
+            "selected-graph.json": "aefedddd7ad256ad8e45fd1170568ca9b3e749723455245cf73a8e1b407f2bd1",
+            "settings.xml": "9e595063642aa7d360f11715915c9721a33c9deef47965649ff458cc57037dc1"
+          },
+          "expectedOrigin": "routecontract-controlled",
+          "rejection": "UNEXPECTED_REPOSITORY_ORIGIN",
+          "successfulGet200Counts": {
+            "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.jar": 1,
+            "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.pom": 1,
+            "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.jar": 1,
+            "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.pom": 1
+          }
+        },
+        {
+          "artifact": "shardingsphere-infra-executor",
+          "case": "wrong-runtime",
+          "consumedFirstPartyFiles": [
+            {
+              "origin": "routecontract-controlled",
+              "originMarkerSha256": "84452e20fff0f6b61d6fe0a30a1809a3cc670bf5f99a963fcbb492770f2e9c85",
+              "path": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.jar",
+              "sha256": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac"
+            },
+            {
+              "origin": "routecontract-controlled",
+              "originMarkerSha256": "84452e20fff0f6b61d6fe0a30a1809a3cc670bf5f99a963fcbb492770f2e9c85",
+              "path": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.pom",
+              "sha256": "ccf3a3854e9f369facb1fe63eabc7303c507a7df2a6438372fc77259428519ce"
+            },
+            {
+              "origin": "routecontract-controlled",
+              "originMarkerSha256": "c259525480e45139c1ce031fd142aeeec776e3c03c71d4d376c458f2561a9c7a",
+              "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.jar",
+              "sha256": "e48e67b2ce2c5d75d60d6794fe93c34d34697daff810a7b1f9c977095c5a02e5"
+            },
+            {
+              "origin": "routecontract-controlled",
+              "originMarkerSha256": "c259525480e45139c1ce031fd142aeeec776e3c03c71d4d376c458f2561a9c7a",
+              "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.pom",
+              "sha256": "d6a5232c2d43ec109fc04924635af245b930c99e449c13bd7949c8f62a518945"
+            }
+          ],
+          "correctAnchorsRetained": false,
+          "dependencyCacheInitiallyAbsent": true,
+          "evidenceSha256": {
+            "commands.jsonl": "c3a84e02f7fe4491bf6e13cfa51caf31d7a16b40e0ea45cba771a91dbc2a7c82",
+            "graph-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "graph.log": "fa6761cc5c780a5ea1df9ea97ed34e19d316610d8149e87cbae3cec9799a607a",
+            "initial-cache.json": "a9f4af779f87ae6d827c73bc26414dc6bac1f63a2720981d6c1ee9daf2231a23",
+            "rejection-exit.json": "01614b0e7bf86220a2287c6fd76f9b3a5c06913c2e0762c9eb3958c397f0bbee",
+            "rejection.log": "a0bfc366576c17737f2de71b155ff11f95a548a0b7ecb74bb2604e4f67a7020a",
+            "repository-requests.jsonl": "9ced61faa3a0aaae847c034e7828789b689cc9be668781879bafe0cf322f9147",
+            "selected-graph.json": "9cef9f515cff8ecf6e7c852933cce7c8ef42255c5c2d20da12b9a7cc4878e13b",
+            "settings.xml": "2f8b1ff864ccdc59de90ebfa679167f20bb95cea21c889e5621574459b838db9"
+          },
+          "negativePomSha256": "d8572bde7e0e9f87de8c416ce413f651f634c31497119b21241bc1f620696dbb",
+          "rejectedVersion": "5.5.2",
+          "rejection": "BannedDependencies",
+          "selectedFirstParty": [
+            {
+              "module": "routecontract-core",
+              "version": "0.2.0"
+            },
+            {
+              "module": "routecontract-shardingsphere-5.5",
+              "version": "0.2.0"
+            }
+          ],
+          "successfulGet200Counts": {
+            "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.jar": 1,
+            "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.pom": 1,
+            "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.jar": 1,
+            "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.pom": 1
+          }
+        },
+        {
+          "artifact": "shardingsphere-infra-common",
+          "case": "wrong-non-anchor",
+          "consumedFirstPartyFiles": [
+            {
+              "origin": "routecontract-controlled",
+              "originMarkerSha256": "e5ef79e9db775ee17cb2aaf93dd0085fa169d9c9b85eb451847ec358b121face",
+              "path": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.jar",
+              "sha256": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac"
+            },
+            {
+              "origin": "routecontract-controlled",
+              "originMarkerSha256": "e5ef79e9db775ee17cb2aaf93dd0085fa169d9c9b85eb451847ec358b121face",
+              "path": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.pom",
+              "sha256": "ccf3a3854e9f369facb1fe63eabc7303c507a7df2a6438372fc77259428519ce"
+            },
+            {
+              "origin": "routecontract-controlled",
+              "originMarkerSha256": "29544173c7dcd84adaeb73dadfb885eb572d5731a31b771d79ff36835e34381a",
+              "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.jar",
+              "sha256": "e48e67b2ce2c5d75d60d6794fe93c34d34697daff810a7b1f9c977095c5a02e5"
+            },
+            {
+              "origin": "routecontract-controlled",
+              "originMarkerSha256": "29544173c7dcd84adaeb73dadfb885eb572d5731a31b771d79ff36835e34381a",
+              "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.pom",
+              "sha256": "d6a5232c2d43ec109fc04924635af245b930c99e449c13bd7949c8f62a518945"
+            }
+          ],
+          "correctAnchorsRetained": true,
+          "dependencyCacheInitiallyAbsent": true,
+          "evidenceSha256": {
+            "commands.jsonl": "f7f1b68cfcdb3eeace058f6ac1c74653f252322a1299f0d246709081120e1343",
+            "graph-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "graph.log": "788470e568574d882107daef297f4f6473803ed0e0e4c5e8656622ece55f2026",
+            "initial-cache.json": "a9f4af779f87ae6d827c73bc26414dc6bac1f63a2720981d6c1ee9daf2231a23",
+            "rejection-exit.json": "01614b0e7bf86220a2287c6fd76f9b3a5c06913c2e0762c9eb3958c397f0bbee",
+            "rejection.log": "248315ed2f039801c817132aab52e39c478a228c66fafc3db2d9711ac3dd7c22",
+            "repository-requests.jsonl": "9a4d606b0e5536e0478362facd44020b260675909f9c4e02711ec9d213995696",
+            "selected-graph.json": "571c34e1d24de6d11b4a1e35fb884492059c35e0dd73bcceaba0b3a8855c9586",
+            "settings.xml": "f953af6557c5fdf54a75095f2c56c6376c4c968d8463f4185e8549f1a2e9b970"
+          },
+          "negativePomSha256": "d7e71cb128f4cf155864a836aadad6a3dfc099e5bcaa20c2a133b86da6f2a42b",
+          "rejectedVersion": "5.5.2",
+          "rejection": "BannedDependencies",
+          "selectedFirstParty": [
+            {
+              "module": "routecontract-core",
+              "version": "0.2.0"
+            },
+            {
+              "module": "routecontract-shardingsphere-5.5",
+              "version": "0.2.0"
+            }
+          ],
+          "successfulGet200Counts": {
+            "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.jar": 1,
+            "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.pom": 1,
+            "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.jar": 1,
+            "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.pom": 1
+          }
+        }
+      ],
+      "positiveExecutions": [
+        {
+          "approvedBaselineUnchanged": true,
+          "attempts": [
+            1,
+            2
+          ],
+          "classfiles": [
+            {
+              "major": 65,
+              "path": "classes/io/github/ym0506/routecontract/a24/A24JavaBoundary.class",
+              "sha256": "c44423c87d21a9811f4ac5c76c2437cc15bd88d6bfe480567c68ae953b96757f"
+            },
+            {
+              "major": 65,
+              "path": "test-classes/io/github/ym0506/routecontract/a24/OfflineImagePullPolicy.class",
+              "sha256": "5b94c2fb3f558e99e14ba89f45924ccbb0d3a10b694c611afb97cde91a18b503"
+            },
+            {
+              "major": 65,
+              "path": "test-classes/io/github/ym0506/routecontract/consumer/StagedArtifactMySqlTest$OrderRow.class",
+              "sha256": "fa77fd0d8d3ac8e0e259272550760ae2418ee03d359a145500ad5db64f809d57"
+            },
+            {
+              "major": 65,
+              "path": "test-classes/io/github/ym0506/routecontract/consumer/StagedArtifactMySqlTest$StatementBinder.class",
+              "sha256": "7de54fdbeb3a965f317104c1883626cee3c1b60de37f08ac9700c88da3f4c70d"
+            },
+            {
+              "major": 65,
+              "path": "test-classes/io/github/ym0506/routecontract/consumer/StagedArtifactMySqlTest.class",
+              "sha256": "f3decd0654b6ec22c115dddc7d530a5bf4e734db9e0b37d338e01fa785c65a26"
+            }
+          ],
+          "cliExecutionMode": "in-process ManifestReviewCli.run assertions",
+          "cliRegressionReturnCodes": {
+            "json": 1,
+            "markdown": 1
+          },
+          "containerControls": {
+            "actualInvocations": [
+              "mysql@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb",
+              "testcontainers/ryuk@sha256:dd3f023a6ed7015b3f95a49ccd65a2daf0c56e681422c12952b19a810dfa6298"
+            ],
+            "javaTestIpv4Property": true,
+            "policyClass": "io.github.ym0506.routecontract.a24.OfflineImagePullPolicy"
+          },
+          "coreResolvedTransitively": true,
+          "evidenceSha256": {
+            "commands.jsonl": "4403d49b56ad0f2bab328ba739739eda968820fad24b9e667d8cff171f22bdcc",
+            "consumer-pom.xml": "06eb976621c61f252e9cbcc9bc7ae65d0f791b640b4a20c52a472427f75b3c8e",
+            "controlled-environment.json": "26c7b18426b52dbff5b18e70b8b9adc810ed316b38313b6f523ceac743deab0a",
+            "graph-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "graph.log": "ef0616c7c6e7c0613592c05acde7a3dd7ee7cf72f9c94b579a68a4803b80b96f",
+            "image-reference-normalization.json": "474ad6e1613c0ce16b3177eb07fb057ca2bf4bc317dff60975344fc72340523c",
+            "inputs/src/main/java/io/github/ym0506/routecontract/a24/A24JavaBoundary.java": "9e8726ba99071f4cbe6656c4185deb8c946fb005f58b13d6bb1c0d74710bb291",
+            "inputs/src/test/java/io/github/ym0506/routecontract/a24/OfflineImagePullPolicy.java": "3c339497c8500891bb7de709742a1cbf7b5f8e919204887c0ed5aba5215ee7ef",
+            "inputs/src/test/java/io/github/ym0506/routecontract/consumer/StagedArtifactMySqlTest.java": "2057a8665d7971cdd9fb3e609a6f9c07ec0178eac3750246694ba320d5877342",
+            "inputs/src/test/resources/manifests/find-paid-orders-by-user.shardingsphere-5.5.2.schema2.approved.json": "ea8c434dafeb74fea2eb9cce2da46516286d166c55fbaa8fb6cdd20f4c8ffad1",
+            "inputs/src/test/resources/manifests/find-paid-orders-by-user.shardingsphere-5.5.3.schema2.approved.json": "9145302eaef634225c9253f8355c564612c06e3bf660e150f464f7beccfd944e",
+            "java-boundary-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "java-boundary.log": "021377dd31847088d6442550316c5d961debc14377c415b9f18309101cbae33f",
+            "junit/TEST-io.github.ym0506.routecontract.consumer.StagedArtifactMySqlTest.xml": "5f1168f011c41bfecd1a8a9bac63be9038a8675f7dc2df9d040c840bd0efcbb1",
+            "junit/io.github.ym0506.routecontract.consumer.StagedArtifactMySqlTest.txt": "d5002ee200e6f4afce9f8d889690f5eafe9a784a07b0a9f8086d0422a85f8bf4",
+            "local-images-after.json": "4663b0291996b82dac23700175daca3ca9f7f1ebf267c02c1aa24c67338fa614",
+            "local-images-before.json": "4663b0291996b82dac23700175daca3ca9f7f1ebf267c02c1aa24c67338fa614",
+            "maven-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "maven.log": "7b3f65e59a254ab0fc33b4372b35d5d21520a17fbb9ba20712f4bc63f89f2961",
+            "reports/5.5.3/candidate.json": "5ab31f011765dfee7546aa5e96be31302f8d38905d4641f2d69b8c8aee3287b1",
+            "reports/5.5.3/review.json": "008c070b18596983c1d4011133bad41b4636d6e34eab3d1a7f04f21909353919",
+            "reports/5.5.3/review.md": "18030c136a7d416b1e5d313c84ec1164b805ff66c7ffdad22da80616a9d38197",
+            "reports/5.5.3/reviewed-baseline.json": "9145302eaef634225c9253f8355c564612c06e3bf660e150f464f7beccfd944e",
+            "repository-requests.jsonl": "87d8c2c0d4fa626a9ecd5d1cbf11dbe1e8b80fd7470aa7cd24d5d6f8ca71632e",
+            "resolved-first-party/routecontract-core/0.2.0/_remote.repositories": "75ef9ddfa39cd631e465a0bc902be9013ffff32290e06e211e06caa52f690347",
+            "resolved-first-party/routecontract-core/0.2.0/routecontract-core-0.2.0.jar": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac",
+            "resolved-first-party/routecontract-core/0.2.0/routecontract-core-0.2.0.jar.sha1": "8f372cfb48e6b356f4bb2b61601a75bed833011543fbeffd48e247692580e248",
+            "resolved-first-party/routecontract-core/0.2.0/routecontract-core-0.2.0.pom": "ccf3a3854e9f369facb1fe63eabc7303c507a7df2a6438372fc77259428519ce",
+            "resolved-first-party/routecontract-core/0.2.0/routecontract-core-0.2.0.pom.sha1": "e4b6d843172a50bc6e8c77a780e1099ad574d2a8aaeb45bd60cdf33bcc2d7fda",
+            "resolved-first-party/routecontract-shardingsphere-5.5/0.2.0/_remote.repositories": "fe7368f1bb6215fb8e39777f7aa0b3954ff0e1b5cab7daf88269ffd5f99f8cb2",
+            "resolved-first-party/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.jar": "e48e67b2ce2c5d75d60d6794fe93c34d34697daff810a7b1f9c977095c5a02e5",
+            "resolved-first-party/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.jar.sha1": "46b8cb0d2ce8e6220935844d47ef21042097e44f7d937d0929bb13266579d12e",
+            "resolved-first-party/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.pom": "d6a5232c2d43ec109fc04924635af245b930c99e449c13bd7949c8f62a518945",
+            "resolved-first-party/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.pom.sha1": "7370c3f0bcefc733fb094e5c0b87f7ded1be2a4928e105f3f9866dc479b06710",
+            "resolved-graph.json": "aefedddd7ad256ad8e45fd1170568ca9b3e749723455245cf73a8e1b407f2bd1",
+            "settings.xml": "1e27dae84a72a5fb793320f8aee8810130d7d0649d298c7b472e87dc79be733e",
+            "summary.json": "85acbeafcbf4b734d76b428c4fe59d1faf3a9da995d2370c1e9478d4d7181861",
+            "toolchain-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "toolchain.log": "15465ab4f901807a5392f390c782b3fad28c3adb41dea9c7a888a2416a659bc0"
+          },
+          "firstPartyArtifacts": 2,
+          "junit": {
+            "errors": 0,
+            "failures": 0,
+            "skipped": 0,
+            "tests": 3
+          },
+          "localImageIdentitiesUnchanged": true,
+          "minimizedReportsVerified": true,
+          "offline": false,
+          "phase": "online",
+          "privateBindAssertionPassed": true,
+          "sameExpectedBusinessRow": true,
+          "shardingSphereComponents": 75,
+          "testMethods": [
+            "loadedCoreAndAutoDiscoveredHookAreTheExpectedStagedJarBytes",
+            "sameBusinessRowWithExpandedExecutionFailsAssertionsAndBothCliReportFormats",
+            "unchangedRealMySqlCaptureMatchesTheExistingReviewedSchemaTwoBaseline"
+          ]
+        },
+        {
+          "approvedBaselineUnchanged": true,
+          "attempts": [
+            1,
+            2
+          ],
+          "classfiles": [
+            {
+              "major": 65,
+              "path": "classes/io/github/ym0506/routecontract/a24/A24JavaBoundary.class",
+              "sha256": "c44423c87d21a9811f4ac5c76c2437cc15bd88d6bfe480567c68ae953b96757f"
+            },
+            {
+              "major": 65,
+              "path": "test-classes/io/github/ym0506/routecontract/a24/OfflineImagePullPolicy.class",
+              "sha256": "5b94c2fb3f558e99e14ba89f45924ccbb0d3a10b694c611afb97cde91a18b503"
+            },
+            {
+              "major": 65,
+              "path": "test-classes/io/github/ym0506/routecontract/consumer/StagedArtifactMySqlTest$OrderRow.class",
+              "sha256": "fa77fd0d8d3ac8e0e259272550760ae2418ee03d359a145500ad5db64f809d57"
+            },
+            {
+              "major": 65,
+              "path": "test-classes/io/github/ym0506/routecontract/consumer/StagedArtifactMySqlTest$StatementBinder.class",
+              "sha256": "7de54fdbeb3a965f317104c1883626cee3c1b60de37f08ac9700c88da3f4c70d"
+            },
+            {
+              "major": 65,
+              "path": "test-classes/io/github/ym0506/routecontract/consumer/StagedArtifactMySqlTest.class",
+              "sha256": "f3decd0654b6ec22c115dddc7d530a5bf4e734db9e0b37d338e01fa785c65a26"
+            }
+          ],
+          "cliExecutionMode": "in-process ManifestReviewCli.run assertions",
+          "cliRegressionReturnCodes": {
+            "json": 1,
+            "markdown": 1
+          },
+          "containerControls": {
+            "actualInvocations": [
+              "mysql@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb",
+              "testcontainers/ryuk@sha256:dd3f023a6ed7015b3f95a49ccd65a2daf0c56e681422c12952b19a810dfa6298"
+            ],
+            "javaTestIpv4Property": true,
+            "policyClass": "io.github.ym0506.routecontract.a24.OfflineImagePullPolicy"
+          },
+          "coreResolvedTransitively": true,
+          "evidenceSha256": {
+            "commands.jsonl": "d614b527a8851583c2140ee0895e0f6af06747c1e19bcfb44de0ec90bb985610",
+            "consumer-pom.xml": "06eb976621c61f252e9cbcc9bc7ae65d0f791b640b4a20c52a472427f75b3c8e",
+            "controlled-environment.json": "26c7b18426b52dbff5b18e70b8b9adc810ed316b38313b6f523ceac743deab0a",
+            "graph-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "graph.log": "8dfc1447bda8ccb7a35e418cc7394c3060767e8af78f6d3d0494bc26f0b8ecd4",
+            "image-reference-normalization.json": "474ad6e1613c0ce16b3177eb07fb057ca2bf4bc317dff60975344fc72340523c",
+            "inputs/src/main/java/io/github/ym0506/routecontract/a24/A24JavaBoundary.java": "9e8726ba99071f4cbe6656c4185deb8c946fb005f58b13d6bb1c0d74710bb291",
+            "inputs/src/test/java/io/github/ym0506/routecontract/a24/OfflineImagePullPolicy.java": "3c339497c8500891bb7de709742a1cbf7b5f8e919204887c0ed5aba5215ee7ef",
+            "inputs/src/test/java/io/github/ym0506/routecontract/consumer/StagedArtifactMySqlTest.java": "2057a8665d7971cdd9fb3e609a6f9c07ec0178eac3750246694ba320d5877342",
+            "inputs/src/test/resources/manifests/find-paid-orders-by-user.shardingsphere-5.5.2.schema2.approved.json": "ea8c434dafeb74fea2eb9cce2da46516286d166c55fbaa8fb6cdd20f4c8ffad1",
+            "inputs/src/test/resources/manifests/find-paid-orders-by-user.shardingsphere-5.5.3.schema2.approved.json": "9145302eaef634225c9253f8355c564612c06e3bf660e150f464f7beccfd944e",
+            "java-boundary-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "java-boundary.log": "021377dd31847088d6442550316c5d961debc14377c415b9f18309101cbae33f",
+            "junit/TEST-io.github.ym0506.routecontract.consumer.StagedArtifactMySqlTest.xml": "8b2d564070372d86611f2e05db016a3f29a8f6f9a6877d37be9c591b5ecec71c",
+            "junit/io.github.ym0506.routecontract.consumer.StagedArtifactMySqlTest.txt": "7b948369bd2a3e3e8cdf4fdc10f8b85e53e61c9d77e1c55716cb8e5344117f29",
+            "local-images-after.json": "4663b0291996b82dac23700175daca3ca9f7f1ebf267c02c1aa24c67338fa614",
+            "local-images-before.json": "4663b0291996b82dac23700175daca3ca9f7f1ebf267c02c1aa24c67338fa614",
+            "maven-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "maven.log": "98fdd43a2dde2c3bbb310d88d909d3f284f8b8d17d3f6e693e1d6ae63a976776",
+            "reports/5.5.3/candidate.json": "5ab31f011765dfee7546aa5e96be31302f8d38905d4641f2d69b8c8aee3287b1",
+            "reports/5.5.3/review.json": "008c070b18596983c1d4011133bad41b4636d6e34eab3d1a7f04f21909353919",
+            "reports/5.5.3/review.md": "18030c136a7d416b1e5d313c84ec1164b805ff66c7ffdad22da80616a9d38197",
+            "reports/5.5.3/reviewed-baseline.json": "9145302eaef634225c9253f8355c564612c06e3bf660e150f464f7beccfd944e",
+            "resolved-first-party/routecontract-core/0.2.0/_remote.repositories": "75ef9ddfa39cd631e465a0bc902be9013ffff32290e06e211e06caa52f690347",
+            "resolved-first-party/routecontract-core/0.2.0/routecontract-core-0.2.0.jar": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac",
+            "resolved-first-party/routecontract-core/0.2.0/routecontract-core-0.2.0.jar.sha1": "8f372cfb48e6b356f4bb2b61601a75bed833011543fbeffd48e247692580e248",
+            "resolved-first-party/routecontract-core/0.2.0/routecontract-core-0.2.0.pom": "ccf3a3854e9f369facb1fe63eabc7303c507a7df2a6438372fc77259428519ce",
+            "resolved-first-party/routecontract-core/0.2.0/routecontract-core-0.2.0.pom.sha1": "e4b6d843172a50bc6e8c77a780e1099ad574d2a8aaeb45bd60cdf33bcc2d7fda",
+            "resolved-first-party/routecontract-shardingsphere-5.5/0.2.0/_remote.repositories": "fe7368f1bb6215fb8e39777f7aa0b3954ff0e1b5cab7daf88269ffd5f99f8cb2",
+            "resolved-first-party/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.jar": "e48e67b2ce2c5d75d60d6794fe93c34d34697daff810a7b1f9c977095c5a02e5",
+            "resolved-first-party/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.jar.sha1": "46b8cb0d2ce8e6220935844d47ef21042097e44f7d937d0929bb13266579d12e",
+            "resolved-first-party/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.pom": "d6a5232c2d43ec109fc04924635af245b930c99e449c13bd7949c8f62a518945",
+            "resolved-first-party/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.pom.sha1": "7370c3f0bcefc733fb094e5c0b87f7ded1be2a4928e105f3f9866dc479b06710",
+            "resolved-graph.json": "aefedddd7ad256ad8e45fd1170568ca9b3e749723455245cf73a8e1b407f2bd1",
+            "summary.json": "72a050c7289ec41fe011c808f092a93bad17759cf821d1c423213e493e26646e",
+            "toolchain-exit.json": "ff8ae5796bcef71911ff9c5c3eaea341819c471f669549e252b830106edd4305",
+            "toolchain.log": "15465ab4f901807a5392f390c782b3fad28c3adb41dea9c7a888a2416a659bc0"
+          },
+          "firstPartyArtifacts": 2,
+          "junit": {
+            "errors": 0,
+            "failures": 0,
+            "skipped": 0,
+            "tests": 3
+          },
+          "localImageIdentitiesUnchanged": true,
+          "minimizedReportsVerified": true,
+          "offline": true,
+          "phase": "offline",
+          "privateBindAssertionPassed": true,
+          "sameExpectedBusinessRow": true,
+          "shardingSphereComponents": 75,
+          "testMethods": [
+            "loadedCoreAndAutoDiscoveredHookAreTheExpectedStagedJarBytes",
+            "sameBusinessRowWithExpandedExecutionFailsAssertionsAndBothCliReportFormats",
+            "unchangedRealMySqlCaptureMatchesTheExistingReviewedSchemaTwoBaseline"
+          ]
+        }
+      ],
+      "runtime": "5.5.3"
+    }
+  ],
+  "completeMavenA24Matrix": true,
+  "consumerCheckoutRevision": "3ad510a0af972231fbd074607936ee52be3cad1f",
+  "contextualSharedGradleBuild": {
+    "path": "examples/staged-split-artifact-consumer/build.gradle",
+    "role": "Contextual shared fixture, frozen explicitly; Maven copy_consumer copies only the Maven POM and shared src, and does not execute this Gradle build.",
+    "sha256": "7f465d3ed2bf656853bf1afe913468e5aaa5c1505e9f8cabf9bc248411dc835f"
+  },
+  "counts": {
+    "actualCommands": 56,
+    "actualMySqlTestExecutions": 24,
+    "cells": 4,
+    "compiledClassOccurrences": 40,
+    "erroredMySqlTests": 0,
+    "failedMySqlTests": 0,
+    "frozenCacheEntryOccurrences": 9064,
+    "negativeControls": 16,
+    "positiveExecutions": 8,
+    "skippedMySqlTests": 0
+  },
+  "date": "2026-09-08",
+  "environment": {
+    "execution": "Single sequential four-cell matrix",
+    "java17": "17.0.15",
+    "java21": "21.0.11",
+    "maven": "3.9.14",
+    "platform": "macOS-26.4.1-arm64-arm-64bit"
+  },
+  "evidenceLabels": [
+    "verified - MySQL",
+    "verified - ShardingSphere-JDBC 5.5.2",
+    "verified - ShardingSphere-JDBC 5.5.3"
+  ],
+  "executedFixtureSha256": {
+    "examples/staged-maven-artifact-consumer/pom.xml": "8bc06611010406fd39838eb595283d61f9383e19f32f5699b8d67c26b24d595e",
+    "examples/staged-split-artifact-consumer/src/test/java/io/github/ym0506/routecontract/consumer/StagedArtifactMySqlTest.java": "675ef37328ccc608a2d264ae017e1ddc2b2d506049165dfc5e0f1071e1c7ec47",
+    "examples/staged-split-artifact-consumer/src/test/resources/manifests/find-paid-orders-by-user.shardingsphere-5.5.2.schema2.approved.json": "ea8c434dafeb74fea2eb9cce2da46516286d166c55fbaa8fb6cdd20f4c8ffad1",
+    "examples/staged-split-artifact-consumer/src/test/resources/manifests/find-paid-orders-by-user.shardingsphere-5.5.3.schema2.approved.json": "9145302eaef634225c9253f8355c564612c06e3bf660e150f464f7beccfd944e",
+    "scripts/consumer_network_sandbox.py": "3d67d969bd2935d9152b975be79f94078244405dbdb404a429e287b0d488498a",
+    "scripts/legacy_artifact_inputs.py": "c9d3facb497012a0eea04115f966df539a1d1b1a2071f9251a235c03fa0fd964",
+    "scripts/maven_legacy_central_cache.py": "c4c3ab8990a140482f5f83ba530b53210f891b3dcc8cc3bc9531cc45b2f6c9db",
+    "scripts/public_split_artifacts.py": "451974ad94238215b83fb2519bef78360ab2b532bcee4d6d098ba9dd22daced0",
+    "scripts/staged_maven_repository.py": "d6a9c671c3c43d1d624fc6e43b2370e30cd0a493f78c5dfb94b00071c038811e",
+    "scripts/tests/test_verify_a24_maven_consumer.py": "107a29c011cfbf2e2f96cb7c5b84d0b3c83953885fae485e290f98f26b8df1ab",
+    "scripts/verify-a24-maven-consumer.py": "86d0e9fdfb56fde20d82e3c1c5afa79c3a005f4d1baf5347137dca4fa164fc76",
+    "scripts/verify-gradle-legacy-artifact-consumer.py": "34795afa93ff5ed4bd0ce11c642d5efac1ffc0648e223bae2a257608c1470f6a",
+    "scripts/verify-staged-maven-artifact-consumer.py": "128b66205a7fce33dcaa37c2055077fdb047e1e2037bb104275c820361abcf24",
+    "scripts/verify-staged-split-artifact-consumer.py": "c67aa149ec73400c1dd84bd95329912855160d327573bb8ca5bb28eaa585a8e5"
+  },
+  "executedHarnessCopiesCreated": false,
+  "externalPostrunClosureSha256": "064b72607d789eb273d41c501d816325e3032dfdf57e61ee5c027185f4403f38",
+  "finalInputsUnchanged": true,
+  "fixtureBinding": "Fourteen input hashes match the independently reviewed prefreeze and unchanged pinned consumer checkout, plus retained per-lane copied source/input bytes. The unchanged runner does not create an executed-harness copy.",
+  "formatVersion": 1,
+  "fullA24Complete": false,
+  "historical4eFailedAttempt": {
+    "excludedFromSuccessfulTotals": true,
+    "failure": "PermissionError in disposable copied checksum JAR before native checksum execution",
+    "historicalRetry": "The old4e matrix was rerun once after the diagnosed failure and independent regression review; final86 completed once without a retry.",
+    "outcome": "FAILED",
+    "remedy": "Add owner-write permission only to the disposable checksum target; preserve reviewed staging and sidecars.",
+    "summarySha256": "dc7f42f1989712fc16b6df906aa42f86a155f8ee0187b80a6562f7132776723f"
+  },
+  "historicalSuccessful4eMatrix": {
+    "excludedFromFinal86Totals": true,
+    "rawSummarySha256": "db7b84385e2ff9a0cbe4e092aa12954fe792d605099101dfd9f8c17b38667856",
+    "stagedSourceRevision": "4e066942f6e244345fe908970b81446f9e08f64e"
+  },
+  "independentRetainedAudit": {
+    "scope": "Read-only retained evidence audit; no tests or JVM reruns.",
+    "sha256": "34527b53575710699f91210679ec8e0812994d345a5b8c8f9f681e70a376a306",
+    "status": "PASS"
+  },
+  "javaNetworkProofs": [
+    {
+      "feature": 17,
+      "javaToolOptions": "-Djava.net.preferIPv4Stack=true",
+      "result": "A24_JAVA_NETWORK_VERIFIED feature=17 loopback=ALLOWED external=OS_DENIED ipv4=true",
+      "sourceSha256": "81b8bd7366460b9ade8fe31138541302528a18e292cc7b778a917f99f93ec622"
+    },
+    {
+      "feature": 21,
+      "javaToolOptions": "-Djava.net.preferIPv4Stack=true",
+      "result": "A24_JAVA_NETWORK_VERIFIED feature=21 loopback=ALLOWED external=OS_DENIED ipv4=true",
+      "sourceSha256": "81b8bd7366460b9ade8fe31138541302528a18e292cc7b778a917f99f93ec622"
+    }
+  ],
+  "localImages": {
+    "mysql": {
+      "imageId": "sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb",
+      "reference": "mysql@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb",
+      "repoDigests": [
+        "mysql@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb"
+      ]
+    },
+    "ryuk": {
+      "imageId": "sha256:dd3f023a6ed7015b3f95a49ccd65a2daf0c56e681422c12952b19a810dfa6298",
+      "reference": "testcontainers/ryuk@sha256:dd3f023a6ed7015b3f95a49ccd65a2daf0c56e681422c12952b19a810dfa6298",
+      "repoDigests": [
+        "testcontainers/ryuk@sha256:dd3f023a6ed7015b3f95a49ccd65a2daf0c56e681422c12952b19a810dfa6298"
+      ]
+    }
+  },
+  "network": {
+    "deniedErrno": 1,
+    "externalOutbound": "OS_DENIED",
+    "helperSha256": "3d67d969bd2935d9152b975be79f94078244405dbdb404a429e287b0d488498a",
+    "localDockerUnixSocket": "ALLOWED",
+    "loopbackHttp": "ALLOWED",
+    "profileSha256": "72c4c02d35a26b64abe8632382ac59e08be19dbdf6277bb15f4d324947dbeb60"
+  },
+  "oneActualFullRun": true,
+  "publicConsumption": false,
+  "rawEvidenceSha256": {
+    "fixture-inputs.json": "c83bd86a4e549c44a6eb62931466bd5b58e9539217207136d2d01621e0e6bf40",
+    "network/network-proof.json": "a047e3853b10f4b9761fff1138c46fa880131ba4022b7022b432ad64c208f840",
+    "reviewed-staged-receipt.json": "1f4bb21b430a03a44d89e6daddc1fbdede1886250637ef83cecedfd71e350c7e",
+    "source-binding.json": "70956df86acefbced4bc1e56d7b5783d7469707e28d3ee3057be598df714dba7",
+    "staged-input-inventory.json": "dedb22d91f0845fa41ee4c772a66c05eed483dc9a7e71035315873e2deb57534",
+    "summary.json": "230340c7063cb2bd49540038bdfe1b4f55c4d32dfa3e5a96ab6f6b7a6a4b7f40"
+  },
+  "repositoryResponseCache": {
+    "cacheHits": 27164,
+    "countsBoundary": "Verified response objects returned by the repository cache; not completed Maven consumption counts.",
+    "initialDownloadTimeoutSeconds": 600,
+    "initiallyAbsent": true,
+    "maxBodyBytes": 104857600,
+    "rawReceiptSha256": "a8aa5c0b23e01c5fd05380d65f4ad2525b405b35a1b04da4566e108905f6ebba",
+    "responseDeliveries": 29484,
+    "source": "This run only; no local Maven cache imported",
+    "uniqueResponseBytes": 142617616,
+    "uniqueResponses": 2320
+  },
+  "requirement": "A-24 Maven component",
+  "reviewedPayloads": [
+    {
+      "module": "routecontract-core",
+      "name": "routecontract-core-0.2.0.jar",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.jar",
+      "sha256": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac"
+    },
+    {
+      "module": "routecontract-core",
+      "name": "routecontract-core-0.2.0.pom",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.pom",
+      "sha256": "ccf3a3854e9f369facb1fe63eabc7303c507a7df2a6438372fc77259428519ce"
+    },
+    {
+      "module": "routecontract-core",
+      "name": "routecontract-core-0.2.0.module",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.module",
+      "sha256": "6878a932dde5696019f6d34d8d07590d0e293c119a16d77bfb1f601e6f9c8a64"
+    },
+    {
+      "module": "routecontract-shardingsphere-5.5",
+      "name": "routecontract-shardingsphere-5.5-0.2.0.jar",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.jar",
+      "sha256": "e48e67b2ce2c5d75d60d6794fe93c34d34697daff810a7b1f9c977095c5a02e5"
+    },
+    {
+      "module": "routecontract-shardingsphere-5.5",
+      "name": "routecontract-shardingsphere-5.5-0.2.0.pom",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.pom",
+      "sha256": "d6a5232c2d43ec109fc04924635af245b930c99e449c13bd7949c8f62a518945"
+    },
+    {
+      "module": "routecontract-shardingsphere-5.5",
+      "name": "routecontract-shardingsphere-5.5-0.2.0.module",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.module",
+      "sha256": "dca55d4f57ef7b8b9d577abc37858ba3a53b901d617086640b50befcd1a1ac96"
+    },
+    {
+      "module": "routecontract-shardingsphere-5.5.2",
+      "name": "routecontract-shardingsphere-5.5.2-0.2.0.jar",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.jar",
+      "sha256": "d5e73f86004fc5a00ebdf3069440d16f8eaf2e033e8b57a7d096ace26630fbe4"
+    },
+    {
+      "module": "routecontract-shardingsphere-5.5.2",
+      "name": "routecontract-shardingsphere-5.5.2-0.2.0.pom",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.pom",
+      "sha256": "baa1a36766d63969f38a90d6ba3c6b9f3d6004e230ed42f2a8778053bc172a3f"
+    },
+    {
+      "module": "routecontract-shardingsphere-5.5.2",
+      "name": "routecontract-shardingsphere-5.5.2-0.2.0.module",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.module",
+      "sha256": "b3dd0230824a5bf442069e183074ca24e610e0c3eebbac7dc968557205cc8dac"
+    }
+  ],
+  "reviewedReceiptSha256": "1f4bb21b430a03a44d89e6daddc1fbdede1886250637ef83cecedfd71e350c7e",
+  "sourceBinding": {
+    "boundary": "Reviewed local staged receipt; no claim of byte identity to CI-generated metadata.",
+    "comparedPaths": [
+      "build.gradle",
+      "settings.gradle",
+      "gradle.properties",
+      "gradle",
+      "gradlew",
+      "LICENSE",
+      "NOTICE",
+      "routecontract-core/build.gradle",
+      "routecontract-core/gradle.lockfile",
+      "routecontract-core/src/main",
+      "routecontract-shardingsphere-5.5/build.gradle",
+      "routecontract-shardingsphere-5.5/gradle.lockfile",
+      "routecontract-shardingsphere-5.5/src/main",
+      "routecontract-shardingsphere-5.5.2/build.gradle",
+      "routecontract-shardingsphere-5.5.2/gradle.lockfile",
+      "routecontract-shardingsphere-5.5.2/src/main"
+    ],
+    "productionPublicationInputsIdentical": true,
+    "treeEntries": 69
+  },
+  "stagedSourceRevision": "86a0be5d2e444f3b73925122fa448d9d1a324edd",
+  "terminalExitCode": 0,
+  "terminalFullEof": true
+}

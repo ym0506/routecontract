@@ -1,10 +1,13 @@
 # Current API entry and legacy migration contract (0.2 candidate)
 
-Status: A-29 passed all 64 checks on independently reviewed local 0.2.0 staging
-from source `4e066942f6e244345fe908970b81446f9e08f64e`. The contract was adopted
-before implementation, and the finite full-run plan was frozen before execution.
-See the [scoped A-29 result](evidence/current-entry-successor-4e06694-2026-09-08.md)
-and the unchanged [earlier focused result](evidence/current-entry-regression-2026-09-08.md).
+Status: the existing A-29 plan passed all 64 checks once on independently
+reviewed local 0.2.0 staging from final producer
+`86a0be5d2e444f3b73925122fa448d9d1a324edd`, using the frozen consumer checkout
+`3ad510a0af972231fbd074607936ee52be3cad1f` with identical production/publication
+inputs. The contract was adopted before implementation and the finite full-run
+inputs were frozen before execution. See the [final candidate A-29 result](evidence/current-entry-successor-86a0be5-2026-09-08.md),
+the unchanged [historical 4e result](evidence/current-entry-successor-4e06694-2026-09-08.md)
+and [earlier focused result](evidence/current-entry-regression-2026-09-08.md).
 This result does not close every release gate or establish public distribution.
 This is a changed application-entry contract, not a repair of immutable legacy
 bytecode and not a passing result for original ADR A-28.
@@ -103,7 +106,8 @@ focused local regression. Original v0.1.3 bytes and documentation stay immutable
 
 The full successor is a separate finite plan of 64 fresh-JVM checks. Execution
 was held until all three coordinated candidate artifacts and their new receipt
-were reviewed, then all 64 checks passed on the retained 4e06694 staging:
+were reviewed. All 64 checks passed on historical 4e06694 staging and were
+executed once again on reviewed final 86a0be5 staging, without changing the plan:
 
 - **32 capture collisions:** four actual distributed legacy JARs, two exact
   runtimes, legacy first/last, and both current capture methods. The action must
@@ -128,7 +132,7 @@ collector origins, the unmodified cause chain and the action/driver counters.
 The plan runs against one frozen reviewed staging receipt; a partial selection
 must report incomplete. The focused eight-cell runner and original A-28 runner
 keep their existing scopes. The A-26 old-bytecode migration gate remains separate.
-The [A-29 receipt](evidence/current-entry-successor-4e06694-2026-09-08.json)
+The [final candidate A-29 receipt](evidence/current-entry-successor-86a0be5-2026-09-08.json)
 records the complete 64-cell execution, 64 distinct process IDs and independent
 raw-observation/input audits. No original A-28 or focused-regression record was
 rewritten. This status update was added after execution; the raw source manifest
