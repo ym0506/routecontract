@@ -25,7 +25,7 @@ RouteContract는 이 변화를 CI에서 잡아냅니다.
 ## Install 0.1.3
 
 기존 **Java 17 · ShardingSphere-JDBC 5.5.3** 테스트 프로젝트에 추가하세요.
-지원하는 작업은 **동기식·비배치 `PreparedStatement`**입니다.
+지원하는 작업은 **동기식·비배치 `PreparedStatement` 호출**입니다.
 
 **Gradle** — Groovy / Kotlin DSL 공통:
 
