@@ -1,7 +1,8 @@
 # Gradle legacy resolver acceptance, 2026-09-08
 
 The local Gradle portion of ADR A-27 passed **37/37 actual resolver cases**.
-This does not close A-27: its Maven consumer cases remain pending. A-28 manual
+This run alone does not close A-27; the separate Maven portion subsequently
+passed [45 actual consumer cases](maven-legacy-resolver-2026-09-08.md). A-28 manual
 classpath/SQL/capture-sentinel execution and public 0.2 publication are separate
 gates. No production source or published artifact was changed for this work.
 

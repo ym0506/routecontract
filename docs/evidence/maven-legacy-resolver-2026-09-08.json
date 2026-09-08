@@ -1,0 +1,3116 @@
+{
+  "boundary": "Actual Maven 3.9.14 / Java17 resolver and consumer Enforcer with materialized pinned JARs/POMs. Reviewed local 0.2 staging plus real public pre-0.2 inputs. No SQL, MySQL, A28 runtime guard, public0.2 release, or external-adoption claim.",
+  "caseCount": 45,
+  "cases": [
+    {
+      "caseId": "0.1.0-552-legacy-first",
+      "kind": "mixed-components",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "08909e6b08889161165f13c40030b536cae31be900326a732fa1a0dfd0908f77"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "e066e21e5bddefb794b765dee5e80b369a664209ef0ff4f55a659ae5f556949e"
+        },
+        {
+          "exitCode": 1,
+          "log": "validate.log",
+          "sha256": "a8c0a8e067ed1cc796779a3566eeb55424c9574daa65c94eaf941bfd9a98adf9"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": true,
+      "pomSha256": "de2e3ac0849666eb16843935c1289c26e1328fefb89aac46686e9e4533546971",
+      "reportSha256": "da1c70604d74ad3d4575cefc9d937050ecebf38afd49d2f9da62932474b43a35",
+      "requests": [
+        {
+          "artifactId": "routecontract-shardingsphere-5.5",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.1.0"
+        },
+        {
+          "artifactId": "routecontract-shardingsphere-5.5.2",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.2.0"
+        }
+      ],
+      "result": "ENFORCER_REJECTED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 90376,
+          "module": "routecontract-core",
+          "name": "routecontract-core-0.2.0.jar",
+          "sha256": "def89f37cf6b4eab02e593bddf77b493c8d52e7b7e66c8ef8f830dc0c67664e8",
+          "version": "0.2.0"
+        },
+        {
+          "byteCount": 75891,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.1.0.jar",
+          "sha256": "d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc",
+          "version": "0.1.0"
+        },
+        {
+          "byteCount": 29010,
+          "module": "routecontract-shardingsphere-5.5.2",
+          "name": "routecontract-shardingsphere-5.5.2-0.2.0.jar",
+          "sha256": "752090d09ac287c5a21c2118b9c79f4077efc72a7d624b72ed5690303fdf2c18",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-core",
+          "version": "0.2.0"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.1.0"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5.2",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedGraphSha256": "4ac3c7cc206b3e77b34c8f921b3b0e83f33a189685b0f05d1e81fcd030543848"
+    },
+    {
+      "caseId": "0.1.0-552-legacy-last",
+      "kind": "mixed-components",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "2350c0a8ccbc083434e45b3d713554e63912a1111f96f4f8f0f23768be52638c"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "7bb463b3378e8c9f506a4993bdf05d0f6c356c783a07d4cf22c5dc78becec7ac"
+        },
+        {
+          "exitCode": 1,
+          "log": "validate.log",
+          "sha256": "3f06b0fb0ffb23d3ed3620ba7d2dab32058278e7ee26597558d33ba9666b511f"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": true,
+      "pomSha256": "c428e7ce77484f5d5afaa694df587ff0d8007244bc76fb5c90427483292a1499",
+      "reportSha256": "d5f4fc453060208994c13ec4bac2cdcd622834af4c444a881d2c3040de1fef04",
+      "requests": [
+        {
+          "artifactId": "routecontract-shardingsphere-5.5.2",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.2.0"
+        },
+        {
+          "artifactId": "routecontract-shardingsphere-5.5",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.1.0"
+        }
+      ],
+      "result": "ENFORCER_REJECTED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 90376,
+          "module": "routecontract-core",
+          "name": "routecontract-core-0.2.0.jar",
+          "sha256": "def89f37cf6b4eab02e593bddf77b493c8d52e7b7e66c8ef8f830dc0c67664e8",
+          "version": "0.2.0"
+        },
+        {
+          "byteCount": 75891,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.1.0.jar",
+          "sha256": "d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc",
+          "version": "0.1.0"
+        },
+        {
+          "byteCount": 29010,
+          "module": "routecontract-shardingsphere-5.5.2",
+          "name": "routecontract-shardingsphere-5.5.2-0.2.0.jar",
+          "sha256": "752090d09ac287c5a21c2118b9c79f4077efc72a7d624b72ed5690303fdf2c18",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-core",
+          "version": "0.2.0"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.1.0"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5.2",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedGraphSha256": "0a2f40796f8bfa78e656243b8b6eacde82f78c385158d4eafc2fc5a2be783c65"
+    },
+    {
+      "caseId": "0.1.0-alone",
+      "kind": "legacy-control",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "f18c194282273f3ccb7dc8920bb4c2ebb35e00fd3a859f18e1c330daf908661c"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "c5a4b56cab50e5c582c7f5bdc09ba5d6f35da328783112b4ac8bb13a4ae3f53d"
+        },
+        {
+          "exitCode": 0,
+          "log": "validate.log",
+          "sha256": "ce4970de3e1d1337ff0f42d13209c563cc73b2dd5dddc221b21735780c9be6e9"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": false,
+      "pomSha256": "2153a06da8c46e45b552e1851b78e4eec28549f111b800e4a64e0ee76db7cf4b",
+      "reportSha256": "0f7714749f227dea7572a9f57a415ba506a58fef4505e42488c560ae50594750",
+      "requests": [
+        {
+          "artifactId": "routecontract-shardingsphere-5.5",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.1.0"
+        }
+      ],
+      "result": "RESOLVED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 75891,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.1.0.jar",
+          "sha256": "d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc",
+          "version": "0.1.0"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.1.0"
+        }
+      ],
+      "selectedGraphSha256": "cc5568ac8f8b9a04257d1a1479029f79ebebc0db8c0a8095cd834af2119ff64f"
+    },
+    {
+      "caseId": "0.1.0-bare-legacy-first",
+      "kind": "bare",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "9171fd8fdd54e97dd9227a215ed64866c7e34d5a3ce28df590786e0e2bbf8979"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "1f8f4d2c48eea026d3e0bdd374341c9ee66860e5b0202a3fa2cae808b9197844"
+        },
+        {
+          "exitCode": 1,
+          "log": "validate.log",
+          "sha256": "c80d6ba3e0dfde90459e93b47550aae5ed40ca65350439f6227f536edb39d16a"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": true,
+      "pomSha256": "19d074e014ffaf4edf72cffc4b89cca8d0f9fcf845395cd14f336ded3104fe67",
+      "reportSha256": "ae3157538570e18bf764f1c03c5398f3c0669252986055f89de0137d136080ba",
+      "requests": [
+        {
+          "artifactId": "legacy-bare-request-0.1.0",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        },
+        {
+          "artifactId": "current-bare-request-0.1.0",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        }
+      ],
+      "result": "ENFORCER_REJECTED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 75891,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.1.0.jar",
+          "sha256": "d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc",
+          "version": "0.1.0"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.1.0"
+        }
+      ],
+      "selectedGraphSha256": "addcbe8817707b6abeabd96016e9c3fe86af0a89d699a1c920fbbed4637b7162"
+    },
+    {
+      "caseId": "0.1.0-bare-legacy-last",
+      "kind": "bare",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "a25354a4a3c6715504d6785c6137ecf1401aaccf2084ab56739516461cae7054"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "5d145be8b8c155ec60d6c52ed9252660100dd53e956eebf91985ff2fe32bbd1d"
+        },
+        {
+          "exitCode": 1,
+          "log": "validate.log",
+          "sha256": "243d7d3bbca54a06f51c73d037678cc607e4b682f9c0e32354b21051b9c990ec"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": true,
+      "pomSha256": "546e724c560d97765059ca318b1b96f2542a7dd6c88e8784a0dd60a204f322c6",
+      "reportSha256": "889e7d9bf9bfc97efb8ed5a9b05803c73aded49d2fe5d5b36402b93d5b44a847",
+      "requests": [
+        {
+          "artifactId": "current-bare-request-0.1.0",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        },
+        {
+          "artifactId": "legacy-bare-request-0.1.0",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        }
+      ],
+      "result": "ENFORCER_REJECTED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 90376,
+          "module": "routecontract-core",
+          "name": "routecontract-core-0.2.0.jar",
+          "sha256": "def89f37cf6b4eab02e593bddf77b493c8d52e7b7e66c8ef8f830dc0c67664e8",
+          "version": "0.2.0"
+        },
+        {
+          "byteCount": 28997,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.2.0.jar",
+          "sha256": "6d139b136e714cb3dfd033aa47dfcbfedffd3e87f6f5aaa2c7762975a714f64e",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-core",
+          "version": "0.2.0"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedGraphSha256": "dd4880ff34bd185219818088b5c197b8d7ae26a0bfc37aca63e2e97de8541192"
+    },
+    {
+      "caseId": "0.1.0-core-legacy-first",
+      "kind": "mixed-components",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "00ef03c10c2200de244effce4ee8165da0b3ae65bda3ed12ea15c09f6af74e8b"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "08f7fcea4273c7c5e88604f481fd73ec3baa420a7922cec634a59add50db094f"
+        },
+        {
+          "exitCode": 1,
+          "log": "validate.log",
+          "sha256": "5e79012be7783f8c083b5a87533dabfab81e365570783631a4ae8aa4070d130e"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": true,
+      "pomSha256": "8d0dad1777ecbd84deb29fa3864dbcd6935d8f4c7b8de6452c3d0126ea00e297",
+      "reportSha256": "8be59cc768e7c1845f4d693e723162c211548bc0609fbd952a71a620b6d253a3",
+      "requests": [
+        {
+          "artifactId": "routecontract-shardingsphere-5.5",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.1.0"
+        },
+        {
+          "artifactId": "routecontract-core",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.2.0"
+        }
+      ],
+      "result": "ENFORCER_REJECTED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 90376,
+          "module": "routecontract-core",
+          "name": "routecontract-core-0.2.0.jar",
+          "sha256": "def89f37cf6b4eab02e593bddf77b493c8d52e7b7e66c8ef8f830dc0c67664e8",
+          "version": "0.2.0"
+        },
+        {
+          "byteCount": 75891,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.1.0.jar",
+          "sha256": "d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc",
+          "version": "0.1.0"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-core",
+          "version": "0.2.0"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.1.0"
+        }
+      ],
+      "selectedGraphSha256": "1ce8510d9fb17c5674249ab457581078463717a933fa23e9423a7471be2ab723"
+    },
+    {
+      "caseId": "0.1.0-core-legacy-last",
+      "kind": "mixed-components",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "4c2417f4ff1a1ae303b33674780621fef78cd55004d5cd3c86f71c26f09e7202"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "2ea9123e18f7704e4a442db82ed46062ca9384b327521776c02927bbc32d6ce7"
+        },
+        {
+          "exitCode": 1,
+          "log": "validate.log",
+          "sha256": "0dba7ab82328590f2a4add2c40a9dc00d75f8336b19238e6b50e8ef8cd408fd8"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": true,
+      "pomSha256": "def3e99b1925a6fb28510ffb30fc04a6078a3f29ace2a436a821353fc4777bbd",
+      "reportSha256": "4d4675990e80badd11bcfda2200670244ea122e7b169fcb94c220ebdd8d0ce99",
+      "requests": [
+        {
+          "artifactId": "routecontract-core",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.2.0"
+        },
+        {
+          "artifactId": "routecontract-shardingsphere-5.5",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.1.0"
+        }
+      ],
+      "result": "ENFORCER_REJECTED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 90376,
+          "module": "routecontract-core",
+          "name": "routecontract-core-0.2.0.jar",
+          "sha256": "def89f37cf6b4eab02e593bddf77b493c8d52e7b7e66c8ef8f830dc0c67664e8",
+          "version": "0.2.0"
+        },
+        {
+          "byteCount": 75891,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.1.0.jar",
+          "sha256": "d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc",
+          "version": "0.1.0"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-core",
+          "version": "0.2.0"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.1.0"
+        }
+      ],
+      "selectedGraphSha256": "7408fa8a2d90374be17deb54b2e2653307c7834aadfce5596f4edb74ccaa0e58"
+    },
+    {
+      "caseId": "0.1.0-managed-legacy-first",
+      "kind": "managed",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "9b7780bd206c813868a717a6e4f572515e490e557c845e843e707eb108e4c5d8"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "f0515fbed29f6f164ccee2d478dba8e5c78137bf151abb5205c36cd8e76f92d5"
+        },
+        {
+          "exitCode": 0,
+          "log": "validate.log",
+          "sha256": "b9e23a9e00ab70903c7d7c8dc6a52587e8b7b38210fa735b04bcdcaf69519e05"
+        }
+      ],
+      "managedCurrentVersion": true,
+      "ownershipPolicy": true,
+      "pomSha256": "a6718c662f4e057137512970fee36f92f1648a2a6bd70b78fcab9dc01d39a79d",
+      "reportSha256": "5c39e0da0572f614c7108a1a2d29a697a4c6d99409e776ecfb39080698dc9324",
+      "requests": [
+        {
+          "artifactId": "legacy-bare-request-0.1.0",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        },
+        {
+          "artifactId": "current-bare-request-0.1.0",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        }
+      ],
+      "result": "RESOLVED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 90376,
+          "module": "routecontract-core",
+          "name": "routecontract-core-0.2.0.jar",
+          "sha256": "def89f37cf6b4eab02e593bddf77b493c8d52e7b7e66c8ef8f830dc0c67664e8",
+          "version": "0.2.0"
+        },
+        {
+          "byteCount": 28997,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.2.0.jar",
+          "sha256": "6d139b136e714cb3dfd033aa47dfcbfedffd3e87f6f5aaa2c7762975a714f64e",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-core",
+          "version": "0.2.0"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedGraphSha256": "e4e3e367ee2b23b906c9968aff8008ebb17c1244a7b4035aa953d09c8bbca0f1"
+    },
+    {
+      "caseId": "0.1.0-managed-legacy-last",
+      "kind": "managed",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "ce9a1c1df2e98b94aa1e4430c3054d9113def81b6d6aabbde672fdda02dbabb2"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "14c993f0707b3e87a6b60dfdb4ec4211282573629778e66535ec67141c7eff03"
+        },
+        {
+          "exitCode": 0,
+          "log": "validate.log",
+          "sha256": "e65b1c4620efc9229cc18a3ac77b8041465bce60b424aca7cb4b89a3a0b9a6fa"
+        }
+      ],
+      "managedCurrentVersion": true,
+      "ownershipPolicy": true,
+      "pomSha256": "a3b6ac9c3ec3625f3d89f9515310949fa54e85e0f1b723b032ba2d93864c566a",
+      "reportSha256": "ae8a3e025f719817e18cd2074048b7f5d42c02ee19ec5be01c030010f47b378a",
+      "requests": [
+        {
+          "artifactId": "current-bare-request-0.1.0",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        },
+        {
+          "artifactId": "legacy-bare-request-0.1.0",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        }
+      ],
+      "result": "RESOLVED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 90376,
+          "module": "routecontract-core",
+          "name": "routecontract-core-0.2.0.jar",
+          "sha256": "def89f37cf6b4eab02e593bddf77b493c8d52e7b7e66c8ef8f830dc0c67664e8",
+          "version": "0.2.0"
+        },
+        {
+          "byteCount": 28997,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.2.0.jar",
+          "sha256": "6d139b136e714cb3dfd033aa47dfcbfedffd3e87f6f5aaa2c7762975a714f64e",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-core",
+          "version": "0.2.0"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedGraphSha256": "6e5162776adb36c105fb12e1b9d60d962baaedffbe91656650a9716f975d4c15"
+    },
+    {
+      "caseId": "0.1.0-rc2-552-legacy-first",
+      "kind": "mixed-components",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "afb1ab158b284188ef01e5736313dfd398acf267a36934569772ede844fb43b1"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "215bcf21e77b15cfbe5a9d2fc57c4ad411cec66a768a6644cede151d57e23a71"
+        },
+        {
+          "exitCode": 1,
+          "log": "validate.log",
+          "sha256": "dbf7a18dddf0732c226eb77eb8a47679cbcb5ed193bf6c03b8e80e9570c17425"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": true,
+      "pomSha256": "802ca1442894bc58b0d2b0af0cd6899234d3d8fb782725fa401de84684c95866",
+      "reportSha256": "56b58685c311efc6c3a65040abe8b87890fa9d66c177e6deb33ba33243b56e2a",
+      "requests": [
+        {
+          "artifactId": "routecontract-shardingsphere-5.5",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.1.0-rc2"
+        },
+        {
+          "artifactId": "routecontract-shardingsphere-5.5.2",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.2.0"
+        }
+      ],
+      "result": "ENFORCER_REJECTED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 90376,
+          "module": "routecontract-core",
+          "name": "routecontract-core-0.2.0.jar",
+          "sha256": "def89f37cf6b4eab02e593bddf77b493c8d52e7b7e66c8ef8f830dc0c67664e8",
+          "version": "0.2.0"
+        },
+        {
+          "byteCount": 75465,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.1.0-rc2.jar",
+          "sha256": "d0e45bc3d6d88f94ee801143356d7472306d852ec58f6517f0e39aeee0213fdb",
+          "version": "0.1.0-rc2"
+        },
+        {
+          "byteCount": 29010,
+          "module": "routecontract-shardingsphere-5.5.2",
+          "name": "routecontract-shardingsphere-5.5.2-0.2.0.jar",
+          "sha256": "752090d09ac287c5a21c2118b9c79f4077efc72a7d624b72ed5690303fdf2c18",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-core",
+          "version": "0.2.0"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.1.0-rc2"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5.2",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedGraphSha256": "4bc08b92b33b06e19012b7c1d393fcf79d176263a11ad14892198875899f442f"
+    },
+    {
+      "caseId": "0.1.0-rc2-552-legacy-last",
+      "kind": "mixed-components",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "1e7ff78714eabbf0ee9aec0657f1eb3ad04dbaa7e5acf1345df4c906876d7439"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "0f78c002d7c4cb27124ca1f17e8d14532b0c65142bc6e85d758718358567d477"
+        },
+        {
+          "exitCode": 1,
+          "log": "validate.log",
+          "sha256": "67bb6187c4a5cc68ea8f3a5482a50ddca0130487477211622aaad8b1914422ea"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": true,
+      "pomSha256": "4ec974385aed223308eaf430414512fad08884097666c797bd5128c206502026",
+      "reportSha256": "e1aae27a4856f447b7bcf6d0104ce6c5b3710e8c7cd965f9fbd77e7f786b714f",
+      "requests": [
+        {
+          "artifactId": "routecontract-shardingsphere-5.5.2",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.2.0"
+        },
+        {
+          "artifactId": "routecontract-shardingsphere-5.5",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.1.0-rc2"
+        }
+      ],
+      "result": "ENFORCER_REJECTED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 90376,
+          "module": "routecontract-core",
+          "name": "routecontract-core-0.2.0.jar",
+          "sha256": "def89f37cf6b4eab02e593bddf77b493c8d52e7b7e66c8ef8f830dc0c67664e8",
+          "version": "0.2.0"
+        },
+        {
+          "byteCount": 75465,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.1.0-rc2.jar",
+          "sha256": "d0e45bc3d6d88f94ee801143356d7472306d852ec58f6517f0e39aeee0213fdb",
+          "version": "0.1.0-rc2"
+        },
+        {
+          "byteCount": 29010,
+          "module": "routecontract-shardingsphere-5.5.2",
+          "name": "routecontract-shardingsphere-5.5.2-0.2.0.jar",
+          "sha256": "752090d09ac287c5a21c2118b9c79f4077efc72a7d624b72ed5690303fdf2c18",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-core",
+          "version": "0.2.0"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.1.0-rc2"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5.2",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedGraphSha256": "d1af1a751aa1c75214998d49912866d97e30d45d53cd402f1e8c51318d15cc36"
+    },
+    {
+      "caseId": "0.1.0-rc2-alone",
+      "kind": "legacy-control",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "e71f340101f45f2a40023fe97b71f98c9e174c8837d04cf419c27b9841cf5606"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "855f985848a86a1ce5a136c06cf1f137e24fd4b7ff999a104aa932c2abd83795"
+        },
+        {
+          "exitCode": 0,
+          "log": "validate.log",
+          "sha256": "29d7924629e75b9a08f02fd9bad7a0137eb16ff1aa2926958b4d88c89c1a5096"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": false,
+      "pomSha256": "7d9808964cf99810e8850afd012af92f262103e7336f119dd0fe797963d50473",
+      "reportSha256": "9b36f8d3acbd8e1adc37460abd0b8cf060aaf6a4131a7e4affed0f4123fb2b39",
+      "requests": [
+        {
+          "artifactId": "routecontract-shardingsphere-5.5",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.1.0-rc2"
+        }
+      ],
+      "result": "RESOLVED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 75465,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.1.0-rc2.jar",
+          "sha256": "d0e45bc3d6d88f94ee801143356d7472306d852ec58f6517f0e39aeee0213fdb",
+          "version": "0.1.0-rc2"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.1.0-rc2"
+        }
+      ],
+      "selectedGraphSha256": "6f88e177a82391b62174bf303e6e42ab2e690d2ac6956573abe2117e34312cdf"
+    },
+    {
+      "caseId": "0.1.0-rc2-bare-legacy-first",
+      "kind": "bare",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "96bce9903c22c17b0f37ad9a7d8fbd1bd264ab7128a14e268a69e2629b48c1de"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "c97722516ec56f68c9c31a89889b895419d07457371226e57cfcf92b68269ce4"
+        },
+        {
+          "exitCode": 1,
+          "log": "validate.log",
+          "sha256": "5872cf05d613aa303a579917468794b08300e41347d1a0c925ea584e30ce5252"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": true,
+      "pomSha256": "6beee938fdb2a211fdec41a0a31a6dbe80f61562d9e007a34fdf5758643ce659",
+      "reportSha256": "ea532672b2342740a9c3b484c31378c7994a020a05598d5beed9206de39d358e",
+      "requests": [
+        {
+          "artifactId": "legacy-bare-request-0.1.0-rc2",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        },
+        {
+          "artifactId": "current-bare-request-0.1.0-rc2",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        }
+      ],
+      "result": "ENFORCER_REJECTED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 75465,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.1.0-rc2.jar",
+          "sha256": "d0e45bc3d6d88f94ee801143356d7472306d852ec58f6517f0e39aeee0213fdb",
+          "version": "0.1.0-rc2"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.1.0-rc2"
+        }
+      ],
+      "selectedGraphSha256": "8cbe517803094fc6626c9c4ccb4166200ebcf07da20c3080933e577301548633"
+    },
+    {
+      "caseId": "0.1.0-rc2-bare-legacy-last",
+      "kind": "bare",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "4bf107eeea602933acc40b5f4c61b13370faa376e882e8740eeef05ed7e610f2"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "801d9ffe8c7e69ffa9a68b016f8358a6eda69c3a9f296040309eabab0d215d9d"
+        },
+        {
+          "exitCode": 1,
+          "log": "validate.log",
+          "sha256": "962a014c34bc53ba19a7167f77c1c485f58fe0fdbf8e64cb2c01cdb1bc068ce8"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": true,
+      "pomSha256": "933c0820e39c264303028490cbc74b9b20a72105be26e9d539c207b68e20d725",
+      "reportSha256": "1662f407d5e16510959081aa1a444b9e0de1b9b0aba32cc474dbf54f99be87de",
+      "requests": [
+        {
+          "artifactId": "current-bare-request-0.1.0-rc2",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        },
+        {
+          "artifactId": "legacy-bare-request-0.1.0-rc2",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        }
+      ],
+      "result": "ENFORCER_REJECTED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 90376,
+          "module": "routecontract-core",
+          "name": "routecontract-core-0.2.0.jar",
+          "sha256": "def89f37cf6b4eab02e593bddf77b493c8d52e7b7e66c8ef8f830dc0c67664e8",
+          "version": "0.2.0"
+        },
+        {
+          "byteCount": 28997,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.2.0.jar",
+          "sha256": "6d139b136e714cb3dfd033aa47dfcbfedffd3e87f6f5aaa2c7762975a714f64e",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-core",
+          "version": "0.2.0"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedGraphSha256": "e826d06ceb2228a13e1c4028c3c6e05dd4d83da1c5b2e571f5644dd566846033"
+    },
+    {
+      "caseId": "0.1.0-rc2-core-legacy-first",
+      "kind": "mixed-components",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "0e31c8f631dcedd7b97c1ac9f5a3f09b77f33642ef2c5552b819620763e12086"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "655dcb28341320799119811b3dda327137018f6922eaaad03045fd81ca7176ed"
+        },
+        {
+          "exitCode": 1,
+          "log": "validate.log",
+          "sha256": "d74292366543f5a059a5af6e04c031c0c395f1af3724c9a1a5eb937bb188e1a5"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": true,
+      "pomSha256": "c74b8bf4dfac0f754ca30537b4526a54369fb174dcb7e8cb3a71ebe6eac37be7",
+      "reportSha256": "f5eee507e943337eb92e644e3c97791e492127c332a2b770d349747c96366073",
+      "requests": [
+        {
+          "artifactId": "routecontract-shardingsphere-5.5",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.1.0-rc2"
+        },
+        {
+          "artifactId": "routecontract-core",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.2.0"
+        }
+      ],
+      "result": "ENFORCER_REJECTED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 90376,
+          "module": "routecontract-core",
+          "name": "routecontract-core-0.2.0.jar",
+          "sha256": "def89f37cf6b4eab02e593bddf77b493c8d52e7b7e66c8ef8f830dc0c67664e8",
+          "version": "0.2.0"
+        },
+        {
+          "byteCount": 75465,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.1.0-rc2.jar",
+          "sha256": "d0e45bc3d6d88f94ee801143356d7472306d852ec58f6517f0e39aeee0213fdb",
+          "version": "0.1.0-rc2"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-core",
+          "version": "0.2.0"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.1.0-rc2"
+        }
+      ],
+      "selectedGraphSha256": "b31c02b8285a4fb6b886827016710184e72c35021938ccfd90513d51ba75e30c"
+    },
+    {
+      "caseId": "0.1.0-rc2-core-legacy-last",
+      "kind": "mixed-components",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "2019f2a249adf2dc72c5dd67a38ff58255b18678e8e3139e715be4f219797885"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "47051262b245a6091886ea7e2c73fdb6feca924e43fa1e8a0ae1753c5a26b21f"
+        },
+        {
+          "exitCode": 1,
+          "log": "validate.log",
+          "sha256": "f26698e2058634d8e862eff33a5fb7832c2504f6d99f767b9d5e72c816959dea"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": true,
+      "pomSha256": "a8e54d6acd5498197b610a7a36aa51e12a83a3bbce549abb378d831973929fa0",
+      "reportSha256": "eb6493b41ab74cffb82343dd6aad9a1aadabe119a2a04046c34126ba7f06bea8",
+      "requests": [
+        {
+          "artifactId": "routecontract-core",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.2.0"
+        },
+        {
+          "artifactId": "routecontract-shardingsphere-5.5",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.1.0-rc2"
+        }
+      ],
+      "result": "ENFORCER_REJECTED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 90376,
+          "module": "routecontract-core",
+          "name": "routecontract-core-0.2.0.jar",
+          "sha256": "def89f37cf6b4eab02e593bddf77b493c8d52e7b7e66c8ef8f830dc0c67664e8",
+          "version": "0.2.0"
+        },
+        {
+          "byteCount": 75465,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.1.0-rc2.jar",
+          "sha256": "d0e45bc3d6d88f94ee801143356d7472306d852ec58f6517f0e39aeee0213fdb",
+          "version": "0.1.0-rc2"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-core",
+          "version": "0.2.0"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.1.0-rc2"
+        }
+      ],
+      "selectedGraphSha256": "7f673e71447ead1a2006334d9d7c96ff6d3e248b264c85f2b438d0245d769ad6"
+    },
+    {
+      "caseId": "0.1.0-rc2-managed-legacy-first",
+      "kind": "managed",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "af853c054a3aaf10d16c58fc16fef53deab6de69f6155040cd1142fdf04e0f7e"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "593733130f01af552567bb96b53b680c1251dfbec4c011cdb6da65fa96b7b665"
+        },
+        {
+          "exitCode": 0,
+          "log": "validate.log",
+          "sha256": "3890d38940264aa56e06ade4a8061a17398ad588496dcc0664ef5cffcc204f34"
+        }
+      ],
+      "managedCurrentVersion": true,
+      "ownershipPolicy": true,
+      "pomSha256": "9d0f00aeecf1ce4661644f38b6208ed13297d8c512e9d13f3072db13e5919471",
+      "reportSha256": "a2f5308799eb436365ea1b4da2738c36414116be19c1c48767feaa3b6da762f1",
+      "requests": [
+        {
+          "artifactId": "legacy-bare-request-0.1.0-rc2",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        },
+        {
+          "artifactId": "current-bare-request-0.1.0-rc2",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        }
+      ],
+      "result": "RESOLVED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 90376,
+          "module": "routecontract-core",
+          "name": "routecontract-core-0.2.0.jar",
+          "sha256": "def89f37cf6b4eab02e593bddf77b493c8d52e7b7e66c8ef8f830dc0c67664e8",
+          "version": "0.2.0"
+        },
+        {
+          "byteCount": 28997,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.2.0.jar",
+          "sha256": "6d139b136e714cb3dfd033aa47dfcbfedffd3e87f6f5aaa2c7762975a714f64e",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-core",
+          "version": "0.2.0"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedGraphSha256": "a6e9d6a8112eaa5a35c0277d40962a64c5eb141a5eedcf9d0783fe2716d81de3"
+    },
+    {
+      "caseId": "0.1.0-rc2-managed-legacy-last",
+      "kind": "managed",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "015fd0ce672ab3bf63da220a7dcac01e7d659152fe299897c5566411d130f2c3"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "b75685b31d0ca05a443e894c16654d600e8434a84b811475bd7d36399b6ca607"
+        },
+        {
+          "exitCode": 0,
+          "log": "validate.log",
+          "sha256": "581b087531fe256e588017e5bab5ad3684c3d5d2eedf15342d904137fd885b80"
+        }
+      ],
+      "managedCurrentVersion": true,
+      "ownershipPolicy": true,
+      "pomSha256": "9864b5f77ee47c04fb3a49bf704c0353575976c5686a35fb27878e0440beeec8",
+      "reportSha256": "0f72890df135869b9524e167531d28c6773429da944454dcecf5bdf466f74e15",
+      "requests": [
+        {
+          "artifactId": "current-bare-request-0.1.0-rc2",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        },
+        {
+          "artifactId": "legacy-bare-request-0.1.0-rc2",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        }
+      ],
+      "result": "RESOLVED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 90376,
+          "module": "routecontract-core",
+          "name": "routecontract-core-0.2.0.jar",
+          "sha256": "def89f37cf6b4eab02e593bddf77b493c8d52e7b7e66c8ef8f830dc0c67664e8",
+          "version": "0.2.0"
+        },
+        {
+          "byteCount": 28997,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.2.0.jar",
+          "sha256": "6d139b136e714cb3dfd033aa47dfcbfedffd3e87f6f5aaa2c7762975a714f64e",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-core",
+          "version": "0.2.0"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedGraphSha256": "d391cbffbae96e04df2c528960eed91b3bde56b5ef1448732f393add7a12ffb9"
+    },
+    {
+      "caseId": "0.1.0-rc2-strict-legacy-first",
+      "kind": "strict",
+      "logs": [
+        {
+          "exitCode": 1,
+          "log": "graph.log",
+          "sha256": "7de6744dc6e3b020df81025242b957ff269f128f5d2b9f7c06c4ef1d942ea400"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": true,
+      "pomSha256": "4d782801e793ae9b50bf0b802efca9e0f19546d756676686a719d20c6df934eb",
+      "reportSha256": "f3c6a0f1f817d45da79f11df982dde226fd05cd5552840eca1e93f769b419bbb",
+      "requests": [
+        {
+          "artifactId": "legacy-hard-request-0.1.0-rc2",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        },
+        {
+          "artifactId": "current-hard-request-0.1.0-rc2",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        }
+      ],
+      "result": "STRICT_RANGE_CONFLICT",
+      "selectedArtifacts": [],
+      "selectedFirstParty": []
+    },
+    {
+      "caseId": "0.1.0-rc2-strict-legacy-last",
+      "kind": "strict",
+      "logs": [
+        {
+          "exitCode": 1,
+          "log": "graph.log",
+          "sha256": "4746679caf76543228d56a9d171baffe18095a0ecac023faedd3a7c078980805"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": true,
+      "pomSha256": "923dd7ab01dc06c6ab773c141725332596afe55340ef36f60c9b193d9a2e8442",
+      "reportSha256": "34b54aeabe35c2423517a78be99f110638b3b3c56a36e9811cbe5f4d71883358",
+      "requests": [
+        {
+          "artifactId": "current-hard-request-0.1.0-rc2",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        },
+        {
+          "artifactId": "legacy-hard-request-0.1.0-rc2",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        }
+      ],
+      "result": "STRICT_RANGE_CONFLICT",
+      "selectedArtifacts": [],
+      "selectedFirstParty": []
+    },
+    {
+      "caseId": "0.1.0-strict-legacy-first",
+      "kind": "strict",
+      "logs": [
+        {
+          "exitCode": 1,
+          "log": "graph.log",
+          "sha256": "8ae0ba3067ff75c6f3695066e14133ede369a668c77ef4d1176070c4272f5b12"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": true,
+      "pomSha256": "059ceb9b61accadc8e1149b970e7fa953a7b87f0f182624ce52a5a719a8c4cd8",
+      "reportSha256": "60dfcbbfd6df58e607a18dcdfceacf0dca8f78fa993f09bb468c59b8fc015216",
+      "requests": [
+        {
+          "artifactId": "legacy-hard-request-0.1.0",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        },
+        {
+          "artifactId": "current-hard-request-0.1.0",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        }
+      ],
+      "result": "STRICT_RANGE_CONFLICT",
+      "selectedArtifacts": [],
+      "selectedFirstParty": []
+    },
+    {
+      "caseId": "0.1.0-strict-legacy-last",
+      "kind": "strict",
+      "logs": [
+        {
+          "exitCode": 1,
+          "log": "graph.log",
+          "sha256": "8d871513e845a740c56c0f41e1e7504599bf7e17b7f70f697f339ab459dc7727"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": true,
+      "pomSha256": "c9f6bba1a7a2aa5683bf0f35e9d5aeef4143b6b87cde8fbed9ae729fc34b94f9",
+      "reportSha256": "68863773983a2cda42fefb2640afac4abe47a48b8cf10438b67925a148f112da",
+      "requests": [
+        {
+          "artifactId": "current-hard-request-0.1.0",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        },
+        {
+          "artifactId": "legacy-hard-request-0.1.0",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        }
+      ],
+      "result": "STRICT_RANGE_CONFLICT",
+      "selectedArtifacts": [],
+      "selectedFirstParty": []
+    },
+    {
+      "caseId": "0.1.2-552-legacy-first",
+      "kind": "mixed-components",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "070bff3334c6b765a5199d3c13964b3907218f93d3fa7d7a8697bab97570700e"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "9bce73f5d807c782f9baef53371d7f0e67e287557e989b83281127b9a19f33c8"
+        },
+        {
+          "exitCode": 1,
+          "log": "validate.log",
+          "sha256": "55a37085019e65556462a8e878fe1d157a492288b18ebc489f6a4ce2355a2747"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": true,
+      "pomSha256": "8f98aa40b9754986d05e4caac6825f5fd1e6ad1e29ea813c150d6b48c483e5d9",
+      "reportSha256": "a92f3175872b27e282f1f9faa8693b177c965d7230ad7d9dd0479af6e4cda4fc",
+      "requests": [
+        {
+          "artifactId": "routecontract-shardingsphere-5.5",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.1.2"
+        },
+        {
+          "artifactId": "routecontract-shardingsphere-5.5.2",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.2.0"
+        }
+      ],
+      "result": "ENFORCER_REJECTED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 90376,
+          "module": "routecontract-core",
+          "name": "routecontract-core-0.2.0.jar",
+          "sha256": "def89f37cf6b4eab02e593bddf77b493c8d52e7b7e66c8ef8f830dc0c67664e8",
+          "version": "0.2.0"
+        },
+        {
+          "byteCount": 75891,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.1.2.jar",
+          "sha256": "d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc",
+          "version": "0.1.2"
+        },
+        {
+          "byteCount": 29010,
+          "module": "routecontract-shardingsphere-5.5.2",
+          "name": "routecontract-shardingsphere-5.5.2-0.2.0.jar",
+          "sha256": "752090d09ac287c5a21c2118b9c79f4077efc72a7d624b72ed5690303fdf2c18",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-core",
+          "version": "0.2.0"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.1.2"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5.2",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedGraphSha256": "1da0882fc4b817bdc1e70765b515a9078031ddfb60f781b41f13103ac5aac463"
+    },
+    {
+      "caseId": "0.1.2-552-legacy-last",
+      "kind": "mixed-components",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "0dd4fcd7a28f165ad46c9e98d22e65f91cadfe594a5bc947646774c9ed9a663a"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "b9c6fa771a4ddfc8de2da39aa7b70d7a3561eed7f34b26d645de552b24e3fa68"
+        },
+        {
+          "exitCode": 1,
+          "log": "validate.log",
+          "sha256": "6a6ab82e107088bd12744ded8674de34dd05ea734d24252624981eb85e3d6eb3"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": true,
+      "pomSha256": "6e19811c73b14658d9691a3e7df197761c9319d125852a98120967f97ad8cb6b",
+      "reportSha256": "4b49d4467ee6e144cb82e80fc0b93d6cf8e256d2072a0acab6078da48a04c88f",
+      "requests": [
+        {
+          "artifactId": "routecontract-shardingsphere-5.5.2",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.2.0"
+        },
+        {
+          "artifactId": "routecontract-shardingsphere-5.5",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.1.2"
+        }
+      ],
+      "result": "ENFORCER_REJECTED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 90376,
+          "module": "routecontract-core",
+          "name": "routecontract-core-0.2.0.jar",
+          "sha256": "def89f37cf6b4eab02e593bddf77b493c8d52e7b7e66c8ef8f830dc0c67664e8",
+          "version": "0.2.0"
+        },
+        {
+          "byteCount": 75891,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.1.2.jar",
+          "sha256": "d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc",
+          "version": "0.1.2"
+        },
+        {
+          "byteCount": 29010,
+          "module": "routecontract-shardingsphere-5.5.2",
+          "name": "routecontract-shardingsphere-5.5.2-0.2.0.jar",
+          "sha256": "752090d09ac287c5a21c2118b9c79f4077efc72a7d624b72ed5690303fdf2c18",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-core",
+          "version": "0.2.0"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.1.2"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5.2",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedGraphSha256": "a799e93b8b095b41146ea19b828ba3c7992c501538b84c0218fd9cbcb3034a3f"
+    },
+    {
+      "caseId": "0.1.2-alone",
+      "kind": "legacy-control",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "ad4d9508ec38e4180fa4b5b77c4efdae81c1b4b77e0098db059f427300582655"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "7cf2d1de2a0b24adc8376fa27c7a203c7230c5a828b7a660582401cfb64bf37f"
+        },
+        {
+          "exitCode": 0,
+          "log": "validate.log",
+          "sha256": "76daea52b60b3b620fd214e06039fd8d4ac1bcfc245c90bab8953c8e9b1447e4"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": false,
+      "pomSha256": "ff772145691e47622a2f590a09d363ad9dec524035d5646c844b1a0b6090f409",
+      "reportSha256": "0c56b02a77707f440f2ef5cba86cc0a4b93b32f223012c94b5dc12e3e5758f0d",
+      "requests": [
+        {
+          "artifactId": "routecontract-shardingsphere-5.5",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.1.2"
+        }
+      ],
+      "result": "RESOLVED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 75891,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.1.2.jar",
+          "sha256": "d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc",
+          "version": "0.1.2"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.1.2"
+        }
+      ],
+      "selectedGraphSha256": "75cce450ed490489db907bb8eab5f1a9601135abed4a2520a937c22a863465a2"
+    },
+    {
+      "caseId": "0.1.2-bare-legacy-first",
+      "kind": "bare",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "1c10d78dedf0274bc7655645b55fd1e73077f592a1fb99f36c991eac6df42469"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "6c7ae53e1af06d3783288c6d4ddce46c4ddaa3999309e04fe12ed9a09ba4872f"
+        },
+        {
+          "exitCode": 1,
+          "log": "validate.log",
+          "sha256": "e11685271cd29cd75a6a9557cba04887c7c3e827cbc3e6e1ff8cf93d1127611c"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": true,
+      "pomSha256": "27e467e4e8d7ffe082e6696ece785a0e39f553473db42fa1c76bf22b7a970dff",
+      "reportSha256": "57b75c158d3df3315ee938da12b4249ecc59d812df6607794e6501d58b31d78e",
+      "requests": [
+        {
+          "artifactId": "legacy-bare-request-0.1.2",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        },
+        {
+          "artifactId": "current-bare-request-0.1.2",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        }
+      ],
+      "result": "ENFORCER_REJECTED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 75891,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.1.2.jar",
+          "sha256": "d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc",
+          "version": "0.1.2"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.1.2"
+        }
+      ],
+      "selectedGraphSha256": "39a1dfeaf14a9bd078942b64d49139c11e4cd9515decedb50bb10ee15e6bc256"
+    },
+    {
+      "caseId": "0.1.2-bare-legacy-last",
+      "kind": "bare",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "ade0d5f452cdd3dd838275764be5883ed9b5075c9e0829b29821436f6af74ff2"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "41671b7f3d34b0db2c5798841f988d6a6511b96bfebf18b5974e038669f61f52"
+        },
+        {
+          "exitCode": 1,
+          "log": "validate.log",
+          "sha256": "86b345b9a56f25f92a8f0f2dae0efa9940a04365c82b3c658d5a3b723d1b2c47"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": true,
+      "pomSha256": "04f627bd0c1a766a4561834ef46a925f3be2398c4349fd2fa1096b45e9f48ad5",
+      "reportSha256": "59e1afbfe16d02dd0ddb63fc3cb1b43fe846d40eb0bb7435ea4ef34adbda910c",
+      "requests": [
+        {
+          "artifactId": "current-bare-request-0.1.2",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        },
+        {
+          "artifactId": "legacy-bare-request-0.1.2",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        }
+      ],
+      "result": "ENFORCER_REJECTED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 90376,
+          "module": "routecontract-core",
+          "name": "routecontract-core-0.2.0.jar",
+          "sha256": "def89f37cf6b4eab02e593bddf77b493c8d52e7b7e66c8ef8f830dc0c67664e8",
+          "version": "0.2.0"
+        },
+        {
+          "byteCount": 28997,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.2.0.jar",
+          "sha256": "6d139b136e714cb3dfd033aa47dfcbfedffd3e87f6f5aaa2c7762975a714f64e",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-core",
+          "version": "0.2.0"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedGraphSha256": "c30acf03a3e254bd2374ad1272e14e1f0a513310785ea7fa9c32764cdeeab85b"
+    },
+    {
+      "caseId": "0.1.2-core-legacy-first",
+      "kind": "mixed-components",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "9352dddfad8ff751acc56f95bb8a36a3bbc3b5ad8ca6153398467c270c75460d"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "34458b8c8f016ecb87681cae9d2aff7d2f2808321fe236de964cdeaa28c71990"
+        },
+        {
+          "exitCode": 1,
+          "log": "validate.log",
+          "sha256": "67a9a888889a613eb68e6562860746840cac6eeb30b8eac3e5a93e67f6ca280e"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": true,
+      "pomSha256": "610dd028e98e6d020638c923e5f8dbb4f9a1cf4788aed8bc706382f2bf28875d",
+      "reportSha256": "2a431c2b5eccf4a38efe2ee709e8a903650f5077a92f227c51af5f8b82737fee",
+      "requests": [
+        {
+          "artifactId": "routecontract-shardingsphere-5.5",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.1.2"
+        },
+        {
+          "artifactId": "routecontract-core",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.2.0"
+        }
+      ],
+      "result": "ENFORCER_REJECTED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 90376,
+          "module": "routecontract-core",
+          "name": "routecontract-core-0.2.0.jar",
+          "sha256": "def89f37cf6b4eab02e593bddf77b493c8d52e7b7e66c8ef8f830dc0c67664e8",
+          "version": "0.2.0"
+        },
+        {
+          "byteCount": 75891,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.1.2.jar",
+          "sha256": "d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc",
+          "version": "0.1.2"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-core",
+          "version": "0.2.0"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.1.2"
+        }
+      ],
+      "selectedGraphSha256": "497f97abd5ee7c39665004380a6537e2f6260d109a4202bc0943603199171cc5"
+    },
+    {
+      "caseId": "0.1.2-core-legacy-last",
+      "kind": "mixed-components",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "6817c0a35577aa95e2e1e44b66ccd9f01ffd4ed5a6bc88b9ed7e7edc53b038c3"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "b861f6e38af7ad5a89d1289760d59e4b8b050e5e690ab7f310f0e5a362564852"
+        },
+        {
+          "exitCode": 1,
+          "log": "validate.log",
+          "sha256": "ef06dd47082a5947babbe00ec9a3322cbbbab0743360fbae0b5f333c1045f296"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": true,
+      "pomSha256": "ae1f7eb4fa8f9324ad10a571bd69dc3dee50a9873535078d98e52d23b068bfee",
+      "reportSha256": "5a5480ff20a6df04e81ff8c46deef4b9cf9814854a69e358324cf35daca221e7",
+      "requests": [
+        {
+          "artifactId": "routecontract-core",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.2.0"
+        },
+        {
+          "artifactId": "routecontract-shardingsphere-5.5",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.1.2"
+        }
+      ],
+      "result": "ENFORCER_REJECTED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 90376,
+          "module": "routecontract-core",
+          "name": "routecontract-core-0.2.0.jar",
+          "sha256": "def89f37cf6b4eab02e593bddf77b493c8d52e7b7e66c8ef8f830dc0c67664e8",
+          "version": "0.2.0"
+        },
+        {
+          "byteCount": 75891,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.1.2.jar",
+          "sha256": "d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc",
+          "version": "0.1.2"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-core",
+          "version": "0.2.0"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.1.2"
+        }
+      ],
+      "selectedGraphSha256": "09f30d7c86f9a6902823111c654cb9d88ed4ac9b3e4cb0f6ca4abb0f1ec51bce"
+    },
+    {
+      "caseId": "0.1.2-managed-legacy-first",
+      "kind": "managed",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "3b02e0727ed3fb1bc6c36e05c2c843c902ea107e096a93d1b8295eedc17e05cd"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "19de783b5b05e399709873219523774f7067a617eb825dcdd50eb30c20487f5b"
+        },
+        {
+          "exitCode": 0,
+          "log": "validate.log",
+          "sha256": "ebdcfb72b0a7821362c8a923f3cd6cb8beea143c373138a25e402b2c700ef4ca"
+        }
+      ],
+      "managedCurrentVersion": true,
+      "ownershipPolicy": true,
+      "pomSha256": "b18b2b0b2929cd9a7e9b8dfeb5c4c340eda2ef1aab36a3134a7203c94510c236",
+      "reportSha256": "00df8f96c6f1d3a4638527dc1b85e1b6ca2d9ecb5e3be9a53a069e57a5e323a5",
+      "requests": [
+        {
+          "artifactId": "legacy-bare-request-0.1.2",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        },
+        {
+          "artifactId": "current-bare-request-0.1.2",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        }
+      ],
+      "result": "RESOLVED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 90376,
+          "module": "routecontract-core",
+          "name": "routecontract-core-0.2.0.jar",
+          "sha256": "def89f37cf6b4eab02e593bddf77b493c8d52e7b7e66c8ef8f830dc0c67664e8",
+          "version": "0.2.0"
+        },
+        {
+          "byteCount": 28997,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.2.0.jar",
+          "sha256": "6d139b136e714cb3dfd033aa47dfcbfedffd3e87f6f5aaa2c7762975a714f64e",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-core",
+          "version": "0.2.0"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedGraphSha256": "600d213a41ec6d323eba7d2a31ef1f257aa14d756f5bcbcf48ed9efe1ada063a"
+    },
+    {
+      "caseId": "0.1.2-managed-legacy-last",
+      "kind": "managed",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "a75c7726af7c2b69f4c86489f5052d319a9aaaf9430c0f0191affbd22732e40b"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "d24abb362b93d19f3d84bb061437418f6f0efac58f51a176539d20a89a7e39f2"
+        },
+        {
+          "exitCode": 0,
+          "log": "validate.log",
+          "sha256": "8994f8946d1d841d5336748396d72ef7bcbd443be93fda400dfdf54af08d0f8b"
+        }
+      ],
+      "managedCurrentVersion": true,
+      "ownershipPolicy": true,
+      "pomSha256": "4f578fc74a1bfe9d95df8cd595b89065869bbb3ccc609b95b5d5d4d3eb984beb",
+      "reportSha256": "37c99d8c4011c560b03e8f6dd49f4a126127207ccfffe982ded6e8b6f4b0238a",
+      "requests": [
+        {
+          "artifactId": "current-bare-request-0.1.2",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        },
+        {
+          "artifactId": "legacy-bare-request-0.1.2",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        }
+      ],
+      "result": "RESOLVED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 90376,
+          "module": "routecontract-core",
+          "name": "routecontract-core-0.2.0.jar",
+          "sha256": "def89f37cf6b4eab02e593bddf77b493c8d52e7b7e66c8ef8f830dc0c67664e8",
+          "version": "0.2.0"
+        },
+        {
+          "byteCount": 28997,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.2.0.jar",
+          "sha256": "6d139b136e714cb3dfd033aa47dfcbfedffd3e87f6f5aaa2c7762975a714f64e",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-core",
+          "version": "0.2.0"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedGraphSha256": "636e9e8cda984252e84f2c88b5559c5b583f6d07adbc051d8f077b3a1dae876c"
+    },
+    {
+      "caseId": "0.1.2-strict-legacy-first",
+      "kind": "strict",
+      "logs": [
+        {
+          "exitCode": 1,
+          "log": "graph.log",
+          "sha256": "54c8a78e534c86bb98c1e402e7ff81bd125be10089994bcd8ac2097f8606afc2"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": true,
+      "pomSha256": "1808c31b398532c22910558aaafcb67799b37bc730ac80ad9501cb8f1ff8be80",
+      "reportSha256": "7a2ad79c0eaa2e440bd75b0295acec93779be3e3b813553036e2652322173525",
+      "requests": [
+        {
+          "artifactId": "legacy-hard-request-0.1.2",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        },
+        {
+          "artifactId": "current-hard-request-0.1.2",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        }
+      ],
+      "result": "STRICT_RANGE_CONFLICT",
+      "selectedArtifacts": [],
+      "selectedFirstParty": []
+    },
+    {
+      "caseId": "0.1.2-strict-legacy-last",
+      "kind": "strict",
+      "logs": [
+        {
+          "exitCode": 1,
+          "log": "graph.log",
+          "sha256": "4167ae62697cc3b4aea378e9e108f2d3c330b4633006881b2f54710328552510"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": true,
+      "pomSha256": "ba890d3be1dcd8f993bdddcc0fb3c3341fd81afc8369d308dc2c1482799dc870",
+      "reportSha256": "47185224add0a5a0983c9d0a39ed850e801f921b6122ae079a87b3450eb0b563",
+      "requests": [
+        {
+          "artifactId": "current-hard-request-0.1.2",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        },
+        {
+          "artifactId": "legacy-hard-request-0.1.2",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        }
+      ],
+      "result": "STRICT_RANGE_CONFLICT",
+      "selectedArtifacts": [],
+      "selectedFirstParty": []
+    },
+    {
+      "caseId": "0.1.3-552-legacy-first",
+      "kind": "mixed-components",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "84848991459f2e21f2d73138fa19f759aab04e6b39a260aea31a7101c07bf400"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "27c4006459f7e6616de62a557cb227133af5529562410125ae054bd60f7eebc8"
+        },
+        {
+          "exitCode": 1,
+          "log": "validate.log",
+          "sha256": "65673f5bf4680cc15f4ef1ef2f158efb95eef38c381de3dbf5528c5b18b40722"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": true,
+      "pomSha256": "f6068985c6905b45fa7724cba637d6861a83090a0a4ce8ce68fcfd24b09d0337",
+      "reportSha256": "4831cb860b83dc5000cfb07b38378fea308c39d1f3d4b838c2f31144c978f555",
+      "requests": [
+        {
+          "artifactId": "routecontract-shardingsphere-5.5",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.1.3"
+        },
+        {
+          "artifactId": "routecontract-shardingsphere-5.5.2",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.2.0"
+        }
+      ],
+      "result": "ENFORCER_REJECTED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 90376,
+          "module": "routecontract-core",
+          "name": "routecontract-core-0.2.0.jar",
+          "sha256": "def89f37cf6b4eab02e593bddf77b493c8d52e7b7e66c8ef8f830dc0c67664e8",
+          "version": "0.2.0"
+        },
+        {
+          "byteCount": 84926,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.1.3.jar",
+          "sha256": "9e883e618eb09d9ecf30814151bb4b0a43eba02c78d288cc582fa7e57e6edba2",
+          "version": "0.1.3"
+        },
+        {
+          "byteCount": 29010,
+          "module": "routecontract-shardingsphere-5.5.2",
+          "name": "routecontract-shardingsphere-5.5.2-0.2.0.jar",
+          "sha256": "752090d09ac287c5a21c2118b9c79f4077efc72a7d624b72ed5690303fdf2c18",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-core",
+          "version": "0.2.0"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.1.3"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5.2",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedGraphSha256": "30ed28132ef8ff25f86e763db7ab568e146b1dbde4a62b2f8ed35ddc9939d297"
+    },
+    {
+      "caseId": "0.1.3-552-legacy-last",
+      "kind": "mixed-components",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "5760d5ea790ee15ed96ff92be4348d1b56b55c5abe286e441745061a300afed5"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "2b988400750dd1378426a23a7ec24ac02600ad4ffa8194fb47eaffd509aeb1de"
+        },
+        {
+          "exitCode": 1,
+          "log": "validate.log",
+          "sha256": "9566696d7db3f974b8b94460ed8c9469464c198683e29a223af490b49041c4e3"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": true,
+      "pomSha256": "6c0deec9d2188c80ba7ebb077d0bc7fc24ffa3848854739a31ab6e73cc000ed2",
+      "reportSha256": "032b347a190fbaabbe3fb8f50abce75ef15a1218fa9b435e329c0f49c9790e5a",
+      "requests": [
+        {
+          "artifactId": "routecontract-shardingsphere-5.5.2",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.2.0"
+        },
+        {
+          "artifactId": "routecontract-shardingsphere-5.5",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.1.3"
+        }
+      ],
+      "result": "ENFORCER_REJECTED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 90376,
+          "module": "routecontract-core",
+          "name": "routecontract-core-0.2.0.jar",
+          "sha256": "def89f37cf6b4eab02e593bddf77b493c8d52e7b7e66c8ef8f830dc0c67664e8",
+          "version": "0.2.0"
+        },
+        {
+          "byteCount": 84926,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.1.3.jar",
+          "sha256": "9e883e618eb09d9ecf30814151bb4b0a43eba02c78d288cc582fa7e57e6edba2",
+          "version": "0.1.3"
+        },
+        {
+          "byteCount": 29010,
+          "module": "routecontract-shardingsphere-5.5.2",
+          "name": "routecontract-shardingsphere-5.5.2-0.2.0.jar",
+          "sha256": "752090d09ac287c5a21c2118b9c79f4077efc72a7d624b72ed5690303fdf2c18",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-core",
+          "version": "0.2.0"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.1.3"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5.2",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedGraphSha256": "09559a89a518db2525807505e8d13c9b9977a1a8e860493a9232e7771f2a735c"
+    },
+    {
+      "caseId": "0.1.3-alone",
+      "kind": "legacy-control",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "6c54601b9cb11698770527730063d12b112558220d1536af13a116a0d9c569ed"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "7b00a7004da76a52d1e699d9a2e691968211b7ea90332725bd2f04927a7c8009"
+        },
+        {
+          "exitCode": 0,
+          "log": "validate.log",
+          "sha256": "cf1f3fb7a6f79558a92738534c6b5d5336d818e5d7cf72254fdaf241dd726271"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": false,
+      "pomSha256": "fb8593e404dbf759d9d46c4a2c22f07d844ae8c026ecb5d495c32a235716a9f8",
+      "reportSha256": "adc51ec6f94ceb795ba056a9a4a45a5747b3e0f621bc21262adf8b14d33fcd68",
+      "requests": [
+        {
+          "artifactId": "routecontract-shardingsphere-5.5",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.1.3"
+        }
+      ],
+      "result": "RESOLVED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 84926,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.1.3.jar",
+          "sha256": "9e883e618eb09d9ecf30814151bb4b0a43eba02c78d288cc582fa7e57e6edba2",
+          "version": "0.1.3"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.1.3"
+        }
+      ],
+      "selectedGraphSha256": "78b7b475453aee839b2943bd455b557c7ba8b5d54b6053287ba7063330c2f48b"
+    },
+    {
+      "caseId": "0.1.3-bare-legacy-first",
+      "kind": "bare",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "5074548ff944a913a7b0b3fbeb7efca0da42558e9b379fa947b322a47e5f6ff3"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "97659fb28c7bb925a28eec226f942d515e135820125b82f3cd6aa22be8cdc937"
+        },
+        {
+          "exitCode": 1,
+          "log": "validate.log",
+          "sha256": "8ccf7dd0cdf19c1c0e39b9609b4d2fcd830f692dc797d7c6af09dc9f01fdd3da"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": true,
+      "pomSha256": "66310fdf1c2e09111e88fc3e56186c951ec8ceac39ae0103beb5c2509edb0ef1",
+      "reportSha256": "3603402cf6d91cb9d60040aa97495f110f24f522b739eff901de62fbc15cbfef",
+      "requests": [
+        {
+          "artifactId": "legacy-bare-request-0.1.3",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        },
+        {
+          "artifactId": "current-bare-request-0.1.3",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        }
+      ],
+      "result": "ENFORCER_REJECTED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 84926,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.1.3.jar",
+          "sha256": "9e883e618eb09d9ecf30814151bb4b0a43eba02c78d288cc582fa7e57e6edba2",
+          "version": "0.1.3"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.1.3"
+        }
+      ],
+      "selectedGraphSha256": "4faf6469f3f075cd4909f16424ff37c444d917e6df314fffb4231f11878969db"
+    },
+    {
+      "caseId": "0.1.3-bare-legacy-last",
+      "kind": "bare",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "7030a6f04a007291fbf3a559828148a2b40d83c64a2c310b433890f0e9608c2a"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "f3456df1d454ef8603e009a23b43ee9f0a7edcd76d155d7fd3c7dee64cf56c52"
+        },
+        {
+          "exitCode": 1,
+          "log": "validate.log",
+          "sha256": "6b993ddb2212ca6b17d49d09c9c3c93e1889f505ddd2a5a8bbc2f65d73295d1e"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": true,
+      "pomSha256": "acfa511afc69af7efe2d8a220a05e0d8f08d10e48360edebe43e78491dc966c2",
+      "reportSha256": "73e7987bfeeae63e5d39c06294a6c2d212f6cf001259f750f1fcd429034a8f7e",
+      "requests": [
+        {
+          "artifactId": "current-bare-request-0.1.3",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        },
+        {
+          "artifactId": "legacy-bare-request-0.1.3",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        }
+      ],
+      "result": "ENFORCER_REJECTED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 90376,
+          "module": "routecontract-core",
+          "name": "routecontract-core-0.2.0.jar",
+          "sha256": "def89f37cf6b4eab02e593bddf77b493c8d52e7b7e66c8ef8f830dc0c67664e8",
+          "version": "0.2.0"
+        },
+        {
+          "byteCount": 28997,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.2.0.jar",
+          "sha256": "6d139b136e714cb3dfd033aa47dfcbfedffd3e87f6f5aaa2c7762975a714f64e",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-core",
+          "version": "0.2.0"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedGraphSha256": "655722d75bfb05282a32ccc1c7dec5099bb15d557da9323af45a17c5b2d5146b"
+    },
+    {
+      "caseId": "0.1.3-core-legacy-first",
+      "kind": "mixed-components",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "6a476d038606263e33c774ba7bb4ca7a3fab5f2e1dc04f848dd73a22415ef889"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "c605f58eca4e55f6c352947f083eddec29354068b92d76bcda28b42751346eea"
+        },
+        {
+          "exitCode": 1,
+          "log": "validate.log",
+          "sha256": "6bcb183b7e96bcb2242f95d5a98cf66c3884a20da3528684ee1c5d9c47e1bb1f"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": true,
+      "pomSha256": "65d521f5646af8be7ccda304554a0aeff03981191790f2385516516c57f0e53a",
+      "reportSha256": "50e66c6e1bbcb13518fecf11f049b67ddda3862f04072c2d292484da10d3be84",
+      "requests": [
+        {
+          "artifactId": "routecontract-shardingsphere-5.5",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.1.3"
+        },
+        {
+          "artifactId": "routecontract-core",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.2.0"
+        }
+      ],
+      "result": "ENFORCER_REJECTED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 90376,
+          "module": "routecontract-core",
+          "name": "routecontract-core-0.2.0.jar",
+          "sha256": "def89f37cf6b4eab02e593bddf77b493c8d52e7b7e66c8ef8f830dc0c67664e8",
+          "version": "0.2.0"
+        },
+        {
+          "byteCount": 84926,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.1.3.jar",
+          "sha256": "9e883e618eb09d9ecf30814151bb4b0a43eba02c78d288cc582fa7e57e6edba2",
+          "version": "0.1.3"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-core",
+          "version": "0.2.0"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.1.3"
+        }
+      ],
+      "selectedGraphSha256": "4f42acd4f3169f0033c5d67ed50da9ffa4031218de92704f62d8174b9d47625c"
+    },
+    {
+      "caseId": "0.1.3-core-legacy-last",
+      "kind": "mixed-components",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "e55a7fe7f509cb6fc516ba73607117dbd1b7cbcde7a983d2554915f07a37b9fd"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "e572621f9105b6a5763a50a0781cc4a908e9a285cf164f0a23fecc0d78b958db"
+        },
+        {
+          "exitCode": 1,
+          "log": "validate.log",
+          "sha256": "47d485facf59cd7779983a0c45fcb0679907afd5cacc0246af25dd5a11b4157d"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": true,
+      "pomSha256": "fc5593f646b7a99f74b27a3722b972cafb113a7517b563394ebeee4bc103a764",
+      "reportSha256": "b4132ed67745c751ec993498bd9b757a4e0c46930cc52af32f914f42b89f7d55",
+      "requests": [
+        {
+          "artifactId": "routecontract-core",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.2.0"
+        },
+        {
+          "artifactId": "routecontract-shardingsphere-5.5",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.1.3"
+        }
+      ],
+      "result": "ENFORCER_REJECTED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 90376,
+          "module": "routecontract-core",
+          "name": "routecontract-core-0.2.0.jar",
+          "sha256": "def89f37cf6b4eab02e593bddf77b493c8d52e7b7e66c8ef8f830dc0c67664e8",
+          "version": "0.2.0"
+        },
+        {
+          "byteCount": 84926,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.1.3.jar",
+          "sha256": "9e883e618eb09d9ecf30814151bb4b0a43eba02c78d288cc582fa7e57e6edba2",
+          "version": "0.1.3"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-core",
+          "version": "0.2.0"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.1.3"
+        }
+      ],
+      "selectedGraphSha256": "72c7ac36d5030d8631f6f1b8fcd4bde85d34fd52ec54dad2344aeff165db43be"
+    },
+    {
+      "caseId": "0.1.3-core-without-policy-control",
+      "kind": "ownership-disabled-control",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "b778cb9f04fcbec7f7889d43c3a67d8e21401ed70d517a7181f884744071955f"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "b3dd198f54b6a6a7cb6c1409269bd6d9f5f0fad24c1bf0efd274fd91b77a6c3b"
+        },
+        {
+          "exitCode": 0,
+          "log": "validate.log",
+          "sha256": "bb3d01cfc644c7b1af245ed3c1053d96d45eb8ec04c0e6ccbe3ef7ef4873c3d2"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": false,
+      "pomSha256": "50c610532249f0abf7c08b286dcc973354c1c7285d86617f9e59ab7a03e9b17f",
+      "reportSha256": "19e68e085782eaeb2f4ccfc8adec8da1b7e35fb873dfaa76fbe62dc798e4f14c",
+      "requests": [
+        {
+          "artifactId": "routecontract-shardingsphere-5.5",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.1.3"
+        },
+        {
+          "artifactId": "routecontract-core",
+          "groupId": "io.github.ym0506.routecontract",
+          "version": "0.2.0"
+        }
+      ],
+      "result": "RESOLVED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 90376,
+          "module": "routecontract-core",
+          "name": "routecontract-core-0.2.0.jar",
+          "sha256": "def89f37cf6b4eab02e593bddf77b493c8d52e7b7e66c8ef8f830dc0c67664e8",
+          "version": "0.2.0"
+        },
+        {
+          "byteCount": 84926,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.1.3.jar",
+          "sha256": "9e883e618eb09d9ecf30814151bb4b0a43eba02c78d288cc582fa7e57e6edba2",
+          "version": "0.1.3"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-core",
+          "version": "0.2.0"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.1.3"
+        }
+      ],
+      "selectedGraphSha256": "bd5f2bfde4e1459f580de41b2955b6ae373d3849aae2f3bf4c73b846069122d3"
+    },
+    {
+      "caseId": "0.1.3-managed-legacy-first",
+      "kind": "managed",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "fa9f9a5978b0089ec0aef1290687aec06bea198f0b0b0ccf8ada1c4bbb84ab3c"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "4b0a03b6ca5384b3875e9fbb6009a628f0be007f7d4264f97ac2e047188f28c7"
+        },
+        {
+          "exitCode": 0,
+          "log": "validate.log",
+          "sha256": "7b5ac3f3664a60cf5060647b9299e618afc56c26d170839ad2d3d926ec51a05d"
+        }
+      ],
+      "managedCurrentVersion": true,
+      "ownershipPolicy": true,
+      "pomSha256": "f06182c0aeb7a7070ca750d31395279d74a4845cdef6c2aa07b7e1634ce6194a",
+      "reportSha256": "0c130e6fcf4fab95fdec66052dcedf87015608f9535fe288019a2e540fb16e7e",
+      "requests": [
+        {
+          "artifactId": "legacy-bare-request-0.1.3",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        },
+        {
+          "artifactId": "current-bare-request-0.1.3",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        }
+      ],
+      "result": "RESOLVED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 90376,
+          "module": "routecontract-core",
+          "name": "routecontract-core-0.2.0.jar",
+          "sha256": "def89f37cf6b4eab02e593bddf77b493c8d52e7b7e66c8ef8f830dc0c67664e8",
+          "version": "0.2.0"
+        },
+        {
+          "byteCount": 28997,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.2.0.jar",
+          "sha256": "6d139b136e714cb3dfd033aa47dfcbfedffd3e87f6f5aaa2c7762975a714f64e",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-core",
+          "version": "0.2.0"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedGraphSha256": "983f9bc6a475c36779f827ed5c978696db50bcbc72a17fe1847fbced2d8d2aa0"
+    },
+    {
+      "caseId": "0.1.3-managed-legacy-last",
+      "kind": "managed",
+      "logs": [
+        {
+          "exitCode": 0,
+          "log": "graph.log",
+          "sha256": "8467fe786c19e654d0794198cc33b8c462b7f14530641c32619cc7e7a2ea924f"
+        },
+        {
+          "exitCode": 0,
+          "log": "classpath.log",
+          "sha256": "255c8140bc0ebbfc456544139b2c8713da6c4b152a46e4606d7d2515340469b8"
+        },
+        {
+          "exitCode": 0,
+          "log": "validate.log",
+          "sha256": "e3451d32a085b015e652dffc3bf516a4a1dbf0aeae1dbfd30f0a7575a74f2234"
+        }
+      ],
+      "managedCurrentVersion": true,
+      "ownershipPolicy": true,
+      "pomSha256": "c2296766e1cd48e04f8860b7a2f4a11f644e5b6a987af90e601c61dfa01ad7d5",
+      "reportSha256": "d5ad125d3b7fd663d0b49aea18b75f0200af1dcc1b3a905ae4820746df6281cf",
+      "requests": [
+        {
+          "artifactId": "current-bare-request-0.1.3",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        },
+        {
+          "artifactId": "legacy-bare-request-0.1.3",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        }
+      ],
+      "result": "RESOLVED",
+      "selectedArtifacts": [
+        {
+          "byteCount": 90376,
+          "module": "routecontract-core",
+          "name": "routecontract-core-0.2.0.jar",
+          "sha256": "def89f37cf6b4eab02e593bddf77b493c8d52e7b7e66c8ef8f830dc0c67664e8",
+          "version": "0.2.0"
+        },
+        {
+          "byteCount": 28997,
+          "module": "routecontract-shardingsphere-5.5",
+          "name": "routecontract-shardingsphere-5.5-0.2.0.jar",
+          "sha256": "6d139b136e714cb3dfd033aa47dfcbfedffd3e87f6f5aaa2c7762975a714f64e",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedFirstParty": [
+        {
+          "module": "routecontract-core",
+          "version": "0.2.0"
+        },
+        {
+          "module": "routecontract-shardingsphere-5.5",
+          "version": "0.2.0"
+        }
+      ],
+      "selectedGraphSha256": "d403ac47b2184960734b9125d6c602041f2e2d77cfd187107d58552340ce4654"
+    },
+    {
+      "caseId": "0.1.3-strict-legacy-first",
+      "kind": "strict",
+      "logs": [
+        {
+          "exitCode": 1,
+          "log": "graph.log",
+          "sha256": "d40ab64a6abcd3646b82967c8957b126f3b10f2cde5e1ee64c06a2ced4752fbd"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": true,
+      "pomSha256": "bdc4125c39092706342abcc4c70b01f2bbddf54c0949271ca59b2b1d0b0fb601",
+      "reportSha256": "20d32f3fa764266ba89a3c923e5771e64911a9328f1308483da3013a7608f712",
+      "requests": [
+        {
+          "artifactId": "legacy-hard-request-0.1.3",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        },
+        {
+          "artifactId": "current-hard-request-0.1.3",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        }
+      ],
+      "result": "STRICT_RANGE_CONFLICT",
+      "selectedArtifacts": [],
+      "selectedFirstParty": []
+    },
+    {
+      "caseId": "0.1.3-strict-legacy-last",
+      "kind": "strict",
+      "logs": [
+        {
+          "exitCode": 1,
+          "log": "graph.log",
+          "sha256": "763b731edb6bd4f36dfb75d0bc3c12f4c0c683027ff0e0fa0ea0d7fe3c8762a4"
+        }
+      ],
+      "managedCurrentVersion": false,
+      "ownershipPolicy": true,
+      "pomSha256": "d2bdcd6c4163bdd2a786e9db6c97d185c3ba0543fa942521abe2c7a1b0f63bbf",
+      "reportSha256": "fd2068c1265fa55354aa004df8d3e86d746bc29006989ba1d9f161c585df38a1",
+      "requests": [
+        {
+          "artifactId": "current-hard-request-0.1.3",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        },
+        {
+          "artifactId": "legacy-hard-request-0.1.3",
+          "groupId": "io.github.ym0506.routecontract.fixtures",
+          "type": "pom",
+          "version": "1"
+        }
+      ],
+      "result": "STRICT_RANGE_CONFLICT",
+      "selectedArtifacts": [],
+      "selectedFirstParty": []
+    }
+  ],
+  "centralResponseCache": {
+    "cacheHits": 28178,
+    "countBoundary": "Returned verified response objects, not proof of completed HTTP delivery or Maven consumption.",
+    "downloadedBytes": 50429767,
+    "initialDownloadTimeoutSeconds": 600,
+    "initiallyAbsent": true,
+    "maxBodyBytes": 104857600,
+    "responseDeliveries": 29298,
+    "source": "This run only; no local Maven cache imported",
+    "uniqueDownloadedResponses": 1120
+  },
+  "environment": {
+    "java": "Homebrew OpenJDK 17.0.15",
+    "maven": "Apache Maven 3.9.14 (996c630dbc656c76214ce58821dcc58be960875b)",
+    "os": "macOS 26.4.1 aarch64",
+    "python": "CPython 3.13.0",
+    "workers": 2
+  },
+  "formatVersion": 1,
+  "fullMavenA27Matrix": true,
+  "registrySha256": "f03dc0d63a23e68fd4cc6895efff1ba1175143e084b76f25f8e70fd19a04419f",
+  "requiredCaseCount": 45,
+  "resultsByCategory": {
+    "ENFORCER_REJECTED": 24,
+    "RESOLVED": 13,
+    "STRICT_RANGE_CONFLICT": 8
+  },
+  "retainedEvidenceSha256": {
+    "case-plan.json": "8d6f645e8274eae532ee78867e2d8e18fa2ea3b2ab65660038629207f54b45a2",
+    "central-responses/receipt.json": "493c07997ff1b96ba59fbace3238a090890d7e168fda97b830d399e8ac29511c",
+    "fixture-inputs.json": "ad03b3e71f27c6292a5dc65b875313a3ff0c7e41ed73c6f6ec7cfdac17fe2119",
+    "repository-checksums.json": "5723b7187155d3a4f89314638649ace12b30a4b3b37e380645b635b7e7d0a6a8",
+    "repository-requests.jsonl": "cc21585f94d1ffe028a22088318f13a54f3a29a0be4851fe1dad21afbd8cad61",
+    "source-binding.json": "ef4d3fdbef7db7af4a44e520a40cb164129cc9987ae1fdea4e19be014f2f9ca7",
+    "summary.json": "282c62bf54e2ac01debf243a4b47426936b0dda222328fde55447cf0d265357b",
+    "toolchain.txt": "e247b2dfce8e80b6ca0556e3dc64fe1673920606b38e6921f31342ad89349056",
+    "verified-input-inventory.json": "189eab12ca431344d9971e647a750d545006b9028dfcdf46b949161aeb98256b"
+  },
+  "sourceBinding": {
+    "boundary": "Reviewed local staged receipt; no claim of byte identity to CI-generated metadata.",
+    "checkoutRevision": "3a136a6f006c8040b0facadafc18606d2a63600a",
+    "comparedPaths": [
+      "build.gradle",
+      "settings.gradle",
+      "gradle.properties",
+      "gradle",
+      "gradlew",
+      "LICENSE",
+      "NOTICE",
+      "routecontract-core/build.gradle",
+      "routecontract-core/gradle.lockfile",
+      "routecontract-core/src/main",
+      "routecontract-shardingsphere-5.5/build.gradle",
+      "routecontract-shardingsphere-5.5/gradle.lockfile",
+      "routecontract-shardingsphere-5.5/src/main",
+      "routecontract-shardingsphere-5.5.2/build.gradle",
+      "routecontract-shardingsphere-5.5.2/gradle.lockfile",
+      "routecontract-shardingsphere-5.5.2/src/main"
+    ],
+    "productionPublicationInputsIdentical": true,
+    "stagedSourceRevision": "008e125a0648ed615842a572d60fd453698bb5aa"
+  },
+  "stagedReceiptSha256": "ff4ad23aca357baa0a29f6ddac3a8b3708f1dbe62e0a73f200f84737449fdb41",
+  "status": "VERIFIED",
+  "testedFixtureInputs": {
+    "examples/maven-legacy-artifact-consumer/README.md": "2ccda07464439a353dd54524c59f59bada526de0dec29f8e3b4bd03c548d9af1",
+    "examples/maven-legacy-artifact-consumer/legacy-ownership-enforcer.xml": "4f646136ded9705132d537d066867ce8a63ac68a1494b0f31969f840e6f2d0cb",
+    "examples/maven-legacy-artifact-consumer/pom.xml": "7eda9ca08b9a974ab3fa5831c4f4443added9b05047624ebb058a7207a42d0f9",
+    "scripts/legacy-artifact-inputs.json": "f03dc0d63a23e68fd4cc6895efff1ba1175143e084b76f25f8e70fd19a04419f",
+    "scripts/legacy_artifact_inputs.py": "c9d3facb497012a0eea04115f966df539a1d1b1a2071f9251a235c03fa0fd964",
+    "scripts/maven_legacy_central_cache.py": "c4c3ab8990a140482f5f83ba530b53210f891b3dcc8cc3bc9531cc45b2f6c9db",
+    "scripts/public_split_artifacts.py": "451974ad94238215b83fb2519bef78360ab2b532bcee4d6d098ba9dd22daced0",
+    "scripts/staged_maven_repository.py": "f8d347e04878761dddf38f3d45df8ad832703313e5d7f87ac28f886e82baa0d0",
+    "scripts/verify-gradle-legacy-artifact-consumer.py": "34795afa93ff5ed4bd0ce11c642d5efac1ffc0648e223bae2a257608c1470f6a",
+    "scripts/verify-maven-legacy-artifact-consumer.py": "4ac96af2ca43b392740f827a6affc86501f03b3dff2afd08ccf37b1ebc7d0fd9",
+    "scripts/verify-staged-maven-artifact-consumer.py": "128b66205a7fce33dcaa37c2055077fdb047e1e2037bb104275c820361abcf24",
+    "scripts/verify-staged-split-artifact-consumer.py": "c67aa149ec73400c1dd84bd95329912855160d327573bb8ca5bb28eaa585a8e5"
+  },
+  "unitVerification": {
+    "command": [
+      "python3",
+      "-m",
+      "unittest",
+      "scripts.tests.test_maven_legacy_central_cache",
+      "scripts.tests.test_verify_maven_legacy_artifact_consumer"
+    ],
+    "evidenceLabel": "verified - unit",
+    "logSha256": "9575fb15f1102057544c1499a93a11155681964057036c4e9ec1bf5373c1b08f",
+    "result": "PASS",
+    "testFileSha256": {
+      "scripts/tests/test_maven_legacy_central_cache.py": "f5d5e757c42aa7aff2d3661b045e8f60f745f7f0d87109936edf68d79418b84d",
+      "scripts/tests/test_verify_maven_legacy_artifact_consumer.py": "ecf24818a2ff498f4571a4234b75122507d33632c55df1a475326897ac348dcd"
+    },
+    "tests": 40
+  },
+  "verifiedInputInventory": [
+    {
+      "byteCount": 90376,
+      "module": "routecontract-core",
+      "name": "routecontract-core-0.2.0.jar",
+      "origin": "staged",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.jar",
+      "sha256": "def89f37cf6b4eab02e593bddf77b493c8d52e7b7e66c8ef8f830dc0c67664e8",
+      "version": "0.2.0"
+    },
+    {
+      "byteCount": 2043,
+      "module": "routecontract-core",
+      "name": "routecontract-core-0.2.0.pom",
+      "origin": "staged",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.pom",
+      "sha256": "ccf3a3854e9f369facb1fe63eabc7303c507a7df2a6438372fc77259428519ce",
+      "version": "0.2.0"
+    },
+    {
+      "byteCount": 4564,
+      "module": "routecontract-core",
+      "name": "routecontract-core-0.2.0.module",
+      "origin": "staged",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.module",
+      "sha256": "d83ce94e4913dc8792999f27c1ab324f23cbfc876b04060a7e36b9814d19f7ea",
+      "version": "0.2.0"
+    },
+    {
+      "byteCount": 28997,
+      "module": "routecontract-shardingsphere-5.5",
+      "name": "routecontract-shardingsphere-5.5-0.2.0.jar",
+      "origin": "staged",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.jar",
+      "sha256": "6d139b136e714cb3dfd033aa47dfcbfedffd3e87f6f5aaa2c7762975a714f64e",
+      "version": "0.2.0"
+    },
+    {
+      "byteCount": 2864,
+      "module": "routecontract-shardingsphere-5.5",
+      "name": "routecontract-shardingsphere-5.5-0.2.0.pom",
+      "origin": "staged",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.pom",
+      "sha256": "d6a5232c2d43ec109fc04924635af245b930c99e449c13bd7949c8f62a518945",
+      "version": "0.2.0"
+    },
+    {
+      "byteCount": 6086,
+      "module": "routecontract-shardingsphere-5.5",
+      "name": "routecontract-shardingsphere-5.5-0.2.0.module",
+      "origin": "staged",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.module",
+      "sha256": "fec11718c25ed03ebc2209039ce5fc351bf73d175bd4d8e72483e9a5f01ceb2e",
+      "version": "0.2.0"
+    },
+    {
+      "byteCount": 29010,
+      "module": "routecontract-shardingsphere-5.5.2",
+      "name": "routecontract-shardingsphere-5.5.2-0.2.0.jar",
+      "origin": "staged",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.jar",
+      "sha256": "752090d09ac287c5a21c2118b9c79f4077efc72a7d624b72ed5690303fdf2c18",
+      "version": "0.2.0"
+    },
+    {
+      "byteCount": 2862,
+      "module": "routecontract-shardingsphere-5.5.2",
+      "name": "routecontract-shardingsphere-5.5.2-0.2.0.pom",
+      "origin": "staged",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.pom",
+      "sha256": "baa1a36766d63969f38a90d6ba3c6b9f3d6004e230ed42f2a8778053bc172a3f",
+      "version": "0.2.0"
+    },
+    {
+      "byteCount": 6418,
+      "module": "routecontract-shardingsphere-5.5.2",
+      "name": "routecontract-shardingsphere-5.5.2-0.2.0.module",
+      "origin": "staged",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.module",
+      "sha256": "9be237af25dd3d2b8fbe5c09561d7e6a194cc493bdda23413d5de6ed486417c7",
+      "version": "0.2.0"
+    },
+    {
+      "byteCount": 75891,
+      "extension": "jar",
+      "module": "routecontract-shardingsphere-5.5",
+      "name": "routecontract-shardingsphere-5.5-0.1.0.jar",
+      "origin": "public-legacy",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.0/routecontract-shardingsphere-5.5-0.1.0.jar",
+      "sha256": "d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc",
+      "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.0/routecontract-shardingsphere-5.5-0.1.0.jar",
+      "version": "0.1.0"
+    },
+    {
+      "byteCount": 1929,
+      "extension": "pom",
+      "module": "routecontract-shardingsphere-5.5",
+      "name": "routecontract-shardingsphere-5.5-0.1.0.pom",
+      "origin": "public-legacy",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.0/routecontract-shardingsphere-5.5-0.1.0.pom",
+      "sha256": "05570bfa238ef77db255a46efdd5bbb25e994ae0137db86491a46a25e28deac9",
+      "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.0/routecontract-shardingsphere-5.5.pom",
+      "version": "0.1.0"
+    },
+    {
+      "byteCount": 75891,
+      "extension": "jar",
+      "module": "routecontract-shardingsphere-5.5",
+      "name": "routecontract-shardingsphere-5.5-0.1.2.jar",
+      "origin": "public-legacy",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.2/routecontract-shardingsphere-5.5-0.1.2.jar",
+      "sha256": "d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc",
+      "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.2/routecontract-shardingsphere-5.5-0.1.2.jar",
+      "version": "0.1.2"
+    },
+    {
+      "byteCount": 2138,
+      "extension": "pom",
+      "module": "routecontract-shardingsphere-5.5",
+      "name": "routecontract-shardingsphere-5.5-0.1.2.pom",
+      "origin": "public-legacy",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.2/routecontract-shardingsphere-5.5-0.1.2.pom",
+      "sha256": "70b5d4161d1532e9f9cb699071790a7806d87658511d931477544fa06037b85d",
+      "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.2/routecontract-shardingsphere-5.5.pom",
+      "version": "0.1.2"
+    },
+    {
+      "byteCount": 84926,
+      "extension": "jar",
+      "module": "routecontract-shardingsphere-5.5",
+      "name": "routecontract-shardingsphere-5.5-0.1.3.jar",
+      "origin": "public-legacy",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.3/routecontract-shardingsphere-5.5-0.1.3.jar",
+      "sha256": "9e883e618eb09d9ecf30814151bb4b0a43eba02c78d288cc582fa7e57e6edba2",
+      "url": "https://repo.maven.apache.org/maven2/io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.3/routecontract-shardingsphere-5.5-0.1.3.jar",
+      "version": "0.1.3"
+    },
+    {
+      "byteCount": 2138,
+      "extension": "pom",
+      "module": "routecontract-shardingsphere-5.5",
+      "name": "routecontract-shardingsphere-5.5-0.1.3.pom",
+      "origin": "public-legacy",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.3/routecontract-shardingsphere-5.5-0.1.3.pom",
+      "sha256": "1db9eb4e8527341ed12184111913b7a56de979c5fc4195afcbdb162cb4e730d9",
+      "url": "https://repo.maven.apache.org/maven2/io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.3/routecontract-shardingsphere-5.5-0.1.3.pom",
+      "version": "0.1.3"
+    },
+    {
+      "byteCount": 4050,
+      "extension": "module",
+      "module": "routecontract-shardingsphere-5.5",
+      "name": "routecontract-shardingsphere-5.5-0.1.3.module",
+      "origin": "public-legacy",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.3/routecontract-shardingsphere-5.5-0.1.3.module",
+      "sha256": "eb3d2c9f8b308eb61d8e4d3e3e83e2937423a898bab0b8a623d4abf71eeb44a0",
+      "url": "https://repo.maven.apache.org/maven2/io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.3/routecontract-shardingsphere-5.5-0.1.3.module",
+      "version": "0.1.3"
+    },
+    {
+      "byteCount": 75465,
+      "extension": "jar",
+      "module": "routecontract-shardingsphere-5.5",
+      "name": "routecontract-shardingsphere-5.5-0.1.0-rc2.jar",
+      "origin": "public-legacy",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.0-rc2/routecontract-shardingsphere-5.5-0.1.0-rc2.jar",
+      "sha256": "d0e45bc3d6d88f94ee801143356d7472306d852ec58f6517f0e39aeee0213fdb",
+      "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.0-rc2/routecontract-shardingsphere-5.5-0.1.0-rc2.jar",
+      "version": "0.1.0-rc2"
+    },
+    {
+      "byteCount": 1933,
+      "extension": "pom",
+      "module": "routecontract-shardingsphere-5.5",
+      "name": "routecontract-shardingsphere-5.5-0.1.0-rc2.pom",
+      "origin": "public-legacy",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.0-rc2/routecontract-shardingsphere-5.5-0.1.0-rc2.pom",
+      "sha256": "569bb8ad2e40237156d73903be508c5b65be6ab1fcfc63834c0529f314507075",
+      "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.0-rc2/routecontract-shardingsphere-5.5.pom",
+      "version": "0.1.0-rc2"
+    },
+    {
+      "byteCount": 526,
+      "module": "legacy-bare-request-0.1.0",
+      "name": "legacy-bare-request-0.1.0-1.pom",
+      "origin": "generated-fixture-pom",
+      "relativePath": "io/github/ym0506/routecontract/fixtures/legacy-bare-request-0.1.0/1/legacy-bare-request-0.1.0-1.pom",
+      "requestedCoordinate": "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0",
+      "sha256": "17d033bf1d8c355e2c5aefa2e2bef90ba3d5629a69c2e1c187959b8f105870a7",
+      "version": "1"
+    },
+    {
+      "byteCount": 528,
+      "module": "legacy-hard-request-0.1.0",
+      "name": "legacy-hard-request-0.1.0-1.pom",
+      "origin": "generated-fixture-pom",
+      "relativePath": "io/github/ym0506/routecontract/fixtures/legacy-hard-request-0.1.0/1/legacy-hard-request-0.1.0-1.pom",
+      "requestedCoordinate": "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:[0.1.0]",
+      "sha256": "322b7642903e02ca6ce60122d9189d343286faa25bbeea86acac4f2abbf6caa1",
+      "version": "1"
+    },
+    {
+      "byteCount": 527,
+      "module": "current-bare-request-0.1.0",
+      "name": "current-bare-request-0.1.0-1.pom",
+      "origin": "generated-fixture-pom",
+      "relativePath": "io/github/ym0506/routecontract/fixtures/current-bare-request-0.1.0/1/current-bare-request-0.1.0-1.pom",
+      "requestedCoordinate": "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.2.0",
+      "sha256": "a6aff59ea4aa0347b698337e0237996fb03f425885355bdd03b836a0ac323455",
+      "version": "1"
+    },
+    {
+      "byteCount": 529,
+      "module": "current-hard-request-0.1.0",
+      "name": "current-hard-request-0.1.0-1.pom",
+      "origin": "generated-fixture-pom",
+      "relativePath": "io/github/ym0506/routecontract/fixtures/current-hard-request-0.1.0/1/current-hard-request-0.1.0-1.pom",
+      "requestedCoordinate": "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:[0.2.0]",
+      "sha256": "48000ea7b854ebd6d439c9164a1d88ecb9a83fc640e7a71f16c7efe10cf5ee65",
+      "version": "1"
+    },
+    {
+      "byteCount": 526,
+      "module": "legacy-bare-request-0.1.2",
+      "name": "legacy-bare-request-0.1.2-1.pom",
+      "origin": "generated-fixture-pom",
+      "relativePath": "io/github/ym0506/routecontract/fixtures/legacy-bare-request-0.1.2/1/legacy-bare-request-0.1.2-1.pom",
+      "requestedCoordinate": "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.2",
+      "sha256": "c86af5d94082e1b60cd159fcf7e9965fc582e78eec0fefc788816b84f04d5a38",
+      "version": "1"
+    },
+    {
+      "byteCount": 528,
+      "module": "legacy-hard-request-0.1.2",
+      "name": "legacy-hard-request-0.1.2-1.pom",
+      "origin": "generated-fixture-pom",
+      "relativePath": "io/github/ym0506/routecontract/fixtures/legacy-hard-request-0.1.2/1/legacy-hard-request-0.1.2-1.pom",
+      "requestedCoordinate": "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:[0.1.2]",
+      "sha256": "a346e83a55e3806b3c0a789d71a2c78abd69573f345fbbdeda81d80a699e4d35",
+      "version": "1"
+    },
+    {
+      "byteCount": 527,
+      "module": "current-bare-request-0.1.2",
+      "name": "current-bare-request-0.1.2-1.pom",
+      "origin": "generated-fixture-pom",
+      "relativePath": "io/github/ym0506/routecontract/fixtures/current-bare-request-0.1.2/1/current-bare-request-0.1.2-1.pom",
+      "requestedCoordinate": "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.2.0",
+      "sha256": "d461d8c9091f811daf21b8ca5650be77c8f9758a221bfc616873d5570aae0d9b",
+      "version": "1"
+    },
+    {
+      "byteCount": 529,
+      "module": "current-hard-request-0.1.2",
+      "name": "current-hard-request-0.1.2-1.pom",
+      "origin": "generated-fixture-pom",
+      "relativePath": "io/github/ym0506/routecontract/fixtures/current-hard-request-0.1.2/1/current-hard-request-0.1.2-1.pom",
+      "requestedCoordinate": "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:[0.2.0]",
+      "sha256": "ed7152def2735a908485068e83614558c99989eedd0f05fe85a85ca7297dd312",
+      "version": "1"
+    },
+    {
+      "byteCount": 526,
+      "module": "legacy-bare-request-0.1.3",
+      "name": "legacy-bare-request-0.1.3-1.pom",
+      "origin": "generated-fixture-pom",
+      "relativePath": "io/github/ym0506/routecontract/fixtures/legacy-bare-request-0.1.3/1/legacy-bare-request-0.1.3-1.pom",
+      "requestedCoordinate": "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.3",
+      "sha256": "7f35125f66bce1fc81eb77147c0f30dc3b274afc03c53cc61dc8990afb2a790b",
+      "version": "1"
+    },
+    {
+      "byteCount": 528,
+      "module": "legacy-hard-request-0.1.3",
+      "name": "legacy-hard-request-0.1.3-1.pom",
+      "origin": "generated-fixture-pom",
+      "relativePath": "io/github/ym0506/routecontract/fixtures/legacy-hard-request-0.1.3/1/legacy-hard-request-0.1.3-1.pom",
+      "requestedCoordinate": "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:[0.1.3]",
+      "sha256": "ad2c838bdda181ab41727ed8157ce1b1b4759e03c9bd2bb277345fe22c426184",
+      "version": "1"
+    },
+    {
+      "byteCount": 527,
+      "module": "current-bare-request-0.1.3",
+      "name": "current-bare-request-0.1.3-1.pom",
+      "origin": "generated-fixture-pom",
+      "relativePath": "io/github/ym0506/routecontract/fixtures/current-bare-request-0.1.3/1/current-bare-request-0.1.3-1.pom",
+      "requestedCoordinate": "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.2.0",
+      "sha256": "0a990a65f4e7f7aa3fc800e65442596ff7671038f05d51894714715ba03dc4de",
+      "version": "1"
+    },
+    {
+      "byteCount": 529,
+      "module": "current-hard-request-0.1.3",
+      "name": "current-hard-request-0.1.3-1.pom",
+      "origin": "generated-fixture-pom",
+      "relativePath": "io/github/ym0506/routecontract/fixtures/current-hard-request-0.1.3/1/current-hard-request-0.1.3-1.pom",
+      "requestedCoordinate": "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:[0.2.0]",
+      "sha256": "a2a07062c9d1643e576c663ed8cb63829f890f8f7a67fe905b840c5ec7059661",
+      "version": "1"
+    },
+    {
+      "byteCount": 534,
+      "module": "legacy-bare-request-0.1.0-rc2",
+      "name": "legacy-bare-request-0.1.0-rc2-1.pom",
+      "origin": "generated-fixture-pom",
+      "relativePath": "io/github/ym0506/routecontract/fixtures/legacy-bare-request-0.1.0-rc2/1/legacy-bare-request-0.1.0-rc2-1.pom",
+      "requestedCoordinate": "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0-rc2",
+      "sha256": "c904c674b164cba9ec3e5c24ad8f2e5c7448886b404f7340773188363c4677e1",
+      "version": "1"
+    },
+    {
+      "byteCount": 536,
+      "module": "legacy-hard-request-0.1.0-rc2",
+      "name": "legacy-hard-request-0.1.0-rc2-1.pom",
+      "origin": "generated-fixture-pom",
+      "relativePath": "io/github/ym0506/routecontract/fixtures/legacy-hard-request-0.1.0-rc2/1/legacy-hard-request-0.1.0-rc2-1.pom",
+      "requestedCoordinate": "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:[0.1.0-rc2]",
+      "sha256": "2304b1d60a8cd81853892d7fb56ecc619e0b7f2294e21f9634c0dfc5ef5f0f9d",
+      "version": "1"
+    },
+    {
+      "byteCount": 531,
+      "module": "current-bare-request-0.1.0-rc2",
+      "name": "current-bare-request-0.1.0-rc2-1.pom",
+      "origin": "generated-fixture-pom",
+      "relativePath": "io/github/ym0506/routecontract/fixtures/current-bare-request-0.1.0-rc2/1/current-bare-request-0.1.0-rc2-1.pom",
+      "requestedCoordinate": "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.2.0",
+      "sha256": "af033670c75dd1855d8eee17e58e2371b6d18e1c60aeaab8e525d428398aa93d",
+      "version": "1"
+    },
+    {
+      "byteCount": 533,
+      "module": "current-hard-request-0.1.0-rc2",
+      "name": "current-hard-request-0.1.0-rc2-1.pom",
+      "origin": "generated-fixture-pom",
+      "relativePath": "io/github/ym0506/routecontract/fixtures/current-hard-request-0.1.0-rc2/1/current-hard-request-0.1.0-rc2-1.pom",
+      "requestedCoordinate": "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:[0.2.0]",
+      "sha256": "2a64182ad64ed968155342651fc2ddef5ea655eb68f7adfede62f3db50946ed7",
+      "version": "1"
+    }
+  ]
+}

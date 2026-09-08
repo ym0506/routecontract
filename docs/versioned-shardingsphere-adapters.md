@@ -426,10 +426,13 @@ relevant rules are:
 
 The 5.5.3 snippet substitutes `5.5.3` and excludes
 `routecontract-shardingsphere-5.5.2`; it also contains the exact same-GA
-`routecontract-shardingsphere-5.5:(,0.2.0)` ban shown above. Enforcer inspects the selected Maven
-graph: if ordinary mediation selects only 0.2.0, it cannot report an unselected pre-0.2 declaration,
-so the fixture separately asserts the selected artifact/version and absence of legacy bytes. A
-selected version below 0.2.0 in an asserted 0.2 lane fails. Runtime guards remain mandatory because
+`routecontract-shardingsphere-5.5:(,0.2.0)` ban shown above. Enforcer 3.6.3 traverses a
+[verbose dependency graph](https://github.com/apache/maven-enforcer/blob/enforcer-3.6.3/enforcer-rules/src/main/java/org/apache/maven/enforcer/rules/dependency/BannedDependenciesBase.java#L99-L129),
+including conflict-loser nodes: ordinary mediation selecting only 0.2.0 does not
+remove a losing legacy request from the ban. The fixture separately asserts
+selected JAR identity and the actual Enforcer result. Its explicitly managed
+consumer aligns both requests to 0.2.0 and passes only with current bytes.
+A selected version below 0.2.0 in an asserted 0.2 lane fails. Runtime guards remain mandatory because
 a consumer may omit Enforcer or manually assemble a classpath.
 
 The published snippet pins Maven Enforcer Plugin and Enforcer Rules 3.6.3. For that audited version,
@@ -548,13 +551,16 @@ mocked service collection.
 | A-24 | Maven Java 17, Gradle Groovy Java 17, Gradle Kotlin Java 17, and the existing bounded Java 21 lane; fresh-empty-cache online, isolated-cache offline after one successful staged-byte online prime, corrupted checksum, wrong artifact origin, and an exact-anchor/non-anchor-version-mismatch case in every build tool. | Both version lanes preserve whole-group ShardingSphere exactness, locks, checksums, fail-closed artifact identity, and documented Java boundaries. The offline run disables network and reuses only the frozen primed cache. Java 21 evidence does not broaden another lane by inference. |
 | A-25 | Strict root build, dependency verification, direct and aggregate SBOMs, license inventory, pinned OSV scan, sources/Javadoc/signature/checksum validation. | No verification bypass; every new 5.5.2 and core artifact is reviewed and represented in release evidence. |
 | A-26 | Compare the documented public API of 0.1.2 `routecontract-shardingsphere-5.5` with 0.2.0 through that same GAV; exclude `.internal`/provider FQCNs. Run an old-bytecode consumer, source recompilation, reflection over record components, equality/`toString`, code-source checks, and the documented classpath/module migration examples separately. | Old documented method and legacy-constructor descriptors link through transitive core on the classpath. Source/reflection/record-shape/code-source changes are either compatible or called out explicitly; module-path migration is rejected with the documented 0.2.0 boundary rather than claimed compatible. [Local acceptance evidence](evidence/public-api-migration-2026-09-07.md) maps every requested category to its verified result and disclosed migration change. |
-| A-27 | Gradle and Maven resolver fixtures combine every released stable pre-0.2 all-in-one version with core alone and with the different-GAV 5.5.2 adapter in both declaration orders. Separately request each same-GA legacy version and 0.2.0 with ordinary mediation, then with strict dual-version requirements; audit any RC-tag/release layout against the same registry. | Different-component combinations fail through the legacy-GAV/core-owner capability or consumer Enforcer. Ordinary same-GA mediation passes only when exactly 0.2.0 is selected and no pre-0.2 file is present; strict incompatible requirements fail resolution. |
+| A-27 | Gradle and Maven resolver fixtures combine every released stable pre-0.2 all-in-one version with core alone and with the different-GAV 5.5.2 adapter in both declaration orders. Separately request each same-GA legacy version and 0.2.0 with ordinary mediation, then with strict dual-version requirements; audit any RC-tag/release layout against the same registry. Maven also tests explicit consumer dependency management separately. | Different-component combinations fail through the legacy-GAV/core-owner capability or consumer Enforcer. Gradle ordinary mediation selects only 0.2.0. Maven equal-depth ordinary mediation follows declaration order, and Enforcer 3.6.3 rejects the legacy request even when it loses selection; explicit dependency management aligns both requests and passes only with exact current adapter/core JARs and no legacy file. Strict incompatible requirements fail the respective resolver. |
 | A-28 | For each released stable pre-0.2 all-in-one version, manually assemble legacy + core-0.2.0 + adapter-0.2.0 classpaths with the legacy JAR first and last, for both new adapters; execute ordinary SQL before capture and a capture sentinel. | Every version and order fails with `RC_LEGACY_ADAPTER_COLLISION` before SQL/action; no old-class shadowing, double capture, `AbstractMethodError`, or silent success. A tag-only RC layout may be covered by a byte/layout-identity proof plus oldest/latest executable cases; any distributed RC artifact is executed directly. |
 
 The local Gradle portion of A-27 passed [37 actual resolver cases](evidence/gradle-legacy-resolver-2026-09-08.md)
 against four distributed legacy releases and reviewed 0.2 staging. The evidence includes the
-copyable core-ownership rule, both declaration orders and exact selected JAR hashes. Maven A-27,
-A-28 runtime/classpath execution and the other outstanding lanes remain separate release gates.
+copyable core-ownership rule, both declaration orders and exact selected JAR hashes. The local
+Maven portion also passed [45 actual consumer cases](evidence/maven-legacy-resolver-2026-09-08.md),
+including declaration-order mediation, verbose Enforcer rejection and explicitly managed selection.
+These two runs supply A-27 resolver evidence for their reviewed staging inputs; A-28 runtime/classpath
+execution and the other outstanding lanes remain separate release gates.
 
 Rows A-01 through A-28 are release gates, not an aspirational sample. Failures may not be waived by a
 narrower unit test or by relabeling the lane experimental in final release metadata.
