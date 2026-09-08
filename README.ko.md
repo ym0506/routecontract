@@ -148,6 +148,7 @@ Proxy, batch, reactive 실행, 애플리케이션이 만든 async 경계와 SQL 
 | CI 실패 검토 | [리포트·CLI](docs/ci-review-report.md) · [리포트 예제](docs/evidence/ci-review-report-example.md) |
 | 관측 내용 이해 | [아키텍처](docs/architecture.md) · [명세](docs/specification.md) |
 | 기존 도구와 비교 | [도구 비교](docs/competitive-analysis.md) · [datasource-proxy 실험](docs/empirical-comparison.md) |
+| 애플리케이션 적용 실험 | [CityPulse: 공개 0.1.3으로 테스트 한 개 실행](docs/evidence/citypulse-isolated-pilot-2026-09-08.md) · 자체 실험이며 유지보수자 채택 사례는 아닙니다 |
 | 릴리스 검증 | [v0.1.3 Central 검증](docs/evidence/release-0.1.3-central.md) · [증거 목록](docs/evidence-matrix.md) |
 | 이전 통합 도구 | [v0.1.2 통합 가이드](docs/first-integration.md) — 과거 버전에 고정한 절차 |
 | 기여 | [기여 가이드](CONTRIBUTING.md) · [로드맵](docs/product-roadmap.md) |
