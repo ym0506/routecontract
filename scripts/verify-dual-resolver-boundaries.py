@@ -19,6 +19,7 @@ import subprocess
 import sys
 import signal
 import xml.etree.ElementTree as ET
+import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / 'examples/dual-resolver-boundary-consumer'
@@ -415,7 +416,8 @@ def anchor_classes(runtime):
 def verify_guard_report(case, report, expected):
     require_case(case, 'runtime-guard', 'maven')
     runtime = case['observedRuntime']
-    message = f'RC_UNSUPPORTED_SHARDINGSPHERE_RUNTIME: exact adapter {case["runtime"]} observed {runtime}'
+    resource = anchor_classes(case['runtime'])['database'].replace('.', '/') + '.class'
+    message = 'RC_UNSUPPORTED_SHARDINGSPHERE_RUNTIME: required exact runtime resource unavailable: ' + resource
     if (report.get('schemaVersion') != 1 or report.get('adapterRuntime') != case['runtime']
             or report.get('observedRuntime') != runtime
             or report.get('currentApi') != 'io.github.ym0506.routecontract.api.RouteContract'
@@ -423,10 +425,20 @@ def verify_guard_report(case, report, expected):
             or report.get('preferIPv4Stack') is not True or report.get('userHome') != expected['userHome']
             or report.get('pid') != expected['pid'] or report.get('parentPid') != expected['parentPid']
             or report.get('pid') == report.get('parentPid') or report.get('actionInvoked') is not False
+            or report.get('captureReturned') is not False or report.get('causePresent') is not False
+            or type(report.get('suppressedCount')) is not int or report['suppressedCount'] != 0
             or report.get('diagnosticCode') != 'RC_UNSUPPORTED_SHARDINGSPHERE_RUNTIME'
             or report.get('diagnosticMessage') != message or report.get('exceptionType') != 'java.lang.IllegalStateException'
             or any(report.get(k) for k in ('cause', 'causes', 'suppressed', 'suppressedExceptions'))):
         raise BoundaryError('The fresh JVM did not prove the coherent opposite-runtime rejection before action')
+    absence = report.get('missingAdapterResource')
+    inspected = expected.get('missingAdapterResource')
+    if (not isinstance(absence, dict) or not isinstance(inspected, dict)
+            or set(absence) != {'resourcePath', 'loaderResources', 'classpathEntries'}
+            or set(inspected) != {'resourcePath', 'classpathEntries'}
+            or inspected['resourcePath'] != resource or absence['loaderResources'] != []
+            or {key: absence[key] for key in inspected} != inspected):
+        raise BoundaryError('The exact missing adapter resource must be absent from the loader and every inspected classpath entry')
     if report.get('core') != expected['core'] or report.get('adapter') != expected['adapter']:
         raise BoundaryError('Actual loaded core/adapter bytes or origins differ from the resolved receipt')
     jars = sorted(expected['shardingSphereJars'], key=lambda j: j['coordinate'])
@@ -451,6 +463,7 @@ def verify_guard_report(case, report, expected):
             raise BoundaryError('An anchor is missing, mixed, or loaded from a different JAR')
     return {'result': 'COHERENT_OPPOSITE_RUNTIME_REJECTED', 'actionInvoked': False,
             'diagnosticCode': report['diagnosticCode'], 'actualJavaFeature': 17,
+            'missingAdapterResourcePath': resource,
             'actualAnchorCoordinates': sorted(x['coordinate'] for x in actual)}
 
 
@@ -709,6 +722,35 @@ def jar_record(coord, path):
     return {'coordinate': coord, 'path': str(path), 'sha256': sha(path), 'byteCount': path.stat().st_size}
 
 
+def inspect_absent_adapter_resource(case, classes, paths):
+    """Independently inspect only the selected adapter's finite database ABI path."""
+    require_case(case, 'runtime-guard', 'maven')
+    resource = anchor_classes(case['runtime'])['database'].replace('.', '/') + '.class'
+    if not classes.is_dir() or classes.is_symlink() or classes.resolve(strict=True) != classes:
+        raise BoundaryError('The probe directory must be canonical and nonsymlink')
+    probe = regular(classes / (GUARD_CLASS.replace('.', '/') + '.class'))
+    if (classes / resource).exists() or (classes / resource).is_symlink():
+        raise BoundaryError('The selected adapter database resource is present in the probe directory')
+    entries = [{'kind': 'probe-classes', 'path': str(classes), 'probeClassSha256': sha(probe), 'resourceEntries': []}]
+    seen = {classes}
+    for declared in paths:
+        path = regular(declared)
+        if path in seen or path.suffix != '.jar':
+            raise BoundaryError('Resource absence requires unique actual classpath JARs')
+        seen.add(path)
+        try:
+            with zipfile.ZipFile(path) as jar:
+                found = [name for name in jar.namelist() if name == resource
+                         or re.fullmatch(r'META-INF/versions/[0-9]+/' + re.escape(resource), name)]
+        except zipfile.BadZipFile as error:
+            raise BoundaryError('Resource absence cannot be proven from an unreadable JAR') from error
+        if found:
+            raise BoundaryError('The selected adapter database resource is present in an actual classpath JAR')
+        entries.append({'kind': 'jar', 'path': str(path), 'sha256': sha(path),
+                        'byteCount': path.stat().st_size, 'resourceEntries': []})
+    return {'resourcePath': resource, 'classpathEntries': entries}
+
+
 def guard_classpath(cache, consumer, case, tree, classpath_file, consumed):
     selected = graph_coordinates(tree, case)
     coordinates = {c for c in selected if c.startswith(SS + ':')}
@@ -746,6 +788,7 @@ def guard_classpath(cache, consumer, case, tree, classpath_file, consumed):
     if (consumer / 'target/test-classes').exists() or (consumer / 'target/surefire-reports').exists():
         raise BoundaryError('Guard fixtures may not execute tests')
     expected = {'parentPid': os.getpid(), 'userHome': str(consumer.parent / 'home'),
+                'missingAdapterResource': inspect_absent_adapter_resource(case, classes, paths),
                 'shardingSphereJars': sorted(sharding, key=lambda j: j['coordinate'])}
     for label, module in (('core', 'routecontract-core'), ('adapter', case['adapter'])):
         jar = next(Path(name) for name in first if Path(name).name == f'{module}-{VERSION}.jar')
@@ -809,6 +852,9 @@ def execute_guard(case, consumer, directory, cache, command, environment, java_h
     for record in [expected['core'], expected['adapter'], *expected['shardingSphereJars']]:
         if jar_record(record['coordinate'], Path(record['path'])) != record:
             raise BoundaryError('Actual runtime JAR bytes changed while measuring the guard')
+    if expected['missingAdapterResource'] != inspect_absent_adapter_resource(
+            case, consumer / 'target/classes', [Path(item['path']) for item in compiled['resolvedJarFiles']]):
+        raise BoundaryError('The actual complete classpath or resource absence changed during capture')
     return proof, consumed
 
 

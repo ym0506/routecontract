@@ -14,6 +14,7 @@ import tempfile
 import unittest
 from unittest import mock
 import xml.etree.ElementTree as ET
+import zipfile
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -115,6 +116,14 @@ def guard_fixture(case):
         'shardingSphereJars': [artifact(coordinate) for coordinate in sorted(
             anchors(runtime) + [f'{SS_GROUP}:shardingsphere-infra-common:{runtime}'])],
     }
+    resource = ('org/apache/shardingsphere/infra/database/core/connector/ConnectionProperties.class'
+                if case['runtime'] == '5.5.2' else
+                'org/apache/shardingsphere/database/connector/core/jdbcurl/parser/ConnectionProperties.class')
+    expected['missingAdapterResource'] = {'resourcePath': resource, 'classpathEntries': [
+        {'kind': 'probe-classes', 'path': '/synthetic/no-execution/classes',
+         'probeClassSha256': 'a' * 64, 'resourceEntries': []},
+        *[dict(kind='jar', resourceEntries=[], **{k: v for k, v in jar.items() if k != 'coordinate'})
+          for jar in [expected['core'], expected['adapter'], *expected['shardingSphereJars']]]]}
     classes = [
         'org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook',
         ('org.apache.shardingsphere.infra.spi.ShardingSphereServiceLoader' if runtime == '5.5.2'
@@ -134,9 +143,11 @@ def guard_fixture(case):
         'shardingSphereCoordinates': sorted(item['coordinate'] for item in expected['shardingSphereJars']),
         'actionInvoked': False,
         'diagnosticCode': 'RC_UNSUPPORTED_SHARDINGSPHERE_RUNTIME',
-        'diagnosticMessage': f'RC_UNSUPPORTED_SHARDINGSPHERE_RUNTIME: exact adapter {case["runtime"]} observed {runtime}',
+        'diagnosticMessage': 'RC_UNSUPPORTED_SHARDINGSPHERE_RUNTIME: required exact runtime resource unavailable: ' + resource,
         'exceptionType': 'java.lang.IllegalStateException',
+        'captureReturned': False, 'causePresent': False, 'suppressedCount': 0,
     })
+    report['missingAdapterResource']['loaderResources'] = []
     return report, expected
 
 
@@ -749,6 +760,71 @@ class RuntimeGuardReportTest(unittest.TestCase):
                 proof = MODULE.verify_guard_report(case, report, expected)
                 self.assertEqual('COHERENT_OPPOSITE_RUNTIME_REJECTED', proof['result'])
 
+    def test_retained_actual_missing_552_abi_reason_is_exact_and_not_a_missing_observed_anchor(self):
+        # Native log SHA256 707e9345ee0aaf7dde90bfe017ea163691cf09dcdba47be68f777a9abe28964a.
+        # Only its observed message is retained here. This synthetic report does
+        # not supply missing fields to, or relabel, the failed native execution.
+        case = self.cases()[0]
+        report, expected = guard_fixture(case)
+        self.assertEqual('241a54d3eed267fce1d043494215987f117a16305db6e95b2a408d81af78bba2',
+                         hashlib.sha256(report['diagnosticMessage'].encode()).hexdigest())
+        self.assertNotEqual(report['missingAdapterResource']['resourcePath'],
+                            report['anchors'][2]['className'].replace('.', '/') + '.class')
+        self.assertEqual('COHERENT_OPPOSITE_RUNTIME_REJECTED',
+                         MODULE.verify_guard_report(case, report, expected)['result'])
+
+    def test_absence_evidence_requires_both_searches_and_every_exact_classpath_entry(self):
+        for case in self.cases():
+            report, expected = guard_fixture(case)
+            mutations = []
+            for field, value in [('loaderResources', ['jar:file:/other.jar!/resource']),
+                                 ('loaderResources', None), ('loaderResources', {}),
+                                 ('resourcePath', 'arbitrary/Missing.class'),
+                                 ('resourcePath', report['anchors'][2]['className'].replace('.', '/') + '.class'),
+                                 ('classpathEntries', [])]:
+                invalid = copy.deepcopy(report); invalid['missingAdapterResource'][field] = value; mutations.append(invalid)
+            for op in ('missing-object', 'missing-loader', 'extra-field', 'missing-entry', 'duplicate-entry',
+                       'reordered', 'changed-hash', 'changed-kind', 'changed-size', 'resource-present'):
+                invalid = copy.deepcopy(report); proof = invalid['missingAdapterResource']
+                if op == 'missing-object': invalid.pop('missingAdapterResource')
+                elif op == 'missing-loader': proof.pop('loaderResources')
+                elif op == 'extra-field': proof['unbound'] = []
+                elif op == 'missing-entry': proof['classpathEntries'].pop()
+                elif op == 'duplicate-entry': proof['classpathEntries'].append(copy.deepcopy(proof['classpathEntries'][-1]))
+                elif op == 'reordered': proof['classpathEntries'].reverse()
+                elif op == 'changed-hash': proof['classpathEntries'][0]['probeClassSha256'] = '0' * 64
+                elif op == 'changed-kind': proof['classpathEntries'][0]['kind'] = 'jar'
+                elif op == 'changed-size': proof['classpathEntries'][1]['byteCount'] += 1
+                else: proof['classpathEntries'][1]['resourceEntries'] = [proof['resourcePath']]
+                mutations.append(invalid)
+            for invalid in mutations:
+                with self.subTest(case=case['id'], proof=invalid.get('missingAdapterResource')), self.assertRaises(MODULE.BoundaryError):
+                    MODULE.verify_guard_report(case, invalid, expected)
+
+    def test_no_marker_prefix_arbitrary_resource_or_old_phrase_is_accepted(self):
+        for case in self.cases():
+            report, expected = guard_fixture(case)
+            for message in ('RC_UNSUPPORTED_SHARDINGSPHERE_RUNTIME',
+                            report['diagnosticMessage'] + ' extra',
+                            report['diagnosticMessage'].replace('ConnectionProperties.class', 'Missing.class'),
+                            'RC_UNSUPPORTED_SHARDINGSPHERE_RUNTIME: exact adapter '
+                            + case['runtime'] + ' observed ' + case['observedRuntime']):
+                invalid = copy.deepcopy(report); invalid['diagnosticMessage'] = message
+                with self.subTest(message=message), self.assertRaises(MODULE.BoundaryError):
+                    MODULE.verify_guard_report(case, invalid, expected)
+
+    def test_explicit_no_return_and_no_cause_evidence_is_required(self):
+        report, expected = guard_fixture(self.cases()[0])
+        for field in ('captureReturned', 'causePresent', 'suppressedCount'):
+            invalid = copy.deepcopy(report); invalid.pop(field)
+            with self.subTest(missing=field), self.assertRaises(MODULE.BoundaryError):
+                MODULE.verify_guard_report(self.cases()[0], invalid, expected)
+            values = (True, 0, 'false', None) if field != 'suppressedCount' else (False, 1, '0', None)
+            for value in values:
+                invalid = copy.deepcopy(report); invalid[field] = value
+                with self.subTest(field=field, value=value), self.assertRaises(MODULE.BoundaryError):
+                    MODULE.verify_guard_report(self.cases()[0], invalid, expected)
+
     def test_actual_action_execution_or_unbound_external_process_identity_is_rejected(self):
         case = self.cases()[0]
         report, expected = guard_fixture(case)
@@ -817,6 +893,56 @@ class RuntimeGuardReportTest(unittest.TestCase):
         for invalid in invalids:
             with self.subTest(report=invalid), self.assertRaises(MODULE.BoundaryError):
                 MODULE.verify_guard_report(case, invalid, expected)
+
+
+class MissingAdapterResourceInspectionTest(unittest.TestCase):
+    def fixture(self, root, runtime='5.5.2'):
+        case = next(case for case in MODULE.fixed_plan() if case['id'] == f'maven-{runtime}-runtime-guard')
+        classes = root / 'classes'; probe = classes / (MODULE.GUARD_CLASS.replace('.', '/') + '.class')
+        probe.parent.mkdir(parents=True); probe.write_bytes(b'synthetic-probe-no-Java-execution')
+        paths = [root / 'first-party.jar', root / 'runtime.jar', root / 'other-dependency.jar']
+        for path in paths:
+            with zipfile.ZipFile(path, 'w') as jar: jar.writestr('unrelated/Present.class', b'synthetic')
+        return case, classes, paths
+
+    def test_reads_actual_files_and_hashes_every_entry_for_both_finite_resources(self):
+        for runtime in ADAPTERS:
+            with self.subTest(runtime=runtime), tempfile.TemporaryDirectory() as tmp:
+                case, classes, paths = self.fixture(Path(tmp).resolve(), runtime)
+                proof = MODULE.inspect_absent_adapter_resource(case, classes, paths)
+                self.assertEqual(4, len(proof['classpathEntries']))
+                self.assertEqual([str(p) for p in [classes, *paths]], [e['path'] for e in proof['classpathEntries']])
+                for path, entry in zip(paths, proof['classpathEntries'][1:]):
+                    self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), entry['sha256'])
+                    self.assertEqual(path.stat().st_size, entry['byteCount'])
+                    self.assertEqual([], entry['resourceEntries'])
+                with zipfile.ZipFile(paths[-1], 'a') as jar: jar.writestr('another.txt', b'changed')
+                self.assertNotEqual(proof, MODULE.inspect_absent_adapter_resource(case, classes, paths))
+
+    def test_present_resource_in_any_jar_or_versioned_entry_prevents_absence_proof(self):
+        for runtime in ADAPTERS:
+            for index in range(3):
+                for prefix in ('', 'META-INF/versions/17/'):
+                    with self.subTest(runtime=runtime, index=index, prefix=prefix), tempfile.TemporaryDirectory() as tmp:
+                        case, classes, paths = self.fixture(Path(tmp).resolve(), runtime)
+                        resource = guard_fixture(case)[1]['missingAdapterResource']['resourcePath']
+                        with zipfile.ZipFile(paths[index], 'a') as jar: jar.writestr(prefix + resource, b'present')
+                        with self.assertRaisesRegex(MODULE.BoundaryError, 'present in an actual classpath JAR'):
+                            MODULE.inspect_absent_adapter_resource(case, classes, paths)
+
+    def test_probe_resource_duplicate_jar_bad_zip_and_symlink_cannot_prove_absence(self):
+        for mutation in ('probe-resource', 'duplicate', 'bad-zip', 'symlink'):
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as tmp:
+                case, classes, paths = self.fixture(Path(tmp).resolve())
+                if mutation == 'probe-resource':
+                    resource = classes / guard_fixture(case)[1]['missingAdapterResource']['resourcePath']
+                    resource.parent.mkdir(parents=True); resource.write_bytes(b'present')
+                elif mutation == 'duplicate': paths.append(paths[0])
+                elif mutation == 'bad-zip': paths[0].write_bytes(b'not a jar')
+                else:
+                    link = paths[0].parent / 'link.jar'; link.symlink_to(paths[0]); paths[0] = link
+                with self.assertRaises(MODULE.BoundaryError):
+                    MODULE.inspect_absent_adapter_resource(case, classes, paths)
 
 
 class MavenGraphRetentionTest(unittest.TestCase):

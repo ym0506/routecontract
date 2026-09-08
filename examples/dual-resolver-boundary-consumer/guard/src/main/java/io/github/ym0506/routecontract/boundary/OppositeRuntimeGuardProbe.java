@@ -109,6 +109,7 @@ public final class OppositeRuntimeGuardProbe {
                     "All actual ShardingSphere JARs must have the exact opposite runtime");
         }
         List<Map<String, Object>> anchors = inspectAnchors(observedRuntime, loader, shardingSphereJars);
+        Map<String, Object> missingAdapterResource = inspectAbsentAdapterResource(adapterRuntime, loader);
 
         AtomicBoolean actionInvoked = new AtomicBoolean();
         IllegalStateException rejection = null;
@@ -119,7 +120,8 @@ public final class OppositeRuntimeGuardProbe {
         } catch (IllegalStateException failure) {
             rejection = failure;
         }
-        String exactMessage = DIAGNOSTIC + ": exact adapter " + adapterRuntime + " observed " + observedRuntime;
+        String exactMessage = DIAGNOSTIC + ": required exact runtime resource unavailable: "
+                + missingAdapterResource.get("resourcePath");
         require(!returned && !actionInvoked.get(), "The current API returned or invoked the application action");
         require(rejection != null && rejection.getClass() == IllegalStateException.class
                         && exactMessage.equals(rejection.getMessage())
@@ -133,6 +135,8 @@ public final class OppositeRuntimeGuardProbe {
                 property(expected, "adapterSha256"), property(expected, "adapterByteCount"));
         require(shardingSphereJars.equals(inspectClasspath(coreJar, adapterJar)),
                 "The actual runtime classpath changed during capture");
+        require(missingAdapterResource.equals(inspectAbsentAdapterResource(adapterRuntime, loader)),
+                "The actual resource absence or complete classpath changed during capture");
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("schemaVersion", 1);
@@ -150,11 +154,58 @@ public final class OppositeRuntimeGuardProbe {
         result.put("anchors", anchors);
         result.put("shardingSphereCoordinates", coordinates);
         result.put("shardingSphereJars", shardingSphereJars);
+        result.put("missingAdapterResource", missingAdapterResource);
+        result.put("captureReturned", returned);
         result.put("actionInvoked", actionInvoked.get());
         result.put("diagnosticCode", DIAGNOSTIC);
         result.put("diagnosticMessage", rejection.getMessage());
         result.put("exceptionType", rejection.getClass().getName());
+        result.put("causePresent", rejection.getCause() != null);
+        result.put("suppressedCount", rejection.getSuppressed().length);
         System.out.println("BOUNDARY_RUNTIME_RESULT " + json(result));
+    }
+
+    private static Map<String, Object> inspectAbsentAdapterResource(
+            final String adapterRuntime, final ClassLoader loader) throws Exception {
+        String resource = "5.5.2".equals(adapterRuntime)
+                ? "org/apache/shardingsphere/infra/database/core/connector/ConnectionProperties.class"
+                : "org/apache/shardingsphere/database/connector/core/jdbcurl/parser/ConnectionProperties.class";
+        List<String> visible = Collections.list(loader.getResources(resource)).stream()
+                .map(URL::toExternalForm).toList();
+        require(visible.isEmpty(), "The selected adapter database ABI must be absent from the actual loader");
+        Path probeClasses = Path.of(OppositeRuntimeGuardProbe.class.getProtectionDomain()
+                .getCodeSource().getLocation().toURI()).toRealPath();
+        List<Map<String, Object>> entries = new ArrayList<>();
+        // inspectClasspath already validates this complete actual classpath and
+        // disallows manifest expansion. Inspect every entry, not only SS JARs.
+        for (String element : System.getProperty("java.class.path").split(Pattern.quote(File.pathSeparator), -1)) {
+            Path path = Path.of(element).toRealPath();
+            Map<String, Object> entry = new LinkedHashMap<>();
+            entry.put("path", path.toString());
+            if (path.equals(probeClasses)) {
+                require(!Files.exists(path.resolve(resource), LinkOption.NOFOLLOW_LINKS),
+                        "The selected adapter database ABI is present in the probe directory");
+                entry.put("kind", "probe-classes");
+                entry.put("probeClassSha256", sha256(path.resolve(
+                        OppositeRuntimeGuardProbe.class.getName().replace('.', '/') + ".class")));
+            } else {
+                try (JarFile jar = new JarFile(path.toFile())) {
+                    require(jar.stream().noneMatch(item -> item.getName().equals(resource)
+                                    || item.getName().matches("META-INF/versions/[0-9]+/" + Pattern.quote(resource))),
+                            "The selected adapter database ABI is present in an actual classpath JAR");
+                }
+                entry.put("kind", "jar");
+                entry.put("sha256", sha256(path));
+                entry.put("byteCount", Files.size(path));
+            }
+            entry.put("resourceEntries", List.of());
+            entries.add(entry);
+        }
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("resourcePath", resource);
+        result.put("loaderResources", visible);
+        result.put("classpathEntries", entries);
+        return result;
     }
 
     private static List<Map<String, Object>> inspectAnchors(

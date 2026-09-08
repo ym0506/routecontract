@@ -8,7 +8,8 @@ rejected the call before action entry with
 `RC_UNSUPPORTED_SHARDINGSPHERE_RUNTIME`, identifying the exact adapter's missing
 version-specific database resource. The fixture required a different, exact
 adapter/observed-version message. The second runtime control was not launched;
-the ten-case gate remains incomplete while this diagnostic contract is reviewed.
+the ten-case gate remains incomplete. The bounded fixture correction below is
+prepared for review; neither of its two runtime controls has been re-executed.
 
 Earlier failed attempts remain failed: missing copied checksum sidecars,
 dependency resolution overwriting tree JSON, and the original Enforcer parser
@@ -118,10 +119,31 @@ Launch the selected Java executable in a new external process with the recorded
 resolved classpath. The fixture must independently verify loaded core/adapter JAR
 origins and receipt digests, the complete selected ShardingSphere coordinate set,
 and all three actual opposite-runtime anchor identities before making one measured
-`capture` call. An action sentinel must remain false. Accept only the coherent
-opposite-runtime `RC_UNSUPPORTED_SHARDINGSPHERE_RUNTIME` result; missing anchors,
+`capture` call. An action sentinel must remain false. The selected adapter's
+database ABI resource must independently be absent from both the actual application
+loader's resource enumeration and every actual classpath entry (including the
+probe directory and all dependency JARs, with versioned JAR entries checked).
+Bind the exact resource path, empty loader results, each inspected entry and its
+file hash before and after capture. The finite expected message is
+`RC_UNSUPPORTED_SHARDINGSPHERE_RUNTIME: required exact runtime resource unavailable: `
+followed by `org/apache/shardingsphere/infra/database/core/connector/ConnectionProperties.class`
+for the selected 5.5.2 adapter, or
+`org/apache/shardingsphere/database/connector/core/jdbcurl/parser/ConnectionProperties.class`
+for the selected 5.5.3 adapter. Require an exact `IllegalStateException`, no cause
+or suppressed exceptions, no return and no action invocation. This missing
+selected-adapter ABI resource is distinct from a missing observed-runtime anchor:
+all three actual opposite-runtime anchors and the entire coherent graph must
+already have passed their checks outside the capture exception handler.
+Arbitrary missing resources, marker-only/prefix matches, missing observed anchors,
 unavailable versions, mixed runtimes, legacy/provider collisions, linkage failures
 or any action execution fail the case. These controls perform no SQL or MySQL work.
+
+The preserved first runtime-guard attempt reached its fail-before-action check but
+failed the fixture's former whole-message `exact adapter ... observed ...`
+expectation. The inherited unsupported-runtime contract permits the exact missing
+adapter ABI reason above. That failed attempt remains failed; this correction
+requires new executions of only the two existing runtime-guard identities, with
+explicit absence evidence. It does not repeat or relabel the eight resolver passes.
 
 Preparation writes the explicit ten-case manifest, fixture input fingerprints and
 generated build/POM/Java inputs with zero executed cases. Without the new reviewed

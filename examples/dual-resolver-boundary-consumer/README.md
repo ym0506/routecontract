@@ -166,9 +166,25 @@ adapter origins must match the receipt before and after the measured call.
 Only one measured current-API `capture` call is made. All environmental and loaded
 identity prechecks are outside its exception handler. The only accepted failure is
 an exact `IllegalStateException`, with no cause or suppressed exceptions, whose
-entire message is
-`RC_UNSUPPORTED_SHARDINGSPHERE_RUNTIME: exact adapter <selected> observed <opposite>`.
-The call cannot return and the action sentinel must remain false. Missing anchors,
+entire message is `RC_UNSUPPORTED_SHARDINGSPHERE_RUNTIME: required exact runtime resource unavailable: `
+followed by the selected adapter's exact database ABI resource:
+
+| Selected adapter | Required absent resource |
+| --- | --- |
+| 5.5.2 | `org/apache/shardingsphere/infra/database/core/connector/ConnectionProperties.class` |
+| 5.5.3 | `org/apache/shardingsphere/database/connector/core/jdbcurl/parser/ConnectionProperties.class` |
+
+Before capture, independently enumerate that resource through the actual loader
+and inspect every actual classpath entry, including the probe directory and all
+JARs (ordinary and versioned entries). Both searches must find nothing. Record
+the exact resource, empty loader results and ordered entry inventory with JAR
+hashes and the probe class hash; recheck it after capture. The Python runner
+independently inspects the same files and requires the entire evidence object to
+match. All three observed opposite-runtime anchors must still be present and
+receipt/graph checks must pass outside the measured exception handler.
+
+The call cannot return and the action sentinel must remain false. A different
+missing resource or arbitrary diagnostic suffix is rejected. Missing observed anchors,
 unavailable versions, mixed versions, linkage errors or other diagnostics fail.
 
 After successful verification, stdout contains exactly one fixture result line
@@ -178,11 +194,18 @@ prefixed `BOUNDARY_RUNTIME_RESULT ` followed by JSON. Its fields are:
 schemaVersion, adapterRuntime, observedRuntime, currentApi,
 javaFeature, javaVersion, userHome, preferIPv4Stack, pid, parentPid,
 core, adapter, anchors, shardingSphereCoordinates, shardingSphereJars,
-actionInvoked, diagnosticCode, diagnosticMessage, exceptionType
+missingAdapterResource, captureReturned, actionInvoked, diagnosticCode,
+diagnosticMessage, exceptionType, causePresent, suppressedCount
 ```
 
 `core`, `adapter` and each `shardingSphereJars` entry contain `coordinate`, `path`,
 `sha256`, `byteCount`. Each anchor adds `role`, `className`, `implementationVersion`.
+`missingAdapterResource` contains exactly `resourcePath`, `loaderResources` (an
+empty list), and `classpathEntries`. Each ordered entry contains `kind`, `path`,
+and empty `resourceEntries`; JAR entries add `sha256` and `byteCount`, while the
+single probe directory adds `probeClassSha256`. No omitted, duplicated or extra
+entry is accepted. `captureReturned` and `causePresent` must be false and
+`suppressedCount` must be the integer zero.
 Paths and process IDs are private raw evidence; any public summary must remove
 them. The native command, exit, stdout/stderr and input fingerprints remain the
 runner's evidence responsibility. No template-generated marker alone completes
