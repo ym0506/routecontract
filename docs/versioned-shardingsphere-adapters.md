@@ -31,8 +31,10 @@ The original A-28 runtime-collision gate is now **FAILED**, with its observation
 [unchanged](evidence/legacy-runtime-collision-2026-09-08.md). Four legacy-first calls selected
 immutable old entry code before a new guard could execute. The candidate adopts the explicit
 [current-entry migration contract](current-entry-migration-acceptance.md) and the separate A-29
-successor gate below. Its eight focused regression cells and integrated-source MySQL checks passed;
-the full successor gate against final staged bytes remains pending.
+successor gate below. Its eight focused regression cells and integrated-source MySQL checks passed.
+The [full 64-cell successor execution](evidence/current-entry-successor-4e06694-2026-09-08.md)
+also passed on reviewed `4e06694` staged bytes, with independently checked fresh-JVM observations.
+That result does not substitute for the distinct runtime-lifecycle/module or release-packaging rows.
 
 The current released contract remains exact ShardingSphere-JDBC 5.5.3. Multiple ShardingSphere
 versions are explicitly outside the v0.1 scope. Nothing in this ADR changes the immutable `v0.1.2`
@@ -607,7 +609,10 @@ change an immutable class already selected through the old FQCN.
 The candidate explicitly changes the application-entry contract and requires A-29 as its successor.
 The [eight focused local regressions](evidence/current-entry-regression-2026-09-08.md) and
 [integrated-source verification](evidence/current-entry-root-integration-2026-09-08.md) do not
-complete A-29. Current release acceptance requires A-01 through A-27 and A-29 on final staged bytes,
+complete A-29 by themselves. The separate
+[full staged A-29 run](evidence/current-entry-successor-4e06694-2026-09-08.md) passed all 64 cells:
+32 current-entry capture collisions, 16 ordinary-SQL collisions, 12 clean controls and four startup
+rejections, with 64 distinct JVMs. Current release acceptance requires A-01 through A-27 and A-29 on final staged bytes,
 plus disclosure of the old-entry migration limit and original A-28 failure. Other failing gates
 cannot be waived by a narrower unit test or by relabeling a lane experimental.
 

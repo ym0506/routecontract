@@ -1,9 +1,11 @@
 # Current API entry and legacy migration contract (0.2 candidate)
 
-Status: implementation acceptance, adopted before implementation. The focused
-local regression passed; the full successor release gate remains pending. See
-[retained results](evidence/current-entry-regression-2026-09-08.md) for exact
-evidence labels and limits.
+Status: A-29 passed all 64 checks on independently reviewed local 0.2.0 staging
+from source `4e066942f6e244345fe908970b81446f9e08f64e`. The contract was adopted
+before implementation, and the finite full-run plan was frozen before execution.
+See the [scoped A-29 result](evidence/current-entry-successor-4e06694-2026-09-08.md)
+and the unchanged [earlier focused result](evidence/current-entry-regression-2026-09-08.md).
+This result does not close every release gate or establish public distribution.
 This is a changed application-entry contract, not a repair of immutable legacy
 bytecode and not a passing result for original ADR A-28.
 
@@ -97,10 +99,11 @@ bytes, reviewed staging, and public distribution. Never claim independent use,
 0.2 publication, full A-28 success, or a full successor-matrix pass from the
 focused local regression. Original v0.1.3 bytes and documentation stay immutable.
 
-### A-29 final staged-byte plan
+### A-29 final staged-byte plan and retained execution
 
-The full successor is a separate finite plan of 64 fresh-JVM checks, held until
-all three coordinated candidate artifacts and their new receipt are reviewed:
+The full successor is a separate finite plan of 64 fresh-JVM checks. Execution
+was held until all three coordinated candidate artifacts and their new receipt
+were reviewed, then all 64 checks passed on the retained 4e06694 staging:
 
 - **32 capture collisions:** four actual distributed legacy JARs, two exact
   runtimes, legacy first/last, and both current capture methods. The action must
@@ -125,7 +128,53 @@ collector origins, the unmodified cause chain and the action/driver counters.
 The plan runs against one frozen reviewed staging receipt; a partial selection
 must report incomplete. The focused eight-cell runner and original A-28 runner
 keep their existing scopes. The A-26 old-bytecode migration gate remains separate.
-This paragraph specifies planned checks; it does not report a 64-cell execution.
+The [A-29 receipt](evidence/current-entry-successor-4e06694-2026-09-08.json)
+records the complete 64-cell execution, 64 distinct process IDs and independent
+raw-observation/input audits. No original A-28 or focused-regression record was
+rewritten. This status update was added after execution; the raw source manifest
+retains the acceptance document's frozen pre-run hash.
+
+### Successor runner and reviewed-input requirement
+
+The separate entry point is `scripts/verify-current-entry-successor.py` and its
+fixture is `examples/current-entry-successor-consumer`. It accepts a new reviewed
+nine-payload staging receipt, an independently checked receipt SHA-256, and the
+staged source revision. It rejects a staged core that lacks the new public entry
+and guard, and rejects an audited legacy JAR containing either new class name.
+The original A-28 receipt must still report `FAILED`.
+
+Use the required inputs below only after the new staging and harness fingerprints
+have been reviewed. Paths and digest values are supplied by that review:
+
+```sh
+python3 scripts/verify-current-entry-successor.py \
+  --repository /path/to/new-reviewed-staging \
+  --staged-receipt /path/to/new-reviewed-nine-payload-receipt.json \
+  --expected-staged-receipt-sha256 REVIEWED_RECEIPT_SHA256 \
+  --staged-source-revision REVIEWED_STAGED_SOURCE_REVISION \
+  --evidence-directory /path/to/absent-external-evidence-directory \
+  --java-home /path/to/jdk-17 \
+  --gradle-distribution-zip /path/to/pinned-gradle-8.14.4-bin.zip
+```
+
+`--prepare-only` verifies the supplied bytes and compiles the standalone probe
+against both locked runtime graphs with strict checksum verification and fresh
+dependency caches. It records `PREPARED`, zero executed cells, and
+`fullA29Matrix: false`; it does not start probe JVMs or MySQL. Preparation output
+is retained separately from the later full execution. The runner never builds
+RouteContract production sources or publishes artifacts. A local cache of the
+actual audited legacy payloads may be supplied with `--legacy-payload-directory`;
+all its bytes remain subject to the registry hashes and layout checks.
+
+A `--case` selection is diagnostic only: even 64 successful explicitly selected
+cells report `INCOMPLETE` and exit 2. Full verification requires the canonical
+64 cells, exact case definitions, distinct positive process IDs, every assertion
+passing, and unchanged source/receipt/JAR/probe inputs. Any observed failure stays
+`FAILED`. The source fingerprint, copied input inventory, resolved graphs,
+prepared launch classpaths, per-cell commands, raw observations and cause chains,
+logs, and Python-generated subprocess-assertion JUnit are retained locally.
+These records can contain local paths and JDBC fixture details; publishing a
+minimized receipt is a separate reviewed evidence step.
 
 ## Application migration
 
