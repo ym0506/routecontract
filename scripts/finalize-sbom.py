@@ -85,8 +85,8 @@ REQUIRED_EXAMPLE_MAVEN_COORDINATES = {
     ),
     MYSQL_552_EXAMPLE_NAME: (
         ("org.apache.shardingsphere", "shardingsphere-jdbc", "5.5.2"),
-        ("org.apache.calcite", "calcite-core", "1.38.0"),
-        ("org.apache.calcite", "calcite-linq4j", "1.38.0"),
+        ("org.apache.calcite", "calcite-core", "1.42.0"),
+        ("org.apache.calcite", "calcite-linq4j", "1.42.0"),
     ),
 }
 MYSQL_CONTAINER_DOCUMENTATION_URL = (

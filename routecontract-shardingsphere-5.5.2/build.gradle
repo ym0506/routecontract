@@ -21,6 +21,10 @@ configurations {
 dependencies {
     api project(':routecontract-core')
 
+    implementation('org.apache.commons:commons-lang3:3.18.0') {
+        because 'CVE-2025-48924 is fixed in Commons Lang 3.18.0; carry the repair in published metadata'
+    }
+
     implementation platform("com.fasterxml.jackson:jackson-bom:${shardingSphereJacksonVersion}")
     implementation('org.apache.shardingsphere:shardingsphere-infra-executor') {
         version {
@@ -49,6 +53,7 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
+    exact552ProbeRuntime 'org.apache.commons:commons-lang3:3.18.0'
     exact552ProbeRuntime "org.apache.shardingsphere:shardingsphere-infra-executor:${exactShardingSphereVersion}"
     wrong553ProbeRuntime "org.apache.shardingsphere:shardingsphere-infra-executor:5.5.3"
 }

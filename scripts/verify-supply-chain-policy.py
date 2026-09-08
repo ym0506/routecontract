@@ -119,8 +119,8 @@ REQUIRED_EXAMPLE_MAVEN_COORDINATES_BY_ROOT = {
     EXAMPLE_ROOT_NAME: REQUIRED_EXAMPLE_MAVEN_COORDINATES,
     MYSQL_552_ROOT_NAME: (
         ("org.apache.shardingsphere", "shardingsphere-jdbc", "5.5.2"),
-        ("org.apache.calcite", "calcite-core", "1.38.0"),
-        ("org.apache.calcite", "calcite-linq4j", "1.38.0"),
+        ("org.apache.calcite", "calcite-core", "1.42.0"),
+        ("org.apache.calcite", "calcite-linq4j", "1.42.0"),
     ),
 }
 EXPECTED_PUBLISHED_DEPENDENCY_MANAGEMENT = (

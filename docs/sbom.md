@@ -158,7 +158,7 @@ hashes, source revision and 167-package attestation boundary in
 The exact example dependency anchors are profile-specific:
 
 - `mysql553`: ShardingSphere-JDBC 5.5.3 and Calcite core/linq4j 1.42.0;
-- `mysql552`: ShardingSphere-JDBC 5.5.2 and Calcite core/linq4j 1.38.0.
+- `mysql552`: ShardingSphere-JDBC 5.5.2 and Calcite core/linq4j 1.42.0.
 
 Both MySQL role roots must mark their dependency components as test-scoped and
 must link to the single canonical MySQL container leaf. The aggregate contains

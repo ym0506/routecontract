@@ -103,6 +103,19 @@ dependencies {
         testImplementation("org.apache.commons:commons-compress:1.26.0")
         if (exactRuntime == "5.5.2") {
             testImplementation("commons-logging:commons-logging:1.2") { version { strictly("1.2") } }
+            // Patch the exact552 workload without introducing absent dependency modules.
+            testImplementation("com.google.protobuf:protobuf-java:4.31.1") { version { strictly("4.31.1") } }
+            testImplementation("org.apache.calcite:calcite-core:1.42.0") { version { strictly("1.42.0") } }
+            testImplementation("org.apache.calcite:calcite-linq4j:1.42.0") { version { strictly("1.42.0") } }
+            testImplementation("org.apache.calcite.avatica:avatica-core:1.28.0") { version { strictly("1.28.0") } }
+            testImplementation("org.apache.calcite.avatica:avatica-metrics:1.28.0") { version { strictly("1.28.0") } }
+            testImplementation("net.hydromatic:aggdesigner-algorithm:6.1") { version { strictly("6.1") } }
+            testImplementation("net.minidev:json-smart:2.5.2") { version { strictly("2.5.2") } }
+            testImplementation("net.minidev:accessors-smart:2.5.2") { version { strictly("2.5.2") } }
+            testImplementation("org.apache.commons:commons-lang3:3.18.0") { version { strictly("3.18.0") } }
+            testImplementation("org.apache.httpcomponents.core5:httpcore5:5.4.3") { version { strictly("5.4.3") } }
+            testImplementation("org.apache.httpcomponents.core5:httpcore5-h2:5.4.3") { version { strictly("5.4.3") } }
+            testImplementation("org.apache.httpcomponents.client5:httpclient5:5.6.3") { version { strictly("5.6.3") } }
         } else {
             testImplementation("net.hydromatic:aggdesigner-algorithm:6.1") { version { strictly("6.1") } }
             testImplementation("net.minidev:json-smart:2.4.10") { version { strictly("2.4.10") } }

@@ -1,6 +1,11 @@
 package io.github.ym0506.routecontract.structure;
 
 import org.junit.jupiter.api.Test;
+import org.w3c.dom.NodeList;
+
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathFactory;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -33,6 +38,7 @@ class ArtifactIsolation552Test {
     private static final String SHARDINGSPHERE_GROUP = "org.apache.shardingsphere";
     private static final String TARGET_VERSION = "0.2.0";
     private static final String SHARDINGSPHERE_VERSION = "5.5.2";
+    private static final String PATCHED_COMMONS_LANG_VERSION = "3.18.0";
     private static final String HOOK_SLOT_CAPABILITY =
             "routecontract-shardingsphere-hook-adapter";
     private static final String ADAPTER_552_CAPABILITY =
@@ -183,6 +189,47 @@ class ArtifactIsolation552Test {
         assertStrictModule(module, "shardingsphere-infra-database-core", SHARDINGSPHERE_VERSION);
     }
 
+    @Test
+    void publicationCarriesPatchedCommonsLangAsADirectRuntimeDependency() throws Exception {
+        var document = DocumentBuilderFactory.newInstance().newDocumentBuilder()
+                .parse(requiredPath("routecontract.adapterPom").toFile());
+        var xpath = XPathFactory.newInstance().newXPath();
+        NodeList dependencies = (NodeList) xpath.evaluate(
+                "/project/dependencies/dependency[groupId='org.apache.commons'"
+                        + " and artifactId='commons-lang3']", document, XPathConstants.NODESET);
+        assertEquals(1, dependencies.getLength(),
+                "the Maven publication must carry Lang directly, not only in dependencyManagement");
+        assertEquals(PATCHED_COMMONS_LANG_VERSION, xpath.evaluate("version", dependencies.item(0)));
+        assertEquals("runtime", xpath.evaluate("scope", dependencies.item(0)));
+
+        String module = withoutWhitespace(Files.readString(
+                requiredPath("routecontract.adapterModuleMetadata")));
+        int runtimeStart = module.indexOf("{\"name\":\"runtimeElements\"");
+        assertTrue(runtimeStart >= 0, "the runtime publication variant must exist");
+        String runtime = module.substring(runtimeStart, matchingObjectEnd(module, runtimeStart) + 1);
+        int dependenciesStart = runtime.indexOf("\"dependencies\":[");
+        assertTrue(dependenciesStart >= 0, "runtimeElements must declare dependencies");
+        int arrayStart = runtime.indexOf('[', dependenciesStart);
+        String runtimeDependencies = runtime.substring(arrayStart, matchingArrayEnd(runtime, arrayStart) + 1);
+        String coordinate = "{\"group\":\"org.apache.commons\",\"module\":\"commons-lang3\",";
+        assertEquals(1, occurrences(runtimeDependencies, coordinate),
+                "Gradle consumers must receive one direct runtime Lang dependency, not only a constraint");
+        int dependencyStart = runtimeDependencies.indexOf(coordinate);
+        String lang = runtimeDependencies.substring(dependencyStart,
+                matchingObjectEnd(runtimeDependencies, dependencyStart) + 1);
+        assertTrue(lang.contains("\"version\":{\"requires\":\""
+                + PATCHED_COMMONS_LANG_VERSION + "\"}"),
+                "the Gradle publication must require the patched Lang version: " + lang);
+    }
+
+    @Test
+    void testRuntimeLoadsThePatchedCommonsLangArtifact() throws ClassNotFoundException {
+        Class<?> lang = Class.forName("org.apache.commons.lang3.StringUtils");
+        assertEquals(PATCHED_COMMONS_LANG_VERSION, lang.getPackage().getImplementationVersion(),
+                "the actual loaded Lang artifact must match the publication's patched version: "
+                        + lang.getProtectionDomain().getCodeSource().getLocation());
+    }
+
     private static JarFile openJar(final String propertyName) throws IOException {
         String value = System.getProperty(propertyName);
         assertTrue(value != null && !value.isBlank(), propertyName + " must identify a built JAR");
@@ -253,6 +300,20 @@ class ArtifactIsolation552Test {
             }
         }
         throw new AssertionError("unterminated JSON object");
+    }
+
+    private static int matchingArrayEnd(final String value, final int start) {
+        assertTrue(start >= 0, "JSON array start must exist");
+        int depth = 0;
+        for (int index = start; index < value.length(); index++) {
+            char current = value.charAt(index);
+            if (current == '[') {
+                depth++;
+            } else if (current == ']' && --depth == 0) {
+                return index;
+            }
+        }
+        throw new AssertionError("unterminated JSON array");
     }
 
     private static String withoutWhitespace(final String value) {

@@ -43,8 +43,8 @@ REQUIRED_EXAMPLE_COORDINATES = (
 )
 REQUIRED_552_EXAMPLE_COORDINATES = (
     ("org.apache.shardingsphere", "shardingsphere-jdbc", "5.5.2"),
-    ("org.apache.calcite", "calcite-core", "1.38.0"),
-    ("org.apache.calcite", "calcite-linq4j", "1.38.0"),
+    ("org.apache.calcite", "calcite-core", "1.42.0"),
+    ("org.apache.calcite", "calcite-linq4j", "1.42.0"),
 )
 MYSQL_DOCUMENTATION_URL = "https://dev.mysql.com/doc/refman/8.4/en/preface.html"
 
@@ -957,7 +957,7 @@ class FinalizeSbomTest(unittest.TestCase):
                 version,
                 [{"license": {"id": "Apache-2.0"}}],
             )
-            for group, name, version in coordinates
+            for group, name, version in dict.fromkeys(coordinates)
         )
 
         root_component = first_party_components[root_name]
@@ -1104,6 +1104,17 @@ class FinalizeSbomTest(unittest.TestCase):
                 f"?project_path=%3A{example_name}"
             )], first_party_purl)
         self.assertEqual([], graph[container_purl])
+
+    def test_mysql552_rejects_the_previous_calcite_graph(self) -> None:
+        pair = self.role_pair("mysql552", "2026-08-14T00:00:03.456Z")
+        for path in pair[:2]:
+            path.write_text(path.read_text(encoding="utf-8").replace(
+                "1.42.0", "1.38.0"
+            ), encoding="utf-8")
+        result = self.run_role_pairs((pair,))
+        self.assertNotEqual(0, result.returncode, "old Calcite must not satisfy the repaired profile")
+        self.assertIn("calcite-core", result.stderr)
+        self.assertIn("Unexpected Maven component version", result.stderr)
 
     def test_mysql552_profile_requires_all_pinned_coordinates(self) -> None:
         qname = lambda name: f"{{{NAMESPACE}}}{name}"
