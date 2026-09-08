@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "status": "VERIFIED_SCOPED_RUNTIME_BOUNDARIES",
+  "scope": "Existing ADR A-01–A-08, A-10, A-18 and A-19 representative runtime boundaries.",
+  "artifactSourceRevision": "86a0be5d2e444f3b73925122fa448d9d1a324edd",
+  "consumerSourceRevision": "3ad510a0af972231fbd074607936ee52be3cad1f",
+  "reviewedUnsignedLocalReceiptSha256": "1f4bb21b430a03a44d89e6daddc1fbdede1886250637ef83cecedfd71e350c7e",
+  "runtimeScope": {
+    "java": [
+      "17.0.15"
+    ],
+    "shardingSphereJdbc": [
+      "5.5.2",
+      "5.5.3"
+    ],
+    "mysql": "8.4.11"
+  },
+  "result": {
+    "required": 28,
+    "executed": 28,
+    "passed": 28,
+    "failed": 0,
+    "distinctJvmProcesses": 28,
+    "orderedCaptureParity": true,
+    "previouslyFailingFourNamedDualSql": [
+      {
+        "shardingSphereJdbc": "5.5.2",
+        "adapterModulePathOrder": [
+          "5.5.2",
+          "5.5.3"
+        ],
+        "previousDiagnostic": "RC_MULTIPLE_ROUTE_CONTRACT_ADAPTERS",
+        "requiredAndObservedDiagnostic": "RC_UNSUPPORTED_MODULE_PATH",
+        "actionEntries": 0,
+        "businessDriverDelegations": 0
+      },
+      {
+        "shardingSphereJdbc": "5.5.2",
+        "adapterModulePathOrder": [
+          "5.5.3",
+          "5.5.2"
+        ],
+        "previousDiagnostic": "RC_MULTIPLE_ROUTE_CONTRACT_ADAPTERS",
+        "requiredAndObservedDiagnostic": "RC_UNSUPPORTED_MODULE_PATH",
+        "actionEntries": 0,
+        "businessDriverDelegations": 0
+      },
+      {
+        "shardingSphereJdbc": "5.5.3",
+        "adapterModulePathOrder": [
+          "5.5.2",
+          "5.5.3"
+        ],
+        "previousDiagnostic": "RC_MULTIPLE_ROUTE_CONTRACT_ADAPTERS",
+        "requiredAndObservedDiagnostic": "RC_UNSUPPORTED_MODULE_PATH",
+        "actionEntries": 0,
+        "businessDriverDelegations": 0
+      },
+      {
+        "shardingSphereJdbc": "5.5.3",
+        "adapterModulePathOrder": [
+          "5.5.3",
+          "5.5.2"
+        ],
+        "previousDiagnostic": "RC_MULTIPLE_ROUTE_CONTRACT_ADAPTERS",
+        "requiredAndObservedDiagnostic": "RC_UNSUPPORTED_MODULE_PATH",
+        "actionEntries": 0,
+        "businessDriverDelegations": 0
+      }
+    ],
+    "namedSqlBoundary": "All six named ordinary-SQL cases reach the module guard before descriptor classification and reject with RC_UNSUPPORTED_MODULE_PATH.",
+    "actualDualProvider": "The 5.5.2 hook was discovered first in all four dual named cases; physical module-path order does not establish provider-discovery order.",
+    "inputVerification": {
+      "currentSourceFingerprints": 27,
+      "reviewedPrimaryPayloads": 9,
+      "changedInputsDuringRun": 0,
+      "preparedAndActualCommandsMatch": true,
+      "compiledProbeSourceMatchesFrozenFixture": true
+    },
+    "rawLogAudit": {
+      "linesThroughEof": 620,
+      "extraUncaughtOrShutdownErrors": 0,
+      "linkageErrors": 0
+    },
+    "sha256": {
+      "summary.json": "0102fc337703d49b216b0dea5000d74a9c247657e2ad39f6d47a875a175648b4",
+      "independent-input-record-audit.json": "30380c8ba689a1e180e8609bf89687768b57e08cfe2d447cb789f5ec9150c33d",
+      "independent-raw-runtime-boundary-audit.json": "5e4cca9f1cbd5fdf845c0b576f9f57621d7aa3b82bae10d64eda52430f825f45"
+    }
+  },
+  "preservedEarlierResults": [
+    {
+      "artifactSourceRevision": "4e066942f6e244345fe908970b81446f9e08f64e",
+      "status": "FAILED",
+      "executed": 28,
+      "passed": 22,
+      "failed": 6,
+      "cause": "Named ordinary-SQL fixture startup omitted required java.instrument and jdk.unsupported JDK roots; RouteContract guard behavior was not reached.",
+      "sha256": {
+        "independent-input-record-audit.json": "dc1834aa5d9ca9ef987907ad898a3656bcbbfff5cb2e44c06777e4a7a818385b",
+        "independent-raw-runtime-boundary-audit.json": "9a9b1204c6436a086d9231992af1525bf4d81ec6040a31a73a6db43da74845c2",
+        "summary.json": "eef95298efbc53a0226f8b062c0d76debdafe7854d3823fcbc5acc1f33020ae5"
+      }
+    },
+    {
+      "artifactSourceRevision": "4e066942f6e244345fe908970b81446f9e08f64e",
+      "status": "FAILED",
+      "executed": 28,
+      "passed": 24,
+      "failed": 4,
+      "cause": "After the fixture correction, the four named dual-adapter SQL cells produced the duplicate-adapter diagnostic before the required module-path diagnostic.",
+      "sha256": {
+        "independent-input-record-audit.json": "7e82b41118766bee0a295769efcf43c795bff8adb4329523b90d4566afb00b76",
+        "independent-raw-runtime-boundary-audit.json": "5ddadb9aa6845433485722256d09a45e0893385949803cf39b9d610f890d5a56",
+        "summary.json": "e2989d11372e3a2f6d20ee33c3052f479097aace8da2009ea7fff05357c7a8ec"
+      }
+    }
+  ],
+  "limits": [
+    "The finite 28-case plan and required diagnostics were unchanged. These results apply to the reviewed 86a0be5 artifact bytes.",
+    "Named-module execution remains unsupported; these checks verify deterministic rejection.",
+    "Original A-28 remains FAILED. Both earlier 4e06694 executions remain FAILED and unchanged.",
+    "A-09, A-11–A-13, full A-23 and A-29 are separate gates; this result does not replace them.",
+    "Unsigned local staged evidence does not establish signing, publication, release readiness, human baseline approval or external adoption."
+  ]
+}

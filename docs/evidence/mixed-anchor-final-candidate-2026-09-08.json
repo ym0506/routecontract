@@ -1,0 +1,911 @@
+{
+  "boundaries": [
+    "All six nominal mixed executor/SPI/database tuples remain included in both physical anchor orders, plus two clean controls. No impossible official class bytes are fabricated.",
+    "The adapter follows the database-owner ABI. Mixed captures reject with the top-level RC_MIXED_SHARDINGSPHERE_RUNTIME code and a real guard frame before the action. Later anchor reflection is separate evidence.",
+    "The two clean controls run no SQL and return INCOMPLETE zero-attempt snapshots. They do not establish SQL execution, JDBC workload coverage, transaction commit or MySQL behavior.",
+    "The original failed 4e06694 run is preserved. This new result binds different reviewed 86a0be5 candidate bytes and the corrected strict classifier; it does not rewrite the old result.",
+    "Whole-group resolver rejection is separate A-24 evidence. This receipt alone does not establish all A-09 acceptance, arbitrary non-anchor runtime compatibility, public 0.2 availability, independent rebuilding, adoption or release completion.",
+    "The passive phase performs three uncached JAR manifest reads per verifyRuntime/capture. Its cost is unmeasured.",
+    "Raw filesystem paths, process identifiers, full messages and logs remain local. This public projection retains versions, artifact hashes, counters, stable codes, class availability and raw evidence digests.",
+    "The public result and acceptance copy were prepared after the final run and independent audit; execution-time source and fixture fingerprints remain unchanged."
+  ],
+  "cases": [
+    {
+      "actionEntries": 1,
+      "anchorObservationsAfterCapture": {
+        "database": {
+          "className": "org.apache.shardingsphere.infra.database.core.connector.ConnectionProperties",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-infra-database-core:5.5.2",
+          "loadedAfterCapture": true,
+          "loadedImplementationVersion": "5.5.2",
+          "loadedOriginSha256": "68d198ad6f475767b83c9ce44f9e3d3fc5717d36f621ce18945951aa52118a57"
+        },
+        "executor": {
+          "className": "org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-infra-executor:5.5.2",
+          "loadedAfterCapture": true,
+          "loadedImplementationVersion": "5.5.2",
+          "loadedOriginSha256": "092981cef6ffeb137146853acf10735f4918b7f95fbf43b570f89ba1da0ad5b4"
+        },
+        "spi": {
+          "className": "org.apache.shardingsphere.infra.spi.ShardingSphereServiceLoader",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-infra-spi:5.5.2",
+          "loadedAfterCapture": true,
+          "loadedImplementationVersion": "5.5.2",
+          "loadedOriginSha256": "4e3adf4e94666b1f87f278cbce092ae806383c6a676d67db1fe3c75298363560"
+        }
+      },
+      "captureLinkageFailure": false,
+      "caseId": "e5.5.2-s5.5.2-d5.5.2-forward",
+      "category": "clean",
+      "entryOriginSha256": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac",
+      "exactGuardObserved": false,
+      "outcome": "PASS",
+      "physicalAnchorOrder": [
+        "executor",
+        "spi",
+        "database"
+      ],
+      "publicTopLevelDiagnosticCode": null,
+      "retainedRawSha256": {
+        "command": "bf4703030fa3da47c59eaad6a70cda15f41152f656e8efabf017d63f1ad3e27c",
+        "jvm": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "observed": "40f5c70b31b697634551f420deac23c4a1a1d9d98b048f0f0e54882e92429134",
+        "result": "9f24e862edf6d7b3962e92011e9f47e1fa91b2b984d4510e2ef4ee0e556254b9"
+      },
+      "returned": true,
+      "snapshot": {
+        "collectorDiagnostics": [
+          "RC_NO_START_CALLBACK_OBSERVED"
+        ],
+        "observedPhysicalAttemptCount": 0,
+        "runtimeIdentity": {
+          "adapterContractVersion": 1,
+          "adapterId": "apache-shardingsphere-jdbc/sql-execution-hook",
+          "infraExecutorImplementationVersion": "5.5.2",
+          "infraSpiImplementationVersion": "5.5.2",
+          "supported": true
+        },
+        "schemaVersion": 2,
+        "status": "INCOMPLETE"
+      },
+      "versions": {
+        "adapter": "5.5.2",
+        "database": "5.5.2",
+        "executor": "5.5.2",
+        "spi": "5.5.2"
+      }
+    },
+    {
+      "actionEntries": 0,
+      "anchorObservationsAfterCapture": {
+        "database": {
+          "className": "org.apache.shardingsphere.database.connector.core.jdbcurl.parser.ConnectionProperties",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-database-connector-core:5.5.3",
+          "loadedAfterCapture": true,
+          "loadedImplementationVersion": "5.5.3",
+          "loadedOriginSha256": "8d8da04ce68e0015781d746ca2373771e75bf16dc67e0c991da57edc5ac0f0f4"
+        },
+        "executor": {
+          "className": "org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-infra-executor:5.5.2",
+          "loadedAfterCapture": true,
+          "loadedImplementationVersion": "5.5.2",
+          "loadedOriginSha256": "092981cef6ffeb137146853acf10735f4918b7f95fbf43b570f89ba1da0ad5b4"
+        },
+        "spi": {
+          "className": "org.apache.shardingsphere.infra.spi.ShardingSphereSPI",
+          "classResourcePresent": false,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-infra-spi:5.5.2",
+          "loadFailureClass": "java.lang.ClassNotFoundException",
+          "loadedAfterCapture": false
+        }
+      },
+      "captureLinkageFailure": false,
+      "caseId": "e5.5.2-s5.5.2-d5.5.3-forward",
+      "category": "mixed",
+      "entryOriginSha256": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac",
+      "exactGuardObserved": true,
+      "outcome": "PASS",
+      "physicalAnchorOrder": [
+        "executor",
+        "spi",
+        "database"
+      ],
+      "publicTopLevelDiagnosticCode": "RC_MIXED_SHARDINGSPHERE_RUNTIME",
+      "retainedRawSha256": {
+        "command": "f167da51e3d588060def556956697749b0053df8599fed71c9a463849c03f714",
+        "jvm": "e6b4f2dc8f9a7d2bd00c22023c79400d9737fe29af31a7646c232ac5df2988b3",
+        "observed": "622979431ff3372f5e6b5387f684775e1ff6509ca98b834470bf9e89ea0200e1",
+        "result": "1436188577096e4e7907a10346240f573d4115aff7a51f9413deae486dba4ac6"
+      },
+      "returned": false,
+      "snapshot": null,
+      "versions": {
+        "adapter": "5.5.3",
+        "database": "5.5.3",
+        "executor": "5.5.2",
+        "spi": "5.5.2"
+      }
+    },
+    {
+      "actionEntries": 0,
+      "anchorObservationsAfterCapture": {
+        "database": {
+          "className": "org.apache.shardingsphere.database.connector.core.jdbcurl.parser.ConnectionProperties",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-database-connector-core:5.5.3",
+          "loadedAfterCapture": true,
+          "loadedImplementationVersion": "5.5.3",
+          "loadedOriginSha256": "8d8da04ce68e0015781d746ca2373771e75bf16dc67e0c991da57edc5ac0f0f4"
+        },
+        "executor": {
+          "className": "org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-infra-executor:5.5.2",
+          "loadedAfterCapture": true,
+          "loadedImplementationVersion": "5.5.2",
+          "loadedOriginSha256": "092981cef6ffeb137146853acf10735f4918b7f95fbf43b570f89ba1da0ad5b4"
+        },
+        "spi": {
+          "className": "org.apache.shardingsphere.infra.spi.ShardingSphereSPI",
+          "classResourcePresent": false,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-infra-spi:5.5.2",
+          "loadFailureClass": "java.lang.ClassNotFoundException",
+          "loadedAfterCapture": false
+        }
+      },
+      "captureLinkageFailure": false,
+      "caseId": "e5.5.2-s5.5.2-d5.5.3-reverse",
+      "category": "mixed",
+      "entryOriginSha256": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac",
+      "exactGuardObserved": true,
+      "outcome": "PASS",
+      "physicalAnchorOrder": [
+        "database",
+        "spi",
+        "executor"
+      ],
+      "publicTopLevelDiagnosticCode": "RC_MIXED_SHARDINGSPHERE_RUNTIME",
+      "retainedRawSha256": {
+        "command": "249d3a1bbc39315ad2f9f2d1821547f783f9f9802f9a0570140d2ba289cce6af",
+        "jvm": "e6b4f2dc8f9a7d2bd00c22023c79400d9737fe29af31a7646c232ac5df2988b3",
+        "observed": "2a0effec92d519fe0d6962a169d3dfb17a3da3311bc04e7dffa43de246358959",
+        "result": "718a00e79c6c55e57cca595cc1cdd0db0a58239ece3e5cba80b09cacd2448eec"
+      },
+      "returned": false,
+      "snapshot": null,
+      "versions": {
+        "adapter": "5.5.3",
+        "database": "5.5.3",
+        "executor": "5.5.2",
+        "spi": "5.5.2"
+      }
+    },
+    {
+      "actionEntries": 0,
+      "anchorObservationsAfterCapture": {
+        "database": {
+          "className": "org.apache.shardingsphere.infra.database.core.connector.ConnectionProperties",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-infra-database-core:5.5.2",
+          "loadedAfterCapture": true,
+          "loadedImplementationVersion": "5.5.2",
+          "loadedOriginSha256": "68d198ad6f475767b83c9ce44f9e3d3fc5717d36f621ce18945951aa52118a57"
+        },
+        "executor": {
+          "className": "org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-infra-executor:5.5.2",
+          "loadedAfterCapture": true,
+          "loadedImplementationVersion": "5.5.2",
+          "loadedOriginSha256": "092981cef6ffeb137146853acf10735f4918b7f95fbf43b570f89ba1da0ad5b4"
+        },
+        "spi": {
+          "className": "org.apache.shardingsphere.infra.spi.ShardingSphereServiceLoader",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-infra-spi:5.5.3",
+          "loadedAfterCapture": true,
+          "loadedImplementationVersion": "5.5.3",
+          "loadedOriginSha256": "f6675c565b66fe0a470056fe5dd61eed8b1a20de28e60a8cc8c40c3ae44ee156"
+        }
+      },
+      "captureLinkageFailure": false,
+      "caseId": "e5.5.2-s5.5.3-d5.5.2-forward",
+      "category": "mixed",
+      "entryOriginSha256": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac",
+      "exactGuardObserved": true,
+      "outcome": "PASS",
+      "physicalAnchorOrder": [
+        "executor",
+        "spi",
+        "database"
+      ],
+      "publicTopLevelDiagnosticCode": "RC_MIXED_SHARDINGSPHERE_RUNTIME",
+      "retainedRawSha256": {
+        "command": "12c9598f03d335ce4c53681a3bcc9eb9e85a4809380ea66d91f509f9c2327e5d",
+        "jvm": "67123f1cc28b0b9e36c8f7cd6157686c2d0e944c32275f05b51d7d1b356c179d",
+        "observed": "5b712f6ee4b03835dc2221b81fd709e7aca55489d738173d933ea95df1d23999",
+        "result": "aa032ac983d55da66353790a641c87b4d783123ed405d5182a25f60a1f174f40"
+      },
+      "returned": false,
+      "snapshot": null,
+      "versions": {
+        "adapter": "5.5.2",
+        "database": "5.5.2",
+        "executor": "5.5.2",
+        "spi": "5.5.3"
+      }
+    },
+    {
+      "actionEntries": 0,
+      "anchorObservationsAfterCapture": {
+        "database": {
+          "className": "org.apache.shardingsphere.infra.database.core.connector.ConnectionProperties",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-infra-database-core:5.5.2",
+          "loadedAfterCapture": true,
+          "loadedImplementationVersion": "5.5.2",
+          "loadedOriginSha256": "68d198ad6f475767b83c9ce44f9e3d3fc5717d36f621ce18945951aa52118a57"
+        },
+        "executor": {
+          "className": "org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-infra-executor:5.5.2",
+          "loadedAfterCapture": true,
+          "loadedImplementationVersion": "5.5.2",
+          "loadedOriginSha256": "092981cef6ffeb137146853acf10735f4918b7f95fbf43b570f89ba1da0ad5b4"
+        },
+        "spi": {
+          "className": "org.apache.shardingsphere.infra.spi.ShardingSphereServiceLoader",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-infra-spi:5.5.3",
+          "loadedAfterCapture": true,
+          "loadedImplementationVersion": "5.5.3",
+          "loadedOriginSha256": "f6675c565b66fe0a470056fe5dd61eed8b1a20de28e60a8cc8c40c3ae44ee156"
+        }
+      },
+      "captureLinkageFailure": false,
+      "caseId": "e5.5.2-s5.5.3-d5.5.2-reverse",
+      "category": "mixed",
+      "entryOriginSha256": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac",
+      "exactGuardObserved": true,
+      "outcome": "PASS",
+      "physicalAnchorOrder": [
+        "database",
+        "spi",
+        "executor"
+      ],
+      "publicTopLevelDiagnosticCode": "RC_MIXED_SHARDINGSPHERE_RUNTIME",
+      "retainedRawSha256": {
+        "command": "7886de96c96639ee3d4167d7b73e4f379369629cb1832900b0539fefd488c101",
+        "jvm": "67123f1cc28b0b9e36c8f7cd6157686c2d0e944c32275f05b51d7d1b356c179d",
+        "observed": "33c102fa99171098d03fcf3c369067b54c36037c1b71fbc58f7645d9dc171749",
+        "result": "80ed99b748f14327a8246da372f14fe733f16292fb5612d8d2cd0aee4b6cd1b3"
+      },
+      "returned": false,
+      "snapshot": null,
+      "versions": {
+        "adapter": "5.5.2",
+        "database": "5.5.2",
+        "executor": "5.5.2",
+        "spi": "5.5.3"
+      }
+    },
+    {
+      "actionEntries": 0,
+      "anchorObservationsAfterCapture": {
+        "database": {
+          "className": "org.apache.shardingsphere.database.connector.core.jdbcurl.parser.ConnectionProperties",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-database-connector-core:5.5.3",
+          "loadedAfterCapture": true,
+          "loadedImplementationVersion": "5.5.3",
+          "loadedOriginSha256": "8d8da04ce68e0015781d746ca2373771e75bf16dc67e0c991da57edc5ac0f0f4"
+        },
+        "executor": {
+          "className": "org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-infra-executor:5.5.2",
+          "loadedAfterCapture": true,
+          "loadedImplementationVersion": "5.5.2",
+          "loadedOriginSha256": "092981cef6ffeb137146853acf10735f4918b7f95fbf43b570f89ba1da0ad5b4"
+        },
+        "spi": {
+          "className": "org.apache.shardingsphere.infra.spi.ShardingSphereSPI",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-infra-spi:5.5.3",
+          "loadedAfterCapture": true,
+          "loadedImplementationVersion": "5.5.3",
+          "loadedOriginSha256": "f6675c565b66fe0a470056fe5dd61eed8b1a20de28e60a8cc8c40c3ae44ee156"
+        }
+      },
+      "captureLinkageFailure": false,
+      "caseId": "e5.5.2-s5.5.3-d5.5.3-forward",
+      "category": "mixed",
+      "entryOriginSha256": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac",
+      "exactGuardObserved": true,
+      "outcome": "PASS",
+      "physicalAnchorOrder": [
+        "executor",
+        "spi",
+        "database"
+      ],
+      "publicTopLevelDiagnosticCode": "RC_MIXED_SHARDINGSPHERE_RUNTIME",
+      "retainedRawSha256": {
+        "command": "d6d743be62ae25897f485cf8da47e5b379780cd372aea457ce2fe939279c707c",
+        "jvm": "51dc0a4b0f472a3eee2c17df7f99b37eba722595d4388ab44e4ae67cdc5e78ca",
+        "observed": "56c0d0df41aac29db40ff1727fcec9fb988917d66ae793c87ba385696ef0fda5",
+        "result": "5bbcbf0e631befc341a8c4c3efbdef3e44ffb6b11c9f03d7bfb3cbaa0633c26d"
+      },
+      "returned": false,
+      "snapshot": null,
+      "versions": {
+        "adapter": "5.5.3",
+        "database": "5.5.3",
+        "executor": "5.5.2",
+        "spi": "5.5.3"
+      }
+    },
+    {
+      "actionEntries": 0,
+      "anchorObservationsAfterCapture": {
+        "database": {
+          "className": "org.apache.shardingsphere.database.connector.core.jdbcurl.parser.ConnectionProperties",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-database-connector-core:5.5.3",
+          "loadedAfterCapture": true,
+          "loadedImplementationVersion": "5.5.3",
+          "loadedOriginSha256": "8d8da04ce68e0015781d746ca2373771e75bf16dc67e0c991da57edc5ac0f0f4"
+        },
+        "executor": {
+          "className": "org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-infra-executor:5.5.2",
+          "loadedAfterCapture": true,
+          "loadedImplementationVersion": "5.5.2",
+          "loadedOriginSha256": "092981cef6ffeb137146853acf10735f4918b7f95fbf43b570f89ba1da0ad5b4"
+        },
+        "spi": {
+          "className": "org.apache.shardingsphere.infra.spi.ShardingSphereSPI",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-infra-spi:5.5.3",
+          "loadedAfterCapture": true,
+          "loadedImplementationVersion": "5.5.3",
+          "loadedOriginSha256": "f6675c565b66fe0a470056fe5dd61eed8b1a20de28e60a8cc8c40c3ae44ee156"
+        }
+      },
+      "captureLinkageFailure": false,
+      "caseId": "e5.5.2-s5.5.3-d5.5.3-reverse",
+      "category": "mixed",
+      "entryOriginSha256": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac",
+      "exactGuardObserved": true,
+      "outcome": "PASS",
+      "physicalAnchorOrder": [
+        "database",
+        "spi",
+        "executor"
+      ],
+      "publicTopLevelDiagnosticCode": "RC_MIXED_SHARDINGSPHERE_RUNTIME",
+      "retainedRawSha256": {
+        "command": "0350d50608550b9c04685249c64999fc92f2c980936c420602edd39e64247856",
+        "jvm": "51dc0a4b0f472a3eee2c17df7f99b37eba722595d4388ab44e4ae67cdc5e78ca",
+        "observed": "e8fe7180187dc8b1172cac5029c1eb7318fef2b5faae7e6572a80f16f568a176",
+        "result": "46b5500d9f50b5652b9f4c8dd6394fa57f18745eb978b4c0af82d2a3d4431bc3"
+      },
+      "returned": false,
+      "snapshot": null,
+      "versions": {
+        "adapter": "5.5.3",
+        "database": "5.5.3",
+        "executor": "5.5.2",
+        "spi": "5.5.3"
+      }
+    },
+    {
+      "actionEntries": 0,
+      "anchorObservationsAfterCapture": {
+        "database": {
+          "className": "org.apache.shardingsphere.infra.database.core.connector.ConnectionProperties",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-infra-database-core:5.5.2",
+          "loadedAfterCapture": true,
+          "loadedImplementationVersion": "5.5.2",
+          "loadedOriginSha256": "68d198ad6f475767b83c9ce44f9e3d3fc5717d36f621ce18945951aa52118a57"
+        },
+        "executor": {
+          "className": "org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-infra-executor:5.5.3",
+          "loadFailureClass": "java.lang.NoClassDefFoundError",
+          "loadedAfterCapture": false
+        },
+        "spi": {
+          "className": "org.apache.shardingsphere.infra.spi.ShardingSphereServiceLoader",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-infra-spi:5.5.2",
+          "loadedAfterCapture": true,
+          "loadedImplementationVersion": "5.5.2",
+          "loadedOriginSha256": "4e3adf4e94666b1f87f278cbce092ae806383c6a676d67db1fe3c75298363560"
+        }
+      },
+      "captureLinkageFailure": false,
+      "caseId": "e5.5.3-s5.5.2-d5.5.2-forward",
+      "category": "mixed",
+      "entryOriginSha256": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac",
+      "exactGuardObserved": true,
+      "outcome": "PASS",
+      "physicalAnchorOrder": [
+        "executor",
+        "spi",
+        "database"
+      ],
+      "publicTopLevelDiagnosticCode": "RC_MIXED_SHARDINGSPHERE_RUNTIME",
+      "retainedRawSha256": {
+        "command": "77c5179fcaea4cf47335f4b022a6a245a25996fb5de1b69c66c111003b9ae7d8",
+        "jvm": "2bd914db099dbc7c1291e0a44643ea525ef714b49f2d95862b6a064f0574d4c0",
+        "observed": "25e07fca598708aaaa1c9ed0d550d1ad5ba2770c09bda2972e427f4de0c96331",
+        "result": "144e8d0cee8c65f93c3021181d028113b512f0582d1826b81a942c4d22ae117a"
+      },
+      "returned": false,
+      "snapshot": null,
+      "versions": {
+        "adapter": "5.5.2",
+        "database": "5.5.2",
+        "executor": "5.5.3",
+        "spi": "5.5.2"
+      }
+    },
+    {
+      "actionEntries": 0,
+      "anchorObservationsAfterCapture": {
+        "database": {
+          "className": "org.apache.shardingsphere.infra.database.core.connector.ConnectionProperties",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-infra-database-core:5.5.2",
+          "loadedAfterCapture": true,
+          "loadedImplementationVersion": "5.5.2",
+          "loadedOriginSha256": "68d198ad6f475767b83c9ce44f9e3d3fc5717d36f621ce18945951aa52118a57"
+        },
+        "executor": {
+          "className": "org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-infra-executor:5.5.3",
+          "loadFailureClass": "java.lang.NoClassDefFoundError",
+          "loadedAfterCapture": false
+        },
+        "spi": {
+          "className": "org.apache.shardingsphere.infra.spi.ShardingSphereServiceLoader",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-infra-spi:5.5.2",
+          "loadedAfterCapture": true,
+          "loadedImplementationVersion": "5.5.2",
+          "loadedOriginSha256": "4e3adf4e94666b1f87f278cbce092ae806383c6a676d67db1fe3c75298363560"
+        }
+      },
+      "captureLinkageFailure": false,
+      "caseId": "e5.5.3-s5.5.2-d5.5.2-reverse",
+      "category": "mixed",
+      "entryOriginSha256": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac",
+      "exactGuardObserved": true,
+      "outcome": "PASS",
+      "physicalAnchorOrder": [
+        "database",
+        "spi",
+        "executor"
+      ],
+      "publicTopLevelDiagnosticCode": "RC_MIXED_SHARDINGSPHERE_RUNTIME",
+      "retainedRawSha256": {
+        "command": "6cc55b250ad72cdf062d191ce86d288edfb9f4b23d4d3c29b2a94804b3a9ec44",
+        "jvm": "2bd914db099dbc7c1291e0a44643ea525ef714b49f2d95862b6a064f0574d4c0",
+        "observed": "921869feb6a678db418e02befb9418a22a6a71c9cb1dbce1b91cc061d5364f22",
+        "result": "19d0fa606d65f244753f0fc8c13fd192d1b3f43fa59a3df4dc8b37c9e769120a"
+      },
+      "returned": false,
+      "snapshot": null,
+      "versions": {
+        "adapter": "5.5.2",
+        "database": "5.5.2",
+        "executor": "5.5.3",
+        "spi": "5.5.2"
+      }
+    },
+    {
+      "actionEntries": 0,
+      "anchorObservationsAfterCapture": {
+        "database": {
+          "className": "org.apache.shardingsphere.database.connector.core.jdbcurl.parser.ConnectionProperties",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-database-connector-core:5.5.3",
+          "loadedAfterCapture": true,
+          "loadedImplementationVersion": "5.5.3",
+          "loadedOriginSha256": "8d8da04ce68e0015781d746ca2373771e75bf16dc67e0c991da57edc5ac0f0f4"
+        },
+        "executor": {
+          "className": "org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-infra-executor:5.5.3",
+          "loadFailureClass": "java.lang.NoClassDefFoundError",
+          "loadedAfterCapture": false
+        },
+        "spi": {
+          "className": "org.apache.shardingsphere.infra.spi.ShardingSphereSPI",
+          "classResourcePresent": false,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-infra-spi:5.5.2",
+          "loadFailureClass": "java.lang.ClassNotFoundException",
+          "loadedAfterCapture": false
+        }
+      },
+      "captureLinkageFailure": false,
+      "caseId": "e5.5.3-s5.5.2-d5.5.3-forward",
+      "category": "mixed",
+      "entryOriginSha256": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac",
+      "exactGuardObserved": true,
+      "outcome": "PASS",
+      "physicalAnchorOrder": [
+        "executor",
+        "spi",
+        "database"
+      ],
+      "publicTopLevelDiagnosticCode": "RC_MIXED_SHARDINGSPHERE_RUNTIME",
+      "retainedRawSha256": {
+        "command": "ea90c003de4bb558f08dd2e129596d843fd5a9aa9da4814a9b997e51d4616c79",
+        "jvm": "60fe2534c3e243062ec999619b58d428b6ce4737d072a811232fc2c59dc5a093",
+        "observed": "4fe8c9489a55af69e52d900980239a78ad6fb2e51c2764cff67c25ba5fe2a76a",
+        "result": "cb0c57775b5991a0153d668b5c1efa8ec8045b0ae699d7e360286aaa1aacb1b8"
+      },
+      "returned": false,
+      "snapshot": null,
+      "versions": {
+        "adapter": "5.5.3",
+        "database": "5.5.3",
+        "executor": "5.5.3",
+        "spi": "5.5.2"
+      }
+    },
+    {
+      "actionEntries": 0,
+      "anchorObservationsAfterCapture": {
+        "database": {
+          "className": "org.apache.shardingsphere.database.connector.core.jdbcurl.parser.ConnectionProperties",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-database-connector-core:5.5.3",
+          "loadedAfterCapture": true,
+          "loadedImplementationVersion": "5.5.3",
+          "loadedOriginSha256": "8d8da04ce68e0015781d746ca2373771e75bf16dc67e0c991da57edc5ac0f0f4"
+        },
+        "executor": {
+          "className": "org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-infra-executor:5.5.3",
+          "loadFailureClass": "java.lang.NoClassDefFoundError",
+          "loadedAfterCapture": false
+        },
+        "spi": {
+          "className": "org.apache.shardingsphere.infra.spi.ShardingSphereSPI",
+          "classResourcePresent": false,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-infra-spi:5.5.2",
+          "loadFailureClass": "java.lang.ClassNotFoundException",
+          "loadedAfterCapture": false
+        }
+      },
+      "captureLinkageFailure": false,
+      "caseId": "e5.5.3-s5.5.2-d5.5.3-reverse",
+      "category": "mixed",
+      "entryOriginSha256": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac",
+      "exactGuardObserved": true,
+      "outcome": "PASS",
+      "physicalAnchorOrder": [
+        "database",
+        "spi",
+        "executor"
+      ],
+      "publicTopLevelDiagnosticCode": "RC_MIXED_SHARDINGSPHERE_RUNTIME",
+      "retainedRawSha256": {
+        "command": "b960b49291036c4b7ec29d617e59be5479df5ca59d8b0e4ed68cece2880e73fa",
+        "jvm": "60fe2534c3e243062ec999619b58d428b6ce4737d072a811232fc2c59dc5a093",
+        "observed": "9edc02af73271466db222d097901e4063eb8635d81d92f76f96680fd96265f4a",
+        "result": "87937be40befbf71d6a029503e69d2f35aa00a2305ae7809d070c50c438ad3f4"
+      },
+      "returned": false,
+      "snapshot": null,
+      "versions": {
+        "adapter": "5.5.3",
+        "database": "5.5.3",
+        "executor": "5.5.3",
+        "spi": "5.5.2"
+      }
+    },
+    {
+      "actionEntries": 0,
+      "anchorObservationsAfterCapture": {
+        "database": {
+          "className": "org.apache.shardingsphere.infra.database.core.connector.ConnectionProperties",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-infra-database-core:5.5.2",
+          "loadedAfterCapture": true,
+          "loadedImplementationVersion": "5.5.2",
+          "loadedOriginSha256": "68d198ad6f475767b83c9ce44f9e3d3fc5717d36f621ce18945951aa52118a57"
+        },
+        "executor": {
+          "className": "org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-infra-executor:5.5.3",
+          "loadedAfterCapture": true,
+          "loadedImplementationVersion": "5.5.3",
+          "loadedOriginSha256": "c3ae26f0f93accce73e0d7f1abeb993391662ee2a3f42468c0cc0169785bd3d3"
+        },
+        "spi": {
+          "className": "org.apache.shardingsphere.infra.spi.ShardingSphereServiceLoader",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-infra-spi:5.5.3",
+          "loadedAfterCapture": true,
+          "loadedImplementationVersion": "5.5.3",
+          "loadedOriginSha256": "f6675c565b66fe0a470056fe5dd61eed8b1a20de28e60a8cc8c40c3ae44ee156"
+        }
+      },
+      "captureLinkageFailure": false,
+      "caseId": "e5.5.3-s5.5.3-d5.5.2-forward",
+      "category": "mixed",
+      "entryOriginSha256": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac",
+      "exactGuardObserved": true,
+      "outcome": "PASS",
+      "physicalAnchorOrder": [
+        "executor",
+        "spi",
+        "database"
+      ],
+      "publicTopLevelDiagnosticCode": "RC_MIXED_SHARDINGSPHERE_RUNTIME",
+      "retainedRawSha256": {
+        "command": "6828c173497d47517d8627d9d50655570b4a5da430c98e8954e14672835c3316",
+        "jvm": "06802ca39dd69289a62e1456923f8e8bb6c160f95dfb706afc91e115a911477b",
+        "observed": "342c5b9632ead3cd5f15f674aa9519d432b89866bb6c4b43d4ebbfc75027a750",
+        "result": "b75f0298f78ef9cf355cf5c878e2a2099e4939a38737a26d810d87a6c9e639bb"
+      },
+      "returned": false,
+      "snapshot": null,
+      "versions": {
+        "adapter": "5.5.2",
+        "database": "5.5.2",
+        "executor": "5.5.3",
+        "spi": "5.5.3"
+      }
+    },
+    {
+      "actionEntries": 0,
+      "anchorObservationsAfterCapture": {
+        "database": {
+          "className": "org.apache.shardingsphere.infra.database.core.connector.ConnectionProperties",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-infra-database-core:5.5.2",
+          "loadedAfterCapture": true,
+          "loadedImplementationVersion": "5.5.2",
+          "loadedOriginSha256": "68d198ad6f475767b83c9ce44f9e3d3fc5717d36f621ce18945951aa52118a57"
+        },
+        "executor": {
+          "className": "org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-infra-executor:5.5.3",
+          "loadedAfterCapture": true,
+          "loadedImplementationVersion": "5.5.3",
+          "loadedOriginSha256": "c3ae26f0f93accce73e0d7f1abeb993391662ee2a3f42468c0cc0169785bd3d3"
+        },
+        "spi": {
+          "className": "org.apache.shardingsphere.infra.spi.ShardingSphereServiceLoader",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-infra-spi:5.5.3",
+          "loadedAfterCapture": true,
+          "loadedImplementationVersion": "5.5.3",
+          "loadedOriginSha256": "f6675c565b66fe0a470056fe5dd61eed8b1a20de28e60a8cc8c40c3ae44ee156"
+        }
+      },
+      "captureLinkageFailure": false,
+      "caseId": "e5.5.3-s5.5.3-d5.5.2-reverse",
+      "category": "mixed",
+      "entryOriginSha256": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac",
+      "exactGuardObserved": true,
+      "outcome": "PASS",
+      "physicalAnchorOrder": [
+        "database",
+        "spi",
+        "executor"
+      ],
+      "publicTopLevelDiagnosticCode": "RC_MIXED_SHARDINGSPHERE_RUNTIME",
+      "retainedRawSha256": {
+        "command": "1b49c8ed5742a9953c9cbf92592c41e60c345c5fa7a6d7dfd1a28be284ad7ef9",
+        "jvm": "06802ca39dd69289a62e1456923f8e8bb6c160f95dfb706afc91e115a911477b",
+        "observed": "41250517af6ea6165aeb370fb059e29baad7b7b248c26755b0ec4bc53196c1d2",
+        "result": "60d24b439fd5608579475127817f2840d18d3efcb4ed380feef9d3d7f2a6b1cd"
+      },
+      "returned": false,
+      "snapshot": null,
+      "versions": {
+        "adapter": "5.5.2",
+        "database": "5.5.2",
+        "executor": "5.5.3",
+        "spi": "5.5.3"
+      }
+    },
+    {
+      "actionEntries": 1,
+      "anchorObservationsAfterCapture": {
+        "database": {
+          "className": "org.apache.shardingsphere.database.connector.core.jdbcurl.parser.ConnectionProperties",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-database-connector-core:5.5.3",
+          "loadedAfterCapture": true,
+          "loadedImplementationVersion": "5.5.3",
+          "loadedOriginSha256": "8d8da04ce68e0015781d746ca2373771e75bf16dc67e0c991da57edc5ac0f0f4"
+        },
+        "executor": {
+          "className": "org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-infra-executor:5.5.3",
+          "loadedAfterCapture": true,
+          "loadedImplementationVersion": "5.5.3",
+          "loadedOriginSha256": "c3ae26f0f93accce73e0d7f1abeb993391662ee2a3f42468c0cc0169785bd3d3"
+        },
+        "spi": {
+          "className": "org.apache.shardingsphere.infra.spi.ShardingSphereSPI",
+          "classResourcePresent": true,
+          "coordinate": "org.apache.shardingsphere:shardingsphere-infra-spi:5.5.3",
+          "loadedAfterCapture": true,
+          "loadedImplementationVersion": "5.5.3",
+          "loadedOriginSha256": "f6675c565b66fe0a470056fe5dd61eed8b1a20de28e60a8cc8c40c3ae44ee156"
+        }
+      },
+      "captureLinkageFailure": false,
+      "caseId": "e5.5.3-s5.5.3-d5.5.3-forward",
+      "category": "clean",
+      "entryOriginSha256": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac",
+      "exactGuardObserved": false,
+      "outcome": "PASS",
+      "physicalAnchorOrder": [
+        "executor",
+        "spi",
+        "database"
+      ],
+      "publicTopLevelDiagnosticCode": null,
+      "retainedRawSha256": {
+        "command": "5d687ea8e907ce66c66e8f550b5bca48866d840dbace67f2c318dfab2b7a40b6",
+        "jvm": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "observed": "b191f828bb70d837e08ee9c34977e3ecf0af797bfa0c7f3be1c6051385c85070",
+        "result": "19e0f7bd4b2dbf87fcd1f008e8b1148735318b1de21834de74311616526098cb"
+      },
+      "returned": true,
+      "snapshot": {
+        "collectorDiagnostics": [
+          "RC_NO_START_CALLBACK_OBSERVED"
+        ],
+        "observedPhysicalAttemptCount": 0,
+        "runtimeIdentity": {
+          "adapterContractVersion": 1,
+          "adapterId": "apache-shardingsphere-jdbc/sql-execution-hook",
+          "infraExecutorImplementationVersion": "5.5.3",
+          "infraSpiImplementationVersion": "5.5.3",
+          "supported": true
+        },
+        "schemaVersion": 2,
+        "status": "INCOMPLETE"
+      },
+      "versions": {
+        "adapter": "5.5.3",
+        "database": "5.5.3",
+        "executor": "5.5.3",
+        "spi": "5.5.3"
+      }
+    }
+  ],
+  "counts": {
+    "cleanNoSql": 2,
+    "distinctFreshJvms": 14,
+    "executed": 14,
+    "expectedLaterAnchorLoadFailureRecords": 8,
+    "mixed": 12,
+    "mixedCellsWithExpectedLaterAnchorLoadFailures": 6,
+    "passed": 14,
+    "required": 14
+  },
+  "date": "2026-09-08",
+  "environmentLabel": "reviewed unsigned local 0.2.0 staging; Java 17.0.15; no SQL",
+  "firstPartyBinaryArtifacts": [
+    {
+      "coordinate": "io.github.ym0506.routecontract:routecontract-core:0.2.0",
+      "sha256": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac"
+    },
+    {
+      "coordinate": "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5.2:0.2.0",
+      "sha256": "d5e73f86004fc5a00ebdf3069440d16f8eaf2e033e8b57a7d096ace26630fbe4"
+    },
+    {
+      "coordinate": "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.2.0",
+      "sha256": "e48e67b2ce2c5d75d60d6794fe93c34d34697daff810a7b1f9c977095c5a02e5"
+    }
+  ],
+  "fullA09Acceptance": false,
+  "fullManualA09Matrix": true,
+  "gate": "A-09 finite manual mixed-anchor matrix",
+  "localReviewDecisionSha256": "4fe28238575d3585c7e45aab0884a7d3ea6eed9693fa3ac2a953b8832ba8171f",
+  "officialAnchorInputs": [
+    {
+      "coordinate": "org.apache.shardingsphere:shardingsphere-infra-database-core:5.5.2",
+      "manifestImplementationVersion": "5.5.2",
+      "sha256": "68d198ad6f475767b83c9ce44f9e3d3fc5717d36f621ce18945951aa52118a57"
+    },
+    {
+      "coordinate": "org.apache.shardingsphere:shardingsphere-infra-executor:5.5.2",
+      "manifestImplementationVersion": "5.5.2",
+      "sha256": "092981cef6ffeb137146853acf10735f4918b7f95fbf43b570f89ba1da0ad5b4"
+    },
+    {
+      "coordinate": "org.apache.shardingsphere:shardingsphere-infra-spi:5.5.2",
+      "manifestImplementationVersion": "5.5.2",
+      "sha256": "4e3adf4e94666b1f87f278cbce092ae806383c6a676d67db1fe3c75298363560"
+    },
+    {
+      "coordinate": "org.apache.shardingsphere:shardingsphere-database-connector-core:5.5.3",
+      "manifestImplementationVersion": "5.5.3",
+      "sha256": "8d8da04ce68e0015781d746ca2373771e75bf16dc67e0c991da57edc5ac0f0f4"
+    },
+    {
+      "coordinate": "org.apache.shardingsphere:shardingsphere-infra-spi:5.5.3",
+      "manifestImplementationVersion": "5.5.3",
+      "sha256": "f6675c565b66fe0a470056fe5dd61eed8b1a20de28e60a8cc8c40c3ae44ee156"
+    },
+    {
+      "coordinate": "org.apache.shardingsphere:shardingsphere-infra-executor:5.5.3",
+      "manifestImplementationVersion": "5.5.3",
+      "sha256": "c3ae26f0f93accce73e0d7f1abeb993391662ee2a3f42468c0cc0169785bd3d3"
+    }
+  ],
+  "originalFailedExecution": {
+    "cleanHarnessSchemaFailures": 2,
+    "evidenceUnchanged": true,
+    "executed": 14,
+    "passed": 6,
+    "realMixedDiagnosticFailures": 6,
+    "stagedReceiptSha256": "38b2269eca162f121fd3996c56df8b894ae2f43cedeb08fcc627032cf70eaa43",
+    "stagedSourceRevision": "4e066942f6e244345fe908970b81446f9e08f64e",
+    "status": "FAILED",
+    "summarySha256": "8fa55131e2aba991cbfa37af0e02235cd1a189ec652b962f65c025c55ff5d25e"
+  },
+  "retainedRawEvidenceSha256": {
+    "fixtureInputs": "54dd0166691809c84f335e88ea4c161e8b4dd666035c2fa91f2ca400df28b9f0",
+    "fullExecutionLog": "5f757e6941469372915443a13f376ae886da0442dbb851637c23b98bdf9c4ba1",
+    "independentAudit": "1d4c14142258b64279e417fb31cce01e9f0c6b323d2f0492720ed07603a5a7b1",
+    "junit": "487e9bd3d0dad85df7379f8e5ed0b283fbe3f7f78be0f3f88c616994552acb09",
+    "prelaunchDispatch": "572aefe0666466e4cda4ffb99b3a07c233abe607cc01c8cdd622d878b318f143",
+    "sourceBinding": "70956df86acefbced4bc1e56d7b5783d7469707e28d3ee3057be598df714dba7",
+    "stagedInventory": "d15f7e70ae329fc8c7f52d68ed8becbd45986cef4b9ba6faf41e9ff17e0c0d03",
+    "summary": "9b1647b73559461c5420eb9e53fae5e5f011b63819eefa5469e028b1e47b080b",
+    "terminal": "a6b35c1dcc148eeee1a1f97625b69d8cd40c806f4dd1dad5889b4a9b5c2895ec"
+  },
+  "runnerRevision": "3ad510a0af972231fbd074607936ee52be3cad1f",
+  "schemaVersion": 1,
+  "stagedReceiptSha256": "1f4bb21b430a03a44d89e6daddc1fbdede1886250637ef83cecedfd71e350c7e",
+  "stagedSourceRevision": "86a0be5d2e444f3b73925122fa448d9d1a324edd",
+  "status": "VERIFIED",
+  "toolchain": {
+    "gradle": "8.14.4",
+    "gradleDistributionSha256": "f1771298a70f6db5a29daf62378c4e18a17fc33c9ba6b14362e0cdf40610380d",
+    "java": "17.0.15"
+  },
+  "verification": {
+    "compiledProbeClassesVerified": 2,
+    "firstPartyProductionBuildPerformed": false,
+    "fixtureAndStagingUnchanged": true,
+    "fixtureFilesVerified": 19,
+    "frozenCheckoutCleanAfterRun": true,
+    "fullStdoutEofRetained": true,
+    "independentAuditFindings": 0,
+    "productionPublicationSourceFilesVerified": 69,
+    "stagedFilesVerified": 90,
+    "terminalExitCode": 0,
+    "uniqueJarPathsVerified": 347
+  }
+}

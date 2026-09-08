@@ -1,11 +1,13 @@
 # Remaining staged runtime boundary acceptance
 
-Status: **FAILED — 24 of 28 cases passed** against the reviewed `4e06694` artifacts.
-The finite plan below was established before implementation and remains unchanged.
-See the [executed evidence](evidence/runtime-boundary-4e06694-2026-09-08.md) and
-[public evidence record](evidence/runtime-boundary-4e06694-2026-09-08.json).
-This covers existing ADR A-01–A-08, A-10, A-18 and A-19 obligations against the
-reviewed unsigned 0.2.0 artifacts from `4e06694`. It does not add support promises,
+Status: **VERIFIED — 28 of 28 planned cases passed** against the reviewed
+`86a0be5` artifacts. The finite plan below was established before implementation
+and remains unchanged. See the [current executed evidence](evidence/runtime-boundary-86a0be5-2026-09-08.md)
+and [public record](evidence/runtime-boundary-86a0be5-2026-09-08.json).
+The earlier `4e06694` executions remain FAILED and are preserved in the
+[historical evidence](evidence/runtime-boundary-4e06694-2026-09-08.md).
+This covers existing ADR A-01–A-08, A-10, A-18 and A-19 obligations against
+reviewed unsigned 0.2.0 artifacts. It does not add support promises,
 JDKs, database versions or workload families. A-09, A-11–A-13 and A-23's complete
 corpus/human review are owned by separate evidence tasks. Original A-28 remains
 FAILED; the completed A-29 runner, fixtures and results remain unchanged.
@@ -78,8 +80,11 @@ frames locally; do not turn raw linkage or setup failures into passing markers.
 
 Hash the nine reviewed staged payloads, source inputs, exact classpaths/module
 paths, compiled classpath/named consumer outputs, commands, logs and observations.
-Use the independently reviewed receipt SHA-256
-`38b2269eca162f121fd3996c56df8b894ae2f43cedeb08fcc627032cf70eaa43`.
+Use the independently reviewed `86a0be5` receipt SHA-256
+`1f4bb21b430a03a44d89e6daddc1fbdede1886250637ef83cecedfd71e350c7e`.
+The historical `4e06694` executions used receipt
+`38b2269eca162f121fd3996c56df8b894ae2f43cedeb08fcc627032cf70eaa43`;
+their failed records remain preserved below.
 Recheck inputs after execution. Full verification requires exactly all 28 planned
 case definitions, 28 distinct JVM process identities, every assertion passing and
 both ordered parity observations. A diagnostic subset remains incomplete, even
@@ -91,7 +96,7 @@ ready command before a full execution. Any actual product failure is retained
 and reported before considering a production fix. No signing, publication,
 credential access or overwrite of earlier evidence is part of this runner.
 
-## Preserved first execution and fixture correction
+## Preserved `4e06694` first execution and fixture correction
 
 The original full 28-cell execution completed with **22 passes and six failures**.
 Its raw summary SHA-256 is
@@ -117,7 +122,7 @@ through EOF and found no extra uncaught or shutdown exceptions beyond the record
 failure chains.
 
 
-## Corrected execution: 24 of 28 passed
+## Preserved `4e06694` corrected execution: 24 of 28 passed
 
 The full unchanged plan executed in 28 distinct JVMs. Ordered capture parity and
 all other rows passed; the four A-19 ordinary-SQL cells failed in both exact
@@ -132,6 +137,29 @@ through EOF and found no additional uncaught, shutdown or linkage errors. The
 [public evidence record](evidence/runtime-boundary-4e06694-2026-09-08.json) retains
 both execution histories and their raw summary and audit hashes.
 
-This result remains **FAILED**. A coordinated production guard-priority fix must
-be tested using separately reviewed candidate bytes. The original `4e06694`
-results cannot validate that later change or establish module-path support.
+The `4e06694` result remains **FAILED**. The guard-priority fix was subsequently
+tested using the separately reviewed `86a0be5` candidate below. The original
+results were not relabeled and do not validate changed artifact bytes.
+
+## `86a0be5` execution: 28 of 28 passed
+
+The unchanged plan executed once from the frozen `3ad510a` consumer checkout
+against the reviewed `86a0be5` production artifacts. All 28 cases passed in
+28 distinct JVMs. All six named ordinary-SQL cells reached `verifyUnnamedModules`
+before descriptor classification and emitted `RC_UNSUPPORTED_MODULE_PATH` with
+zero action entries and physical business-driver calls. This includes the four
+formerly failing dual-adapter cells in both exact runtimes and physical orders.
+The actual discovered dual provider remained the 5.5.2 hook; module rejection
+takes precedence in both physical adapter orders.
+
+All 27 current input fingerprints and nine reviewed primary payloads remained
+unchanged. Current inputs included the final staged-consumer build file; old
+fixture hashes were not silently reused. Prepared and actual commands, consumer
+source and bytecode, runtime artifacts and raw records were checked. An independent
+audit read all 620 JVM log lines through EOF and found no additional uncaught,
+shutdown or linkage errors. The [current public record](evidence/runtime-boundary-86a0be5-2026-09-08.json)
+retains both earlier failure histories and the new raw summary and audit hashes.
+
+This verifies the listed runtime boundaries for the reviewed candidate bytes.
+JPMS execution remains unsupported. Other acceptance gates, publication, release
+readiness and external adoption remain outside this result.

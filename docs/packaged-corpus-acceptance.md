@@ -1,8 +1,10 @@
 # Final packaged runtime binding for the existing MySQL corpus
 
-Status: planned. This finite A-23 check binds the existing six MySQL suites to
-reviewed local 0.2.0 JARs. It does not add workloads, regenerate goldens, approve
-an application baseline, or complete the separate human review.
+Status: final packaged runtime binding verified on 2026-09-08. All 28 existing
+MySQL tests in six suites passed against reviewed local 0.2.0 JARs. The separate
+authentic human review remains pending: `humanReview: null`, `fullA23Complete:
+false`, and `publicConsumption: false`. See the [execution evidence](evidence/packaged-corpus-final-86a0be5-2026-09-08.md).
+No workloads or goldens were added or regenerated.
 
 ## Fixed scope
 
@@ -25,9 +27,11 @@ Before execution, require an independently supplied receipt path, expected
 SHA-256, and full staged source revision. Validate all nine unique coordinate-bound
 JAR/POM/module payloads, their actual repository bytes, and the unchanged
 production/publication source binding. Do not derive approval from a freshly
-computed receipt hash. The present reviewed source is `4e066942f6e244345fe908970b81446f9e08f64e`;
-the supplied receipt digest is
-`38b2269eca162f121fd3996c56df8b894ae2f43cedeb08fcc627032cf70eaa43`.
+computed receipt hash. The executed reviewed source is `86a0be5d2e444f3b73925122fa448d9d1a324edd`;
+the independently supplied receipt digest is
+`1f4bb21b430a03a44d89e6daddc1fbdede1886250637ef83cecedfd71e350c7e`.
+The earlier `4e06694` candidate was used for preparation only; no full corpus
+execution occurred on that candidate.
 
 Each consumer and dependency cache must begin absent. Copy the original tests,
 resources, and manifest inputs byte-for-byte into a disposable consumer, retain
@@ -67,6 +71,8 @@ strict locks/metadata and wrapper identity.
 
 At completion recheck receipt bytes, all staged payloads and repository inventory,
 source binding, every executed fixture/helper file, and all original/copy inputs.
+After the second lane, revalidate both retained lanes, including their commands,
+logs and exits, JUnit, provenance, consumer inputs, selected JAR bytes and outputs.
 Only the final packaged runtime binding can become complete. The result must
 leave full A-23/human approval/public consumption false or pending as appropriate.
 No source-project MySQL result may substitute for this packaged execution.
@@ -80,3 +86,27 @@ run; any retry needs a diagnosed terminal cause and new evidence directory.
 No offline, additional JDK, production build, signing, release, publication or
 user-adoption claim belongs to this check. Raw SQL/bind/connection details remain
 private; public evidence must contain minimized outcomes and hash bindings only.
+
+## Recorded final result
+
+The two sequential Java 17 consumers completed once, with exit 0 and full output
+retained. ShardingSphere 5.5.3 passed the four existing suites / 14 tests, and
+5.5.2 passed the two existing suites / 14 tests. There were zero failed, skipped,
+missing or additional cases. The provenance extension contributed zero tests.
+
+Independent read-only audit verified all 39 original inputs, 16 executed
+fixture/helper files, 54 applicable original-copy occurrences, 74 consumer-input
+hashes, 633 compile/runtime graph artifact occurrences and 349 runtime-classpath
+JAR occurrences. All 12 class-level before/after provenance records matched the
+reviewed core/adapter JARs and current API in the actual suite JVMs. All 14
+5.5.2 corpus golden comparisons and 11 generated report/demo files were retained
+and checked; no golden input changed. Both lanes and global inputs passed final
+closure checks after all execution.
+
+Each original corpus's eight shapes × 20 repetitions and each runtime's 20
+concurrently open caller-capture pairs are bound to their successful original
+JUnit method and unchanged test source. The report checks use the report API;
+this run does not establish a standalone CLI result. Technical golden comparison
+and packaged-runtime verification do not complete the separate human baseline
+review. No public-consumption, extra-JDK, offline, or physical callback-overlap
+claim follows from this result.

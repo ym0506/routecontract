@@ -1,16 +1,18 @@
 # Existing runtime lifecycle acceptance: A-11, A-12 and A-13
 
-Status: the single corrected six-cell execution is accepted within the existing A-11/A-12/A-13
-scope after independent review of full terminated JVM logs and input bindings. The original run
-remains NOT_ACCEPTED because its harness missed a shutdown error. No production artifact or
-acceptance scope changed. See the [final local candidate evidence](evidence/runtime-lifecycle-final-candidate-2026-09-08.md).
+Status: candidate `86a0be5` is accepted within the existing six A-11/A-12/A-13 cells after
+independent review of full terminated JVM logs and final input bindings. See the
+[new candidate evidence](evidence/runtime-lifecycle-final-86a0be5-2026-09-08.md). The
+[corrected 4e execution](evidence/runtime-lifecycle-final-candidate-2026-09-08.md) remains
+separately accepted for its original bytes; its first-run predecessor remains NOT_ACCEPTED.
+No acceptance scope was added.
 
 ## Frozen execution inputs
 
-- Production source: `4e066942f6e244345fe908970b81446f9e08f64e`.
+- Production source: `86a0be5d2e444f3b73925122fa448d9d1a324edd`.
 - Local coordinated 0.2.0 staging: one neutral core and exact 5.5.2/5.5.3 adapters.
 - Externally pinned reviewed receipt SHA-256:
-  `38b2269eca162f121fd3996c56df8b894ae2f43cedeb08fcc627032cf70eaa43`.
+  `1f4bb21b430a03a44d89e6daddc1fbdede1886250637ef83cecedfd71e350c7e`.
 - Java 17; Gradle 8.14.4 distribution and wrapper hashes are verified before use.
 - MySQL 8.4.11, digest
   `b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb`, only for the positive A-12 cases.
@@ -102,8 +104,8 @@ or subset switch; the plan is six fresh JVM cells and two fresh dependency-cache
 python3 scripts/verify-runtime-lifecycle-consumer.py \
   --repository "$STAGED_REPOSITORY" \
   --staged-receipt "$REVIEWED_RECEIPT" \
-  --staged-receipt-sha256 38b2269eca162f121fd3996c56df8b894ae2f43cedeb08fcc627032cf70eaa43 \
-  --staged-source-revision 4e066942f6e244345fe908970b81446f9e08f64e \
+  --staged-receipt-sha256 1f4bb21b430a03a44d89e6daddc1fbdede1886250637ef83cecedfd71e350c7e \
+  --staged-source-revision 86a0be5d2e444f3b73925122fa448d9d1a324edd \
   --java-home "$JAVA17_HOME" \
   --gradle-distribution-zip "$GRADLE_8_14_4_ZIP" \
   --evidence-directory "$EVIDENCE_DIRECTORY"
@@ -116,11 +118,11 @@ toolchain, raw Gradle/JVM logs, classpath and compiled-class hashes, actual load
 inventories and one structured case result per completed JVM. `summary.json` stays `FAILED` if any
 case, setup step or final source/receipt/payload binding fails.
 
-Pre-run verification on 2026-09-08: 14 focused Python harness tests passed. Java 17 compilation with
+Historical fixture verification on 2026-09-08: 14 focused Python harness tests passed. Java 17 compilation with
 `--release 17 -Xlint:all -Werror` passed against available exact-version JAR inputs for both runtimes;
 the launcher and its JSON helper also compiled with only the JDK. These are `verified - unit` and
 compile-only observations. They did not alone establish either final strict consumer graph or runtime
-acceptance; the subsequent corrected execution resolved the two fresh locked graphs and executed
+acceptance; the subsequent corrected 4e execution resolved the two fresh locked graphs and executed
 all six cells, with independent review recorded in the linked final evidence.
 
 ## First-run harness correction
@@ -139,9 +141,9 @@ One corrected finite run completed after the revised fixture was reviewed. All s
 and post-run artifact/source/fixture bytes were independently accepted. The original failed run
 is retained separately and is not counted as successful acceptance.
 
-## Accepted execution record
+## Historical corrected 4e execution record
 
-The corrected run used Java 17.0.15, Gradle 8.14.4 and actual MySQL 8.4.11 with the pinned image.
+The historical corrected 4e run used Java 17.0.15, Gradle 8.14.4 and actual MySQL 8.4.11 with the pinned image.
 For each exact runtime, A-11 rejected late provider attachment and A-13 rejected the split bridge
 with the specified stable diagnostic before the action. A-12 returned the exact synthetic business
 row with one action, one delegated physical JDBC execute and one hook-reported physical attempt;
@@ -152,3 +154,23 @@ This post-run documentation does not alter the frozen executed inputs. Their has
 reproduction command, raw evidence hashes, original rejection and corrected independent review
 are recorded in the linked minimized evidence. The stated loader and operation boundaries above
 remain the acceptance boundary.
+
+## Accepted 86a0be5 execution record
+
+The same finite six-case plan subsequently ran once against the new reviewed `86a0be5` staged
+bytes from the frozen `3ad510a` fixture checkout. All six JVMs exited normally through EOF.
+Both A-12 cells recorded one real MySQL 8.4.11 driver execution, one hook-reported attempt and
+one returned callback, with the exact synthetic row and no callback failure. A-11 and A-13
+retained their stable pre-action rejection behavior for both exact ShardingSphere versions.
+
+Independent review accepted all six complete raw logs and loader observations, both strict/locked
+consumer graphs, nine payload pins and all 22 before/after input hashes. Twenty inputs retain
+the historical corrected-run hashes; the shared staged-consumer build and this acceptance
+document are the two changed inputs. The new shared build preserves lifecycle-only compilation
+and strengthens graph checks. No first-party artifact or production source was rebuilt or changed
+by the lifecycle execution.
+
+The [new minimized evidence](evidence/runtime-lifecycle-final-86a0be5-2026-09-08.json) binds the actual new source, receipt,
+run-ready record, independent raw audit and unchanged historical evidence. This updated
+acceptance document is a post-run copy; its bytes are not the frozen documentation fingerprint
+recorded by that execution. The historical failure and corrected 4e acceptance remain separate.

@@ -1,11 +1,28 @@
 # A-09 manual mixed-anchor acceptance
 
-Status: initial reviewed `4e06694` execution FAILED; source correction implemented,
-new packaged verification pending. This gate retains the ADR's exact
+Status: the complete manual 14-case matrix is verified on newly reviewed `86a0be5` staging;
+the original `4e06694` execution remains FAILED. Whole-group resolver evidence remains separate. This gate retains the ADR's exact
 `RC_MIXED_SHARDINGSPHERE_RUNTIME` requirement; an unavailable class is retained in the cell, and a different stable
 marker is a failed mixed cell, not an excuse to omit that cell. Whole-group resolver
 rejection is separate A-24 evidence, and this runner does not prove arbitrary manual
 non-anchor compatibility, SQL behavior, or a public release.
+
+## Verified candidate result
+
+The [2026-09-08 result](evidence/mixed-anchor-final-candidate-2026-09-08.md) and its
+[minimized receipt](evidence/mixed-anchor-final-candidate-2026-09-08.json) retain all 14 final observations.
+Source `86a0be5d2e444f3b73925122fa448d9d1a324edd`, reviewed receipt
+`1f4bb21b430a03a44d89e6daddc1fbdede1886250637ef83cecedfd71e350c7e`, and frozen runner
+`3ad510a0af972231fbd074607936ee52be3cad1f` identify this new candidate run.
+All 12 mixed cells reject with the required top-level marker before action entry;
+both clean no-SQL controls return the exact incomplete snapshot. Independent raw/input
+review found zero discrepancies. Six cells still retain the expected later official
+anchor-load failures after the correct capture rejection.
+
+This result completes the finite manual matrix only. It keeps `fullA09Acceptance: false`
+until separate whole-group resolver and other required evidence is considered. The original
+failed summary and its reviewed `4e06694` receipt are unchanged. This acceptance copy was
+updated after execution; the raw result retains the original execution-time document hash.
 
 ## Frozen scope
 
@@ -54,7 +71,8 @@ requiring an impossible official class to load would add an unrelated acceptance
 
 For both clean controls, the sentinel runs once and capture returns schema 2, INCOMPLETE,
 zero physical attempts and `RC_NO_START_CALLBACK_OBSERVED` with all four runtime-identity
-components and the derived `supported` property strictly equal to boolean `true`.
+components exactly matching the expected identity, and the derived `supported` property
+strictly equal to boolean `true`.
 All input JAR paths, hashes, manifest versions, expected class resources and observed
 loaded class origins are recorded. Reverse-order cells retain the same three selected
 anchor payloads and reverse that complete sequence. No duplicate-version anchor remains
@@ -82,8 +100,9 @@ recording. `--case` is diagnostic only; it never produces complete manual-matrix
 
 ## Observed failure and correction acceptance
 
-The first full 14-cell execution against reviewed `4e06694` staging is retained at
-`/private/tmp/routecontract-a09-final-4e06694-20260908` with original status FAILED (6/14).
+The first full 14-cell execution against reviewed `4e06694` staging retains its original
+status FAILED (6/14), bound by raw summary SHA-256
+`8fa55131e2aba991cbfa37af0e02235cd1a189ec652b962f65c025c55ff5d25e`.
 Six mixed cells satisfy the required marker. Three nominal mixed tuples in both orders
 fail the diagnostic contract while still blocking action entry: E552/S552/D553 reports
 UNSUPPORTED, and E553/S552 with either database owner includes a linkage cause beneath
@@ -96,8 +115,8 @@ The product correction must classify the actual mixed resource/JAR versions befo
 links the hook ABI. An adapter-local passive phase must preserve legacy/dual descriptor
 precedence, avoid service-loader recursion and collector access, and retain all later
 loaded-origin/loader/module/ABI checks. Fresh source regression probes first reproduce
-the three actual failing tuples in both orders. New packaged acceptance requires newly
-reviewed candidate bytes; a source test does not replace the original staged failure.
+the three actual failing tuples in both orders. The final packaged run above uses newly
+reviewed candidate bytes; its result is separate from the retained original staged failure.
 
 The added passive phase currently reads three JAR manifests in each `verifyRuntime()`
 call, including the registry verification performed for each capture. Constructors are
