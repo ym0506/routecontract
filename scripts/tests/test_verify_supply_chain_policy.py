@@ -1755,6 +1755,98 @@ empty=
         self.assertNotEqual(0, result.returncode)
         self.assertIn("unapproved license", result.stderr)
 
+    def add_reviewed_stax2_fixture(self) -> None:
+        component = apache_component(
+            "pkg:maven/org.codehaus.woodstox/stax2-api@4.2.2?type=jar",
+            "org.codehaus.woodstox", "stax2-api", "4.2.2",
+        )
+        component["licenses"] = [{"license": {"id": "BSD-2-Clause"}}]
+        component["properties"] = [
+            {"name": "cdx:maven:package:test", "value": "true"}
+        ]
+        for document in (self.sbom_document, self.example_sbom_document):
+            document["components"].append(copy.deepcopy(component))
+            root_ref = document["metadata"]["component"]["bom-ref"]
+            next(item for item in document["dependencies"] if item["ref"] == root_ref)[
+                "dependsOn"
+            ].append(component["purl"])
+            document["dependencies"].append({"ref": component["purl"], "dependsOn": []})
+        self.policy_document["licenseExceptions"].append({
+            "kind": "id", "license": "BSD-2-Clause",
+            "purl": "pkg:maven/org.codehaus.woodstox/stax2-api@4.2.2",
+            "scope": "test-runtime", "url": None,
+        })
+
+    def test_accepts_exact_stax2_bsd2_with_proven_test_scope(self) -> None:
+        self.add_reviewed_stax2_fixture()
+        self.write_fixture()
+        result = self.prepare_inventory()
+        self.assertEqual(0, result.returncode, result.stderr)
+
+    def test_repository_stax2_exception_keeps_global_allowlist_unchanged(self) -> None:
+        policy = json.loads((REPOSITORY_ROOT / "security/supply-chain-policy.json").read_text())
+        self.assertEqual(["Apache-2.0", "BSD-3-Clause", "EPL-1.0", "EPL-2.0", "MIT"],
+                         policy["allowedLicenseIds"])
+        self.assertEqual([{
+            "kind": "id", "license": "BSD-2-Clause",
+            "purl": "pkg:maven/org.codehaus.woodstox/stax2-api@4.2.2",
+            "scope": "test-runtime", "url": None,
+        }], [item for item in policy["licenseExceptions"] if "stax2-api" in item["purl"]])
+
+    def test_rejects_stax2_without_proven_test_scope(self) -> None:
+        self.add_reviewed_stax2_fixture()
+        for properties in ([], [{"name": "cdx:maven:package:test", "value": "false"}]):
+            with self.subTest(properties=properties):
+                for document in (self.sbom_document, self.example_sbom_document):
+                    document["components"][-1]["properties"] = properties
+                self.write_fixture()
+                result = self.prepare_inventory()
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn("test-runtime", result.stderr)
+
+    def test_rejects_stax2_outside_exact_version_exception(self) -> None:
+        self.add_reviewed_stax2_fixture()
+        for document in (self.sbom_document, self.example_sbom_document):
+            document["components"][-1]["version"] = "4.2.3"
+            replace_component_purl(document,
+                                   "pkg:maven/org.codehaus.woodstox/stax2-api@4.2.2?type=jar",
+                                   "pkg:maven/org.codehaus.woodstox/stax2-api@4.2.3?type=jar")
+        self.write_fixture()
+        result = self.prepare_inventory()
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("unapproved license", result.stderr)
+
+    def test_rejects_stax2_replaced_by_an_allowed_license_id(self) -> None:
+        self.add_reviewed_stax2_fixture()
+        for document in (self.sbom_document, self.example_sbom_document):
+            document["components"][-1]["licenses"] = [{"license": {"id": "Apache-2.0"}}]
+        self.write_fixture()
+        result = self.prepare_inventory()
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("exact reviewed BSD-2-Clause", result.stderr)
+
+    def test_stax2_exception_does_not_allow_bsd2_for_another_component(self) -> None:
+        self.add_reviewed_stax2_fixture()
+        for document in (self.sbom_document, self.example_sbom_document):
+            next(item for item in document["components"] if item["name"] == "json-smart")[
+                "licenses"
+            ] = [{"license": {"id": "BSD-2-Clause"}}]
+        self.write_fixture()
+        result = self.prepare_inventory()
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("unapproved license", result.stderr)
+
+    def test_stax2_exception_does_not_recognize_bsd4_or_unknown_licenses(self) -> None:
+        self.add_reviewed_stax2_fixture()
+        for identifier in ("BSD-4-Clause", "Unknown-9.9"):
+            with self.subTest(identifier=identifier):
+                for document in (self.sbom_document, self.example_sbom_document):
+                    document["components"][-1]["licenses"] = [{"license": {"id": identifier}}]
+                self.write_fixture()
+                result = self.prepare_inventory()
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn("reviewed SPDX license-id set", result.stderr)
+
     def test_rejects_unknown_spdx_exception_id(self) -> None:
         unknown = "GPL-2.0-only WITH Unknown-exception-9.9"
         self.policy_document["licenseExceptions"][0]["license"] = unknown

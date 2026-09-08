@@ -7,7 +7,7 @@ document license at ``metadata.licenses``. It does not populate the distinct
 output as its source of dependency truth, copies it to a verified output, and
 adds first-party licenses plus reviewed license metadata for the exact
 test-only artifacts and pinned MySQL fixture that the dependency-only plugin
-output cannot fully represent.
+output cannot fully represent, plus the exact ANTLR runtime license mapping correction.
 """
 
 from __future__ import annotations
@@ -41,6 +41,9 @@ H2_PRODUCER_LICENSE_RECORDS = (
     ("id", "MPL-2.0", ""),
     ("name", "EPL 1.0", "https://opensource.org/licenses/eclipse-1.0.php"),
 )
+ANTLR_MAVEN_COORDINATE = ("org.antlr", "antlr4-runtime", "4.10.1")
+ANTLR_JAR_SHA256 = "da66be0c98acfb29bc708300d05f1a3269c40f9984a4cb9251cf2ba1898d1334"
+ANTLR_LICENSE_ID = "BSD-3-Clause"
 REVIEWED_MAVEN_LICENSE_EXPRESSIONS = {
     ("jakarta.transaction", "jakarta.transaction-api", "1.3.3"):
         "EPL-2.0 OR (GPL-2.0-only WITH Classpath-exception-2.0)",
@@ -53,6 +56,7 @@ REVIEWED_MAVEN_LICENSE_EXPRESSIONS = {
 LICENSE_OVERRIDE_MAVEN_COORDINATES = (
     *REVIEWED_MAVEN_LICENSE_EXPRESSIONS.keys(),
     (MYSQL_CONNECTOR_GROUP, MYSQL_CONNECTOR_NAME, MYSQL_CONNECTOR_VERSION),
+    ANTLR_MAVEN_COORDINATE,
 )
 MYSQL_EXAMPLE_NAME = "mysql-example"
 MYSQL_552_EXAMPLE_NAME = "mysql-5.5.2-example"
@@ -751,7 +755,11 @@ def _json_license_override_coordinates(
 ) -> set[tuple[str, str, str]]:
     present: set[tuple[str, str, str]] = set()
     for coordinate in LICENSE_OVERRIDE_MAVEN_COORDINATES:
-        components = _json_exact_maven_components(document, *coordinate)
+        components = (
+            _json_antlr_license_components(document)
+            if coordinate == ANTLR_MAVEN_COORDINATE
+            else _json_exact_maven_components(document, *coordinate)
+        )
         if len(components) > 1:
             raise SbomError(
                 f"Multiple {coordinate[0]}:{coordinate[1]} components are ambiguous"
@@ -773,6 +781,61 @@ def _validate_h2_license_override(
         raise SbomError("H2 license choices differ from the reviewed input")
 
 
+def _is_antlr_license_target(identity: dict[str, object]) -> bool:
+    group, name, version = ANTLR_MAVEN_COORDINATE
+    expected_purl = _maven_jar_purl(group, name, version)
+    if (
+        tuple(identity.get(field) for field in ("group", "name", "version"))
+        != ANTLR_MAVEN_COORDINATE
+        and identity.get("purl") != expected_purl
+        and identity.get("bom-ref") != expected_purl
+    ):
+        return False
+    expected = {
+        "type": "library", "group": group, "name": name, "version": version,
+        "purl": expected_purl, "bom-ref": expected_purl,
+    }
+    if {field: identity.get(field) for field in expected} != expected:
+        raise SbomError("Reviewed ANTLR component identity differs for org.antlr:antlr4-runtime:4.10.1")
+    return True
+
+
+def _json_antlr_license_components(document: dict[str, object]) -> list[dict[str, object]]:
+    return [
+        component for component in _json_components(document)
+        if _is_antlr_license_target(component)
+    ]
+
+
+def _xml_antlr_license_components(root: ET.Element) -> list[ET.Element]:
+    return [
+        component for component in _xml_components(root)
+        if _is_antlr_license_target({
+            "type": component.get("type"), "bom-ref": component.get("bom-ref"),
+            **{
+                field: component.findtext(_qname(field))
+                for field in ("group", "name", "version", "purl")
+            },
+        })
+    ]
+
+
+def _validate_antlr_license_override(
+    record: dict[str, object], *, finalized: bool = False
+) -> None:
+    sha256_values = tuple(
+        content for algorithm, content in record["hashes"] if algorithm == "SHA-256"
+    )
+    if sha256_values != (ANTLR_JAR_SHA256,):
+        raise SbomError("ANTLR JAR SHA-256 differs from the reviewed artifact")
+    canonical = (("id", ANTLR_LICENSE_ID, ""),)
+    # The pinned producer maps the POM's generic BSD name to BSD-4-Clause.
+    if record["licenses"] != canonical and (
+        finalized or record["licenses"] != (("id", "BSD-4-Clause", ""),)
+    ):
+        raise SbomError("ANTLR license records differ from the reviewed input")
+
+
 def _set_json_reviewed_maven_licenses(document: dict[str, object]) -> None:
     for (group, name, expected_version), expression in (
         REVIEWED_MAVEN_LICENSE_EXPRESSIONS.items()
@@ -788,6 +851,9 @@ def _set_json_reviewed_maven_licenses(document: dict[str, object]) -> None:
         if (group, name, expected_version) == H2_MAVEN_COORDINATE:
             _validate_h2_license_override(_json_component_record(component, "H2"))
         component["licenses"] = [{"expression": expression}]
+    for component in _json_antlr_license_components(document):
+        _validate_antlr_license_override(_json_component_record(component, "ANTLR"))
+        component["licenses"] = [{"license": {"id": ANTLR_LICENSE_ID}}]
 
 
 def _verify_json_reviewed_maven_licenses(document: dict[str, object]) -> None:
@@ -808,6 +874,10 @@ def _verify_json_reviewed_maven_licenses(document: dict[str, object]) -> None:
             )
         if component.get("licenses") != [{"expression": expression}]:
             raise SbomError(f"Reviewed license metadata is missing for {group}:{name}")
+    for component in _json_antlr_license_components(document):
+        _validate_antlr_license_override(
+            _json_component_record(component, "ANTLR"), finalized=True
+        )
 
 
 def _json_mysql_container() -> dict[str, object]:
@@ -1904,7 +1974,11 @@ def _xml_license_override_coordinates(
 ) -> set[tuple[str, str, str]]:
     present: set[tuple[str, str, str]] = set()
     for coordinate in LICENSE_OVERRIDE_MAVEN_COORDINATES:
-        components = _xml_exact_maven_components(root, *coordinate)
+        components = (
+            _xml_antlr_license_components(root)
+            if coordinate == ANTLR_MAVEN_COORDINATE
+            else _xml_exact_maven_components(root, *coordinate)
+        )
         if len(components) > 1:
             raise SbomError(
                 f"Multiple {coordinate[0]}:{coordinate[1]} components are ambiguous"
@@ -1941,6 +2015,12 @@ def _set_xml_reviewed_maven_licenses(root: ET.Element) -> None:
         if (group, name, expected_version) == H2_MAVEN_COORDINATE:
             _validate_h2_license_override(_xml_component_record(component, "H2")[1])
         _set_xml_license_expression(component, expression)
+    for component in _xml_antlr_license_components(root):
+        _validate_antlr_license_override(_xml_component_record(component, "ANTLR")[1])
+        licenses = component.find(_qname("licenses"))
+        licenses.clear()
+        license_element = ET.SubElement(licenses, _qname("license"))
+        ET.SubElement(license_element, _qname("id")).text = ANTLR_LICENSE_ID
 
 
 def _xml_has_exact_license_expression(
@@ -1980,6 +2060,10 @@ def _verify_xml_reviewed_maven_licenses(root: ET.Element) -> None:
             )
         if not _xml_has_exact_license_expression(component, expression):
             raise SbomError(f"Reviewed license metadata is missing for {group}:{name}")
+    for component in _xml_antlr_license_components(root):
+        _validate_antlr_license_override(
+            _xml_component_record(component, "ANTLR")[1], finalized=True
+        )
 
 
 def _xml_mysql_container() -> ET.Element:

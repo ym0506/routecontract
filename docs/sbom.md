@@ -128,6 +128,8 @@ component's own `licenses`. `scripts/finalize-sbom.py` therefore:
 - records JTS Core 1.19.0 as `EPL-2.0 OR BSD-3-Clause`;
 - records test-only H2 2.2.224 as `MPL-2.0 OR EPL-1.0`, with an exact
   coordinate/version exception rather than adding MPL to the global allowlist;
+- corrects the exact ANTLR runtime 4.10.1 JAR's producer-mapped `BSD-4-Clause`
+  record to the publisher's `BSD-3-Clause` while preserving its runtime/test scope;
 - rejects `org.locationtech.jts.io:jts-io-common` if it reappears;
 - binds the digest-pinned MySQL 8.4.11 test container to the aggregate and the
   two MySQL example profiles that use it.
@@ -135,6 +137,11 @@ component's own `licenses`. `scripts/finalize-sbom.py` therefore:
 The [H2 acceptance record](h2-license-acceptance.md) binds the publisher's
 dual-license statement and exact JAR/POM hashes. Unknown licenses, other H2
 versions and components without proven test scope do not gain this exception.
+
+The [ANTLR/Stax2 acceptance record](antlr-stax2-license-acceptance.md) binds the
+ANTLR publisher and producer-mapping evidence. Stax2 API 4.2.2 retains its
+accurate `BSD-2-Clause` record with an exact test-runtime policy exception;
+neither BSD-2-Clause nor BSD-4-Clause enters the global allowed-license list.
 
 The MySQL container is an `excluded` CycloneDX component with
 `routecontract:usage=test-only`. RouteContract does not assert an image-wide

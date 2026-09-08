@@ -9,6 +9,13 @@
   ],
   "licenseExceptions": [
     {
+      "kind": "id",
+      "license": "BSD-2-Clause",
+      "purl": "pkg:maven/org.codehaus.woodstox/stax2-api@4.2.2",
+      "scope": "test-runtime",
+      "url": null
+    },
+    {
       "kind": "expression",
       "license": "MPL-2.0 OR EPL-1.0",
       "purl": "pkg:maven/com.h2database/h2@2.2.224",

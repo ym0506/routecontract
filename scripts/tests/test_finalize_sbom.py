@@ -35,6 +35,7 @@ H2_LICENSE_CHOICES = [
         }
     },
 ]
+ANTLR_JAR_SHA256 = "da66be0c98acfb29bc708300d05f1a3269c40f9984a4cb9251cf2ba1898d1334"
 REQUIRED_EXAMPLE_COORDINATES = (
     ("org.apache.shardingsphere", "shardingsphere-jdbc", "5.5.3"),
     ("org.apache.calcite", "calcite-core", "1.42.0"),
@@ -72,6 +73,16 @@ def append_xml_component(parent: ET.Element, component: dict[str, object]) -> No
     )
     for field in ("group", "name", "version"):
         ET.SubElement(element, qname(field)).text = str(component[field])
+    if "description" in component:
+        ET.SubElement(element, qname("description")).text = str(component["description"])
+    if "scope" in component:
+        ET.SubElement(element, qname("scope")).text = str(component["scope"])
+    if "hashes" in component:
+        hashes = ET.SubElement(element, qname("hashes"))
+        for item in component["hashes"]:
+            ET.SubElement(hashes, qname("hash"), {"alg": str(item["alg"])}).text = str(
+                item["content"]
+            )
     if "licenses" in component:
         licenses = ET.SubElement(element, qname("licenses"))
         for choice in component["licenses"]:
@@ -91,6 +102,8 @@ def append_xml_component(parent: ET.Element, component: dict[str, object]) -> No
                         license_value["url"]
                     )
     ET.SubElement(element, qname("purl")).text = str(component["purl"])
+    if "modified" in component:
+        ET.SubElement(element, qname("modified")).text = str(component["modified"]).lower()
     if "properties" in component:
         properties = ET.SubElement(element, qname("properties"))
         for item in component["properties"]:
@@ -339,6 +352,267 @@ class FinalizeSbomTest(unittest.TestCase):
             str(self.output_json),
             str(self.output_xml),
         )
+
+    def add_antlr_component(self) -> dict[str, object]:
+        component = maven_component(
+            "org.antlr", "antlr4-runtime", "4.10.1",
+            [{"license": {"id": "BSD-4-Clause"}}],
+        )
+        component["hashes"] = [{"alg": "SHA-256", "content": ANTLR_JAR_SHA256}]
+        component["scope"] = "required"
+        component["properties"] = [
+            {"name": "cdx:maven:package:test", "value": "false"}
+        ]
+        self.components.append(component)
+        return component
+
+    def test_normalizes_exact_antlr_preserving_runtime_and_test_profiles(self) -> None:
+        antlr = self.add_antlr_component()
+        qname = lambda name: f"{{{NAMESPACE}}}{name}"
+        for role, test_scope in (("adapter552", "false"), ("mysql552", "true")):
+            for identifier in ("BSD-4-Clause", "BSD-3-Clause"):
+                with self.subTest(role=role, identifier=identifier):
+                    antlr["properties"][0]["value"] = test_scope
+                    antlr["licenses"] = [{"license": {"id": identifier}}]
+                    pair = self.role_pair(role, "2026-08-14T00:00:00Z")
+                    result = self.run_role_pairs((pair,))
+                    self.assertEqual(0, result.returncode, result.stderr)
+                    document = json.loads(pair[2].read_text(encoding="utf-8"))
+                    component = next(
+                        item for item in document["components"] if item["purl"] == antlr["purl"]
+                    )
+                    expected = copy.deepcopy(antlr)
+                    expected["licenses"] = [{"license": {"id": "BSD-3-Clause"}}]
+                    self.assertEqual(expected, component)
+                    xml_component = next(
+                        item for item in ET.parse(pair[3]).getroot().findall(
+                            f"{qname('components')}/{qname('component')}"
+                        ) if item.get("bom-ref") == antlr["purl"]
+                    )
+                    expected_xml = ET.Element("fixture")
+                    append_xml_component(expected_xml, expected)
+                    self.assertEqual(
+                        ET.canonicalize(ET.tostring(expected_xml[0]), strip_text=True),
+                        ET.canonicalize(ET.tostring(xml_component), strip_text=True),
+                    )
+                    verification = self.run_finalizer(
+                        "--verify-pair", str(pair[2]), str(pair[3])
+                    )
+                    self.assertEqual(0, verification.returncode, verification.stderr)
+
+    def test_does_not_normalize_antlr_another_version(self) -> None:
+        antlr = self.add_antlr_component()
+        antlr.update(maven_component(
+            "org.antlr", "antlr4-runtime", "4.10.2",
+            [{"license": {"id": "BSD-4-Clause"}}],
+        ))
+        self.write_sources()
+        result = self.finalize()
+        self.assertEqual(0, result.returncode, result.stderr)
+        document = json.loads(self.output_json.read_text(encoding="utf-8"))
+        component = next(
+            item for item in document["components"] if item["purl"] == antlr["purl"]
+        )
+        self.assertEqual(antlr, component)
+        verification = self.run_finalizer(
+            "--verify-pair", str(self.output_json), str(self.output_xml)
+        )
+        self.assertEqual(0, verification.returncode, verification.stderr)
+
+    def test_preserves_actual_antlr_4132_record_alongside_4101_in_both_formats(self) -> None:
+        target = self.add_antlr_component()
+        existing = maven_component(
+            "org.antlr", "antlr4-runtime", "4.13.2",
+            [{"license": {
+                "id": "BSD-3-Clause", "url": "https://opensource.org/licenses/BSD-3-Clause"
+            }}],
+        )
+        # Exact component metadata from the retained aggregate producer output.
+        existing["description"] = "The ANTLR 4 Runtime"
+        existing["modified"] = False
+        existing["properties"] = [{"name": "cdx:maven:package:test", "value": "true"}]
+        existing["hashes"] = [
+            {"alg": algorithm, "content": content} for algorithm, content in (
+                ("MD5", "eecf1908f0cfff10f8bb82878b5ca401"),
+                ("SHA-1", "fc3db6d844df652a3d5db31c87fa12757f13691d"),
+                ("SHA-256", "dd3e8a13a2d669bf84fb8d834de35ce4875f27157698d206241ec8488aadcaf7"),
+                ("SHA-512", "1c3e47b6b5dc40ca13927a7ae2ed187f470b8f406cea325e73c7a18af8e07b9ada0484312dd611f225f030b5585924932c702fd9326c143a626e271682b2b95e"),
+                ("SHA3-256", "2d39db66ce6dc530c7796f75d646f4d8316586e2acd0756524c25b238eb71618"),
+                ("SHA3-512", "a4cdaec49dff4a6963a0db56712a837db7300de7145335b915ffc2234b0d53d6f9fd4b1d6e82c4350e22fee9390ca643cfbf7f51ff47a11bc44561b6686be32b"),
+                ("SHA-384", "f49c2395e16fe71fa35622bcca225c0910609ef09626207ce4522c73c760fd232489489ea88d54c88fc21b05a03031e0"),
+                ("SHA3-384", "322345326586e3f8954e80efa80b510228a7eb06f6d7283177f04809c15aad1722c700897c8c8f405955946b63808bc0"),
+            )
+        ]
+        self.components.append(existing)
+        pair = self.role_pair("aggregate", "2026-08-14T00:00:00Z")
+        result = self.run_role_pairs((pair,))
+        self.assertEqual(0, result.returncode, result.stderr)
+        document = json.loads(pair[2].read_text(encoding="utf-8"))
+        components = {item["purl"]: item for item in document["components"]}
+        self.assertEqual(existing, components[existing["purl"]])
+        self.assertEqual(
+            [{"license": {"id": "BSD-3-Clause"}}], components[target["purl"]]["licenses"]
+        )
+        qname = lambda name: f"{{{NAMESPACE}}}{name}"
+        xml_component = next(
+            item for item in ET.parse(pair[3]).getroot().findall(
+                f"{qname('components')}/{qname('component')}"
+            ) if item.get("bom-ref") == existing["purl"]
+        )
+        expected_xml = ET.Element("fixture")
+        append_xml_component(expected_xml, existing)
+        self.assertEqual(
+            ET.canonicalize(ET.tostring(expected_xml[0]), strip_text=True),
+            ET.canonicalize(ET.tostring(xml_component), strip_text=True),
+        )
+        verification = self.run_finalizer("--verify-pair", str(pair[2]), str(pair[3]))
+        self.assertEqual(0, verification.returncode, verification.stderr)
+
+    def test_rejects_contradictory_antlr_4101_identity_in_either_format(self) -> None:
+        antlr = self.add_antlr_component()
+        qname = lambda name: f"{{{NAMESPACE}}}{name}"
+        for format_name in ("json", "xml"):
+            for field, value in (("version", "4.13.2"), ("name", "different-runtime")):
+                with self.subTest(format=format_name, field=field):
+                    self.write_sources()
+                    if format_name == "json":
+                        document = json.loads(self.source_json.read_text(encoding="utf-8"))
+                        component = next(
+                            item for item in document["components"] if item["purl"] == antlr["purl"]
+                        )
+                        component[field] = value
+                        self.source_json.write_text(json.dumps(document) + "\n", encoding="utf-8")
+                    else:
+                        tree = ET.parse(self.source_xml)
+                        component = next(
+                            item for item in tree.getroot().findall(
+                                f"{qname('components')}/{qname('component')}"
+                            ) if item.get("bom-ref") == antlr["purl"]
+                        )
+                        component.find(qname(field)).text = value
+                        tree.write(self.source_xml, encoding="utf-8", xml_declaration=True)
+                    result = self.finalize()
+                    self.assertNotEqual(0, result.returncode)
+                    self.assertIn("identity", result.stderr)
+                    self.assertFalse(self.output_json.exists())
+                    self.assertFalse(self.output_xml.exists())
+
+    def test_rejects_antlr_without_the_exact_unambiguous_jar_sha256(self) -> None:
+        antlr = self.add_antlr_component()
+        for hashes in (
+            [],
+            [{"alg": "SHA-256", "content": "0" * 64}],
+            [
+                {"alg": "SHA-256", "content": ANTLR_JAR_SHA256},
+                {"alg": "SHA-256", "content": "0" * 64},
+            ],
+        ):
+            with self.subTest(hashes=hashes):
+                antlr["hashes"] = hashes
+                self.write_sources()
+                result = self.finalize()
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn("ANTLR JAR SHA-256 differs from the reviewed artifact", result.stderr)
+                self.assertFalse(self.output_json.exists())
+                self.assertFalse(self.output_xml.exists())
+
+    def test_rejects_unreviewed_antlr_license_records(self) -> None:
+        antlr = self.add_antlr_component()
+        for choices in (
+            None,
+            [{"license": {"id": "MIT"}}],
+            [{"license": {"id": "Unreviewed-License"}}],
+            [{"license": {"name": "The BSD License"}}],
+            [{"expression": "BSD-3-Clause OR MIT"}],
+            [{"license": {"id": "BSD-4-Clause", "url": "https://example.com/license"}}],
+        ):
+            with self.subTest(choices=choices):
+                if choices is None:
+                    antlr.pop("licenses", None)
+                else:
+                    antlr["licenses"] = copy.deepcopy(choices)
+                self.write_sources()
+                result = self.finalize()
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn("ANTLR license records differ from the reviewed input", result.stderr)
+                self.assertFalse(self.output_json.exists())
+                self.assertFalse(self.output_xml.exists())
+
+    def test_rejects_contradictory_antlr_xml_before_normalization(self) -> None:
+        antlr = self.add_antlr_component()
+        qname = lambda name: f"{{{NAMESPACE}}}{name}"
+        for field, child, value in (
+            ("hashes", "hash", "0" * 64),
+            ("licenses", "license/id", "MIT"),
+            ("properties", "property", "true"),
+        ):
+            with self.subTest(field=field):
+                self.write_sources()
+                tree = ET.parse(self.source_xml)
+                component = next(
+                    item for item in tree.getroot().findall(
+                        f"{qname('components')}/{qname('component')}"
+                    ) if item.get("bom-ref") == antlr["purl"]
+                )
+                path = "/".join(qname(part) for part in (field, *child.split("/")))
+                component.find(path).text = value
+                tree.write(self.source_xml, encoding="utf-8", xml_declaration=True)
+                result = self.finalize()
+                self.assertNotEqual(0, result.returncode)
+                if field != "properties":
+                    self.assertIn("ANTLR", result.stderr)
+                self.assertFalse(self.output_json.exists())
+                self.assertFalse(self.output_xml.exists())
+
+    def test_verifier_rejects_antlr_hash_and_license_tampering(self) -> None:
+        antlr = self.add_antlr_component()
+        antlr["licenses"] = [{"license": {"id": "BSD-3-Clause"}}]
+        qname = lambda name: f"{{{NAMESPACE}}}{name}"
+        for field in ("hashes", "licenses"):
+            with self.subTest(field=field):
+                self.write_sources()
+                result = self.finalize()
+                self.assertEqual(0, result.returncode, result.stderr)
+                document = json.loads(self.output_json.read_text(encoding="utf-8"))
+                component = next(
+                    item for item in document["components"] if item["purl"] == antlr["purl"]
+                )
+                tree = ET.parse(self.output_xml)
+                xml_component = next(
+                    item for item in tree.getroot().findall(
+                        f"{qname('components')}/{qname('component')}"
+                    ) if item.get("bom-ref") == antlr["purl"]
+                )
+                if field == "hashes":
+                    component["hashes"][0]["content"] = "0" * 64
+                    xml_component.find(f"{qname('hashes')}/{qname('hash')}").text = "0" * 64
+                else:
+                    component["licenses"] = [{"license": {"id": "BSD-4-Clause"}}]
+                    xml_component.find(
+                        f"{qname('licenses')}/{qname('license')}/{qname('id')}"
+                    ).text = "BSD-4-Clause"
+                self.output_json.write_text(json.dumps(document) + "\n", encoding="utf-8")
+                tree.write(self.output_xml, encoding="utf-8", xml_declaration=True)
+                verification = self.run_finalizer(
+                    "--verify-pair", str(self.output_json), str(self.output_xml)
+                )
+                self.assertNotEqual(0, verification.returncode)
+                self.assertIn("ANTLR", verification.stderr)
+
+    def test_does_not_rewrite_generic_bsd4_on_another_antlr_named_artifact(self) -> None:
+        antlr = self.add_antlr_component()
+        antlr.update(maven_component(
+            "com.example", "antlr4-runtime", "4.10.1",
+            [{"license": {"id": "BSD-4-Clause"}}],
+        ))
+        self.write_sources()
+        result = self.finalize()
+        self.assertEqual(0, result.returncode, result.stderr)
+        document = json.loads(self.output_json.read_text(encoding="utf-8"))
+        component = next(
+            item for item in document["components"] if item["purl"] == antlr["purl"]
+        )
+        self.assertEqual(antlr, component)
 
     def add_h2_component(self) -> dict[str, object]:
         component = maven_component(

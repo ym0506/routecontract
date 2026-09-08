@@ -179,6 +179,7 @@ MYSQL_LICENSE_REVIEW_EXCEPTION = {
 SPDX_TOKEN = re.compile(r"[A-Za-z0-9][A-Za-z0-9.+-]*|[()]")
 REVIEWED_SPDX_LICENSE_IDS = {
     "Apache-2.0",
+    "BSD-2-Clause",
     "BSD-3-Clause",
     "EPL-1.0",
     "EPL-2.0",
@@ -190,6 +191,7 @@ REVIEWED_SPDX_LICENSE_IDS = {
 }
 H2_LICENSE_PURL = "pkg:maven/com.h2database/h2@2.2.224"
 H2_LICENSE_EXPRESSION = "MPL-2.0 OR EPL-1.0"
+STAX2_LICENSE_PURL = "pkg:maven/org.codehaus.woodstox/stax2-api@4.2.2"
 REVIEWED_SPDX_EXCEPTION_IDS = {
     "Classpath-exception-2.0",
     "Universal-FOSS-exception-1.0",
@@ -1937,6 +1939,19 @@ def _validate_licenses(
                     f"H2 component {policy_purl} must use its exact reviewed SPDX expression"
                 )
             _prove_component_scope(component, "test-runtime", f"H2 component {policy_purl}")
+            used_exceptions.add(exception_key)
+            continue
+        if policy_purl == STAX2_LICENSE_PURL:
+            exception_key = (policy_purl, "id", "BSD-2-Clause", "")
+            if (
+                purl != f"{policy_purl}?type=jar"
+                or records != [("id", "BSD-2-Clause", "")]
+                or exception_key not in exceptions
+            ):
+                raise PolicyError(
+                    f"Stax2 component {policy_purl} must use its exact reviewed BSD-2-Clause record"
+                )
+            _prove_component_scope(component, "test-runtime", f"Stax2 component {policy_purl}")
             used_exceptions.add(exception_key)
             continue
         if all(
