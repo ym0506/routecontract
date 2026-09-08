@@ -3711,6 +3711,14 @@ module._decode_activation_record(payload, url, 'record.json')
 class PublicExternalEvidenceTest(unittest.TestCase):
     RECORD_COMMIT = "b" * 40
     TAG_COMMIT = "c" * 40
+    # The mocked RC tag has its own README, independent of the current landing page.
+    # Both git-show and public-contents fixtures consume these same synthetic bytes;
+    # production still checks their equality and the required immutable-tag anchors.
+    TAGGED_README_BYTES = (
+        b"# Synthetic RouteContract RC fixture\n\n"
+        b"ShardingSphere-JDBC 5.5.3\n\n"
+        b"```bash\n./scripts/quickstart-demo.sh\n```\n"
+    )
     RECORD_BLOB = "d" * 40
     RECORD_TREE = "e" * 40
     FORM_BLOB = "f" * 40
@@ -3769,8 +3777,10 @@ class PublicExternalEvidenceTest(unittest.TestCase):
         self.artifact_download = self.artifact_download_patcher.start()
         self.addCleanup(self.artifact_download_patcher.stop)
 
-    @staticmethod
-    def tagged_bytes(_commit: str, path: str) -> bytes:
+    @classmethod
+    def tagged_bytes(cls, _commit: str, path: str) -> bytes:
+        if path == "README.md":
+            return cls.TAGGED_README_BYTES
         return (REPOSITORY_ROOT / path).read_bytes()
 
     def fake_graphql_issue(self, _owner: str, _repository: str, number: int) -> dict:
