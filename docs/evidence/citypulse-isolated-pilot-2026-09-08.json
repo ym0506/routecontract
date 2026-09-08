@@ -1,0 +1,119 @@
+{
+  "applicationInvocations": 1,
+  "approvedBaseline": false,
+  "artifactMaturity": "public RouteContract 0.1.3; self-prepared pilot experiment",
+  "capturedAggregate": {
+    "completeCaptureAssertionPassed": true,
+    "noReportedExecutionFailuresAssertionPassed": true,
+    "observedDataSourceCount": 1,
+    "observedPhysicalAttemptCount": 2
+  },
+  "changedSourceFileSha256": {
+    "pom.xml": "f2a3ea60f0aa6190e45b02482e48e66011aea5e310f4077557e2da4829a5647a",
+    "src/test/java/com/hmdp/VoucherOrderShardingIntegrationTest.java": "b7f5ce565a7af5167a3d24f1dd9031514ea5096c93f6c36c911b33b533100b6b"
+  },
+  "cleanupVerified": true,
+  "copiedDataRows": 0,
+  "documentationRevision": 2,
+  "evidenceLabel": "verified - MySQL",
+  "independentOutcomeReview": {
+    "findings": 0,
+    "sha256": "0b967fce4821d031db6afde857720855ba40ccf0552db332e602f75682485c22",
+    "status": "VERIFIED"
+  },
+  "isolation": {
+    "cleanupVerified": true,
+    "customSchedulingEnabled": false,
+    "delayQueueEnabled": false,
+    "emptyRedisConsumerRetained": true,
+    "externalConfigInherited": false,
+    "initialRedisKeys": 0,
+    "kafkaAutoConfigurationExcluded": true,
+    "network": "new internal Docker bridge",
+    "orderMqMode": "redis-stream",
+    "publishedPorts": 0,
+    "shopWarmupsEnabled": false,
+    "syntheticDatabaseSchemas": 2,
+    "syntheticTables": 11
+  },
+  "limitations": [
+    "One selected patched method; original unpatched method not separately run and the full application test suite not executed.",
+    "Capture wraps only the final lookup, not payment writes or transaction commit.",
+    "Self-prepared synthetic local experiment; no maintainer request, adoption, approved budget, baseline or regression-failure demonstration.",
+    "Original application SQL logging remains in private raw logs; public evidence must contain only minimized aggregates/hashes."
+  ],
+  "maintainerOutreachSent": false,
+  "originalAssertionSourceCallsPreserved": 23,
+  "originalUnpatchedTestSeparatelyRun": false,
+  "ownerAdoption": false,
+  "publicRouteContractSha256": "9e883e618eb09d9ecf30814151bb4b0a43eba02c78d288cc582fa7e57e6edba2",
+  "regressionFailureReproduction": false,
+  "reproduction": {
+    "commands": "normalized recorded compile, dependency prefetch and direct offline Surefire invocations",
+    "guide": "citypulse-isolated-pilot-reproduction-2026-09-08.md",
+    "patch": "citypulse-routecontract-0.1.3-first-observation.patch",
+    "patchSha256": "39b4e141347d88b3f3f9201102455090cd62bf7bf4764d8b2c33a96062c31b75",
+    "privateIsolationRunnerPublished": false,
+    "requiresPreparedIsolatedEnvironment": true,
+    "runtimeRerunForDocumentationRevision": false,
+    "targetLicenseFinding": "No explicit project license found at the pinned target revision; upstream context is not relicensed."
+  },
+  "resolvedGraph": {
+    "jars": 276,
+    "shardingSphereJars": 73,
+    "shardingSphereVersions": [
+      "5.5.3"
+    ]
+  },
+  "retainedHashes": {
+    "TEST-com.hmdp.VoucherOrderShardingIntegrationTest.xml": "18dd42c04cdfc4b97c367850db1801d9a4185385b49b97fc2d630f1726c18fb9",
+    "actual-create-commands.json": "c1e1d9759bfe05520b835062aa6361d181257f6d45e9224ccb215088e537cdbd",
+    "cleanup.json": "e72bca3cfad2cb0fbfb5bf251689aa04dc21e92f07a258041c7bd12e01e4d2ad",
+    "compile-inputs.json": "cf27bd9b027b79838dbe490d5d49a4fd21c362d7ec6af745b806e049dd4967d3",
+    "compile-terminal.json": "023194ff49376f5c218ee245ec03c1e2b0b995aff4f441622607fdf90a98aa3b",
+    "compile.log": "def534b5342fcf21e3ec5ce02f48eca0afaea6679b2886c8fac5e0dea6d9c60e",
+    "containers-before-test.json": "c5801b755ebc496fa4d60978a24dc4e8e501eeb0bcea80361ea8ea45168f7e4f",
+    "experiment-summary.json": "9369e0f941098ab515ddc073d6169f2e0789842c104d691d0adbd5e844f235be",
+    "independent-isolation-review.json": "6d3061970c0d731089a0e997d57baecf5b17bbea5a986beb84d5ffa65f4f7d20",
+    "network-before-test.json": "1437fdc221f19f4b05ebfa12171869f1fce999a4bfbafe328ff356d88bae32d2",
+    "proposal.patch": "39b4e141347d88b3f3f9201102455090cd62bf7bf4764d8b2c33a96062c31b75",
+    "resolved-graph.json": "16b429bca246f8e62c14feeaa83b79452e4b91d0ce9e28eb30132dec19da8fee",
+    "run-isolated.py": "70e369dc41c1f597c54e62cf1a25c81a93169457a7d0636568ca3ffd88932602",
+    "runtime-plan.json": "6512eb9959fb5205d45e7d26e7538ee4c4d37c88f2d94ebd054cc8fa8e6a559d",
+    "test-container-after.json": "fb4287f59f41e725341b03ce27feaa3bfcf77cd4dfbd00ba2eb5f25e5bd4a101",
+    "test-dispatch.json": "79fee6fef505b795d847115b3811218ac13fe0c4e8324e2101627b5cc5cf520a",
+    "test-terminal.json": "b55095e4b6a27873f6dd8a30e0336ff2d4ddb3ceb255916ea7aa2cf8b4c907da",
+    "test.log": "1ca242467dcd459de87d5045d2b13a92020c964f2ac0e112eaee65e35c8a9892"
+  },
+  "runtime": {
+    "javaVendor": "Eclipse Adoptium",
+    "javaVersion": "17.0.17",
+    "mavenVersion": "3.9.11",
+    "mysqlVersion": "8.4.11",
+    "redisVersion": "7.4.2",
+    "routeContractVersion": "0.1.3",
+    "shardingSphereVersion": "5.5.3",
+    "springBootVersion": "3.2.12"
+  },
+  "schemaVersion": 1,
+  "selectedTest": {
+    "class": "com.hmdp.VoucherOrderShardingIntegrationTest",
+    "errors": 0,
+    "failures": 0,
+    "method": "routesFourOrderCombinationsAndKeepsConditionalPayIdempotent",
+    "skipped": 0,
+    "tests": 1
+  },
+  "sourceCompile": {
+    "exitCode": 0,
+    "javaVersion": "17.0.15",
+    "mainSourceFileCount": 204,
+    "mavenVersion": "3.9.14",
+    "testSourceFileCount": 77
+  },
+  "sourceRevision": "dccffc7a33965868a4b55ff9aae60bb831d76bad",
+  "status": "VERIFIED_SELF_PREPARED_ISOLATED_EXPERIMENT",
+  "syntheticSchemaTableCount": 11,
+  "targetRepository": "rexqd/citypulse-platform",
+  "targetSourceUrl": "https://github.com/rexqd/citypulse-platform/tree/dccffc7a33965868a4b55ff9aae60bb831d76bad"
+}
