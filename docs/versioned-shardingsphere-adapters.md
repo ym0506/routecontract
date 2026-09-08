@@ -592,10 +592,14 @@ mocked service collection.
 The [final-candidate Maven A-24 execution](evidence/a24-maven-staged-consumer-2026-09-08.md)
 passed all four Java 17/21 and exact 5.5.2/5.5.3 cells, with 24 online/offline MySQL test executions
 and 16 checksum/origin/version controls. Each offline run used its frozen prime after the HTTP
-endpoint closed, direct external connections were denied, and the fixed fixture's image-pull
-policy was disabled. Loopback JDBC and the local Docker socket remained allowed; this is not a
-Docker-daemon-wide network-isolation claim. The separate Gradle/Kotlin A-24 portion remains
-pending, so this Maven result does not complete the whole A-24 row.
+endpoint closed, direct external connections were denied, and the fixed fixture explicitly
+prohibited image pulls. Loopback JDBC and the local Docker socket remained allowed; this is not a
+Docker-daemon-wide network-isolation claim. The separate
+[Gradle/Kotlin A-24 execution](evidence/a24-gradle-consumer-2026-09-08.md) also completed its
+28 Java 17 cases against the same reviewed `4e06694` staging: 24 actual MySQL tests across eight
+online/offline positive cases, plus 20 checksum/origin/version controls. Together these records
+cover the specified local A-24 build-tool profiles. They do not establish public 0.2 availability,
+other platforms, or completion of the remaining release rows.
 
 The local Gradle portion of A-27 passed [37 actual resolver cases](evidence/gradle-legacy-resolver-2026-09-08.md)
 against four distributed legacy releases and reviewed 0.2 staging. The evidence includes the
