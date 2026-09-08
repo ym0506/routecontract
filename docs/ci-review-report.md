@@ -1,7 +1,9 @@
 # CI review reports
 
-Available in the [v0.1.3 GitHub release](https://github.com/ym0506/routecontract/releases/tag/v0.1.3).
-The v0.1.2 local installer does not include these APIs. Maven Central publication is pending.
+Available in v0.1.3 through [GitHub Release assets](https://github.com/ym0506/routecontract/releases/tag/v0.1.3)
+and a [Maven Central test dependency](../README.en.md#install-013); see the
+[Central verification record](evidence/release-0.1.3-central.md).
+The v0.1.2 local installer does not include these APIs.
 
 ## See the result first
 
