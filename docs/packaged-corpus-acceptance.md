@@ -1,10 +1,18 @@
 # Final packaged runtime binding for the existing MySQL corpus
 
-Status: final packaged runtime binding verified on 2026-09-08. All 28 existing
-MySQL tests in six suites passed against reviewed local 0.2.0 JARs. The separate
+Retained result: packaged runtime binding for producer `86a0be5` was verified on
+2026-09-08. All 28 existing MySQL tests in six suites passed against its reviewed
+local 0.2.0 JARs. The separate
 authentic human review remains pending: `humanReview: null`, `fullA23Complete:
 false`, and `publicConsumption: false`. See the [execution evidence](evidence/packaged-corpus-final-86a0be5-2026-09-08.md).
 No workloads or goldens were added or regenerated.
+
+The dependency correction changes the 5.5.2 source build and lock inputs at
+`5fdfc3dcd3f4190e4c2b9e381b0b096169b387bb`. The corresponding input fingerprints
+were independently reviewed; all test methods, resources and expected values remain unchanged.
+Its passing source-project tests do not replace a new packaged execution on the
+corrected inputs. That execution is pending, and the recorded result below keeps
+its original producer, receipt and dependency graph.
 
 ## Fixed scope
 
@@ -87,7 +95,7 @@ No offline, additional JDK, production build, signing, release, publication or
 user-adoption claim belongs to this check. Raw SQL/bind/connection details remain
 private; public evidence must contain minimized outcomes and hash bindings only.
 
-## Recorded final result
+## Retained result for producer 86a0be5
 
 The two sequential Java 17 consumers completed once, with exit 0 and full output
 retained. ShardingSphere 5.5.3 passed the four existing suites / 14 tests, and

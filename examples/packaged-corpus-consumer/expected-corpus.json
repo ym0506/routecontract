@@ -1,5 +1,5 @@
 {
-  "corpusSourceRevision": "9184de3cb9d0e71bf5b9a07fa180e9c31a220d98",
+  "corpusSourceRevision": "5fdfc3dcd3f4190e4c2b9e381b0b096169b387bb",
   "formatVersion": 1,
   "goldenGenerationEnabled": false,
   "humanReview": null,
@@ -80,8 +80,8 @@
     "examples/manifests/find-paid-orders-by-user.shardingsphere-5.5.2.schema2.candidate.json": "53494d8f0a95311d9fe5e13ceab8452037851052c3717a58fa05efebf9015fb9",
     "examples/manifests/find-paid-orders-by-user.shardingsphere-5.5.3.schema2.approved.json": "9145302eaef634225c9253f8355c564612c06e3bf660e150f464f7beccfd944e",
     "examples/manifests/find-paid-orders-by-user.shardingsphere-5.5.3.schema2.candidate.json": "5ab31f011765dfee7546aa5e96be31302f8d38905d4641f2d69b8c8aee3287b1",
-    "examples/mysql-5.5.2/build.gradle": "666a3405c382001ac1f395f2c3494be67d25ad277e37dfbb3e6052f2ac9ec866",
-    "examples/mysql-5.5.2/gradle.lockfile": "4ac8bc7937de055ca29070cee2f70c694069a6891ff56b12bae2b4de3f0a42c0",
+    "examples/mysql-5.5.2/build.gradle": "e2c8a1783868c734f47986d98604b113daee4445b0039946a401826e159b7613",
+    "examples/mysql-5.5.2/gradle.lockfile": "27308bbee1baf6f434a68839662f7f29ad70340cb7dfce8bed5b441c3c57b6fc",
     "examples/mysql-5.5.2/src/test/java/io/github/ym0506/routecontract/example552/Exact552ObservedExecutionRegressionCorpusMySqlTest.java": "b1dbaa924438f250e29b06b19685b284360b80790677566f7c5e8ef5712d925c",
     "examples/mysql-5.5.2/src/test/java/io/github/ym0506/routecontract/example552/Exact552OperationContractMySqlTest.java": "b08d680f4a585191e7552d6b8f6fd3bf19286bbfc41ee02c7a4d9a538af2ba4e",
     "examples/mysql-5.5.2/src/test/resources/corpus/shardingsphere-5.5.2/control-additional-filter.json": "24f0500a48de8608d4a69cf2a396a2c51272270cc1d08f244afcf165e661c058",
