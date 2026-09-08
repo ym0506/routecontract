@@ -1,0 +1,130 @@
+import groovy.json.JsonOutput
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
+import org.gradle.api.artifacts.result.UnresolvedDependencyResult
+import org.gradle.api.attributes.Bundling
+import org.gradle.api.attributes.Category
+import org.gradle.api.attributes.LibraryElements
+import org.gradle.api.attributes.Usage
+import org.gradle.api.attributes.java.TargetJvmVersion
+import org.gradle.internal.exceptions.MultiCauseException
+
+plugins {
+    id 'base'
+}
+
+def routeGroup = 'io.github.ym0506.routecontract'
+def routeVersion = '0.2.0'
+def requestedRuntime = '@@RUNTIME@@'
+def declaredAdapters = ['@@FIRST_ADAPTER@@', '@@SECOND_ADAPTER@@']
+def runtimeAnchors = [
+        'shardingsphere-infra-executor',
+        'shardingsphere-infra-spi',
+        '@@DATABASE_ANCHOR@@'
+]
+def knownAdapters = ['routecontract-shardingsphere-5.5.2', 'routecontract-shardingsphere-5.5']
+if (!(requestedRuntime in ['5.5.2', '5.5.3']) || declaredAdapters.toSet() != knownAdapters.toSet()
+        || declaredAdapters.size() != 2
+        || runtimeAnchors.last() != (requestedRuntime == '5.5.2'
+                ? 'shardingsphere-infra-database-core' : 'shardingsphere-database-connector-core')) {
+    throw new GradleException('Invalid generated dual-resolver fixture inputs')
+}
+if (Runtime.version().feature() != 17 || System.getProperty('java.net.preferIPv4Stack') != 'true') {
+    throw new GradleException('The resolver fixture requires actual Java 17 and trusted IPv4 settings')
+}
+def repositoryUrl = providers.gradleProperty('routecontractRepositoryUrl').orNull
+if (repositoryUrl == null || !(repositoryUrl ==~ /http:\/\/127[.]0[.]0[.]1:[1-9][0-9]{0,4}\//)) {
+    throw new GradleException('routecontractRepositoryUrl must be one canonical loopback HTTP base URL')
+}
+def repositoryUri = new URI(repositoryUrl)
+if (repositoryUri.port > 65535 || repositoryUri.toString() != repositoryUrl) {
+    throw new GradleException('routecontractRepositoryUrl has an invalid port or noncanonical spelling')
+}
+
+repositories {
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'reviewedStaging'
+                url = uri(repositoryUrl)
+                allowInsecureProtocol = true
+                metadataSources {
+                    gradleMetadata()
+                    mavenPom()
+                }
+            }
+        }
+        filter { includeGroup(routeGroup) }
+    }
+    mavenCentral {
+        content { excludeGroup(routeGroup) }
+    }
+}
+
+def dualRuntime = configurations.create('dualAdapterRuntime') {
+    canBeConsumed = false
+    canBeResolved = true
+    attributes {
+        attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category, Category.LIBRARY))
+        attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_RUNTIME))
+        attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, LibraryElements.JAR))
+        attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling, Bundling.EXTERNAL))
+        attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 17)
+    }
+}
+
+dependencies {
+    declaredAdapters.each { module ->
+        add(dualRuntime.name, "${routeGroup}:${module}:${routeVersion}")
+    }
+    runtimeAnchors.each { module ->
+        add(dualRuntime.name, "org.apache.shardingsphere:${module}:${requestedRuntime}")
+    }
+}
+
+def failureMessages = { Throwable initial ->
+    def pending = [initial]
+    def seen = Collections.newSetFromMap(new IdentityHashMap<Throwable, Boolean>())
+    def result = []
+    while (!pending.isEmpty()) {
+        Throwable current = pending.remove(0)
+        if (current != null && seen.add(current)) {
+            result.add([exceptionType: current.class.name, message: current.message ?: ''])
+            if (current instanceof MultiCauseException) {
+                pending.addAll(current.causes)
+            } else if (current.cause != null) {
+                pending.add(current.cause)
+            }
+            pending.addAll(current.suppressed.toList())
+        }
+    }
+    result
+}
+
+tasks.register('resolveDualAdapters') {
+    group = 'verification'
+    description = 'Retain the actual unresolved graph, then require native dependency resolution'
+    doLast {
+        def graph = dualRuntime.incoming.resolutionResult
+        def selected = graph.allComponents.findAll { it.id instanceof ModuleComponentIdentifier }.collect {
+            [coordinate: it.id.displayName, selectionReasons: it.selectionReason.descriptions.collect { reason ->
+                [cause: reason.cause.toString(), description: reason.description]
+            }]
+        }.sort { it.coordinate }
+        def unresolved = graph.allDependencies.findAll { it instanceof UnresolvedDependencyResult }.collect {
+            [requested: it.requested.displayName, attempted: it.attempted.displayName,
+             from: it.from.id.displayName, failureMessages: failureMessages(it.failure)]
+        }.sort { left, right ->
+            [left.requested, left.attempted, left.from].join('\n') <=>
+                    [right.requested, right.attempted, right.from].join('\n')
+        }
+        def report = [schemaVersion: 1, tool: 'gradle', configuration: dualRuntime.name,
+                      requestedRuntime: requestedRuntime, routeContractVersion: routeVersion,
+                      declaredAdapters: declaredAdapters.collect { "${routeGroup}:${it}:${routeVersion}".toString() },
+                      declaredRuntimeAnchors: runtimeAnchors.collect {
+                          "org.apache.shardingsphere:${it}:${requestedRuntime}".toString()
+                      }, selectedComponents: selected, unresolved: unresolved]
+        file('negative-graph.json').setText(JsonOutput.prettyPrint(JsonOutput.toJson(report)) + '\n', 'UTF-8')
+        // This is deliberately uncaught: native Gradle failure, not a fixture-written rejection, is evidence.
+        dualRuntime.files
+    }
+}
