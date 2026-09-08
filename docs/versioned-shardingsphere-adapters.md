@@ -70,9 +70,12 @@ The completed CI for `4483fcf` passed 172 Java tests, 12 SBOM validations and th
 branches. The [parser correction](osv-fixed-branches-acceptance.md) preserves all
 branches and still rejects every finding. A separate pinned local scan of that
 inventory found six vulnerable dependencies; correcting the parser does not fix them.
-The dependency repair is in progress. Its actual resolved graph, publication metadata
-and affected consumer checks require new evidence before release. The observations
-above retain their original producer and dependency inputs.
+The [dependency correction](evidence/six-dependency-correction-2026-09-08.md) subsequently
+passed 31 adapter tests and the 14 unchanged 5.5.2 MySQL tests. Its clean-revision
+scan at `cef11a1` verified 306 packages with zero findings against the pinned
+database. Current pinned-Temurin CI and affected packaged-consumer checks remain
+required before release. The observations above retain their original producer
+and dependency inputs.
 
 ## 1. Context and observed facts
 
