@@ -1,8 +1,8 @@
 # Real Maven legacy resolver acceptance for A-27
 
-Status: [45/45 actual Maven cases verified on the final candidate](evidence/legacy-resolver-4e06694-2026-09-08.md),
-including the new API payloads from source `4e06694`. The
-[earlier staging evidence](evidence/maven-legacy-resolver-2026-09-08.md) is preserved separately.
+Status: [45/45 actual Maven cases verified against reviewed source `86a0be5`](evidence/legacy-resolver-86a0be5-2026-09-08.md).
+The [earlier 4e06694 execution](evidence/legacy-resolver-4e06694-2026-09-08.md) and
+[initial staging evidence](evidence/maven-legacy-resolver-2026-09-08.md) are preserved separately.
 This work implements the Maven
 portion of A-27 with the existing pinned legacy registry and reviewed 0.2
 staging. It corrects the ADR's selected-only Enforcer assumption; shared input

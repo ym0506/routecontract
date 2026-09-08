@@ -1,8 +1,8 @@
 # Real legacy resolver acceptance for the 0.2 candidate
 
-Status: the final-candidate local Gradle 37-case and Maven 45-case runs passed
-on 2026-09-08 against reviewed source `4e06694`; see the
-[execution evidence](evidence/legacy-resolver-4e06694-2026-09-08.md).
+Status: the local Gradle 37-case and Maven 45-case runs passed on 2026-09-08
+against reviewed source `86a0be5`; see the [execution evidence](evidence/legacy-resolver-86a0be5-2026-09-08.md).
+The [earlier 4e06694 execution](evidence/legacy-resolver-4e06694-2026-09-08.md) remains preserved.
 This file specifies the resolver work item, not the whole release requirement
 in `versioned-shardingsphere-adapters.md`. It makes no public 0.2, MySQL,
 manual-classpath or adoption claim. Original A-28 remains FAILED; the separate
