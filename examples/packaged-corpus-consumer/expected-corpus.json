@@ -1,0 +1,109 @@
+{
+  "corpusSourceRevision": "9184de3cb9d0e71bf5b9a07fa180e9c31a220d98",
+  "formatVersion": 1,
+  "goldenGenerationEnabled": false,
+  "humanReview": null,
+  "lanes": {
+    "5.5.2": {
+      "adapter": "routecontract-shardingsphere-5.5.2",
+      "concurrentlyOpenCapturePairs": 20,
+      "corpusShapes": 8,
+      "repetitionsPerShape": 20,
+      "sourceDirectory": "examples/mysql-5.5.2",
+      "suites": {
+        "io.github.ym0506.routecontract.example552.Exact552ObservedExecutionRegressionCorpusMySqlTest": [
+          "equalityAndSafeSyntacticControlsStayOnOneObservedDataSource",
+          "sameValueRangeAndFalseOtherShardBranchKeepBusinessRowsButExpandObservedExecutions",
+          "equalRangeUpdateChangesOneBusinessRowWhileFourJdbcAttemptsAreObserved",
+          "strategyRemovalProducesTwoDifferentObservableRegressionShapes",
+          "reducedPublicIssue38456PairReturnsSameCountButEightVersusOneAttemptsAreObserved",
+          "builtInShardingConditionsAuditIsActiveButDoesNotRejectTheRecordedRiskCases",
+          "allCorpusStructuralSignaturesRemainDeterministicAcrossTwentyRepetitions"
+        ],
+        "io.github.ym0506.routecontract.example552.Exact552OperationContractMySqlTest": [
+          "ordinarySqlAndSuccessiveCapturesRemainIsolatedOnExact552",
+          "sameBusinessResultProducesCanonicalExact552PolicyEvidence",
+          "workerReceivesSubmissionContextButRawChildDoesNotInheritItOnExact552",
+          "concurrentSingleAndFanOutCapturesRemainIsolatedAcrossTwentyPairs",
+          "caughtPhysicalCallbackFailureRemainsDiagnosticOnlyOnExact552",
+          "interruptedCallerCannotCloseAsContractEligibleOnExact552",
+          "capturedEvidenceDoesNotRetainRawSecretValuesOnExact552"
+        ]
+      },
+      "tests": 14
+    },
+    "5.5.3": {
+      "adapter": "routecontract-shardingsphere-5.5",
+      "concurrentlyOpenCapturePairs": 20,
+      "corpusShapes": 8,
+      "repetitionsPerShape": 20,
+      "sourceDirectory": "examples/mysql",
+      "suites": {
+        "io.github.ym0506.routecontract.example.DataSourceProxyComparisonMySqlTest": [
+          "fairPhysicalWrapperComparisonShowsWhatThePrimitiveProvidesAndWhatTheContractAdds"
+        ],
+        "io.github.ym0506.routecontract.example.FailureBoundaryMySqlTest": [
+          "caughtFanOutJdbcFailureCannotBeCertifiedByBudgetsOrManifest"
+        ],
+        "io.github.ym0506.routecontract.example.ObservedExecutionRegressionCorpusMySqlTest": [
+          "equalityAndSafeSyntacticControlsStayOnOneObservedDataSource",
+          "sameValueRangeAndFalseOtherShardBranchKeepBusinessRowsButExpandObservedExecutions",
+          "equalRangeUpdateChangesOneBusinessRowWhileFourJdbcAttemptsAreObserved",
+          "strategyRemovalProducesTwoDifferentObservableRegressionShapes",
+          "reducedPublicIssue38456PairReturnsSameCountButEightVersusOneAttemptsAreObserved",
+          "builtInShardingConditionsAuditIsActiveButDoesNotRejectTheRecordedRiskCases",
+          "allCorpusStructuralSignaturesRemainDeterministicAcrossTwentyRepetitions"
+        ],
+        "io.github.ym0506.routecontract.example.OperationCorrelationMySqlTest": [
+          "firstWorkerReceivesSubmissionContextButRawChildDoesNotInheritIt",
+          "fanOutStructuralExecutionSignatureIsStableAcrossTwentyCaptures",
+          "concurrentSingleAndFanOutOperationsRemainIsolatedAcrossTwentyPairs",
+          "functionallyEquivalentRangeQueryFailsCanonicalManifestContractWithActionableCiEvidence",
+          "capturedEvidenceContainsNoRawParameterOrSqlText"
+        ]
+      },
+      "tests": 14
+    }
+  },
+  "originalInputSha256": {
+    "examples/manifests/README.md": "1840a904545e8ab618f5de04d7c0195a3120a8781990f3a6b38c1a652f13964d",
+    "examples/manifests/find-order-by-user-after-strategy-change.approved.json": "a8ef5c3e78b49e241cbfb71a4ceeaf20f1a56507cf3c98fe17ea9aecf1086fce",
+    "examples/manifests/find-order-by-user-after-strategy-change.candidate.json": "a38003f209c4f9d8c57ebdf7bb80e5e32d815f3365837b4f22f0717bf9a38daa",
+    "examples/manifests/find-order-by-user-after-strategy-change.expected-diff.txt": "86abba3dd248c45aca583371e33c2e76e61f95380ea916ee1171bad6c55aa6f3",
+    "examples/manifests/find-order-by-user-after-strategy-change.shardingsphere-5.5.3.schema2.approved.json": "d68b12a77c42a09a79310c3a0212fed4c03f42dbe9dc257a39d3079b8456c913",
+    "examples/manifests/find-order-by-user-after-strategy-change.shardingsphere-5.5.3.schema2.candidate.json": "a344d2c899558872077ff2c025a2d7d8b90a825b879807c6a31955f6e9b7a608",
+    "examples/manifests/find-paid-orders-by-user.approved.json": "a082ca797ebe40be5b8c9409893de7d9a861086d8d4b760cbc00e925b2436a60",
+    "examples/manifests/find-paid-orders-by-user.candidate.json": "be65fe9b0c6469aaabcb4aefebb95ce7790c74ac0c0b3b229df1b228da9f4738",
+    "examples/manifests/find-paid-orders-by-user.expected-diff.txt": "e5a886f4d710eac9ff60ab1188ab0fafb59fc9d45547711e2afd5ff948ecf9af",
+    "examples/manifests/find-paid-orders-by-user.shardingsphere-5.5.2.expected-diff.txt": "e5a886f4d710eac9ff60ab1188ab0fafb59fc9d45547711e2afd5ff948ecf9af",
+    "examples/manifests/find-paid-orders-by-user.shardingsphere-5.5.2.schema2.approved.json": "ea8c434dafeb74fea2eb9cce2da46516286d166c55fbaa8fb6cdd20f4c8ffad1",
+    "examples/manifests/find-paid-orders-by-user.shardingsphere-5.5.2.schema2.candidate.json": "53494d8f0a95311d9fe5e13ceab8452037851052c3717a58fa05efebf9015fb9",
+    "examples/manifests/find-paid-orders-by-user.shardingsphere-5.5.3.schema2.approved.json": "9145302eaef634225c9253f8355c564612c06e3bf660e150f464f7beccfd944e",
+    "examples/manifests/find-paid-orders-by-user.shardingsphere-5.5.3.schema2.candidate.json": "5ab31f011765dfee7546aa5e96be31302f8d38905d4641f2d69b8c8aee3287b1",
+    "examples/mysql-5.5.2/build.gradle": "666a3405c382001ac1f395f2c3494be67d25ad277e37dfbb3e6052f2ac9ec866",
+    "examples/mysql-5.5.2/gradle.lockfile": "4ac8bc7937de055ca29070cee2f70c694069a6891ff56b12bae2b4de3f0a42c0",
+    "examples/mysql-5.5.2/src/test/java/io/github/ym0506/routecontract/example552/Exact552ObservedExecutionRegressionCorpusMySqlTest.java": "b1dbaa924438f250e29b06b19685b284360b80790677566f7c5e8ef5712d925c",
+    "examples/mysql-5.5.2/src/test/java/io/github/ym0506/routecontract/example552/Exact552OperationContractMySqlTest.java": "b08d680f4a585191e7552d6b8f6fd3bf19286bbfc41ee02c7a4d9a538af2ba4e",
+    "examples/mysql-5.5.2/src/test/resources/corpus/shardingsphere-5.5.2/control-additional-filter.json": "24f0500a48de8608d4a69cf2a396a2c51272270cc1d08f244afcf165e661c058",
+    "examples/mysql-5.5.2/src/test/resources/corpus/shardingsphere-5.5.2/control-alias.json": "c3a4b72b00c7fc06d97e1c34cad85a10c94e80c8104afc7b9cab4557e6928ccd",
+    "examples/mysql-5.5.2/src/test/resources/corpus/shardingsphere-5.5.2/control-equality.json": "8988cd8c43b15c4e5c9056a2d3a49219f0ba58f2137006ae3c0509cc79aa9619",
+    "examples/mysql-5.5.2/src/test/resources/corpus/shardingsphere-5.5.2/control-limit.json": "8a470d0d56c2924359a4805aa59974f17a4bd7412d4cc8057814013b7df69d08",
+    "examples/mysql-5.5.2/src/test/resources/corpus/shardingsphere-5.5.2/control-predicate-reorder.json": "05be47fbc2f2c31a599b6cc46978d92ac3afdb0323f19e1aa2278031f46ddd8a",
+    "examples/mysql-5.5.2/src/test/resources/corpus/shardingsphere-5.5.2/control-single-value-in.json": "127ab90794d97e5d6f6df55741639bcc37d57d257413c6c9b3903cf7cf547320",
+    "examples/mysql-5.5.2/src/test/resources/corpus/shardingsphere-5.5.2/database-strategy-removed.json": "1f1f48e173c4ed84bad6f07a6dddd0676c1fbae3d419c5bd48c9900390e99411",
+    "examples/mysql-5.5.2/src/test/resources/corpus/shardingsphere-5.5.2/equality.json": "60db2d0cebd20a30c99a38c3201809c3ab16a3a498955c64efb2f35d50078771",
+    "examples/mysql-5.5.2/src/test/resources/corpus/shardingsphere-5.5.2/false-other-shard.json": "2a284d4492332b7ac8e573fd27d5a8d5880648f1faa72f7e9a3abf3ff9bb0842",
+    "examples/mysql-5.5.2/src/test/resources/corpus/shardingsphere-5.5.2/issue-join.json": "2c58c3515ff45a52a423c3b93d6ba5cd21c529a5ee4991c8e102bfad403e07f8",
+    "examples/mysql-5.5.2/src/test/resources/corpus/shardingsphere-5.5.2/issue-subquery.json": "f4c056060b80a5774faa07df3de1ae48acdec5cd2a13de6349a3e565458361d1",
+    "examples/mysql-5.5.2/src/test/resources/corpus/shardingsphere-5.5.2/range-update.json": "638cece63f11b054c1a6b833846ed2f9aa8225db771fbec84eb0bb09da1d1577",
+    "examples/mysql-5.5.2/src/test/resources/corpus/shardingsphere-5.5.2/same-value-range.json": "e1c5f56e3861e0774b203a2afd1abefeff68873cac9803215cad2e5e0a9865f9",
+    "examples/mysql-5.5.2/src/test/resources/corpus/shardingsphere-5.5.2/table-strategy-removed.json": "8f5eb8ef60f02757ad79086a1a3a5e81376e06bbaf946295baf3ca1f31a4c75e",
+    "examples/mysql/build.gradle": "faeb52dcbc39debd9043d993bb6d26fd8bb0a93b4c59ed51d9477b221dca83cc",
+    "examples/mysql/gradle.lockfile": "f8e5da44bff441aeb21b6a2b87559529d47bb47f618b0a0ded8e0fbed440db4c",
+    "examples/mysql/src/test/java/io/github/ym0506/routecontract/example/DataSourceProxyComparisonMySqlTest.java": "cc43f36c0f47fe54f58b6c117e23be6beccebbbccb3ab4a25b34a8fd5a1aa1ee",
+    "examples/mysql/src/test/java/io/github/ym0506/routecontract/example/FailureBoundaryMySqlTest.java": "f8cf16ade099bcc01f2b8bf0316735513adda7005f00529e760f2581b63f7e49",
+    "examples/mysql/src/test/java/io/github/ym0506/routecontract/example/ObservedExecutionRegressionCorpusMySqlTest.java": "d736a9d8f89347a67bcbf3247f73ac6aa3d50a6d793f347f64d37488821db03c",
+    "examples/mysql/src/test/java/io/github/ym0506/routecontract/example/OperationCorrelationMySqlTest.java": "1bf785e9cf27a7774d54ea567cb2ca9937298a2f88b16c085684715cf1ada504",
+    "gradle.properties": "d47a1f61424e8ae1960602a774fc0a6547843d276a5fabdbfc1c0aacd82a6894"
+  }
+}
