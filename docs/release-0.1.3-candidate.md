@@ -16,7 +16,7 @@ The core split and 5.5.2 adapter remain separate unreleased 0.2 work.
 The immutable v0.1.2 release, its installer pins and contest evidence remain
 historical release evidence. Existing local-install and assisted-pilot instructions
 remain pinned to v0.1.2; the [released report example](ci-review-report.md) uses v0.1.3.
-Use the [ordinary Central dependency](../README.en.md#install-013) for current installation.
+Use the [ordinary Central dependency](../README.md#install-013) for current installation.
 This release does not activate a new contest recruitment window.
 
 Original acceptance requirements, retained for audit; completion evidence and exceptions

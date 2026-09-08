@@ -26,7 +26,7 @@ body:
     attributes:
       label: Versions and build tool, if known
       description: Optional. No employer, hostname, private path or repository URL is needed.
-      placeholder: ShardingSphere-JDBC 5.5.3; Java 17; Maven; RouteContract 0.1.2
+      placeholder: ShardingSphere-JDBC 5.5.3; Java 17; Maven; RouteContract 0.1.3
 
   - type: dropdown
     id: integration_stage

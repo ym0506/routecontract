@@ -376,7 +376,7 @@ class SubmissionClaimTextTest(unittest.TestCase):
         )
         sbom = (REPOSITORY_ROOT / "docs" / "sbom.md").read_text(encoding="utf-8")
         notice = (REPOSITORY_ROOT / "NOTICE").read_text(encoding="utf-8")
-        readme = (REPOSITORY_ROOT / "README.md").read_text(encoding="utf-8")
+        readme = (REPOSITORY_ROOT / "docs" / "reference-guide.ko.md").read_text(encoding="utf-8")
         normalized_third_party = " ".join(third_party.split())
         normalized_sbom = " ".join(sbom.split())
         for required in (
@@ -820,8 +820,8 @@ class SubmissionClaimTextTest(unittest.TestCase):
     def test_public_docs_keep_build_consumer_and_contest_boundaries_explicit(self) -> None:
         contributing = (REPOSITORY_ROOT / "CONTRIBUTING.md").read_text(encoding="utf-8")
         releasing = (REPOSITORY_ROOT / "RELEASING.md").read_text(encoding="utf-8")
-        readme_ko = (REPOSITORY_ROOT / "README.md").read_text(encoding="utf-8")
-        readme_en = (REPOSITORY_ROOT / "README.en.md").read_text(encoding="utf-8")
+        readme_ko = (REPOSITORY_ROOT / "docs" / "reference-guide.ko.md").read_text(encoding="utf-8")
+        readme_en = (REPOSITORY_ROOT / "docs" / "reference-guide.md").read_text(encoding="utf-8")
         competitive = (
             REPOSITORY_ROOT / "docs" / "competitive-analysis.md"
         ).read_text(encoding="utf-8")
@@ -857,7 +857,7 @@ class SubmissionClaimTextTest(unittest.TestCase):
         )
         self.assertIn("intentional contract-gate\n  child exit `1`", releasing)
         self.assertIn("혼합 자동화", readme_ko)
-        self.assertTrue(readme_ko.startswith("# RouteContract for ShardingSphere-JDBC\n"))
+        self.assertTrue(readme_ko.startswith("# RouteContract 상세 가이드\n"))
         self.assertIn(
             "MyBatis·JPA·Hibernate별 end-to-end 호환성을 검증했다는 뜻은 아닙니다",
             readme_ko,
@@ -869,7 +869,7 @@ class SubmissionClaimTextTest(unittest.TestCase):
         self.assertLess(readme_ko.index("## 기존 도구와의 정확한 차이"), readme_ko.index("## 코드·공개 증거 경계"))
         self.assertLess(readme_ko.index("## v0.1 지원 범위"), readme_ko.index("## 의존성·Release 호환성 상세"))
         self.assertIn(
-            "[검증 증거 매트릭스](docs/evidence-matrix.md)", readme_ko
+            "[검증 증거 매트릭스](../docs/evidence-matrix.md)", readme_ko
         )
         self.assertIn(
             "datasource-proxy도 충분히 신뢰할 수 있는 직접 구현 대안", readme_ko
@@ -877,7 +877,7 @@ class SubmissionClaimTextTest(unittest.TestCase):
         self.assertIn("모든 물리 data source wrapper 없이", readme_ko)
         self.assertIn("docs/empirical-comparison.md", readme_ko)
         self.assertIn("Mixed automation", readme_en)
-        self.assertTrue(readme_en.startswith("# RouteContract for ShardingSphere-JDBC\n"))
+        self.assertTrue(readme_en.startswith("# RouteContract detailed guide\n"))
         self.assertIn(
             "not verified end-to-end compatibility with each of MyBatis, JPA, and Hibernate",
             readme_en,
@@ -899,11 +899,11 @@ class SubmissionClaimTextTest(unittest.TestCase):
                 "routecontract-shardingsphere-5.5:0.1.2",
                 readme,
             )
-            self.assertIn("(docs/first-integration.md)", readme)
+            self.assertIn("(../docs/first-integration.md)", readme)
             for block in re.findall(r"```groovy\n(.*?)```", readme, re.DOTALL):
                 self.assertNotIn("routecontract-shardingsphere-5.5:0.1.2", block)
         self.assertIn(
-            "[Verification evidence matrix](docs/evidence-matrix.md)",
+            "[Verification evidence matrix](../docs/evidence-matrix.md)",
             readme_en,
         )
         self.assertIn("RouteContract v0.1 implemented surface", competitive)
@@ -1351,9 +1351,9 @@ class TaggedIssueFormAllowlistTest(unittest.TestCase):
 
 
 class FirstIntegrationDocumentationContractTest(unittest.TestCase):
-    def test_readmes_link_next_step_immediately_after_quick_start(self) -> None:
-        readme_ko = (REPOSITORY_ROOT / "README.md").read_text(encoding="utf-8")
-        readme_en = (REPOSITORY_ROOT / "README.en.md").read_text(encoding="utf-8")
+    def test_reference_guides_link_next_step_immediately_after_quick_start(self) -> None:
+        readme_ko = (REPOSITORY_ROOT / "docs" / "reference-guide.ko.md").read_text(encoding="utf-8")
+        readme_en = (REPOSITORY_ROOT / "docs" / "reference-guide.md").read_text(encoding="utf-8")
 
         self.assertEqual(1, readme_ko.count("## 다음 단계: 첫 통합 가능성 검토하기"))
         self.assertEqual(1, readme_en.count("## Next step: assess a first integration"))
@@ -1372,7 +1372,7 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             self.assertLess(readme.index("## Quick Start"), readme.index(next_heading))
             self.assertLess(readme.index(next_heading), readme.index(usage_heading))
             section = readme[readme.index(next_heading):readme.index(usage_heading)]
-            self.assertIn("(docs/first-integration.md)", section)
+            self.assertIn("(../docs/first-integration.md)", section)
             self.assertIn("5.5.3", section)
             self.assertIn("Maven Central", section)
             self.assertTrue(
@@ -1384,7 +1384,7 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
                 or "no completion time is\npromised" in section
             )
             self.assertLess(
-                section.index("(docs/first-integration.md)"),
+                section.index("(../docs/first-integration.md)"),
                 section.index("issues/new?template=stable-feedback.yml"),
             )
             for anchor in (
@@ -2069,10 +2069,10 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             )
             self.assertEqual(0, result.returncode, result.stderr)
 
-    def test_activation_shell_examples_parse_and_readme_compares_candidate(self) -> None:
+    def test_activation_shell_examples_parse_and_reference_guides_compare_candidate(self) -> None:
         paths = (
-            REPOSITORY_ROOT / "README.md",
-            REPOSITORY_ROOT / "README.en.md",
+            REPOSITORY_ROOT / "docs" / "reference-guide.ko.md",
+            REPOSITORY_ROOT / "docs" / "reference-guide.md",
             REPOSITORY_ROOT / "docs" / "first-integration.md",
         )
         for path in paths:
@@ -2090,7 +2090,7 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
                     )
                     self.assertEqual(0, result.returncode, result.stderr)
 
-        for readme_name in ("README.md", "README.en.md"):
+        for readme_name in ("docs/reference-guide.ko.md", "docs/reference-guide.md"):
             readme = (REPOSITORY_ROOT / readme_name).read_text(encoding="utf-8")
             self.assertIn(
                 "new ManifestVerifier().verify(approved, candidate)",
@@ -2103,8 +2103,8 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             self.assertIn("6adacbe04d60b3af83d9067a14a878d26a6c90f5", readme)
             self.assertIn("fc4fdd16c21574afa1150654ce354cf8004b138b", readme)
 
-    def test_readme_quick_start_stops_before_project_code_on_revision_mismatch(self) -> None:
-        for readme_name in ("README.md", "README.en.md"):
+    def test_reference_quick_start_stops_before_project_code_on_revision_mismatch(self) -> None:
+        for readme_name in ("docs/reference-guide.ko.md", "docs/reference-guide.md"):
             readme = (REPOSITORY_ROOT / readme_name).read_text(encoding="utf-8")
             quick_start = readme[readme.index("## Quick Start") :]
             block = re.search(r"```bash\n(.*?)```", quick_start, flags=re.DOTALL).group(1)
