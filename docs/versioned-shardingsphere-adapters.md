@@ -56,11 +56,13 @@ elsewhere in this ADR remain historical and do not contribute to these totals.
 | A-24 Gradle | [28 Groovy/Kotlin cases](evidence/a24-gradle-final-86a0be5-2026-09-08.md), with 24 MySQL executions, 16 rejections and four origin controls |
 | A-24 Maven | [Four Java 17/21 profiles](evidence/a24-maven-final-86a0be5-2026-09-08.md), with 24 MySQL executions and 16 negative controls |
 | A-26 migration | [Six MySQL tests and compatibility probes](evidence/public-api-migration-86a0be5-2026-09-08.md), within the documented migration limits |
+| A-15/A-17 dual-adapter boundaries | [Ten identities from three separate executions](evidence/dual-resolver-boundaries-86a0be5-2026-09-08.md): four Gradle, four Maven and two runtime guards |
 | A-27 resolver policies | [37 Gradle and 45 Maven cases](evidence/legacy-resolver-86a0be5-2026-09-08.md), with separate complete-log and artifact checks |
 | A-29 current entry | [64 fresh JVM cases](evidence/current-entry-successor-86a0be5-2026-09-08.md) |
 
-The [dual-resolver boundary](dual-resolver-boundary-acceptance.md), remaining final
-release evidence and human review retain their own requirements. These local results
+The [dual-resolver boundary](dual-resolver-boundary-acceptance.md) is complete within
+its documented scope. Remaining security/release evidence and human review retain
+their own requirements. These local results
 do not establish public 0.2 availability. The original A-28 failure remains disclosed.
 
 ## 1. Context and observed facts

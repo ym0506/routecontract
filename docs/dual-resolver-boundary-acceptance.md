@@ -1,21 +1,19 @@
 # Remaining A-15 / A-17 resolver and runtime boundaries
 
-Status: four Gradle cases against the reviewed `86a0be5` candidate passed and
-their raw evidence has been audited. A later Maven execution passed all four
-dual-adapter declaration-order cases with the reviewed native Enforcer subtree
-validator. Its first opposite-runtime control then failed: the current API
-rejected the call before action entry with
-`RC_UNSUPPORTED_SHARDINGSPHERE_RUNTIME`, identifying the exact adapter's missing
-version-specific database resource. The fixture required a different, exact
-adapter/observed-version message. The second runtime control was not launched;
-the ten-case gate remains incomplete. The bounded fixture correction below is
-prepared for review; neither of its two runtime controls has been re-executed.
+Status: all ten distinct existing identities are verified against the reviewed
+`86a0be5` candidate: four retained Gradle cases, four retained Maven dual-adapter
+cases and two final current-API runtime guards from three separately bound
+executions. Both guards compiled current-API Java 17 probes, verified the complete
+coherent opposite-runtime JAR set and all three anchors, independently proved the
+selected adapter database ABI resource absent, and rejected before action with
+no cause or suppressed exception. See the [minimized evidence](evidence/dual-resolver-boundaries-86a0be5-2026-09-08.md).
 
-Earlier failed attempts remain failed: missing copied checksum sidecars,
-dependency resolution overwriting tree JSON, and the original Enforcer parser
-rejecting the banned adapter's declared executor child are retained separately.
-Existing audited A-24 anchor and non-anchor controls remain separate evidence;
-positive MySQL cases are not repeated here.
+All six earlier failed invocations remain failed, including the former guard
+whole-message expectation failure. The eight resolver passes were retained;
+only the two existing guard identities were executed after the final fixture
+correction. This is a distinct-execution aggregate, not one successful ten-case
+invocation. Existing A-24 positives and independent security/release gates remain
+separate; no SQL/MySQL work was performed by these ten boundaries.
 
 The finite plan contains exactly ten Java 17 cases:
 
@@ -141,9 +139,9 @@ or any action execution fail the case. These controls perform no SQL or MySQL wo
 The preserved first runtime-guard attempt reached its fail-before-action check but
 failed the fixture's former whole-message `exact adapter ... observed ...`
 expectation. The inherited unsupported-runtime contract permits the exact missing
-adapter ABI reason above. That failed attempt remains failed; this correction
-requires new executions of only the two existing runtime-guard identities, with
-explicit absence evidence. It does not repeat or relabel the eight resolver passes.
+adapter ABI reason above. That failed attempt remains failed. Only the two existing runtime-guard identities
+were subsequently executed and passed with explicit absence evidence. The eight
+resolver passes were retained with their original execution and input bindings.
 
 Preparation writes the explicit ten-case manifest, fixture input fingerprints and
 generated build/POM/Java inputs with zero executed cases. Without the new reviewed
