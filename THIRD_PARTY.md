@@ -122,6 +122,15 @@ specific build:
 ./gradlew --no-daemon --no-build-cache validateOfficialCycloneDxSbom
 ```
 
+## Standalone observer-cost experiment
+
+`examples/observer-cost` uses OpenJDK JMH 1.37 (`jmh-core` and the
+`jmh-generator-annprocess` compiler processor). The [upstream POM](https://github.com/openjdk/jmh/blob/1.37/pom.xml)
+declares GPL version 2 with the Classpath exception; the [upstream license](https://github.com/openjdk/jmh/blob/1.37/LICENSE)
+contains the terms. JMH is an experiment dependency and is not added to the published library
+POM, shaded into a RouteContract JAR or included in the root Gradle dependency profile.
+The standalone runner records its resolved dependency file hashes separately from that profile.
+
 ## Reviewed test-only transitive metadata
 
 These components are reached only through the MySQL example/test graph in the
