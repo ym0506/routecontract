@@ -28,6 +28,11 @@ For non-trivial changes:
 5. Record exact versions, repetitions, raw result path, limitations and evidence label.
 6. Keep commits and pull requests focused and reviewable.
 
+When changing the Java test suite inventory or case counts, update both
+`scripts/summarize-test-results.py` and the independent acceptance fixture in
+`submission/tools/tests/test_summarize_test_results.py`. Run both Python test roots used by CI:
+`submission/tools/tests` and `scripts/tests`. Preserve historical release/contest expectations.
+
 Tests passing alone is not completion. A claim also needs a reproducible command, an environment label and a stated limitation.
 
 ## Evidence labels

@@ -88,9 +88,25 @@ on Ubuntu 24 / Temurin 17.0.20.1+1 / Gradle 8.14.4. The **job failed after those
 summary tool's fixed inventory had not registered the new suite. Unsigned candidate preparation
 and downstream steps were skipped. This failed job is not evidence of a completed candidate.
 
-The inventory correction adds this exact suite with its required count of 606. Seven Python
-acceptance tests first reproduced the stale-inventory failure, then passed after registration;
-29 existing coordinated-preparation tests also passed. Checks still reject an absent A-22 suite,
-605 matrix cases, failures, unknown or duplicate suites, and missing original core/MySQL suites.
-Reprocessing the unchanged downloaded XML with the corrected tool produces a 25-suite/780-case
-summary locally. That is a post-processing check, not a successful rerun of the original CI job.
+The inventory correction adds this exact suite with its required count of 606. The existing
+submission tests maintain a separate acceptance fixture; that fixture also requires an explicit
+update to 25 suites and 780 cases. The intermediate `3f471a9` CI job exposed that stale fixture
+before reaching the Java tests. The final tests extend that existing acceptance suite and preserve
+its historical 52-case contest-summary check. They reject an absent A-22 suite, 605 matrix cases,
+duplicate or unknown suites, failures and missing original suites. All 314 submission-tool tests
+passed locally on CPython 3.12.14 after the correction. Reprocessing the unchanged downloaded XML
+with the corrected tool produces a 25-suite/780-case summary locally. That is a post-processing
+check, not a successful rerun of either failed CI job.
+
+The complete `scripts/tests` run also finished: 1,067 cases, with 1,064 passed and three existing
+opt-in integration probes skipped (official CycloneDX checks and the release-asset MySQL consumer).
+This local Python result does not substitute for those separate integration checks.
+
+When adding Java suites or changing case counts, update both the summarizer inventory and
+`submission/tools/tests/test_summarize_test_results.py`. Keep the acceptance fixture independent
+of the production allowlist, and run both Python test roots used by CI:
+
+```sh
+python3 -m unittest discover -s submission/tools/tests -v
+python3 -m unittest discover -s scripts/tests -v
+```
