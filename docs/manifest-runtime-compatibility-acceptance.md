@@ -81,3 +81,16 @@ runtime SHA-256 `9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32a
 three attempt logs are retained locally in `/private/tmp/routecontract-a22-validation-20260909/`
 and the log paths recorded by its `validation.json`. This local result is not a new full CI,
 database or packaged-consumer matrix result.
+
+The first CI execution at merge `baeb8a832554d036da1fb921beef07def2867c9e` retained 25 raw JUnit
+suites with 780 passing cases, including this suite's 606 cases and the existing 28 MySQL cases,
+on Ubuntu 24 / Temurin 17.0.20.1+1 / Gradle 8.14.4. The **job failed after those tests**: the
+summary tool's fixed inventory had not registered the new suite. Unsigned candidate preparation
+and downstream steps were skipped. This failed job is not evidence of a completed candidate.
+
+The inventory correction adds this exact suite with its required count of 606. Seven Python
+acceptance tests first reproduced the stale-inventory failure, then passed after registration;
+29 existing coordinated-preparation tests also passed. Checks still reject an absent A-22 suite,
+605 matrix cases, failures, unknown or duplicate suites, and missing original core/MySQL suites.
+Reprocessing the unchanged downloaded XML with the corrected tool produces a 25-suite/780-case
+summary locally. That is a post-processing check, not a successful rerun of the original CI job.

@@ -29,6 +29,7 @@ EXPECTED_SUITES = {
     "io.github.ym0506.routecontract.internal.CurrentRuntimeGuardTest": 9,
     "io.github.ym0506.routecontract.internal.RuntimeAdapterRegistryTest": 9,
     "io.github.ym0506.routecontract.manifest.ManifestReviewReportTest": 13,
+    "io.github.ym0506.routecontract.manifest.ManifestRuntimeCompatibilityMatrixTest": 606,
     "io.github.ym0506.routecontract.structure.CorePublicationStructureTest": 3,
     "io.github.ym0506.routecontract.CurrentRouteContractCompatibilityTest": 4,
     "io.github.ym0506.routecontract.RouteContractTest": 19,
