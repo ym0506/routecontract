@@ -164,6 +164,7 @@ Independent integration and repeat use have not yet been verified.
 | Review failures in CI | [Report guide and CLI](docs/ci-review-report.md) · [Example report](docs/evidence/ci-review-report-example.md) |
 | Understand what is observed | [Architecture](docs/architecture.md) · [Specification](docs/specification.md) |
 | Compare with existing tools | [Tool comparison](docs/competitive-analysis.md) · [Measured datasource-proxy fixture](docs/empirical-comparison.md) |
+| Inspect observer cost | [Public 0.1.3: three conditions, raw measurements and limitations](docs/observer-cost.md) |
 | See an application experiment | [CityPulse: one isolated test with public 0.1.3](docs/evidence/citypulse-isolated-pilot-2026-09-08.md) · Self-prepared; no maintainer adoption |
 | Inspect release evidence | [v0.1.3 Central verification](docs/evidence/release-0.1.3-central.md) · [Evidence matrix](docs/evidence-matrix.md) |
 | Explore earlier integration tooling | [v0.1.2 integration guide](docs/first-integration.md) — pinned historical workflow |
