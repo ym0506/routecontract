@@ -1,0 +1,65 @@
+# JMH version: 1.37
+# VM version: JDK 17.0.15, OpenJDK 64-Bit Server VM, 17.0.15+0
+# VM invoker: /opt/homebrew/Cellar/openjdk@17/17.0.15/libexec/openjdk.jdk/Contents/Home/bin/java
+# VM options: <none>
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: <none>
+# Measurement: 1 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: io.github.ym0506.routecontract.examples.firstproject.ObserverCostBenchmark.queryAndAssert
+# Parameters: (condition = absent, query = equality)
+
+# Run progress: 0.00% complete, ETA 00:00:01
+# Fork: 1 of 1
+Iteration   1: <failure>
+
+java.lang.IllegalStateException: Unexpected RouteContract class/SPI presence: absent/true/1
+	at io.github.ym0506.routecontract.examples.firstproject.ObserverCostBenchmark.setUp(ObserverCostBenchmark.java:56)
+	at io.github.ym0506.routecontract.examples.firstproject.jmh_generated.ObserverCostBenchmark_queryAndAssert_jmhTest._jmh_tryInit_f_observercostbenchmark0_G(ObserverCostBenchmark_queryAndAssert_jmhTest.java:451)
+	at io.github.ym0506.routecontract.examples.firstproject.jmh_generated.ObserverCostBenchmark_queryAndAssert_jmhTest.queryAndAssert_AverageTime(ObserverCostBenchmark_queryAndAssert_jmhTest.java:164)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at org.openjdk.jmh.runner.BenchmarkHandler$BenchmarkTask.call(BenchmarkHandler.java:527)
+	at org.openjdk.jmh.runner.BenchmarkHandler$BenchmarkTask.call(BenchmarkHandler.java:504)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+
+
+Benchmark had encountered error, and fail on error was requested
+ERROR: org.openjdk.jmh.runner.RunnerException: Benchmark caught the exception
+	at org.openjdk.jmh.runner.Runner.runBenchmarks(Runner.java:572)
+	at org.openjdk.jmh.runner.Runner.internalRun(Runner.java:309)
+	at org.openjdk.jmh.runner.Runner.run(Runner.java:208)
+	at org.openjdk.jmh.Main.main(Main.java:71)
+Caused by: org.openjdk.jmh.runner.BenchmarkException: Benchmark error during the run
+	at org.openjdk.jmh.runner.BenchmarkHandler.runIteration(BenchmarkHandler.java:440)
+	at org.openjdk.jmh.runner.BaseRunner.runBenchmark(BaseRunner.java:283)
+	at org.openjdk.jmh.runner.BaseRunner.runBenchmark(BaseRunner.java:233)
+	at org.openjdk.jmh.runner.BaseRunner.doSingle(BaseRunner.java:138)
+	at org.openjdk.jmh.runner.BaseRunner.runBenchmarksForked(BaseRunner.java:75)
+	at org.openjdk.jmh.runner.ForkedRunner.run(ForkedRunner.java:72)
+	at org.openjdk.jmh.runner.ForkedMain.main(ForkedMain.java:86)
+	Suppressed: java.lang.IllegalStateException: Unexpected RouteContract class/SPI presence: absent/true/1
+		at io.github.ym0506.routecontract.examples.firstproject.ObserverCostBenchmark.setUp(ObserverCostBenchmark.java:56)
+		at io.github.ym0506.routecontract.examples.firstproject.jmh_generated.ObserverCostBenchmark_queryAndAssert_jmhTest._jmh_tryInit_f_observercostbenchmark0_G(ObserverCostBenchmark_queryAndAssert_jmhTest.java:451)
+		at io.github.ym0506.routecontract.examples.firstproject.jmh_generated.ObserverCostBenchmark_queryAndAssert_jmhTest.queryAndAssert_AverageTime(ObserverCostBenchmark_queryAndAssert_jmhTest.java:164)
+		at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+		at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+		at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+		at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+		at org.openjdk.jmh.runner.BenchmarkHandler$BenchmarkTask.call(BenchmarkHandler.java:527)
+		at org.openjdk.jmh.runner.BenchmarkHandler$BenchmarkTask.call(BenchmarkHandler.java:504)
+		at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+		at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
+		at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+		at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+		at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+		at java.base/java.lang.Thread.run(Thread.java:840)

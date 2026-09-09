@@ -1,7 +1,7 @@
 # Observer cost of public RouteContract 0.1.3
 
-Status: **planned**. Do not quote performance numbers until a completed run and its limitations
-are recorded. This standalone JMH experiment consumes the published JAR, not local project
+Status: an [exploratory local run and its limitations](../../docs/observer-cost.md) are recorded.
+The result does not establish a stable latency-overhead percentage. This standalone JMH experiment consumes the published JAR, not local project
 classes. It reuses the first-project example's `OrderFixture`, `OrderRepository` and YAML.
 
 ## Acceptance and measurement scope
@@ -45,6 +45,10 @@ python3 examples/observer-cost/run.py --output /absolute/new/output-directory
 
 Set `JAVA_HOME` to a Java 17 JDK if Maven otherwise selects another version. Dependency downloads
 and eighteen fixture/JVM startups can make the full experiment take several minutes.
+
+`--smoke` checks all six condition/query combinations with shorter iterations. The separate
+GitHub Actions smoke workflow is a correctness check, not performance evidence. Optional plots
+use `plot.py` with matplotlib and reject smoke or partial results.
 
 ## Method references
 
