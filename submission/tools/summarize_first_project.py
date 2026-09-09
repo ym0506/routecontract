@@ -29,7 +29,7 @@ def verified_observation(path, status, count):
             if type(candidate[field]) is not int or candidate[field] != count:
                 return None
         codes = [finding["code"] for finding in report["findings"]]
-        if sorted(codes) != ([] if matched else ["RCM201", "RCM202"]):
+        if sorted(codes) != (["RCM000"] if matched else ["RCM201", "RCM202"]):
             return None
         return count
     except (OSError, ValueError, KeyError, TypeError):

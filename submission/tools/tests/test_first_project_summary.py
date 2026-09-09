@@ -26,7 +26,7 @@ class FirstProjectSummaryTest(unittest.TestCase):
                                     "observedPhysicalAttemptCount": count,
                                     "distinctObservedDataSourceNameCount": count},
                       "findings": [{"code": code} for code in
-                                   (["RCM201", "RCM202"] if key == "range" else [])]}
+                                   (["RCM201", "RCM202"] if key == "range" else ["RCM000"])]}
             (directory / "review.json").write_text(json.dumps(report))
 
     def test_complete_rehearsal_explains_expected_rejection_and_recovery(self):
