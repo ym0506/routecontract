@@ -7,10 +7,46 @@ observed physical JDBC execution attempts while keeping that test's business ass
 
 This guide uses **RouteContract 0.1.3 from Maven Central**, **Java 17** and exact
 **ShardingSphere-JDBC 5.5.3**. It covers synchronous, non-batch `PreparedStatement` calls.
-The example needs a running Docker engine and downloads MySQL and Java dependencies on first use.
-For a preview without installation, [read the report](evidence/ci-review-report-example.md).
+Try the synthetic example in your browser, or run it locally with a running Docker engine.
+For a preview without running anything, [read the report](evidence/ci-review-report-example.md).
+
+## Try in your browser
+
+You need a GitHub account and permission to run Actions in your own fork. Java, Docker and the
+build tool run on GitHub's hosted runner; **no local installation is required**.
+
+1. [Fork RouteContract](https://github.com/ym0506/routecontract/fork) into your account.
+2. In **your fork**, open **Actions**. Enable Actions if GitHub asks you to, then select
+   **First project** from the workflow list.
+3. Click **Run workflow**, keep the `main` branch and default **Maven**, then run it.
+   You can choose **Gradle** or **Both** instead. If `build_tool` is missing in an older fork,
+   sync its main branch first.
+4. Open the new run and read its **Summary** once it finishes:
+
+   | Stage | Exact business row | Observed attempts / aliases | Contract |
+   | --- | --- | --- | --- |
+   | Normal query | Order 201 / user 3 / PAID | 1 / 1 | `MATCH` |
+   | Same-result range query | Same row | 2 / 2 | `POLICY_VIOLATION`: `RCM201`, `RCM202` |
+   | Normal query restored | Same row | 1 / 1 | `MATCH` |
+
+   **The demonstration is green only after verifying the expected rejection and recovery.**
+   The range-query test itself fails. Dependency, compiler or Docker failures cannot count as
+   that rejection; an unfinished stage appears as not verified in the summary.
+5. Download **first-project-Maven** or **first-project-Gradle** from the run's **Artifacts**.
+   Under `build/lifecycle-evidence/`, `match/`, `range/` and `restored/` retain each verified
+   stage's `candidate.json`, `review.json` and `review.md`. Start with `range/review.md`.
+
+The workflow also verifies that capture cannot approve a missing baseline. It compares against
+the example's existing reviewed synthetic baseline and keeps that file unchanged. This exercise
+does not approve a baseline for your application. Next, [adapt one existing test](#adapt-one-existing-test).
+
+If **Run workflow** is absent, check that you are in your own fork and that the workflow is on
+its default branch. See GitHub's [manual-run instructions](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow).
 
 ## Run the published dependency
+
+For local execution, install Java 17 and start Docker. The first run downloads Java dependencies
+and the MySQL image.
 
 Clone the examples, then choose **one** build tool. The example lives on the repository's main
 branch and resolves the released library from Central; it does not build RouteContract from source.

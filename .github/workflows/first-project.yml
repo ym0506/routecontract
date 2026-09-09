@@ -5,12 +5,18 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+    inputs:
+      build_tool:
+        description: Build tool for this demonstration
+        type: choice
+        default: Maven
+        options: [Maven, Gradle, Both]
 
 permissions:
   contents: read
 
 concurrency:
-  group: first-project-${{ github.ref }}
+  group: first-project-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -21,7 +27,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build: [Maven, Gradle]
+        build: ${{ fromJSON(github.event_name != 'workflow_dispatch' && '["Maven","Gradle"]' || inputs.build_tool == 'Gradle' && '["Gradle"]' || inputs.build_tool == 'Both' && '["Maven","Gradle"]' || '["Maven"]') }}
     env:
       BUILD_TOOL: ${{ matrix.build }}
     defaults:
@@ -64,6 +70,7 @@ jobs:
           printf '%s\n' "${RUNNER_TEMP}/apache-maven-3.9.14/bin" >> "$GITHUB_PATH"
 
       - name: Verify first-time capture never approves a baseline
+        id: capture
         run: |
           set -euo pipefail
           baseline="${RUNNER_TEMP}/first-project-unapproved.json"
@@ -93,6 +100,7 @@ jobs:
           cp build/routecontract/candidate.json build/lifecycle-evidence/unapproved-candidate.json
 
       - name: Run the ordinary matching check
+        id: match
         run: |
           set -euo pipefail
           mkdir -p build/lifecycle-evidence
@@ -113,6 +121,7 @@ jobs:
           cp build/routecontract/* build/lifecycle-evidence/match/
 
       - name: Verify the intentional same-result regression fails
+        id: range
         run: |
           set -euo pipefail
           status=0
@@ -150,6 +159,7 @@ jobs:
           cp build/routecontract/* build/lifecycle-evidence/range/
 
       - name: Restore the normal check
+        id: restored
         run: |
           set -euo pipefail
           if test "$BUILD_TOOL" = Maven; then
@@ -164,14 +174,19 @@ jobs:
           assert report['status'] == 'MATCH' and report['matched'] is True
           PY
           sha256sum --check build/lifecycle-evidence/baseline.sha256
+          mkdir -p build/lifecycle-evidence/restored
+          cp build/routecontract/* build/lifecycle-evidence/restored/
 
-      - name: Show the regression review
+      - name: Show the demonstration summary
         if: always()
+        env:
+          CAPTURE_OUTCOME: ${{ steps.capture.outcome }}
+          MATCH_OUTCOME: ${{ steps.match.outcome }}
+          RANGE_OUTCOME: ${{ steps.range.outcome }}
+          RESTORED_OUTCOME: ${{ steps.restored.outcome }}
         run: |
-          report=build/lifecycle-evidence/range/review.md
-          if test -f "$report"; then
-            cat "$report" >> "$GITHUB_STEP_SUMMARY"
-          fi
+          python3 ../../submission/tools/summarize_first_project.py \
+            build/lifecycle-evidence >> "$GITHUB_STEP_SUMMARY"
 
       - name: Keep example results
         if: always()

@@ -30,6 +30,7 @@ This illustration summarizes the [checked-in MySQL manifests](examples/manifests
 The counts describe **hook-reported physical JDBC execution attempts and observed aliases**.
 They do not measure physical tables, a complete route plan or performance.
 
+[Try in your browser](docs/first-project.md#try-in-your-browser) ·
 [Inspect the CI report](docs/evidence/ci-review-report-example.md) ·
 [Apply v0.1.3 to one test](docs/first-project.md) ·
 [Ask whether it fits your project](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)
@@ -118,6 +119,7 @@ with stable diagnostic codes and investigation steps.
 
 | Try it | Requirements | What to expect |
 | --- | --- | --- |
+| [Run in your browser](docs/first-project.md#try-in-your-browser) | GitHub account; Actions access in your fork | Hosted MySQL demonstration: `MATCH → POLICY_VIOLATION → MATCH`. No local installation. |
 | [Generate the v0.1.3 CI report](docs/ci-review-report.md#try-the-released-report-without-docker) | Git, Java 17; initial dependency downloads | Compares committed manifests; writes `POLICY_VIOLATION` with `RCM201` / `RCM202`. The example deliberately fails the check. No Docker. |
 | [Reproduce the MySQL change](docs/reference-guide.md#quick-start) | Git, Java 17, Docker; initial downloads | Historical **v0.1.2** demo, pinned to its immutable tag. The wrapper succeeds after verifying the expected contract rejection. |
 | [Run the v0.1.3 first-project example](docs/first-project.md) | Git, Java 17, Docker; Maven or the Gradle wrapper | Capture a candidate, review a baseline, see `MATCH`, then reproduce the same-result `1 → 2` failure. Adapt one existing test. |
