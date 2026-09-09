@@ -1,0 +1,8 @@
+{
+  "wrongClasspathRejected": true,
+  "wrongClasspathExitCode": 1,
+  "reason": "Absent condition included RouteContract class and provider; preflight stopped before fixture execution.",
+  "logSha256": "c6a98781ff4649ef52a674d84402f3103c1a0daa15e38e081fa0bd7576e11e6a",
+  "smokePlotRejected": true,
+  "smokePlotExitCode": 2
+}

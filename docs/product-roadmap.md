@@ -35,7 +35,9 @@ structure while preserving the application's existing result assertions.
 - **Observer cost.** Compare library absent, present with capture disabled, capture enabled, and
   enabled with report generation outside the timed operation. Measure allocation/retention,
   CPU, latency and incomplete captures under stated concurrency and workload. Do not infer
-  production performance from the existing correctness corpus.
+  production performance from the existing correctness corpus. The [first local experiment](observer-cost.md)
+  records operation time and estimated allocation for absent/idle/capture-plus-checks. Timing
+  direction varies between blocks; retained heap, CPU, report cost and concurrency remain unmeasured.
 - **Baseline evolution.** Human review stays explicit. A future version migration tool must show
   compatibility/semantic differences and never silently bless new fingerprints.
 - **Failure explanation.** Stable findings and next steps must reflect the verifier's precedence.
