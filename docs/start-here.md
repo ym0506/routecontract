@@ -12,7 +12,7 @@ where the same result needs `1 → 2` observed attempts.
 
 | 목적 / Goal | 시작점 / Start | 필요한 것 / Requirements |
 | --- | --- | --- |
-| 동작 이해 / Understand | [비교 그림 / Illustrated example](../README.md#see-it-work) · [애플리케이션 실험](application-evaluations.ko.md) / [Application evaluations](application-evaluations.md) | 설치 없음 / No installation |
+| 동작 이해 / Understand | [20초 영어 설명 / 20-second interactive explanation](https://routecontract.ym56.chatgpt.site) · [애플리케이션 실험](application-evaluations.ko.md) / [Application evaluations](application-evaluations.md) | 설치 없음; 설명 페이지는 DB를 실행하지 않습니다 / No installation; the explanation does not run a database |
 | 브라우저에서 체험 / Try in your browser | [v0.1.3 MySQL 시연](first-project.ko.md#try-in-your-browser) / [v0.1.3 MySQL demonstration](first-project.md#try-in-your-browser) | GitHub 계정·fork의 Actions 권한 / GitHub account and Actions access in your fork; no local installation |
 | 실제 DB 반례 재현 / Reproduce | [v0.1.2 고정 Quick Start / Pinned Quick Start](reference-guide.md#quick-start) | Git, Java 17, Docker, network |
 | CI 결과 검토 / Review a CI result | [미리보기 / Preview](evidence/ci-review-report-example.md) · [v0.1.3 리포트 생성 / Generate a report](ci-review-report.md#try-the-released-report-without-docker) | 미리보기는 설치 없음; 생성은 Git·Java 17·network / No install to preview; Git, Java 17 and network to generate |

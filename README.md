@@ -34,7 +34,8 @@ The [application evaluations](docs/application-evaluations.md) also show **equal
 with a changed data source**, and two MyBatis queries returning the same order with
 different execution budgets. These are maintainer-run synthetic experiments.
 
-[Try in your browser](docs/first-project.md#try-in-your-browser) ·
+[20-second interactive explanation](https://routecontract.ym56.chatgpt.site) ·
+[Run the MySQL demo in your browser](docs/first-project.md#try-in-your-browser) ·
 [Inspect the CI report](docs/evidence/ci-review-report-example.md) ·
 [Apply v0.1.3 to one test](docs/first-project.md) ·
 [Ask whether it fits your project](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)
