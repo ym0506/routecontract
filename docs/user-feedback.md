@@ -9,7 +9,12 @@ change. No installation, public repository, or maintainer role is needed to ask 
 Unsupported versions and not-a-fit experiences are useful too; describing them does not expand the
 released support boundary.
 
-Use the [short feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml).
+설치 전 질문이나 적용 중 막힌 부분은 [현재 0.1.3 도움 Discussion](https://github.com/ym0506/routecontract/discussions/76)에
+짧은 댓글로 남겨도 됩니다.
+
+For a conversation, reply in the [current 0.1.3 setup-help Discussion](https://github.com/ym0506/routecontract/discussions/76).
+A short comment is enough. If you prefer an issue, use the
+[short feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml).
 Only a short question or experience and the public-information check are required. For example:
 
 ```text
