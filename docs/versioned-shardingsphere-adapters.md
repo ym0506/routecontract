@@ -375,6 +375,10 @@ structurally valid identity whose values are unsupported. Likewise, `RCM001` is 
 result for a successfully decoded manifest, not a substitute for strict JSON/schema-shape errors.
 No verification path rewrites, approves, or replaces the human-owned approved baseline.
 
+The [A-22 executable acceptance matrix](manifest-runtime-compatibility-acceptance.md) covers all
+ordered pairs of the declared decoded identity categories and separately checks malformed-input
+decoder and CLI behavior. It does not broaden the supported runtime set.
+
 ## 4. Dependency-resolution contract
 
 ### 4.1 Gradle
