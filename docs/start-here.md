@@ -20,7 +20,7 @@ where the same result needs `1 → 2` observed attempts.
 | v0.1.3 첫 통합 / First v0.1.3 project | [첫 프로젝트](first-project.ko.md) · [First project](first-project.md) | Java 17, Docker, Gradle/Maven; candidate → 검토 / review → CI |
 | v0.1.2 자산 설치 / Install v0.1.2 assets | [고정 로컬 설치 명령 / Pinned local installer](install-local.md) | Python 3.10+, curl, POSIX, network |
 | v0.1.2 통합 참고 / v0.1.2 integration reference | [지원 범위와 빌드 경로 / Integration guide](first-integration.md) | Java 17, 기존 테스트 / Existing test |
-| 질문·경험 공유 / Ask or share | [짧은 피드백 / Short feedback](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml), [도움받기 / Get help](user-feedback.md) | 설치 불필요 / No installation |
+| 질문·경험 공유 / Ask or share | [댓글로 질문 / Ask in a comment](https://github.com/ym0506/routecontract/discussions/76) · [피드백 양식 / Feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml) · [도움받기 / Get help](user-feedback.md) | 설치 불필요 / No installation |
 | 기여 / Contribute | [기여 지침 / Contributor guide](../CONTRIBUTING.md), [다음 단계 / Roadmap](product-roadmap.md) | 재현 가능한 문제 / Reproducible problem |
 
 ## 도입 전에 확인할 세 가지 / Check fit
