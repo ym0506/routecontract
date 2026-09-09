@@ -30,6 +30,10 @@ This illustration summarizes the [checked-in MySQL manifests](examples/manifests
 The counts describe **hook-reported physical JDBC execution attempts and observed aliases**.
 They do not measure physical tables, a complete route plan or performance.
 
+The [application evaluations](docs/application-evaluations.md) also show **equal counts
+with a changed data source**, and two MyBatis queries returning the same order with
+different execution budgets. These are maintainer-run synthetic experiments.
+
 [Try in your browser](docs/first-project.md#try-in-your-browser) ·
 [Inspect the CI report](docs/evidence/ci-review-report-example.md) ·
 [Apply v0.1.3 to one test](docs/first-project.md) ·
@@ -165,7 +169,7 @@ Independent integration and repeat use have not yet been verified.
 | Understand what is observed | [Architecture](docs/architecture.md) · [Specification](docs/specification.md) |
 | Compare with existing tools | [Tool comparison](docs/competitive-analysis.md) · [Measured datasource-proxy fixture](docs/empirical-comparison.md) |
 | Inspect observer cost | [Public 0.1.3: three conditions, raw measurements and limitations](docs/observer-cost.md) |
-| See an application experiment | [CityPulse: one isolated test with public 0.1.3](docs/evidence/citypulse-isolated-pilot-2026-09-08.md) · Self-prepared; no maintainer adoption |
+| Examine application code | [Three evaluations: destination changes, query budgets and existing tests](docs/application-evaluations.md) · [한국어](docs/application-evaluations.ko.md) · Author-run experiments |
 | Inspect release evidence | [v0.1.3 Central verification](docs/evidence/release-0.1.3-central.md) · [Evidence matrix](docs/evidence-matrix.md) |
 | Explore earlier integration tooling | [v0.1.2 integration guide](docs/first-integration.md) — pinned historical workflow |
 | Contribute | [Contributing](CONTRIBUTING.md) · [Roadmap](docs/product-roadmap.md) |

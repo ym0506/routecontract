@@ -1,6 +1,14 @@
 # CityPulse isolated RouteContract pilot — 2026-09-08
 
-**SELF-PREPARED · UNSENT · NOT ADOPTION**
+**SELF-PREPARED · NOT ADOPTION**
+
+Outreach update, 2026-09-10: the experiment was shared in
+[CityPulse issue #1](https://github.com/rexqd/citypulse-platform/issues/1) on
+2026-09-08 at 12:05 UTC. No recipient-run integration has been verified. The
+experimental JSON below retains its original pre-contact snapshot, including
+`maintainerOutreachSent: false`; this note records the later contact without
+changing the experimental record. See the [application evaluations](../application-evaluations.md)
+for this experiment alongside the mapper and data-source-change cases.
 
 The [patch and recorded-command guide](citypulse-isolated-pilot-reproduction-2026-09-08.md) provides the unchanged
 [two-file patch](citypulse-routecontract-0.1.3-first-observation.patch), pinned source, exact command structure and
@@ -15,8 +23,8 @@ The captured final order lookup reported **2 physical JDBC execution attempts ac
 1 observed DataSource**. The complete-capture and no-reported-execution-failure
 assertions passed alongside the existing business assertions.
 
-This experiment was prepared by the RouteContract side. The CityPulse maintainer did
-not request, approve or run it. No issue, PR, comment, DM or other outreach was sent.
+This experiment was prepared and run by the RouteContract side before the first
+contact. It was not requested or approved by the CityPulse maintainer.
 
 | Item | Verified result |
 | --- | --- |

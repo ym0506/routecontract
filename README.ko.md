@@ -30,6 +30,10 @@ RouteContract는 이 변화를 CI에서 잡아냅니다.
 수치는 **hook이 보고한 물리 JDBC 실행 시도와 관측 별칭**입니다.
 물리 테이블 수, 전체 라우팅 계획이나 성능을 측정한 값은 아닙니다.
 
+[애플리케이션 코드 실험](docs/application-evaluations.ko.md)에서는 **횟수가 같은데 데이터
+소스가 바뀌는 경우**와 같은 주문을 다른 실행 예산으로 조회하는 MyBatis 사례도 확인했습니다.
+유지관리자가 준비하고 실행한 합성 실험입니다.
+
 [브라우저에서 체험](docs/first-project.ko.md#try-in-your-browser) ·
 [CI 리포트 확인](docs/evidence/ci-review-report-example.md) ·
 [v0.1.3을 테스트 하나에 적용](docs/first-project.ko.md) ·
@@ -161,7 +165,7 @@ Proxy, batch, reactive 실행, 애플리케이션이 만든 async 경계와 SQL 
 | 관측 내용 이해 | [아키텍처](docs/architecture.md) · [명세](docs/specification.md) |
 | 기존 도구와 비교 | [도구 비교](docs/competitive-analysis.md) · [datasource-proxy 실험](docs/empirical-comparison.md) |
 | 관측 비용 확인 | [공개 0.1.3의 세 조건 비교·원시 측정·한계](docs/observer-cost.md) |
-| 애플리케이션 적용 실험 | [CityPulse: 공개 0.1.3으로 테스트 한 개 실행](docs/evidence/citypulse-isolated-pilot-2026-09-08.md) · 자체 실험이며 유지보수자 채택 사례는 아닙니다 |
+| 애플리케이션 코드 실험 | [세 가지 실험: 실행 대상·조회 예산·기존 테스트](docs/application-evaluations.ko.md) · [English](docs/application-evaluations.md) · 자체 실행 실험 |
 | 릴리스 검증 | [v0.1.3 Central 검증](docs/evidence/release-0.1.3-central.md) · [증거 목록](docs/evidence-matrix.md) |
 | 이전 통합 도구 | [v0.1.2 통합 가이드](docs/first-integration.md) — 과거 버전에 고정한 절차 |
 | 기여 | [기여 가이드](CONTRIBUTING.md) · [로드맵](docs/product-roadmap.md) |
