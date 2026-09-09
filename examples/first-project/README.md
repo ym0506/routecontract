@@ -6,7 +6,10 @@ A standalone example using **RouteContract 0.1.3 from Maven Central**, **Java 17
 [Walkthrough: capture, review, check and CI](../../docs/first-project.md) ·
 [한국어](../../docs/first-project.ko.md) · [Synthetic baseline review](baselines/README.md)
 
-Start Docker, then run one build tool from this directory:
+**Try without local setup:** [fork and run First project in your browser](../../docs/first-project.md#try-in-your-browser).
+The hosted workflow shows normal check → expected rejection → recovery and retains all three reports.
+
+To run locally, start Docker, then run one build tool from this directory:
 
 ```bash
 mvn -B test

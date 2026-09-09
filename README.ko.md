@@ -30,6 +30,7 @@ RouteContract는 이 변화를 CI에서 잡아냅니다.
 수치는 **hook이 보고한 물리 JDBC 실행 시도와 관측 별칭**입니다.
 물리 테이블 수, 전체 라우팅 계획이나 성능을 측정한 값은 아닙니다.
 
+[브라우저에서 체험](docs/first-project.ko.md#try-in-your-browser) ·
 [CI 리포트 확인](docs/evidence/ci-review-report-example.md) ·
 [v0.1.3을 테스트 하나에 적용](docs/first-project.ko.md) ·
 [내 프로젝트에 맞는지 문의](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)
@@ -115,6 +116,7 @@ candidate 생성만으로 baseline이 승인되지는 않습니다. 의도한 �
 
 | 해볼 일 | 필요한 환경 | 예상 결과 |
 | --- | --- | --- |
+| [브라우저에서 실행](docs/first-project.ko.md#try-in-your-browser) | GitHub 계정; 자신의 fork에서 Actions 실행 권한 | GitHub 환경의 MySQL로 `MATCH → POLICY_VIOLATION → MATCH`를 확인합니다. 로컬 설치는 필요 없습니다. |
 | [v0.1.3 CI 리포트 생성](docs/ci-review-report.md#try-the-released-report-without-docker) | Git, Java 17, 최초 의존성 다운로드 | 저장된 manifest를 비교해 `POLICY_VIOLATION`, `RCM201`·`RCM202`를 출력합니다. 의도적으로 검사가 실패하는 예제이며 Docker는 필요 없습니다. |
 | [MySQL 실행 변화 재현](docs/reference-guide.ko.md#quick-start) | Git, Java 17, Docker, 최초 다운로드 | 불변 tag에 고정한 과거 **v0.1.2** 시연입니다. wrapper는 예상한 계약 거부까지 확인하면 성공합니다. |
 | [v0.1.3 첫 프로젝트 예제](docs/first-project.ko.md) | Git, Java 17, Docker; Maven 또는 Gradle wrapper | candidate 생성·기준 검토·`MATCH`를 확인하고, 같은 결과에서 실행 시도 `1 → 2` 변화로 실패하는 과정을 실행합니다. |

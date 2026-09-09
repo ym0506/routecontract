@@ -7,10 +7,48 @@
 정확히 **ShardingSphere-JDBC 5.5.3**을 사용합니다. 지원 범위는 동기식·비배치
 `PreparedStatement` 호출입니다.
 
-예제 실행에는 Docker가 필요합니다. 처음에는 의존성과 MySQL 이미지를 내려받으므로 시간이
-더 걸릴 수 있습니다. 예제 코드는 저장소 main에 있고, 라이브러리는 Central에서 받습니다.
+브라우저에서 합성 예제를 체험하거나, Docker가 실행 중인 로컬 환경에서 따라 할 수 있습니다.
+예제 코드는 저장소 main에 있고, 라이브러리는 Central에서 받습니다.
+
+<a id="try-in-your-browser"></a>
+
+## 브라우저에서 체험하기
+
+GitHub 계정과 자신의 fork에서 Actions를 실행할 권한이 필요합니다. Java·Docker·빌드 도구는
+GitHub가 제공하는 실행 환경에서 작동하므로 **컴퓨터에 따로 설치하지 않아도 됩니다.**
+
+1. [RouteContract를 자신의 계정으로 fork](https://github.com/ym0506/routecontract/fork)합니다.
+2. **자신의 fork**에서 **Actions**를 엽니다. 활성화 안내가 나오면 Actions를 활성화한 뒤
+   workflow 목록에서 **First project**를 선택합니다.
+3. **Run workflow**를 누르고 `main` 브랜치와 기본값 **Maven**으로 실행합니다.
+   **Gradle**, **Both**도 선택할 수 있습니다. 예전에 만든 fork에 `build_tool` 선택이 없다면
+   먼저 main 브랜치를 동기화하세요.
+4. 새 실행을 열고 완료 후 **Summary**에서 세 단계를 확인합니다.
+
+   | 단계 | 정확히 검증하는 업무 행 | 관측 실행 시도 / 별칭 | 계약 결과 |
+   | --- | --- | --- | --- |
+   | 정상 조회 | 주문 201 / 사용자 3 / PAID | 1 / 1 | `MATCH` |
+   | 같은 결과를 반환하는 범위 조회 | 동일한 행 | 2 / 2 | `POLICY_VIOLATION`: `RCM201`, `RCM202` |
+   | 정상 조회로 복구 | 동일한 행 | 1 / 1 | `MATCH` |
+
+   **예상한 거부와 정상 복구를 모두 확인해야 체험 workflow가 성공합니다.** 범위 조회 테스트
+   자체는 실패합니다. 의존성·컴파일·Docker 오류는 계약 거부로 인정하지 않으며, 확인하지
+   못한 단계는 요약에 `Not verified`로 표시합니다.
+5. 실행 화면의 **Artifacts**에서 **first-project-Maven** 또는 **first-project-Gradle**을
+   내려받습니다. `build/lifecycle-evidence/` 아래 `match/`, `range/`, `restored/`에 각 단계의
+   `candidate.json`, `review.json`, `review.md`를 보관합니다. `range/review.md`부터 보세요.
+
+workflow는 capture가 없는 기준 파일을 자동 승인하지 않는지도 확인합니다. 비교에는 예제의
+기존 검토된 합성 기준을 사용하며 그 파일을 바꾸지 않습니다. 자신의 애플리케이션 기준을
+승인하는 과정은 별도입니다. 체험 후 [자신의 테스트 하나에 적용](#자신의-테스트와-ci로-옮기기)하세요.
+
+**Run workflow**가 보이지 않으면 자신의 fork인지, 기본 브랜치에 workflow가 있는지
+확인하세요. [GitHub 수동 실행 안내](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow)도 참고할 수 있습니다.
 
 ## 예제 실행
+
+로컬 실행에는 Java 17과 실행 중인 Docker가 필요합니다. 처음에는 의존성과 MySQL 이미지를
+내려받으므로 시간이 더 걸릴 수 있습니다.
 
 ```bash
 git clone https://github.com/ym0506/routecontract.git
