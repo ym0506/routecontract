@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="#install-013">Install</a> · <a href="#usage">Usage</a> · <a href="#see-it-work">Demo</a> · <a href="#documentation">Documentation</a> · <a href="README.ko.md">한국어</a>
+  <a href="#see-it-work">How it works</a> · <a href="#install-013">Install</a> · <a href="#usage">Usage</a> · <a href="#documentation">Documentation</a> · <a href="README.ko.md">한국어</a>
 </p>
 
 **The query result can stay the same while database execution changes.**
@@ -21,6 +21,18 @@ add a check for changes in observed execution counts, data sources and rewritten
 
 In the included MySQL example, the same row is returned while observed attempts increase
 from **1 to 2**. RouteContract catches the change in CI.
+
+## See it work
+
+![Illustration of the verified MySQL fixture: the same business row, physical JDBC execution attempts 1 to 2 and observed data-source aliases 1 to 2; the strict contract rejects the candidate with RCM201 and RCM202.](docs/assets/execution-comparison.svg)
+
+This illustration summarizes the [checked-in MySQL manifests](examples/manifests/README.md).
+The counts describe **hook-reported physical JDBC execution attempts and observed aliases**.
+They do not measure physical tables, a complete route plan or performance.
+
+[Inspect the CI report](docs/evidence/ci-review-report-example.md) ·
+[Apply v0.1.3 to one test](docs/first-project.md) ·
+[Ask whether it fits your project](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)
 
 ## Install 0.1.3
 
@@ -100,26 +112,24 @@ The [manifest example](docs/reference-guide.md#approved-manifests-and-structural
 shows the Java API; [CI review reports](docs/ci-review-report.md) add Markdown or JSON output
 with stable diagnostic codes and investigation steps.
 
-## See it work
-
-[Watch the 2:54 demo](https://www.youtube.com/watch?v=pcgvNNxd1mM) ·
-[Open the actual CI report](docs/evidence/ci-review-report-example.md)
-
-![Illustration of the verified MySQL fixture: the same business row, physical JDBC execution attempts 1 to 2 and observed data-source aliases 1 to 2; the strict contract rejects the candidate with RCM201 and RCM202.](docs/assets/execution-comparison.svg)
-
-This illustration summarizes the [checked-in MySQL manifests](examples/manifests/README.md).
-The counts describe **hook-reported physical JDBC execution attempts and observed aliases**.
-They do not measure physical tables, a complete route plan or performance.
-
 <a id="quick-start"></a>
 
-### Try an example
+## Try an example
 
 | Try it | Requirements | What to expect |
 | --- | --- | --- |
 | [Generate the v0.1.3 CI report](docs/ci-review-report.md#try-the-released-report-without-docker) | Git, Java 17; initial dependency downloads | Compares committed manifests; writes `POLICY_VIOLATION` with `RCM201` / `RCM202`. The example deliberately fails the check. No Docker. |
 | [Reproduce the MySQL change](docs/reference-guide.md#quick-start) | Git, Java 17, Docker; initial downloads | Historical **v0.1.2** demo, pinned to its immutable tag. The wrapper succeeds after verifying the expected contract rejection. |
 | [Run the v0.1.3 first-project example](docs/first-project.md) | Git, Java 17, Docker; Maven or the Gradle wrapper | Capture a candidate, review a baseline, see `MATCH`, then reproduce the same-result `1 → 2` failure. Adapt one existing test. |
+
+<details>
+<summary>Earlier recorded walkthrough · 2:54 · Korean captions</summary>
+
+[Watch the original demo](https://www.youtube.com/watch?v=pcgvNNxd1mM).
+This recording includes earlier release and CI screens. Use the v0.1.3 guides above for
+current installation and reproduction commands.
+
+</details>
 
 ## Supported scope
 
