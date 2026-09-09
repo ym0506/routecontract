@@ -54,7 +54,7 @@ def main():
     sources.mkdir(parents=True)
     inputs = [HERE / "pom.xml", HERE / "run.py", HERE / "README.md"]
     fixture = ROOT / "examples/first-project/src/test/java" / PACKAGE
-    for source in [fixture / "OrderFixture.java", fixture / "OrderRepository.java", *sorted((HERE / "src").glob("*.java"))]:
+    for source in [fixture / "OrderFixture.java", fixture / "OrderRepository.java", *sorted((HERE / "src/main/java" / PACKAGE).glob("*.java"))]:
         shutil.copyfile(source, sources / source.name)
         inputs.append(source)
     inputs.append(ROOT / "examples/first-project/src/test/resources/sharding.yaml")
