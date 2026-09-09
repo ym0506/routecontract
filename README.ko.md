@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="#install-013">설치</a> · <a href="#사용-예">사용 예</a> · <a href="#동작-확인">시연</a> · <a href="#문서">문서</a> · <a href="README.md">English</a>
+  <a href="#동작-확인">동작 확인</a> · <a href="#install-013">설치</a> · <a href="#사용-예">사용 예</a> · <a href="#문서">문서</a> · <a href="README.md">English</a>
 </p>
 
 **조회 결과는 같은데, DB 실행은 달라질 수 있습니다.**
@@ -21,6 +21,18 @@ RouteContract는 [Apache ShardingSphere-JDBC](https://github.com/apache/sharding
 
 포함된 MySQL 예제는 **같은 행을 반환하면서 관측된 실행 시도가 1회에서 2회로 증가**합니다.
 RouteContract는 이 변화를 CI에서 잡아냅니다.
+
+## 동작 확인
+
+![검증된 MySQL 예제 요약: 같은 업무 행을 반환하지만 물리 JDBC 실행 시도와 관측 데이터 소스 별칭이 각각 1에서 2로 증가합니다. Strict 계약은 RCM201·RCM202로 candidate를 거부합니다.](docs/assets/execution-comparison.svg)
+
+그림은 [체크인된 MySQL manifest](examples/manifests/README.md)를 요약한 것입니다.
+수치는 **hook이 보고한 물리 JDBC 실행 시도와 관측 별칭**입니다.
+물리 테이블 수, 전체 라우팅 계획이나 성능을 측정한 값은 아닙니다.
+
+[CI 리포트 확인](docs/evidence/ci-review-report-example.md) ·
+[v0.1.3을 테스트 하나에 적용](docs/first-project.ko.md) ·
+[내 프로젝트에 맞는지 문의](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)
 
 ## Install 0.1.3
 
@@ -97,26 +109,24 @@ candidate 생성만으로 baseline이 승인되지는 않습니다. 의도한 �
 [CI 리포트 가이드](docs/ci-review-report.md)에서 Java API, Markdown·JSON 출력,
 진단 코드와 조사 방법을 확인할 수 있습니다.
 
-## 동작 확인
-
-[2분 54초 시연 영상 보기](https://www.youtube.com/watch?v=pcgvNNxd1mM) ·
-[실제 CI 리포트 보기](docs/evidence/ci-review-report-example.md)
-
-![검증된 MySQL 예제 요약: 같은 업무 행을 반환하지만 물리 JDBC 실행 시도와 관측 데이터 소스 별칭이 각각 1에서 2로 증가합니다. Strict 계약은 RCM201·RCM202로 candidate를 거부합니다.](docs/assets/execution-comparison.svg)
-
-그림은 [체크인된 MySQL manifest](examples/manifests/README.md)를 요약한 것입니다.
-수치는 **hook이 보고한 물리 JDBC 실행 시도와 관측 별칭**입니다.
-물리 테이블 수, 전체 라우팅 계획이나 성능을 측정한 값은 아닙니다.
-
 <a id="quick-start"></a>
 
-### 예제 실행
+## 예제 실행
 
 | 해볼 일 | 필요한 환경 | 예상 결과 |
 | --- | --- | --- |
 | [v0.1.3 CI 리포트 생성](docs/ci-review-report.md#try-the-released-report-without-docker) | Git, Java 17, 최초 의존성 다운로드 | 저장된 manifest를 비교해 `POLICY_VIOLATION`, `RCM201`·`RCM202`를 출력합니다. 의도적으로 검사가 실패하는 예제이며 Docker는 필요 없습니다. |
 | [MySQL 실행 변화 재현](docs/reference-guide.ko.md#quick-start) | Git, Java 17, Docker, 최초 다운로드 | 불변 tag에 고정한 과거 **v0.1.2** 시연입니다. wrapper는 예상한 계약 거부까지 확인하면 성공합니다. |
 | [v0.1.3 첫 프로젝트 예제](docs/first-project.ko.md) | Git, Java 17, Docker; Maven 또는 Gradle wrapper | candidate 생성·기준 검토·`MATCH`를 확인하고, 같은 결과에서 실행 시도 `1 → 2` 변화로 실패하는 과정을 실행합니다. |
+
+<details>
+<summary>이전 시연 영상 · 2분 54초 · 한국어 자막</summary>
+
+[기존 시연 영상 보기](https://www.youtube.com/watch?v=pcgvNNxd1mM).
+이 영상에는 이전 릴리스와 CI 화면이 포함되어 있습니다. 현재 설치·재현 명령은
+위의 v0.1.3 가이드를 이용하세요.
+
+</details>
 
 ## 지원 범위
 
