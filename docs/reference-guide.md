@@ -16,7 +16,7 @@ data-source sets in CI.
 The included MySQL example returns the same row while observed attempts grow from `1 → 2`;
 the contract rejects it with `RCM201` and `RCM202`. Review whether that change is intentional.
 
-**Supported:** Java 17 · exact ShardingSphere-JDBC 5.5.3 · synchronous non-batch `PreparedStatement`.
+**Supported:** Java 17 or 21 · exact ShardingSphere-JDBC 5.5.3 · synchronous non-batch `PreparedStatement`.
 Read the [execution boundary and limitations](../docs/start-here.md#도입-전에-확인할-세-가지--check-fit) before integrating.
 
 ## Get started
@@ -26,7 +26,7 @@ Read the [execution boundary and limitations](../docs/start-here.md#도입-전�
 | See what it does | [Watch the 2:54 demo](https://www.youtube.com/watch?v=pcgvNNxd1mM) · [Actual comparison](../examples/manifests/README.md) — no installation |
 | See the report a CI reviewer reads | [Markdown preview](../docs/evidence/ci-review-report-example.md) · [Generate it with v0.1.3](../docs/ci-review-report.md#try-the-released-report-without-docker) — Git and Java 17, no Docker |
 | Reproduce the same-result, changed-execution case | [Quick Start below](#quick-start) — Git, Java 17, Docker |
-| Apply it to one test in your project | [Install 0.1.3 from Maven Central](#install-013) — existing Java 17 / ShardingSphere-JDBC 5.5.3 test |
+| Apply it to one test in your project | [Install 0.1.3 from Maven Central](#install-013) — existing Java 17 or 21 / ShardingSphere-JDBC 5.5.3 test |
 | Ask about fit or share an experience | [Short feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml) — no installation or public repository required |
 
 The latest [v0.1.3 release](https://github.com/ym0506/routecontract/releases/tag/v0.1.3) includes
@@ -41,9 +41,10 @@ See [how to get help and record use](../docs/user-feedback.md).
 
 ## Install 0.1.3
 
-See the [public file verification and Gradle/Maven installation results](../docs/evidence/release-0.1.3-central.md).
+See the [public file verification and Gradle/Maven installation results](../docs/evidence/release-0.1.3-central.md)
+and the current [Java 17/21 runtime checks](java21-runtime-acceptance.md).
 
-Add the test dependency to an existing **Java 17 / ShardingSphere-JDBC 5.5.3** project.
+Add the test dependency to an existing **Java 17 or 21 / ShardingSphere-JDBC 5.5.3** project.
 Keep its ShardingSphere configuration, data-source setup and business-result assertions.
 
 Gradle Groovy / Kotlin DSL:

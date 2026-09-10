@@ -12,14 +12,19 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.io.DataInputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class OrderContractTest {
+    // Immutable public 0.1.3 JAR checksum from repo.maven.apache.org.
+    private static final String PUBLIC_JAR_SHA256 = "9e883e618eb09d9ecf30814151bb4b0a43eba02c78d288cc582fa7e57e6edba2";
     private static final String OPERATION = "find-paid-orders-by-user";
     private static final ManifestPolicy PROPOSED_POLICY = ManifestPolicy.strict(1, 1);
     private static final DataSourceAliases ALIASES = DataSourceAliases.of(Map.of(
@@ -35,9 +40,7 @@ class OrderContractTest {
 
     @BeforeAll
     static void setUp() throws Exception {
-        if (Runtime.version().feature() != 17) {
-            throw new IllegalArgumentException("Use a Java 17 JDK for this ShardingSphere-JDBC 5.5.3 example");
-        }
+        verifyRuntime();
         mode = option("routecontract.mode", "check", List.of("assert", "capture", "check"));
         query = option("routecontract.query", "equality", List.of("equality", "range"));
         if (!mode.equals("assert")) {
@@ -45,6 +48,34 @@ class OrderContractTest {
         }
         fixture = new OrderFixture();
         fixture.start();
+    }
+
+    private static void verifyRuntime() throws Exception {
+        int feature = Runtime.version().feature();
+        if (feature != 17 && feature != 21) {
+            throw new IllegalArgumentException("Use a Java 17 or 21 JDK for this ShardingSphere-JDBC 5.5.3 example");
+        }
+        int exampleClassMajor = classMajor(OrderContractTest.class);
+        int libraryClassMajor = classMajor(RouteContract.class);
+        assertEquals(feature + 44, exampleClassMajor, "Compile the example for the actual test JDK");
+        assertEquals(61, libraryClassMajor, "The public library must remain compiled for Java 17");
+        Path libraryJar = Path.of(RouteContract.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+        String jarSha256 = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+                .digest(Files.readAllBytes(libraryJar)));
+        assertEquals(PUBLIC_JAR_SHA256, jarSha256, "Use the immutable Maven Central 0.1.3 JAR");
+        System.out.println("ROUTECONTRACT_RUNTIME java=" + feature + " classMajor=" + exampleClassMajor
+                + " libraryClassMajor=" + libraryClassMajor + " jarSha256=" + jarSha256);
+    }
+
+    private static int classMajor(Class<?> type) throws Exception {
+        String resource = "/" + type.getName().replace('.', '/') + ".class";
+        try (var input = new DataInputStream(type.getResourceAsStream(resource))) {
+            if (input.readInt() != 0xCAFEBABE) {
+                throw new IllegalStateException("Invalid class file for " + type.getName());
+            }
+            input.readUnsignedShort();
+            return input.readUnsignedShort();
+        }
     }
 
     private static void prepareManifestFiles() throws Exception {

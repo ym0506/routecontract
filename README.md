@@ -54,7 +54,7 @@ or a complete routing plan.
 
 ## Install 0.1.3
 
-For an existing **Java 17 · ShardingSphere-JDBC 5.5.3** test project.
+For an existing **Java 17 or 21 · ShardingSphere-JDBC 5.5.3** test project.
 Supported operations are **synchronous, non-batch `PreparedStatement`** calls.
 
 **Gradle** — Groovy or Kotlin DSL:
@@ -140,7 +140,7 @@ with stable diagnostic codes and investigation steps.
 
 ## Try an example
 
-Use **Java 17, Maven 3.9.x and a running Docker engine**. The first run downloads dependencies
+Use **Java 17 or 21, Maven 3.9.x and a running Docker engine**. The first run downloads dependencies
 and the MySQL image. The example uses **released 0.1.3 from Maven Central** and already includes
 a reviewed expectation file for its synthetic data.
 
@@ -172,7 +172,7 @@ example's generated report, so read the failing report before restoring the quer
 
 | Area | Published v0.1.3 |
 | --- | --- |
-| Java | 17 |
+| Java | 17 and 21; [runtime verification](docs/java21-runtime-acceptance.md) |
 | ShardingSphere | JDBC, **exactly 5.5.3** |
 | Execution | Synchronous, non-batch `PreparedStatement` operations that return normally, without caller interruption |
 | Database verification | MySQL 8.4.11; [published Gradle and Maven consumer evidence](docs/evidence/release-0.1.3-central.md) |

@@ -53,7 +53,7 @@ JUnit·Maven·Gradle 테스트가 실패하므로 CI에서도 변경을 확인�
 
 ## Install 0.1.3
 
-기존 **Java 17 · ShardingSphere-JDBC 5.5.3** 테스트 프로젝트에 추가하세요.
+기존 **Java 17 또는 21 · ShardingSphere-JDBC 5.5.3** 테스트 프로젝트에 추가하세요.
 지원하는 작업은 **동기식·비배치 `PreparedStatement` 호출**입니다.
 
 **Gradle** — Groovy / Kotlin DSL 공통:
@@ -136,7 +136,7 @@ candidate 생성만으로 baseline이 승인되지는 않습니다. 의도한 �
 
 ## 예제 실행
 
-**Java 17, Maven 3.9.x, 실행 중인 Docker**가 필요합니다. 처음에는 의존성과 MySQL 이미지를
+**Java 17 또는 21, Maven 3.9.x, 실행 중인 Docker**가 필요합니다. 처음에는 의존성과 MySQL 이미지를
 내려받습니다. 예제는 **Maven Central의 0.1.3**을 사용하며, 합성 데이터에 맞게 검토한 기준 파일이
 이미 들어 있습니다.
 
@@ -167,7 +167,7 @@ mvn -B test -Droutecontract.query=range
 
 | 구분 | 공개 v0.1.3 |
 | --- | --- |
-| Java | 17 |
+| Java | 17과 21; [런타임 검증](docs/java21-runtime-acceptance.md) |
 | ShardingSphere | JDBC, **정확히 5.5.3** |
 | 실행 | 정상 반환하며 caller interruption이 없는 동기식·비배치 `PreparedStatement` 작업 |
 | DB 검증 환경 | MySQL 8.4.11 · [공개 Gradle·Maven 소비자 검증](docs/evidence/release-0.1.3-central.md) |

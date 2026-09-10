@@ -1,6 +1,6 @@
 # RouteContract in one test
 
-A standalone example using **RouteContract 0.1.3 from Maven Central**, **Java 17**, exact
+A standalone example using **RouteContract 0.1.3 from Maven Central**, **Java 17 or 21**, exact
 **ShardingSphere-JDBC 5.5.3**, and two disposable **MySQL 8.4.11** containers.
 
 [Walkthrough: direct assertions, optional JSON comparison and CI](../../docs/first-project.md) ·
@@ -16,6 +16,13 @@ mvn -B test
 # or, using the repository's Gradle wrapper:
 ../../gradlew -p . test --rerun-tasks
 ```
+
+Maven uses the Java 17 or 21 JDK selected by `JAVA_HOME`. When switching JDKs, preserve any
+reports you need and run `mvn -B clean` first to remove classes compiled by the previous JDK.
+Gradle defaults to Java 17;
+add `-ProutecontractJavaVersion=21` to each command for an installed Java 21 toolchain,
+or set `ROUTECONTRACT_EXAMPLE_JAVA_VERSION=21` for the session. The test verifies the
+actual runtime and unchanged public JAR; see [runtime evidence](../../docs/java21-runtime-acceptance.md).
 
 The example has its own build settings. Neither command builds RouteContract from the repository
 sources. If you copy this directory to another repository, use that repository's Gradle wrapper
