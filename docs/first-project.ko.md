@@ -97,7 +97,7 @@ mvn -B test -Droutecontract.query=range
 | `RCM202` | 사용한 데이터 소스의 서로 다른 별칭이 너무 많습니다. | 기준은 최대 1개, 관측은 2개. |
 
 **별칭(alias)**은 설정된 데이터 소스에 붙이는 민감하지 않은 이름입니다. 예제는 `ds_0`을
-`orders-even`, `ds_1`을 `orders-odd`로 표시합니다. **예산(budget)**은 허용 상한입니다.
+`orders-even`, `ds_1`을 `orders-odd`로 표시합니다. 예산(budget)은 허용 상한입니다.
 이 수치가 물리 테이블 개수나 성능 저하를 뜻하지는 않습니다.
 
 실패 리포트를 읽은 뒤 query 옵션 없이 원래 명령을 다시 실행하면 `MATCH`로 돌아옵니다.
