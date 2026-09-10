@@ -32,10 +32,13 @@ class ReadmeDemoLinkContractTest(unittest.TestCase):
                 )
 
     def test_main_readmes_keep_a_direct_public_demo_link(self) -> None:
-        for relative in ("README.md", "README.ko.md"):
+        for relative, guide in (
+            ("README.md", "docs/first-project.md"),
+            ("README.ko.md", "docs/first-project.ko.md"),
+        ):
             with self.subTest(page=relative):
                 text = (REPOSITORY_ROOT / relative).read_text(encoding="utf-8")
-                self.assertIn(VIDEO_URL, text)
+                self.assertIn(f"({guide}#try-in-your-browser)", text)
 
 
 if __name__ == "__main__":
