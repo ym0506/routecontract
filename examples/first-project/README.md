@@ -17,7 +17,9 @@ mvn -B test
 ../../gradlew -p . test --rerun-tasks
 ```
 
-Maven uses the Java 17 or 21 JDK selected by `JAVA_HOME`. Gradle defaults to Java 17;
+Maven uses the Java 17 or 21 JDK selected by `JAVA_HOME`. When switching JDKs, preserve any
+reports you need and run `mvn -B clean` first to remove classes compiled by the previous JDK.
+Gradle defaults to Java 17;
 add `-ProutecontractJavaVersion=21` to each command for an installed Java 21 toolchain,
 or set `ROUTECONTRACT_EXAMPLE_JAVA_VERSION=21` for the session. The test verifies the
 actual runtime and unchanged public JAR; see [runtime evidence](../../docs/java21-runtime-acceptance.md).

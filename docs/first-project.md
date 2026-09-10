@@ -72,6 +72,8 @@ mvn -B test
 ```
 
 Maven compiles and runs the example with the JDK selected by `JAVA_HOME`; use Java 17 or 21.
+When switching JDKs in an existing checkout, run `mvn -B clean` first so Maven does not reuse
+classes compiled by the previous JDK. This removes generated outputs; keep any reports you need.
 Gradle defaults to Java 17. To use an installed Java 21 JDK, add `-ProutecontractJavaVersion=21`
 to **each** Gradle command in this guide, or set `ROUTECONTRACT_EXAMPLE_JAVA_VERSION=21`
 for the shell session. The test verifies its actual JVM, compiled consumer class and unchanged

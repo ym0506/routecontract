@@ -66,6 +66,8 @@ cd routecontract/examples/first-project
 | Gradle wrapper | `../../gradlew -p . test --rerun-tasks` |
 
 Maven은 `JAVA_HOME`으로 선택한 Java 17 또는 21로 예제를 컴파일하고 실행합니다.
+같은 체크아웃에서 JDK를 바꿀 때는 먼저 `mvn -B clean`으로 이전 JDK의 클래스 파일을 지우세요.
+생성된 결과도 지워지므로 필요한 리포트는 먼저 보관하세요.
 Gradle 기본값은 Java 17입니다. 설치된 Java 21을 쓰려면 이 문서의 **모든** Gradle 명령에
 `-ProutecontractJavaVersion=21`을 추가하거나, 셸 세션에 `ROUTECONTRACT_EXAMPLE_JAVA_VERSION=21`을
 설정하세요. 테스트는 실제 JVM, 예제 클래스 버전, Central 배포 JAR이 맞는지도 확인합니다.

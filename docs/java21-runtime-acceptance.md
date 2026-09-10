@@ -104,7 +104,10 @@ The native artifact contains `java21-runtime-summary.json` and minimized `core.x
 A configured version alone is not a passing runtime result.
 
 For the public example, use the [Maven/Gradle walkthrough](first-project.md). With `JAVA_HOME`
-pointing to Java 21, the existing direct lifecycle verifier can also be run from the repository root:
+pointing to Java 21, the existing direct lifecycle verifier can also be run from the repository root.
+If Maven previously compiled this checkout on a different JDK, first preserve any needed generated
+reports and run `mvn -B -f examples/first-project/pom.xml clean`; Maven incremental compilation
+can otherwise reuse the previous class version:
 
 ```bash
 ROUTECONTRACT_EXAMPLE_JAVA_VERSION=21 python3 submission/tools/verify_first_project_direct_assertions.py Maven
