@@ -12,32 +12,44 @@
   <a href="#동작-확인">동작 확인</a> · <a href="#install-013">설치</a> · <a href="#사용-예">사용 예</a> · <a href="#문서">문서</a> · <a href="README.md">English</a>
 </p>
 
-**조회 결과는 같은데, DB 실행은 달라질 수 있습니다.**
+**ShardingSphere-JDBC 테스트에서 반환값과 DB 실행을 함께 검사합니다.**
 
-RouteContract는 [Apache ShardingSphere-JDBC](https://github.com/apache/shardingsphere)의
-`SQLExecutionHook`이 보고한 물리 JDBC 실행 시도를 기록하고, 명시한 예산과 사람이 검토한
-기준에 맞는지 확인하는 Java 테스트 라이브러리입니다. 기존 업무 결과 assertion에 실행 시도 수,
-관측 데이터 소스, 재작성된 SQL 구조의 변화 검사도 더할 수 있습니다.
+RouteContract는 ShardingSphere-JDBC를 사용하는 Java 앱의 통합 테스트용 라이브러리입니다. 기존 repository나
+service 호출을 감싸고, 반환값 검사에 더해 **JDBC 실행 시도 횟수와 사용한 데이터 소스**를 검사합니다.
 
-포함된 MySQL 예제는 **같은 행을 반환하면서 관측된 실행 시도가 1회에서 2회로 증가**합니다.
-RouteContract는 이 변화를 CI에서 잡아냅니다.
+SQL을 바꾼 뒤에도 원하는 주문은 조회되지만, 이전에는 한 데이터 소스만 조회하던 코드가
+두 곳을 조회할 수 있습니다. 이때 반환값 검사는 통과해도 추가한 실행 검사는 실패합니다.
+JUnit·Maven·Gradle 테스트가 실패하므로 CI에서도 변경을 확인할 수 있습니다.
 
 ## 동작 확인
 
-![검증된 MySQL 예제 요약: 같은 업무 행을 반환하지만 물리 JDBC 실행 시도와 관측 데이터 소스 별칭이 각각 1에서 2로 증가합니다. Strict 계약은 RCM201·RCM202로 candidate를 거부합니다.](docs/assets/execution-comparison.svg)
+예제는 사용자 `3`의 결제 완료 주문을 조회합니다. 두 쿼리 모두 **주문 201, 사용자 3,
+상태 PAID**를 반환합니다. 이 예제의 샤딩 규칙에서는 동등 조건이 한 데이터 소스로 향하고,
+범위 조건은 설정된 두 데이터 소스를 모두 조회합니다.
 
-그림은 [체크인된 MySQL manifest](examples/manifests/README.md)를 요약한 것입니다.
-수치는 **hook이 보고한 물리 JDBC 실행 시도와 관측 별칭**입니다.
-물리 테이블 수, 전체 라우팅 계획이나 성능을 측정한 값은 아닙니다.
+| 쿼리 조건과 바인딩 값 | 반환된 주문 | JDBC 실행 시도 | 사용한 데이터 소스 |
+| --- | --- | --- | --- |
+| `user_id = ?`, 값 `3` | `201 / 3 / PAID` | 1회 | 1개 |
+| `user_id BETWEEN ? AND ?`, 값 `3, 3` | `201 / 3 / PAID` | 2회 | 2개 |
 
-[애플리케이션 코드 실험](docs/application-evaluations.ko.md)에서는 **횟수가 같은데 데이터
-소스가 바뀌는 경우**와 같은 주문을 다른 실행 예산으로 조회하는 MyBatis 사례도 확인했습니다.
-유지관리자가 준비하고 실행한 합성 실험입니다.
+이 테스트는 **실행 시도 최대 1회, 데이터 소스 최대 1개**를 허용합니다. 문서의 *예산(budget)*은
+이 허용 상한을 뜻합니다. 범위 조회가 두 상한을 넘으면 리포트에 다음 결과가 나옵니다.
 
-[브라우저에서 MySQL 시연 실행](docs/first-project.ko.md#try-in-your-browser) ·
-[CI 리포트 확인](docs/evidence/ci-review-report-example.md) ·
-[v0.1.3을 테스트 하나에 적용](docs/first-project.ko.md) ·
-[내 프로젝트에 맞는지 문의](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)
+| 리포트 표시 | 이 예제에서의 뜻 |
+| --- | --- |
+| `POLICY_VIOLATION` | 허용 상한을 넘었으므로 계약 assertion이 실패했습니다. |
+| `RCM201` | **JDBC 실행 시도 초과:** 허용 1회, 관측 2회. |
+| `RCM202` | **데이터 소스 수 초과:** 허용 1개, 관측 2개. 리포트에서는 민감하지 않은 별칭으로 구분합니다. |
+
+변경한 쿼리와 샤딩 규칙을 보고 추가 실행이 의도한 것인지 판단합니다. 의도한 변경이면
+기준도 검토해서 바꾸고, 아니라면 쿼리나 설정을 수정합니다. 횟수 증가만으로 성능 저하를
+단정하지는 않습니다. 수치는 `SQLExecutionHook`이 보고한 실행 시도이며, 물리 테이블 수나
+전체 라우팅 계획을 뜻하지 않습니다.
+
+![같은 주문이 반환되지만 실행 시도와 데이터 소스가 각각 하나에서 둘로 늘어 테스트의 허용 상한을 넘는 예제.](docs/assets/execution-comparison.svg)
+
+[예제 실행](#quick-start) · [설치 없이 리포트 보기](docs/evidence/ci-review-report-example.md) ·
+[예제 쿼리 소스](examples/first-project/src/test/java/io/github/ym0506/routecontract/examples/firstproject/OrderRepository.java)
 
 ## Install 0.1.3
 
@@ -101,7 +113,13 @@ RouteAssertions.assertThat(snapshot)
 작동하는 작업을 선택하고, 예상 결과·데이터 소스 이름·실행 예산을 자신의 fixture에 맞게
 정하세요. hook callback의 반환은 트랜잭션 커밋을 증명하지 않습니다.
 
+이 Java assertion은 관측한 값을 직접 검사합니다. 실행 가능한 예제에서는 리포트를 쓰고,
+이번 실행을 검토된 JSON 기준 파일과 비교하는 과정도 포함합니다.
+
 ### 기준을 검토한 뒤 CI에서 비교하기
+
+**manifest**는 관측한 실행·데이터 소스 별칭·허용 상한을 담은 JSON 파일입니다.
+**candidate**는 이번 실행 결과이고, **baseline**은 비교 기준으로 검토한 파일입니다.
 
 1. 대표 작업을 capture하고 **candidate manifest**를 생성합니다.
 2. 관측 내용, 민감하지 않은 데이터 소스 별칭, 실행 예산을 버전 관리에서 검토합니다.
@@ -118,21 +136,32 @@ candidate 생성만으로 baseline이 승인되지는 않습니다. 의도한 �
 
 ## 예제 실행
 
-| 해볼 일 | 필요한 환경 | 예상 결과 |
-| --- | --- | --- |
-| [브라우저에서 실행](docs/first-project.ko.md#try-in-your-browser) | GitHub 계정; 자신의 fork에서 Actions 실행 권한 | GitHub 환경의 MySQL로 `MATCH → POLICY_VIOLATION → MATCH`를 확인합니다. 로컬 설치는 필요 없습니다. |
-| [v0.1.3 CI 리포트 생성](docs/ci-review-report.md#try-the-released-report-without-docker) | Git, Java 17, 최초 의존성 다운로드 | 저장된 manifest를 비교해 `POLICY_VIOLATION`, `RCM201`·`RCM202`를 출력합니다. 의도적으로 검사가 실패하는 예제이며 Docker는 필요 없습니다. |
-| [MySQL 실행 변화 재현](docs/reference-guide.ko.md#quick-start) | Git, Java 17, Docker, 최초 다운로드 | 불변 tag에 고정한 과거 **v0.1.2** 시연입니다. wrapper는 예상한 계약 거부까지 확인하면 성공합니다. |
-| [v0.1.3 첫 프로젝트 예제](docs/first-project.ko.md) | Git, Java 17, Docker; Maven 또는 Gradle wrapper | candidate 생성·기준 검토·`MATCH`를 확인하고, 같은 결과에서 실행 시도 `1 → 2` 변화로 실패하는 과정을 실행합니다. |
+**Java 17, Maven 3.9.x, 실행 중인 Docker**가 필요합니다. 처음에는 의존성과 MySQL 이미지를
+내려받습니다. 예제는 **Maven Central의 0.1.3**을 사용하며, 합성 데이터에 맞게 검토한 기준 파일이
+이미 들어 있습니다.
 
-<details>
-<summary>이전 시연 영상 · 2분 54초 · 한국어 자막</summary>
+```bash
+git clone https://github.com/ym0506/routecontract.git
+cd routecontract/examples/first-project
+mvn -B test
+```
 
-[기존 시연 영상 보기](https://www.youtube.com/watch?v=pcgvNNxd1mM).
-이 영상에는 이전 릴리스와 CI 화면이 포함되어 있습니다. 현재 설치·재현 명령은
-위의 v0.1.3 가이드를 이용하세요.
+테스트가 통과하고 `build/routecontract/review.md`에 `MATCH`가 나와야 합니다.
+반환된 주문과 DB 실행이 예제의 기준에 맞는다는 뜻입니다. 이제 쿼리를 바꿔 실행합니다.
 
-</details>
+```bash
+mvn -B test -Droutecontract.query=range
+```
+
+**이 테스트는 실패해야 합니다.** 주문 반환값은 같지만 실행 시도와 데이터 소스가 각각
+1에서 2로 늘어납니다. `build/routecontract/review.md`를 열어 위에서 설명한 두 상한 초과
+(`RCM201`, `RCM202`)를 확인하세요. 다운로드·컴파일·Docker 오류는 이 예제의 예상 실패가 아닙니다.
+
+`mvn -B test`를 다시 실행하면 원래 쿼리로 돌아가 `MATCH`가 나옵니다. 예제는 실행할 때마다
+리포트를 새로 쓰므로, 원복하기 전에 실패 리포트를 읽으세요.
+
+[Gradle 명령과 자기 테스트에 적용하는 방법](docs/first-project.ko.md) ·
+[GitHub Actions에서 같은 MySQL 예제 실행](docs/first-project.ko.md#try-in-your-browser)
 
 ## 지원 범위
 

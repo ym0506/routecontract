@@ -2,8 +2,11 @@
 
 [English](first-project.md) · [실행 가능한 예제](../examples/first-project/README.md) · [리포트 미리보기](evidence/ci-review-report-example.md)
 
-기존 업무 결과 검증을 유지하면서, 관측된 물리 JDBC 실행 시도가 검토한 기준과 같은지
-확인하는 과정입니다. **Maven Central의 RouteContract 0.1.3**, **Java 17**,
+Maven이나 Gradle로 실행할 수 있는 테스트 예제입니다. 쿼리를 바꿔도 원하는 주문은
+반환되지만 데이터 소스를 한 곳 더 조회하는 상황을 만들고, RouteContract의 추가 검사가
+실패하는 것을 확인합니다. DB 설정과 검토된 기준 파일이 예제에 들어 있습니다.
+
+**Maven Central의 RouteContract 0.1.3**, **Java 17**,
 정확히 **ShardingSphere-JDBC 5.5.3**을 사용합니다. 지원 범위는 동기식·비배치
 `PreparedStatement` 호출입니다.
 
@@ -28,7 +31,7 @@ GitHub가 제공하는 실행 환경에서 작동하므로 **컴퓨터에 따로
    | 단계 | 정확히 검증하는 업무 행 | 관측 실행 시도 / 별칭 | 계약 결과 |
    | --- | --- | --- | --- |
    | 정상 조회 | 주문 201 / 사용자 3 / PAID | 1 / 1 | `MATCH` |
-   | 같은 결과를 반환하는 범위 조회 | 동일한 행 | 2 / 2 | `POLICY_VIOLATION`: `RCM201`, `RCM202` |
+   | 같은 결과를 반환하는 범위 조회 | 동일한 행 | 2 / 2 | `POLICY_VIOLATION`: 실행 2회·데이터 소스 2개가 각각 상한 1을 초과 |
    | 정상 조회로 복구 | 동일한 행 | 1 / 1 | `MATCH` |
 
    **예상한 거부와 정상 복구를 모두 확인해야 체험 workflow가 성공합니다.** 범위 조회 테스트
@@ -66,9 +69,48 @@ cd routecontract/examples/first-project
 통과하고, `build/routecontract/review.md`와 `review.json`에 `MATCH`가 나와야 합니다.
 Docker·컴파일·다운로드 오류는 실행 환경 문제이므로 계약 위반과 구분해서 확인하세요.
 
+## 같은 업무 결과에서 실행 변화 확인
+
+앞에서 통과한 실행과 같은 기준 파일을 사용합니다. 범위 조회로 바꾸면 주문 `201 / 3 / PAID`는
+그대로 반환되지만, JDBC 실행 시도와 사용한 데이터 소스가 각각 하나에서 둘로 늘어납니다.
+앞에서 선택한 빌드 도구로 실행하세요.
+
+**Maven:**
+
+```bash
+mvn -B test -Droutecontract.query=range
+```
+
+**Gradle:**
+
+```bash
+../../gradlew -p . test --rerun-tasks -ProutecontractQuery=range
+```
+
+**이 명령은 실패해야 합니다.** 테스트는 주문 반환값을 확인하고 리포트를 쓴 뒤, 실행 검사를
+실패시킵니다. `build/routecontract/review.md`를 열어 다음 내용을 확인하세요.
+
+| 표시 | 뜻 | 이 예제의 수치 |
+| --- | --- | --- |
+| `POLICY_VIOLATION` | 관측한 횟수나 개수가 허용 상한을 넘었습니다. | 주문 반환값은 맞지만 테스트는 실패합니다. |
+| `RCM201` | hook이 보고한 물리 JDBC 실행 시도가 너무 많습니다. | 기준은 최대 1회, 관측은 2회. |
+| `RCM202` | 사용한 데이터 소스의 서로 다른 별칭이 너무 많습니다. | 기준은 최대 1개, 관측은 2개. |
+
+**별칭(alias)**은 설정된 데이터 소스에 붙이는 민감하지 않은 이름입니다. 예제는 `ds_0`을
+`orders-even`, `ds_1`을 `orders-odd`로 표시합니다. **예산(budget)**은 허용 상한입니다.
+이 수치가 물리 테이블 개수나 성능 저하를 뜻하지는 않습니다.
+
+실패 리포트를 읽은 뒤 query 옵션 없이 원래 명령을 다시 실행하면 `MATCH`로 돌아옵니다.
+생성된 리포트는 실행할 때마다 바뀌지만 예제의 기준 파일은 그대로 유지됩니다. 자기 프로젝트의
+변경이라면 쿼리·샤딩 설정을 확인하고, 의도하지 않은 추가 실행은 수정합니다. 의도한 변경이면
+새 기준을 검토합니다.
+
 ## 첫 기준을 직접 검토하기
 
-새 기준을 만드는 과정을 연습하려면 candidate를 생성합니다.
+앞의 예제에는 **baseline**, 즉 예상 실행과 허용 상한을 검토해 저장한 JSON 파일이 있습니다.
+**candidate**는 이번 실행에서 관측한 내용을 담은 파일입니다. 자기 테스트에 처음 적용할 때는
+candidate를 만들고 검토한 뒤 그 테스트의 기준으로 삼습니다. 아래에서는 새 경로로 이 과정을
+연습합니다.
 
 <details>
 <summary>Maven</summary>
@@ -126,39 +168,6 @@ mvn -B test -Droutecontract.baseline=baselines/first-review.approved.json
 
 `MATCH`가 나와야 합니다. 기준 파일이 없으면 비교는 실패하며, candidate를 기준으로 자동
 승인하지 않습니다.
-
-## 같은 업무 결과에서 실행 변화 확인
-
-범위 조건을 사용하는 예제 변형을 실행하면 동일한 주문 행을 반환하면서 관측된 물리 JDBC
-실행 시도가 **1회에서 2회**로 늘어납니다.
-
-<details>
-<summary>Maven</summary>
-
-```bash
-mvn -B test -Droutecontract.query=range \
-  -Droutecontract.baseline=baselines/first-review.approved.json
-```
-
-</details>
-
-<details>
-<summary>Gradle</summary>
-
-```bash
-../../gradlew -p . test --rerun-tasks -ProutecontractQuery=range \
-  -ProutecontractBaseline=baselines/first-review.approved.json
-```
-
-</details>
-
-**이 명령은 실패해야 합니다.** `build/routecontract/review.md`에서 `POLICY_VIOLATION`,
-실행 시도 예산을 뜻하는 `RCM201`, 관측 별칭 예산을 뜻하는 `RCM202`를 확인하세요.
-업무 결과 assertion은 통과하고 계약 비교가 실패합니다. 기준 파일은 바뀌지 않습니다.
-query 옵션을 빼고 다시 실행하면 `MATCH`로 돌아옵니다.
-
-관측된 시도 수는 물리 테이블 수나 전체 실행 계획이 아닙니다. 실행 시도가 늘었다는 사실만으로
-성능 저하를 단정할 수 없으며, 의도한 변경인지는 담당자가 판단합니다.
 
 ## 자신의 테스트와 CI로 옮기기
 

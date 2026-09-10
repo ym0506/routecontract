@@ -12,32 +12,45 @@
   <a href="#see-it-work">How it works</a> · <a href="#install-013">Install</a> · <a href="#usage">Usage</a> · <a href="#documentation">Documentation</a> · <a href="README.ko.md">한국어</a>
 </p>
 
-**The query result can stay the same while database execution changes.**
+**Add checks for database execution to your ShardingSphere-JDBC tests.**
 
-RouteContract is a Java test library for [Apache ShardingSphere-JDBC](https://github.com/apache/shardingsphere).
-It records physical JDBC execution attempts reported by `SQLExecutionHook` and compares them
-with explicit budgets and a human-reviewed baseline. Keep your existing result assertions;
-add a check for changes in observed execution counts, data sources and rewritten-SQL structure.
+RouteContract is a Java library for integration tests that use [Apache ShardingSphere-JDBC](https://github.com/apache/shardingsphere). Wrap one repository or service
+call, keep the assertion on its returned value, and also assert how many JDBC execution attempts
+it should make and which configured data sources it should use.
 
-In the included MySQL example, the same row is returned while observed attempts increase
-from **1 to 2**. RouteContract catches the change in CI.
+For example, a query can still return the right order after a SQL change starts querying a second
+data source. The result assertion passes; the added execution assertion fails. Your normal
+JUnit/Maven/Gradle test run then fails in CI as well.
 
 ## See it work
 
-![Illustration of the verified MySQL fixture: the same business row, physical JDBC execution attempts 1 to 2 and observed data-source aliases 1 to 2; the strict contract rejects the candidate with RCM201 and RCM202.](docs/assets/execution-comparison.svg)
+The included test asks for the paid orders of user `3`. Both query forms return the same
+complete order: **order 201, user 3, status PAID**. The example's sharding rules send equality
+to one data source, while a range visits both configured data sources.
 
-This illustration summarizes the [checked-in MySQL manifests](examples/manifests/README.md).
-The counts describe **hook-reported physical JDBC execution attempts and observed aliases**.
-They do not measure physical tables, a complete route plan or performance.
+| Query predicate and bound values | Returned order | JDBC execution attempts | Data sources observed |
+| --- | --- | --- | --- |
+| `user_id = ?` with `3` | `201 / 3 / PAID` | 1 | 1 |
+| `user_id BETWEEN ? AND ?` with `3, 3` | `201 / 3 / PAID` | 2 | 2 |
 
-The [application evaluations](docs/application-evaluations.md) also show **equal counts
-with a changed data source**, and two MyBatis queries returning the same order with
-different execution budgets. These are maintainer-run synthetic experiments.
+The test allows **at most one execution attempt and one data source**. A *budget* is this
+allowed maximum. The range query exceeds both limits, so its report says:
 
-[Run the MySQL demo in your browser](docs/first-project.md#try-in-your-browser) ·
-[Inspect the CI report](docs/evidence/ci-review-report-example.md) ·
-[Apply v0.1.3 to one test](docs/first-project.md) ·
-[Ask whether it fits your project](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)
+| Report entry | Meaning in this example |
+| --- | --- |
+| `POLICY_VIOLATION` | At least one allowed limit was exceeded; the contract assertion fails. |
+| `RCM201` | **Too many JDBC execution attempts:** observed 2, allowed 1. |
+| `RCM202` | **Too many distinct data sources:** observed 2, allowed 1. The report counts their non-sensitive aliases. |
+
+Check the changed query and sharding rules before deciding whether the extra work is intended.
+An intentional change needs a reviewed expectation; a larger count alone does not prove a
+performance problem. These are `SQLExecutionHook`-reported attempts, not physical-table counts
+or a complete routing plan.
+
+![Same order returned; execution attempts and observed data sources rise from one to two, exceeding the test's limits.](docs/assets/execution-comparison.svg)
+
+[Run this example](#quick-start) · [Read the report without installing anything](docs/evidence/ci-review-report-example.md) ·
+[Inspect the query](examples/first-project/src/test/java/io/github/ym0506/routecontract/examples/firstproject/OrderRepository.java)
 
 ## Install 0.1.3
 
@@ -102,9 +115,15 @@ RouteAssertions.assertThat(snapshot)
 supported JDBC execution scope; adapt the operation, expected result, data-source name and
 budget to your fixture. A hook callback returning does not prove a transaction committed.
 
+These Java assertions check the observation directly. The runnable example also writes a report
+and compares the current execution with a reviewed JSON file, as described next.
+
 <a id="approved-manifests-and-structural-manifest-diffs"></a>
 
 ### Review a baseline, then check it in CI
+
+A **manifest** is a JSON file containing the observed execution, data-source aliases and limits.
+The **candidate** describes this run; the **baseline** is the reviewed file used as the expectation.
 
 1. Capture a representative operation and write a **candidate manifest**.
 2. Review its observations, non-sensitive data-source aliases and budgets in version control.
@@ -121,21 +140,33 @@ with stable diagnostic codes and investigation steps.
 
 ## Try an example
 
-| Try it | Requirements | What to expect |
-| --- | --- | --- |
-| [Run in your browser](docs/first-project.md#try-in-your-browser) | GitHub account; Actions access in your fork | Hosted MySQL demonstration: `MATCH → POLICY_VIOLATION → MATCH`. No local installation. |
-| [Generate the v0.1.3 CI report](docs/ci-review-report.md#try-the-released-report-without-docker) | Git, Java 17; initial dependency downloads | Compares committed manifests; writes `POLICY_VIOLATION` with `RCM201` / `RCM202`. The example deliberately fails the check. No Docker. |
-| [Reproduce the MySQL change](docs/reference-guide.md#quick-start) | Git, Java 17, Docker; initial downloads | Historical **v0.1.2** demo, pinned to its immutable tag. The wrapper succeeds after verifying the expected contract rejection. |
-| [Run the v0.1.3 first-project example](docs/first-project.md) | Git, Java 17, Docker; Maven or the Gradle wrapper | Capture a candidate, review a baseline, see `MATCH`, then reproduce the same-result `1 → 2` failure. Adapt one existing test. |
+Use **Java 17, Maven 3.9.x and a running Docker engine**. The first run downloads dependencies
+and the MySQL image. The example uses **released 0.1.3 from Maven Central** and already includes
+a reviewed expectation file for its synthetic data.
 
-<details>
-<summary>Earlier recorded walkthrough · 2:54 · Korean captions</summary>
+```bash
+git clone https://github.com/ym0506/routecontract.git
+cd routecontract/examples/first-project
+mvn -B test
+```
 
-[Watch the original demo](https://www.youtube.com/watch?v=pcgvNNxd1mM).
-This recording includes earlier release and CI screens. Use the v0.1.3 guides above for
-current installation and reproduction commands.
+Expect a passing test and `MATCH` in `build/routecontract/review.md`: the returned order and
+observed execution agree with the example's expectation. Now change the query:
 
-</details>
+```bash
+mvn -B test -Droutecontract.query=range
+```
+
+**This test should fail.** The order assertion still passes, but execution attempts and data
+sources both increase from 1 to 2. Open `build/routecontract/review.md` to see the two exceeded
+limits (`RCM201` and `RCM202`, explained above). A download, compiler or Docker error is a setup
+failure, not this expected rejection.
+
+Run `mvn -B test` again to restore the original query and get `MATCH`. Each run replaces the
+example's generated report, so read the failing report before restoring the query.
+
+[Gradle commands and applying it to your own test](docs/first-project.md) ·
+[Run the same MySQL demo in GitHub Actions](docs/first-project.md#try-in-your-browser)
 
 ## Supported scope
 

@@ -2,12 +2,14 @@
 
 [한국어](first-project.ko.md) · [Runnable example](../examples/first-project/README.md) · [Report API](ci-review-report.md)
 
-Start with one existing test whose result matters to you. RouteContract adds a comparison of
-observed physical JDBC execution attempts while keeping that test's business assertion.
+This is a test you run with Maven or Gradle: a query returns the correct order, but changing
+its predicate makes it query an extra configured data source. RouteContract makes the added
+execution assertion fail while keeping the order assertion. The example below has the database
+setup and reviewed expectation file ready to use.
 
 This guide uses **RouteContract 0.1.3 from Maven Central**, **Java 17** and exact
 **ShardingSphere-JDBC 5.5.3**. It covers synchronous, non-batch `PreparedStatement` calls.
-Try the synthetic example in your browser, or run it locally with a running Docker engine.
+[Run locally](#run-the-published-dependency) to see pass → fail → pass, or use the browser steps below.
 For a preview without running anything, [read the report](evidence/ci-review-report-example.md).
 
 ## Try in your browser
@@ -26,7 +28,7 @@ build tool run on GitHub's hosted runner; **no local installation is required**.
    | Stage | Exact business row | Observed attempts / aliases | Contract |
    | --- | --- | --- | --- |
    | Normal query | Order 201 / user 3 / PAID | 1 / 1 | `MATCH` |
-   | Same-result range query | Same row | 2 / 2 | `POLICY_VIOLATION`: `RCM201`, `RCM202` |
+   | Same-result range query | Same row | 2 / 2 | `POLICY_VIOLATION`: 2 executions and 2 sources exceed the limits of 1 |
    | Normal query restored | Same row | 1 / 1 | `MATCH` |
 
    **The demonstration is green only after verifying the expected rejection and recovery.**
@@ -75,10 +77,48 @@ returns exactly the expected order. See the example's baseline review record bef
 The first run can take longer while dependencies and the database image download. A Docker,
 dependency or compiler failure is a setup failure; it does not demonstrate contract rejection.
 
+## See a change fail
+
+Use the same included baseline as the passing run above. The range-query variant still returns
+order `201 / 3 / PAID`, but it makes two observed JDBC execution attempts against two data
+sources instead of one. Choose the same build tool:
+
+**Maven:**
+
+```bash
+mvn -B test -Droutecontract.query=range
+```
+
+**Gradle:**
+
+```bash
+../../gradlew -p . test --rerun-tasks -ProutecontractQuery=range
+```
+
+**This command should fail.** The test first verifies the returned order, writes its report,
+then fails the execution assertion. Open `build/routecontract/review.md`:
+
+| Entry | What it means | This example |
+| --- | --- | --- |
+| `POLICY_VIOLATION` | An observed count exceeds an allowed maximum. | The test fails even though the order assertion passed. |
+| `RCM201` | Too many hook-reported physical JDBC execution attempts. | Observed 2; baseline allows 1. |
+| `RCM202` | Too many distinct observed data-source aliases. | Observed 2; baseline allows 1. |
+
+An **alias** is a non-sensitive label for a configured data source; this fixture maps `ds_0`
+to `orders-even` and `ds_1` to `orders-odd`. A **budget** is the allowed maximum. These numbers
+are not counts of physical tables or proof of a performance regression.
+
+Read the report, then rerun the original command without the query option to restore `MATCH`.
+The generated report is replaced on each run; the included baseline remains unchanged.
+For a real change, inspect the SQL and sharding configuration. Fix unintended extra execution,
+or review an updated expectation when the change is intentional.
+
 ## Capture and review your first baseline
 
-To rehearse first-time setup, create a candidate for a new baseline path. Choose the same build tool
-as above:
+The demo above uses an existing **baseline**: the reviewed JSON file that records expected
+execution and allowed counts. A **candidate** records the current run. When adding a check to
+your own test, first capture a candidate and review it before establishing that test's baseline.
+You can rehearse that process below with a new path, using the same build tool:
 
 <details>
 <summary>Maven</summary>
@@ -144,39 +184,6 @@ mvn -B test -Droutecontract.baseline=baselines/first-review.approved.json
 Expect `MATCH`. If the baseline is missing, check mode must fail and leave a candidate for review.
 Creating a candidate must never silently substitute for that review.
 
-## See a change fail
-
-The example has a range-query variant that keeps the same exact business result while the
-hook-reported physical JDBC execution attempts increase from **1 to 2**.
-
-<details>
-<summary>Maven</summary>
-
-```bash
-mvn -B test -Droutecontract.query=range \
-  -Droutecontract.baseline=baselines/first-review.approved.json
-```
-
-</details>
-
-<details>
-<summary>Gradle</summary>
-
-```bash
-../../gradlew -p . test --rerun-tasks -ProutecontractQuery=range \
-  -ProutecontractBaseline=baselines/first-review.approved.json
-```
-
-</details>
-
-**This command should fail.** Open `build/routecontract/review.md`: expect `POLICY_VIOLATION`,
-`RCM201` (attempt budget) and `RCM202` (observed-alias budget). The test's business assertion passes
-before the contract comparison fails. The approved baseline stays unchanged.
-
-Remove the query option and rerun the check to return to `MATCH`. These counts describe observed
-attempts and aliases, not physical-table counts or a complete route plan. More attempts alone do
-not establish a latency regression; investigate whether the change was intended.
-
 ## Adapt one existing test
 
 Use the example's test as a working reference. In your existing project:
@@ -230,7 +237,7 @@ CI artifact policy. [CI review reports](ci-review-report.md#ci-use) explains the
 | Dependency resolution or compilation fails | Check Java 17 and the whole ShardingSphere runtime graph for exact 5.5.3. |
 | Baseline is missing | Run capture locally, review the candidate, then create the baseline explicitly. |
 | Capture has no eligible observation | Confirm that the selected operation actually reaches supported synchronous, non-batch JDBC execution. |
-| `POLICY_VIOLATION` | Inspect the governing baseline budget and changed attempts/aliases before deciding whether to change the query or review a new baseline. |
+| `RCM201` / `RCM202` | Execution attempts / distinct data sources exceed the baseline limit. Compare actual and allowed counts, then inspect the SQL and sharding rules. |
 | A different non-match status | Use the report's finding codes and next steps. Do not accept the candidate automatically. |
 
 Tell us your version, build tool, stage reached and the short error code in the

@@ -10,8 +10,16 @@ The v0.1.2 local installer does not include these APIs.
 Open the [Markdown example](evidence/ci-review-report-example.md) or
 [JSON example](evidence/ci-review-report-example.json) without installing anything.
 The report shows attempts and observed data-source aliases changing from `1` to `2`,
-with `POLICY_VIOLATION`, `RCM201` and `RCM202`. It includes the governing baseline
-limits and the next investigation steps.
+so the test fails with `POLICY_VIOLATION` (an allowed maximum was exceeded):
+
+| Code | Plain meaning | Example values |
+| --- | --- | --- |
+| `RCM201` | Too many physical JDBC execution attempts were observed. | Actual 2; allowed 1. |
+| `RCM202` | Too many distinct data-source aliases were observed. | Actual 2; allowed 1. |
+
+A budget is an allowed maximum; an alias is a non-sensitive label for a configured data source.
+The approved baseline supplies these limits. Inspect the changed query and sharding rules to
+understand why the extra execution happened, then fix it or review an intentional change.
 
 ## Try the released report without Docker
 

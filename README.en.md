@@ -12,8 +12,9 @@ Java 17, exact ShardingSphere-JDBC 5.5.3, synchronous non-batch `PreparedStateme
 
 ## Quick Start
 
-[Choose an example in the main README](README.md#quick-start): the v0.1.3 report example
-needs no Docker; the [historical MySQL demo](docs/reference-guide.md#quick-start) is pinned to v0.1.2.
+[Run the current v0.1.3 MySQL example](README.md#quick-start): see a passing query, an expected
+execution-check failure, and a passing restored query. Use Java 17, Maven and Docker locally,
+or [run it in GitHub Actions](docs/first-project.md#try-in-your-browser).
 
 ## Smallest usage example
 
