@@ -34,7 +34,6 @@ RouteContract는 이 변화를 CI에서 잡아냅니다.
 소스가 바뀌는 경우**와 같은 주문을 다른 실행 예산으로 조회하는 MyBatis 사례도 확인했습니다.
 유지관리자가 준비하고 실행한 합성 실험입니다.
 
-[20초 인터랙티브 설명 · English](https://routecontract.ym56.chatgpt.site) ·
 [브라우저에서 MySQL 시연 실행](docs/first-project.ko.md#try-in-your-browser) ·
 [CI 리포트 확인](docs/evidence/ci-review-report-example.md) ·
 [v0.1.3을 테스트 하나에 적용](docs/first-project.ko.md) ·
