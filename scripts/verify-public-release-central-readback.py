@@ -25,7 +25,7 @@ import zipfile
 
 
 def _load(name: str, filename: str):
-    spec = importlib.util.spec_from_file_location(name, Path(__file__).resolve().with_name(filename))
+    spec = importlib.util.spec_from_file_location(name, Path(__file__).resolve().parent / filename)
     module = importlib.util.module_from_spec(spec)
     sys.modules[name] = module
     spec.loader.exec_module(module)
@@ -33,7 +33,10 @@ def _load(name: str, filename: str):
 
 
 artifacts = _load('release_central_readback_artifacts', 'public_release_artifacts.py')
-bundle_tool = _load('release_central_readback_bundle', 'prepare-central-upload-bundle.py')
+# Existing schema-1 receipts bind the bundle verifier's basename and exact bytes.
+# The current top-level bundle tool belongs to the incompatible 0.2 schema.
+bundle_tool = _load('release_central_readback_bundle',
+                    'legacy/central-v0_1_3/prepare-central-upload-bundle.py')
 REQUEST_TIMEOUT_SECONDS = 20
 TOTAL_TIMEOUT_SECONDS = 600
 CHUNK_BYTES = 64 * 1024

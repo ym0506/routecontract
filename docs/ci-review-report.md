@@ -103,6 +103,41 @@ ineligible capture, budget violation, structural drift, review required, match.
   freshness or human approval. Approval provenance stays in the repository's review process.
 - No command approves a baseline, uploads artifacts, posts a PR comment or connects to a database.
 
+## Unreleased 0.2 source example
+
+The following runtime-identity contract applies only to the unreleased 0.2 source.
+Published 0.1.3 uses schema 1 and exact ShardingSphere-JDBC 5.5.3.
+
+- Schema-2 manifests from the same supported exact runtime may match. A 5.5.2/5.5.3
+  identity mismatch must produce `INCOMPATIBLE`, `RCM005`, and strict exit 1 before budget
+  checks. Unsupported identities produce `RCM004`; legacy schema 1 remains implicitly 5.5.3.
+
+Java 17 and this source checkout are required. No Docker is needed to review the committed
+example; this command alone does not constitute a new database experiment.
+
+The unreleased 0.2 source exposes this command from `routecontract-core`, without loading a
+ShardingSphere adapter. The previous `:routecontract-shardingsphere-5.5:reviewManifest` task remains
+a compatibility alias. After an intentional runtime migration, recapture and separately review
+the baseline; editing its runtime identity does not establish approval.
+
+```bash
+mkdir -p build
+./gradlew --quiet :routecontract-core:reviewManifest \
+  -PapprovedManifest=examples/manifests/find-paid-orders-by-user.approved.json \
+  -PcandidateManifest=examples/manifests/find-paid-orders-by-user.candidate.json \
+  -PreviewReportOutput=build/review-first.md
+```
+
+The Gradle task intentionally fails because the example violates the contract. The Markdown
+report remains at `build/review-first.md`. Choose a new output path for each invocation.
+Add `-PreviewReportFormat=json` for JSON. Paths are relative to the repository root.
+
+From an application test, call `ManifestReviewReport.compare(approved, candidate)`, then
+`toMarkdown()` or `toJson()`. Use `verification()` with the existing assertions; the report is
+a presentation layer. The CLI main class is
+`io.github.ym0506.routecontract.manifest.ManifestReviewCli`, accepting exactly
+`--baseline PATH --candidate PATH --format markdown|json --output PATH`.
+
 ## CI use
 
 Generate the report in the same job as the candidate check. In a following `if: always()` step,

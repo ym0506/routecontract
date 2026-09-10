@@ -1,0 +1,371 @@
+{
+  "cases": [
+    {
+      "actualCapabilities": [
+        "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.2.0"
+      ],
+      "buildTool": "Gradle 8.14.4",
+      "coherentResolvedRuntimeClaimed": false,
+      "declarationOrder": [
+        "routecontract-shardingsphere-5.5.2",
+        "routecontract-shardingsphere-5.5"
+      ],
+      "execution": "retained-gradle-four",
+      "id": "gradle-5.5.2-selected-first",
+      "intrinsicStrictCollisionCount": 3,
+      "nativeExitCode": 1,
+      "result": "NATIVE_CAPABILITY_AND_INTRINSIC_STRICT_REJECTED",
+      "resultSha256": "3743d7cc4cb546a99f9a9dd0c7cd81b2d4262a4ac12ffe1932c036e4781eff43",
+      "selectedAdapterRuntime": "5.5.2",
+      "status": "PASS"
+    },
+    {
+      "actualCapabilities": [
+        "io.github.ym0506.routecontract:routecontract-shardingsphere-hook-adapter:1"
+      ],
+      "buildTool": "Gradle 8.14.4",
+      "coherentResolvedRuntimeClaimed": false,
+      "declarationOrder": [
+        "routecontract-shardingsphere-5.5",
+        "routecontract-shardingsphere-5.5.2"
+      ],
+      "execution": "retained-gradle-four",
+      "id": "gradle-5.5.2-opposite-first",
+      "intrinsicStrictCollisionCount": 3,
+      "nativeExitCode": 1,
+      "result": "NATIVE_CAPABILITY_AND_INTRINSIC_STRICT_REJECTED",
+      "resultSha256": "e57326e7f7be13087992286cc44999a56156ff4a5db10b273a3d414d725a71aa",
+      "selectedAdapterRuntime": "5.5.2",
+      "status": "PASS"
+    },
+    {
+      "actualCapabilities": [
+        "io.github.ym0506.routecontract:routecontract-shardingsphere-hook-adapter:1"
+      ],
+      "buildTool": "Gradle 8.14.4",
+      "coherentResolvedRuntimeClaimed": false,
+      "declarationOrder": [
+        "routecontract-shardingsphere-5.5",
+        "routecontract-shardingsphere-5.5.2"
+      ],
+      "execution": "retained-gradle-four",
+      "id": "gradle-5.5.3-selected-first",
+      "intrinsicStrictCollisionCount": 4,
+      "nativeExitCode": 1,
+      "result": "NATIVE_CAPABILITY_AND_INTRINSIC_STRICT_REJECTED",
+      "resultSha256": "6b73ffb05d735c0fe72aec13aa8a00a5359bc984225ef2f198911d210664cfb9",
+      "selectedAdapterRuntime": "5.5.3",
+      "status": "PASS"
+    },
+    {
+      "actualCapabilities": [
+        "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.2.0"
+      ],
+      "buildTool": "Gradle 8.14.4",
+      "coherentResolvedRuntimeClaimed": false,
+      "declarationOrder": [
+        "routecontract-shardingsphere-5.5.2",
+        "routecontract-shardingsphere-5.5"
+      ],
+      "execution": "retained-gradle-four",
+      "id": "gradle-5.5.3-opposite-first",
+      "intrinsicStrictCollisionCount": 4,
+      "nativeExitCode": 1,
+      "result": "NATIVE_CAPABILITY_AND_INTRINSIC_STRICT_REJECTED",
+      "resultSha256": "9b56060938cfeffc7c22ed6740628ddb6b27d2fa2a338f2620cbea78a6b8ddbd",
+      "selectedAdapterRuntime": "5.5.3",
+      "status": "PASS"
+    },
+    {
+      "buildTool": "Maven 3.9.14",
+      "declarationOrder": [
+        "routecontract-shardingsphere-5.5.2",
+        "routecontract-shardingsphere-5.5"
+      ],
+      "execution": "retained-maven-four",
+      "id": "maven-5.5.2-selected-first",
+      "intrinsicRejectedExecutorCoordinates": [
+        "org.apache.shardingsphere:shardingsphere-infra-executor:5.5.3"
+      ],
+      "nativeExitCode": 1,
+      "nativeFailureSectionSha256": "e3e001c2f2f67bd1c8327c68b46652ba21620347a5aa0cea90cd4ed719f0d9b3",
+      "observedSelectedRuntime": "5.5.2",
+      "rejectedSubtreeRepresentsResolvedRuntime": false,
+      "result": "NATIVE_ENFORCER_WITH_INTRINSIC_EXECUTOR_REJECTED",
+      "resultSha256": "570b6e8a2c062c4377afa898ffdb6f3d85fde8670ade6e455499897b5538253e",
+      "selectedAdapterRuntime": "5.5.2",
+      "selectedGraphCoherent": true,
+      "selectedShardingSphereModuleCount": 48,
+      "status": "PASS"
+    },
+    {
+      "buildTool": "Maven 3.9.14",
+      "declarationOrder": [
+        "routecontract-shardingsphere-5.5",
+        "routecontract-shardingsphere-5.5.2"
+      ],
+      "execution": "retained-maven-four",
+      "id": "maven-5.5.2-opposite-first",
+      "intrinsicRejectedExecutorCoordinates": [
+        "org.apache.shardingsphere:shardingsphere-infra-executor:5.5.3"
+      ],
+      "nativeExitCode": 1,
+      "nativeFailureSectionSha256": "e3e001c2f2f67bd1c8327c68b46652ba21620347a5aa0cea90cd4ed719f0d9b3",
+      "observedSelectedRuntime": "5.5.2",
+      "rejectedSubtreeRepresentsResolvedRuntime": false,
+      "result": "NATIVE_ENFORCER_WITH_INTRINSIC_EXECUTOR_REJECTED",
+      "resultSha256": "307c27a741e6b5e983023a9cce465702f473068fedfa8f1a80b1bfb815aa00dd",
+      "selectedAdapterRuntime": "5.5.2",
+      "selectedGraphCoherent": true,
+      "selectedShardingSphereModuleCount": 48,
+      "status": "PASS"
+    },
+    {
+      "buildTool": "Maven 3.9.14",
+      "declarationOrder": [
+        "routecontract-shardingsphere-5.5",
+        "routecontract-shardingsphere-5.5.2"
+      ],
+      "execution": "retained-maven-four",
+      "id": "maven-5.5.3-selected-first",
+      "intrinsicRejectedExecutorCoordinates": [
+        "org.apache.shardingsphere:shardingsphere-infra-executor:5.5.2"
+      ],
+      "nativeExitCode": 1,
+      "nativeFailureSectionSha256": "8c1151a46fd034b8b298487951f6810fc931050db290788f8cbdb5f954db292a",
+      "observedSelectedRuntime": "5.5.3",
+      "rejectedSubtreeRepresentsResolvedRuntime": false,
+      "result": "NATIVE_ENFORCER_WITH_INTRINSIC_EXECUTOR_REJECTED",
+      "resultSha256": "e1d8f66df5dfeb8f6ca84af06763a2364ad095087a1f70baf391b94cf964b435",
+      "selectedAdapterRuntime": "5.5.3",
+      "selectedGraphCoherent": true,
+      "selectedShardingSphereModuleCount": 26,
+      "status": "PASS"
+    },
+    {
+      "buildTool": "Maven 3.9.14",
+      "declarationOrder": [
+        "routecontract-shardingsphere-5.5.2",
+        "routecontract-shardingsphere-5.5"
+      ],
+      "execution": "retained-maven-four",
+      "id": "maven-5.5.3-opposite-first",
+      "intrinsicRejectedExecutorCoordinates": [
+        "org.apache.shardingsphere:shardingsphere-infra-executor:5.5.2"
+      ],
+      "nativeExitCode": 1,
+      "nativeFailureSectionSha256": "8c1151a46fd034b8b298487951f6810fc931050db290788f8cbdb5f954db292a",
+      "observedSelectedRuntime": "5.5.3",
+      "rejectedSubtreeRepresentsResolvedRuntime": false,
+      "result": "NATIVE_ENFORCER_WITH_INTRINSIC_EXECUTOR_REJECTED",
+      "resultSha256": "9e9eef3e4191e64546b36d4392cdcfb31f723ca56a00b1b52440e12deac2657b",
+      "selectedAdapterRuntime": "5.5.3",
+      "selectedGraphCoherent": true,
+      "selectedShardingSphereModuleCount": 26,
+      "status": "PASS"
+    },
+    {
+      "actionInvoked": false,
+      "actualAnchorCoordinates": [
+        "org.apache.shardingsphere:shardingsphere-infra-executor:5.5.3",
+        "org.apache.shardingsphere:shardingsphere-infra-spi:5.5.3",
+        "org.apache.shardingsphere:shardingsphere-database-connector-core:5.5.3"
+      ],
+      "buildTool": "Maven 3.9.14 plus external Java 17",
+      "captureReturned": false,
+      "causePresent": false,
+      "compiledClassMajor": 61,
+      "compiledClassSha256": "d9a1174115143aaca4794db171380d4f765ef9170a2f35495888b150cf61f7e2",
+      "currentApi": "io.github.ym0506.routecontract.api.RouteContract",
+      "diagnosticCode": "RC_UNSUPPORTED_SHARDINGSPHERE_RUNTIME",
+      "exactDiagnosticMessageSha256": "241a54d3eed267fce1d043494215987f117a16305db6e95b2a408d81af78bba2",
+      "execution": "final-guard-two",
+      "freshExternalJavaProcess": true,
+      "id": "maven-5.5.2-runtime-guard",
+      "inspectedClasspathEntryCount": 48,
+      "nativeExitCode": 0,
+      "observedRuntime": "5.5.3",
+      "result": "COHERENT_OPPOSITE_RUNTIME_REJECTED",
+      "resultSha256": "c1a766cd9aa35958e3340b69a750458d41e46fc80a371732d1a343b881f400f4",
+      "runtimeReportSha256": "07dd2ad0f88b570cd688a05c6308e62aec28c6f3faf46976bf9fe0588a549ec9",
+      "selectedAdapterDatabaseAbiAbsentFromLoaderAndAllClasspathEntries": true,
+      "selectedAdapterRuntime": "5.5.2",
+      "selectedShardingSphereModuleCount": 26,
+      "status": "PASS",
+      "suppressedCount": 0
+    },
+    {
+      "actionInvoked": false,
+      "actualAnchorCoordinates": [
+        "org.apache.shardingsphere:shardingsphere-infra-executor:5.5.2",
+        "org.apache.shardingsphere:shardingsphere-infra-spi:5.5.2",
+        "org.apache.shardingsphere:shardingsphere-infra-database-core:5.5.2"
+      ],
+      "buildTool": "Maven 3.9.14 plus external Java 17",
+      "captureReturned": false,
+      "causePresent": false,
+      "compiledClassMajor": 61,
+      "compiledClassSha256": "d9a1174115143aaca4794db171380d4f765ef9170a2f35495888b150cf61f7e2",
+      "currentApi": "io.github.ym0506.routecontract.api.RouteContract",
+      "diagnosticCode": "RC_UNSUPPORTED_SHARDINGSPHERE_RUNTIME",
+      "exactDiagnosticMessageSha256": "d4cead5d9607fde275db8173b84d2bdf095604e23dbd5ed3071e5e296ba8d2c2",
+      "execution": "final-guard-two",
+      "freshExternalJavaProcess": true,
+      "id": "maven-5.5.3-runtime-guard",
+      "inspectedClasspathEntryCount": 72,
+      "nativeExitCode": 0,
+      "observedRuntime": "5.5.2",
+      "result": "COHERENT_OPPOSITE_RUNTIME_REJECTED",
+      "resultSha256": "d757ccb0dd1819120045c2b123be8ef6506c898580ef8cc5d6cd816eafdf13a8",
+      "runtimeReportSha256": "3019ef0380613276ce1131a1803f3d55123a0ea164844242bb5346e9ecb232f0",
+      "selectedAdapterDatabaseAbiAbsentFromLoaderAndAllClasspathEntries": true,
+      "selectedAdapterRuntime": "5.5.3",
+      "selectedShardingSphereModuleCount": 48,
+      "status": "PASS",
+      "suppressedCount": 0
+    }
+  ],
+  "checks": {
+    "allClasspathEntryHashesCheckedBeforeAndAfterCapture": true,
+    "completeOppositeRuntimeJarSetsAndThreeLoadedAnchorsVerified": true,
+    "exactNativeCapabilityAndEnforcerCauses": true,
+    "exactSelectedAdapterDatabaseAbiAbsenceIndependentlyVerified": true,
+    "exactSelectedJava17": true,
+    "intrinsicCausesBoundToPublishedMetadata": true,
+    "originalStagingReceiptAndInputsUnchanged": true,
+    "reviewedFirstPartyPayloadsAndHttpOriginsBound": true,
+    "runtimeActionSentinelsRemainFalse": true,
+    "runtimeGuardsCompiledAgainstCurrentApi": true,
+    "separateFreshCaches": true,
+    "strictChecksumsRetained": true,
+    "treeAndResolutionOutputsSeparate": true
+  },
+  "counts": {
+    "actualJUnitExecutions": 0,
+    "actualMySqlExecutions": 0,
+    "coherentOppositeRuntimeGuards": 2,
+    "completedDistinctCases": 10,
+    "coverageSourceExecutions": 3,
+    "dualAdapterNativeRejections": 8,
+    "finalRuntimeGuardCases": 2,
+    "plannedCases": 10,
+    "retainedGradleCases": 4,
+    "retainedMavenDualCases": 4,
+    "singleSuccessfulTenCaseInvocation": false
+  },
+  "date": "2026-09-08",
+  "environment": {
+    "gradleVersion": "8.14.4",
+    "javaFeature": 17,
+    "mavenCompilerVersion": "3.14.1",
+    "mavenDependencyPluginVersion": "3.11.0",
+    "mavenEnforcerVersion": "3.6.3",
+    "mavenVersion": "3.9.14",
+    "os": "macOS"
+  },
+  "evidenceSha256": {
+    "aggregateRawAudit": "ae47fdf2d7b9460386d184e6c42241231b5bd75899ea4e88432ae77cab59263b",
+    "gradleReuseAudit": "15767a7a9e95abb065a7c06bc9de3967f2c329490ce8df5da4a7c5e80b863d79",
+    "mavenFourPassAudit": "fc7e5f796344f3d748c72a49aab4e437a201d2297920df4735d1b045c9fda351",
+    "reviewedStagingReceipt": "1f4bb21b430a03a44d89e6daddc1fbdede1886250637ef83cecedfd71e350c7e"
+  },
+  "executionBindings": [
+    {
+      "caseResultsUsed": 4,
+      "fixtureRevision": "35ddd7261b0b77665a52b0ded34a35a40c514c28",
+      "id": "retained-gradle-four",
+      "inputManifestSha256": "6bf7196bf6c8ef69f4e06e08eacf183027160a1dfacd43b3b16219ffc2934656",
+      "launchSha256": "633222855832ca520b83c49cc0a1cf72f34aab8fa4ff49a09b02c03e88cf364c",
+      "rawSummarySha256": "0b7d21c4394f1708c39d2c181c95876b2c72e3513a3b970714bdca84456f5b52",
+      "runnerSha256": "0e262824e90cca1ed464ac27d393863b7b635bf4bb3677a120a99642dcdfc3ba",
+      "sourceRunStatus": "FAILED_PRESERVED"
+    },
+    {
+      "caseResultsUsed": 4,
+      "fixtureRevision": "1f41d12e037a838f5263794cb7475d5fdb36a735",
+      "id": "retained-maven-four",
+      "inputManifestSha256": "d341124b3420625f3b5055628a9858bee1f53fd0f53a387e51e301247ed9f053",
+      "launchSha256": "5e3f092f03b52d9f52f1cfdc2683aff22a2ba3e64cc4df7de8b71e948d29be9d",
+      "rawSummarySha256": "94555f62aaf6a5c15706e410f4f34965fad1d9512a52720680edd55d11f97ef4",
+      "runnerSha256": "a2c40112666ae1b7271c196bff9884792e2061a17fab9a9e46f585e691a0dc40",
+      "sourceRunStatus": "FAILED_PRESERVED"
+    },
+    {
+      "caseResultsUsed": 2,
+      "fixtureRevision": "599f036131b56137edf1a790b71eee8ef0f34695",
+      "id": "final-guard-two",
+      "inputManifestSha256": "55ace0eedb297403b9024fba99cde406581af71c31319cbfc841d6f225849716",
+      "launchSha256": "9f59dc576ddd006c6fac2d1d26d424101c99934640c8d2b9cc0008d92d3466d2",
+      "rawSummarySha256": "b374d1d9e9bc4e332e7de877bb8a4b9f68a42ede740da981e7b0d765c6164038",
+      "runnerSha256": "37971b955ab670e937d72258269937e4db9bb51102ed5ab0056cbb706db9d204",
+      "sourceRunStatus": "NATIVE_CASES_PASSED_PENDING_INDEPENDENT_AUDIT"
+    }
+  ],
+  "formatVersion": 1,
+  "limits": [
+    "Coverage combines four Gradle results, four later Maven dual results and two final runtime guards from three distinct executions and runner/input hashes.",
+    "All six historical failed invocations remain failed; no single successful ten-case invocation or first-attempt success is claimed.",
+    "A Gradle rejected graph or Maven rejected subtree does not identify an executable or resolved runtime.",
+    "Existing A-24 anchor/non-anchor and positive MySQL evidence remains separate.",
+    "This bounded result does not complete independent security/release gates or establish SQL/MySQL behavior, public release, external adoption, full A-24 completion, other JDKs or platforms."
+  ],
+  "preservedFailedAttempts": [
+    {
+      "attempt": 1,
+      "attemptedCases": 1,
+      "cause": "Gradle fixture initially lacked standard Java variant compatibility.",
+      "passedCases": 0,
+      "rawAuditSha256": "df89cda2b49cb2b64996bde2632288f4bf19bd99f838f50d13c4831435f924f5",
+      "status": "FAILED_PRESERVED",
+      "summarySha256": "70772969f6d235f295e4ff6088838085ee88294d5f1a26b4958fee463d444fd6"
+    },
+    {
+      "attempt": 2,
+      "attemptedCases": 1,
+      "cause": "Parser rejected the ordinary Maven runtime variant label in an intrinsic Gradle cause.",
+      "passedCases": 0,
+      "rawAuditSha256": "4ae00f99eab1ba3eea3b6d6acb1bf94638263114c630a9f9d6ec574a89ba5d75",
+      "status": "FAILED_PRESERVED",
+      "summarySha256": "af4e3a3082ee34d8ba9ef6b2311827e0657d04ee2446963ead4b64d258025ab0"
+    },
+    {
+      "attempt": 3,
+      "attemptedCases": 5,
+      "cause": "Four Gradle cases passed; the first Maven download failed because disposable checksum sidecars were omitted.",
+      "passedCases": 4,
+      "rawAuditSha256": "3597a2d94e7bfd2ce4831ca2cefb69d6b6e5f429b72a9be4cdc6fe8fa98aa803",
+      "status": "FAILED_PRESERVED",
+      "summarySha256": "0b7d21c4394f1708c39d2c181c95876b2c72e3513a3b970714bdca84456f5b52"
+    },
+    {
+      "attempt": 4,
+      "attemptedCases": 1,
+      "cause": "Maven artifact resolution overwrote dependency-tree JSON through a shared outputFile property.",
+      "passedCases": 0,
+      "rawAuditSha256": "6585c6944c65fcce2f9db02d0b442017197c9df453582f26ee3654ab2dc3b02f",
+      "status": "FAILED_PRESERVED",
+      "summarySha256": "f2c0a4d81c414809d9c1775d1b65f73831f1fa99905b05418fca7c02b0dbda86"
+    },
+    {
+      "attempt": 5,
+      "attemptedCases": 1,
+      "cause": "Parser rejected an executor child directly declared by the opposite adapter POM.",
+      "passedCases": 0,
+      "rawAuditSha256": "cfa3f2a550aa9758683aa79c9a4c17b17b27f6018fc81fec2265cdaf28d12387",
+      "status": "FAILED_PRESERVED",
+      "summarySha256": "99b103b36f3de8f8e3f3f1e5c96aa60fd94cf18636b739a33195c6b4dc48e4ea"
+    },
+    {
+      "attempt": 6,
+      "attemptedCases": 5,
+      "cause": "Four Maven dual cases passed; the first guard was rejected by an overly specific whole-message fixture expectation. The valid fail-closed resource-specific reason required a bounded acceptance correction.",
+      "passedCases": 4,
+      "rawAuditSha256": "68d8a16d8a12cd5ccf5183828b44564022303975e72d12cd38dba6a3b0afa86c",
+      "status": "FAILED_PRESERVED",
+      "summarySha256": "94555f62aaf6a5c15706e410f4f34965fad1d9512a52720680edd55d11f97ef4"
+    }
+  ],
+  "scope": "The ten existing A-15/A-17 dual-resolver and coherent-opposite current-API boundaries on reviewed local unsigned 0.2.0 staging.",
+  "sourceRevision": "86a0be5d2e444f3b73925122fa448d9d1a324edd",
+  "status": "VERIFIED"
+}

@@ -1,0 +1,492 @@
+{
+  "acceptedCompleteExistingLifecycleMatrix": true,
+  "caseResults": [
+    {
+      "actionCount": 0,
+      "captureStatus": null,
+      "caseId": "A11-552",
+      "diagnosticCode": "RC_SHARDINGSPHERE_PROVIDER_NOT_ACTIVE",
+      "driverExecutionCount": 0,
+      "exposedRawLinkageError": false,
+      "loaderObservationSummary": {
+        "coreLoaderExposesHookByPhase": [
+          true,
+          true,
+          true
+        ],
+        "routeContractProviderCountsAfterDiscovery": [
+          0,
+          0
+        ],
+        "tcclExposesHookByPhase": [
+          false,
+          false,
+          true
+        ]
+      },
+      "observedPhysicalAttemptCount": 0,
+      "observedSha256": "1432c1fa0c80a8185e546522cf3322b858920a8eb23cca6962fd531adf705cf1",
+      "outcome": "EXPECTED_REJECTION",
+      "resultSha256": "d9618b9c6f92c7417e6dded2b404469e689113d16b0b89b8bd1435a565a0b5a2",
+      "returnedSnapshot": false,
+      "runtime": "5.5.2",
+      "terminatedJvmLogSha256": "91f388d9af05111913a0cceecc7c2aaf60d22108b6460445ce1978076948e7f2",
+      "terminatedProcessExitCode": 0,
+      "uncaughtThreadFailureCount": 0
+    },
+    {
+      "actionCount": 1,
+      "cachedProviderClassUnchanged": true,
+      "cachedProviderLoaderUnchanged": true,
+      "cachedProviderOriginUnchanged": true,
+      "callbackFailureCount": 0,
+      "callbackReturnedCount": 1,
+      "captureStatus": "COMPLETE",
+      "caseId": "A12-552",
+      "collectorDiagnostics": [],
+      "diagnosticCode": null,
+      "driverExecutionCount": 1,
+      "exactBusinessRowsMatched": true,
+      "exposedRawLinkageError": false,
+      "loaderObservationSummary": {
+        "coreLoaderExposesHookByPhase": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "routeContractProviderCountsAfterDiscovery": [
+          1,
+          1,
+          1
+        ],
+        "tcclExposesHookByPhase": [
+          true,
+          true,
+          false,
+          false
+        ]
+      },
+      "mysqlContainerCount": 2,
+      "mysqlDriverOrigin": {
+        "implementationVersion": "26.7.0",
+        "jar": "mysql-connector-j-26.7.0.jar",
+        "name": "com.mysql.cj.jdbc.Driver",
+        "sha256": "69084713593a4aa8d07c383619b9639276f08bccf8faf1c562178147d389b1e1"
+      },
+      "mysqlServerMetadata": [
+        {
+          "databaseProductName": "MySQL",
+          "databaseProductVersion": "8.4.11"
+        },
+        {
+          "databaseProductName": "MySQL",
+          "databaseProductVersion": "8.4.11"
+        }
+      ],
+      "observedDataSourceNames": [
+        "ds_1"
+      ],
+      "observedPhysicalAttemptCount": 1,
+      "observedSha256": "f1771e8a0a1e9540994da1d9408c2c1f22dafcef0d08c29ec4be9cb59026c90a",
+      "outcome": "CAPTURED",
+      "resultSha256": "39f111bf92eab80010d0246cd2f7cff2570c8f2b6f4c329f6376e3057c803a51",
+      "returnedSnapshot": true,
+      "runtime": "5.5.2",
+      "syntheticBusinessRows": [
+        {
+          "orderId": 201,
+          "status": "PAID",
+          "userId": 3
+        }
+      ],
+      "terminatedJvmLogSha256": "2df64faab6460acd9ff6dfd489d8a6e817e37638587337acc7da55c8e2b5a34a",
+      "terminatedProcessExitCode": 0,
+      "uncaughtThreadFailureCount": 0,
+      "unknownOutcomeCount": 0
+    },
+    {
+      "actionCount": 0,
+      "captureStatus": null,
+      "caseId": "A13-552",
+      "diagnosticCode": "RC_ADAPTER_CLASSLOADER_MISMATCH",
+      "driverExecutionCount": 0,
+      "exposedRawLinkageError": false,
+      "loaderObservationSummary": {
+        "coreLoaderExposesHookByPhase": [
+          true,
+          true
+        ],
+        "routeContractProviderCountsAfterDiscovery": [],
+        "tcclExposesHookByPhase": [
+          true,
+          true
+        ]
+      },
+      "observedPhysicalAttemptCount": 0,
+      "observedSha256": "fcbc553332d765ae92731677183207783bddcb087d2b5611f40f28d7cc3d115f",
+      "outcome": "EXPECTED_REJECTION",
+      "providerDiscoveryDiagnosticCode": "RC_ADAPTER_CLASSLOADER_MISMATCH",
+      "resultSha256": "4e4b856b366c137017cca206a37ff6bc856465efbaef12a4fd2bb2f1f493edd2",
+      "returnedSnapshot": false,
+      "runtime": "5.5.2",
+      "sameCoreJarAcrossLoaders": true,
+      "terminatedJvmLogSha256": "4905129c6befdbefe9b2cafb1335f6dc5a502b8e3eb11385933f747b7c0d3c01",
+      "terminatedProcessExitCode": 0,
+      "uncaughtThreadFailureCount": 0
+    },
+    {
+      "actionCount": 0,
+      "captureStatus": null,
+      "caseId": "A11-553",
+      "diagnosticCode": "RC_SHARDINGSPHERE_PROVIDER_NOT_ACTIVE",
+      "driverExecutionCount": 0,
+      "exposedRawLinkageError": false,
+      "loaderObservationSummary": {
+        "coreLoaderExposesHookByPhase": [
+          true,
+          true,
+          true
+        ],
+        "routeContractProviderCountsAfterDiscovery": [
+          0,
+          0
+        ],
+        "tcclExposesHookByPhase": [
+          false,
+          false,
+          true
+        ]
+      },
+      "observedPhysicalAttemptCount": 0,
+      "observedSha256": "514625833d8660c1a7809517bba8ac4e4d71291933a37ba588efbc3517c6d7e1",
+      "outcome": "EXPECTED_REJECTION",
+      "resultSha256": "166990ff745aec8a5e806a66e9ca25c544034e7f21e6627f378589556100159d",
+      "returnedSnapshot": false,
+      "runtime": "5.5.3",
+      "terminatedJvmLogSha256": "6b23a1d9581c9d8b5bb7ca0a52db5d86caeff0586f595983f48ab760e0564c54",
+      "terminatedProcessExitCode": 0,
+      "uncaughtThreadFailureCount": 0
+    },
+    {
+      "actionCount": 1,
+      "cachedProviderClassUnchanged": true,
+      "cachedProviderLoaderUnchanged": true,
+      "cachedProviderOriginUnchanged": true,
+      "callbackFailureCount": 0,
+      "callbackReturnedCount": 1,
+      "captureStatus": "COMPLETE",
+      "caseId": "A12-553",
+      "collectorDiagnostics": [],
+      "diagnosticCode": null,
+      "driverExecutionCount": 1,
+      "exactBusinessRowsMatched": true,
+      "exposedRawLinkageError": false,
+      "loaderObservationSummary": {
+        "coreLoaderExposesHookByPhase": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "routeContractProviderCountsAfterDiscovery": [
+          1,
+          1,
+          1
+        ],
+        "tcclExposesHookByPhase": [
+          true,
+          true,
+          false,
+          false
+        ]
+      },
+      "mysqlContainerCount": 2,
+      "mysqlDriverOrigin": {
+        "implementationVersion": "26.7.0",
+        "jar": "mysql-connector-j-26.7.0.jar",
+        "name": "com.mysql.cj.jdbc.Driver",
+        "sha256": "69084713593a4aa8d07c383619b9639276f08bccf8faf1c562178147d389b1e1"
+      },
+      "mysqlServerMetadata": [
+        {
+          "databaseProductName": "MySQL",
+          "databaseProductVersion": "8.4.11"
+        },
+        {
+          "databaseProductName": "MySQL",
+          "databaseProductVersion": "8.4.11"
+        }
+      ],
+      "observedDataSourceNames": [
+        "ds_1"
+      ],
+      "observedPhysicalAttemptCount": 1,
+      "observedSha256": "520aa3af7705e3a324297aed4ce8034e12303d8e00ced5b0665b12540fad2414",
+      "outcome": "CAPTURED",
+      "resultSha256": "651b417557c0f88b5daee8b322350b53ef50405079f825cbd80e538717465993",
+      "returnedSnapshot": true,
+      "runtime": "5.5.3",
+      "syntheticBusinessRows": [
+        {
+          "orderId": 201,
+          "status": "PAID",
+          "userId": 3
+        }
+      ],
+      "terminatedJvmLogSha256": "1fd5c4048b0cc084573d622fd0ae02dd58566f01ae778ad1810f84385d76bc00",
+      "terminatedProcessExitCode": 0,
+      "uncaughtThreadFailureCount": 0,
+      "unknownOutcomeCount": 0
+    },
+    {
+      "actionCount": 0,
+      "captureStatus": null,
+      "caseId": "A13-553",
+      "diagnosticCode": "RC_ADAPTER_CLASSLOADER_MISMATCH",
+      "driverExecutionCount": 0,
+      "exposedRawLinkageError": false,
+      "loaderObservationSummary": {
+        "coreLoaderExposesHookByPhase": [
+          true,
+          true
+        ],
+        "routeContractProviderCountsAfterDiscovery": [],
+        "tcclExposesHookByPhase": [
+          true,
+          true
+        ]
+      },
+      "observedPhysicalAttemptCount": 0,
+      "observedSha256": "097af766140d44231e40ebf888389e14451bb8c637943afe57eff3bcb3bde600",
+      "outcome": "EXPECTED_REJECTION",
+      "providerDiscoveryDiagnosticCode": "RC_ADAPTER_CLASSLOADER_MISMATCH",
+      "resultSha256": "263c3c42d4eaf30b536ae0ba5a6074c3e879f79e5d757ed6fc7d5348728024c5",
+      "returnedSnapshot": false,
+      "runtime": "5.5.3",
+      "sameCoreJarAcrossLoaders": true,
+      "terminatedJvmLogSha256": "dfcb426cdf11d1c8b29857cdb9f5dbb1f1be3e527ed28f17e158a1cab2415794",
+      "terminatedProcessExitCode": 0,
+      "uncaughtThreadFailureCount": 0
+    }
+  ],
+  "distributionBoundary": "reviewed local staged payloads",
+  "environment": {
+    "gradle": "8.14.4",
+    "gradleDistributionSha256": "f1771298a70f6db5a29daf62378c4e18a17fc33c9ba6b14362e0cdf40610380d",
+    "java": "Homebrew OpenJDK 17.0.15+0",
+    "mysqlConnectorJ": "26.7.0",
+    "mysqlImage": "mysql:8.4.11@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb",
+    "os": "macOS 26.4.1 aarch64",
+    "python": "3.12.14",
+    "testcontainers": "1.21.4"
+  },
+  "evidenceId": "runtime-lifecycle-final-candidate-2026-09-08",
+  "evidenceLabels": {
+    "A11AndA13": [
+      "verified - ShardingSphere-JDBC 5.5.2",
+      "verified - ShardingSphere-JDBC 5.5.3"
+    ],
+    "A12": [
+      "verified - MySQL",
+      "verified - ShardingSphere-JDBC 5.5.2",
+      "verified - ShardingSphere-JDBC 5.5.3"
+    ]
+  },
+  "executedFixtureInputs": {
+    "docs/runtime-lifecycle-acceptance.md": "687985d51e862e79a327c876a77690f30a86644886468df798c399a9421a0f25",
+    "examples/runtime-lifecycle-consumer/README.md": "670194b1a0c087bd55efaf27594cfafee398db5cb9817b1f021114a44c25f49b",
+    "examples/runtime-lifecycle-consumer/runtime-evidence.gradle": "95be0f6db37ef511351824b76241f0da94733e8694e3fb74785ba5b0b64f2852",
+    "examples/runtime-lifecycle-consumer/src/test/java/io/github/ym0506/routecontract/lifecycle/CountingMySqlDriver.java": "ab2a93769bc178e3720eb3b78e33dd0824e6c2ed148692fe73917e3260799eae",
+    "examples/runtime-lifecycle-consumer/src/test/java/io/github/ym0506/routecontract/lifecycle/LifecycleCase.java": "249f0e1e64dc6b2e5c00ba5ef50ccbd1f23679ead3fbc404593d0a580e1517f6",
+    "examples/runtime-lifecycle-consumer/src/test/java/io/github/ym0506/routecontract/lifecycle/ProbeJson.java": "8480e2b9a5586b788a0d6fadb7416f5e3c9f856afa39a5d10b77ea189ef16eb5",
+    "examples/runtime-lifecycle-consumer/src/test/java/io/github/ym0506/routecontract/lifecycle/RuntimeLifecycleProbe.java": "10852d90e25ab0a82472aff936c5bc8e2d5cc95597b41e628dec5e414bf128cd",
+    "examples/staged-split-artifact-consumer/build.gradle": "ab4b9c7d74328725378de918ea9df2d9071269ec214c32362d832b524733e940",
+    "examples/staged-split-artifact-consumer/gradle-locks/5.5.2.lockfile": "ac270510719ece47ee7b6e08294bf58bc5ff4b67980cc82a4abe13216f58a047",
+    "examples/staged-split-artifact-consumer/gradle-locks/5.5.3.lockfile": "6a4b755998f050c56fd8dc016bca98d64d4a2899675f338612c0c57170e41ec5",
+    "examples/staged-split-artifact-consumer/settings.gradle": "a25f92d9247b7ae57574384c26bd37d073024c9572dc6fcf64e82e3e81c28a15",
+    "gradle/verification-metadata.xml": "e75f57f3cd0a670c2d40d131182fe074d65fe0d9a1bc144de672f42313489910",
+    "gradle/wrapper/gradle-wrapper.jar": "7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172",
+    "gradle/wrapper/gradle-wrapper.properties": "258e493d81184b05a0466604eb41650ddd521e659733e91b6f195b5003d041ab",
+    "gradlew": "b187b4c52e749f5760afdd6fadc31b2a98ad35fb249bf0dff03b72650f320409",
+    "scripts/legacy_artifact_inputs.py": "c9d3facb497012a0eea04115f966df539a1d1b1a2071f9251a235c03fa0fd964",
+    "scripts/public_split_artifacts.py": "451974ad94238215b83fb2519bef78360ab2b532bcee4d6d098ba9dd22daced0",
+    "scripts/tests/test_verify_runtime_lifecycle_consumer.py": "d7234e21bfc33bde4360be07ca23bd5e8e76478740f1d6c981c26127b0305574",
+    "scripts/verify-gradle-legacy-artifact-consumer.py": "34795afa93ff5ed4bd0ce11c642d5efac1ffc0648e223bae2a257608c1470f6a",
+    "scripts/verify-gradle-split-artifact-consumer.py": "87e8e9ba5079a241f0e4af50a4c0c50957dd59f1f93ee8984f208b7e35de7bdb",
+    "scripts/verify-runtime-lifecycle-consumer.py": "db6d9b0f7dc0253e82ff8c2a9cb2b560a084254f544cc72746d1e73d7c925d4c",
+    "scripts/verify-staged-split-artifact-consumer.py": "c67aa149ec73400c1dd84bd95329912855160d327573bb8ca5bb28eaa585a8e5"
+  },
+  "execution": {
+    "completedAtUtc": "2026-09-08T08:05:41.097719+00:00",
+    "correctedRunFreshJvms": 6,
+    "correctedRunRepetitions": 1,
+    "elapsedSeconds": 69.801,
+    "freshDependencyCacheCompileLanes": 2,
+    "frozenInputCount": 22,
+    "inputBindingsUnchanged": true,
+    "runnerExitCode": 0,
+    "runnerReportedPassedCases": 6
+  },
+  "formatVersion": 1,
+  "graphSummaries": [
+    {
+      "allShardingSphereComponentsExact": true,
+      "compileJarCount": 179,
+      "compiledFixtureClassCount": 8,
+      "freshDependencyCacheInitiallyAbsent": true,
+      "gradleLogSha256": "817cc1a4ba70f3a209643af99c4122757f0b0027b991854289bb440a8b00647e",
+      "resolvedClasspathSha256": "69c0218b865e0db8bef2f254ab4eb68b2f654267ccd9d989299f22591880598a",
+      "runtime": "5.5.2",
+      "runtimeJarCount": 203,
+      "strictDependencyVerification": true,
+      "strictLockedConfigurations": true
+    },
+    {
+      "allShardingSphereComponentsExact": true,
+      "compileJarCount": 104,
+      "compiledFixtureClassCount": 8,
+      "freshDependencyCacheInitiallyAbsent": true,
+      "gradleLogSha256": "ca3c8a92e576722a805756925fa10f0015c739db13836fc655b5477f751c7553",
+      "resolvedClasspathSha256": "68ce1c38a91315251b755090b34179ea976e98c2c47b713d97716456737fbfbe",
+      "runtime": "5.5.3",
+      "runtimeJarCount": 145,
+      "strictDependencyVerification": true,
+      "strictLockedConfigurations": true
+    }
+  ],
+  "independentAdoptionProven": false,
+  "independentReview": {
+    "acceptedCases": 6,
+    "inputBinding": {
+      "actualStagedPayloadHashesMatch": true,
+      "correctionBindingSha256": "d9fba0394dfd76fd79ac1505c5bd70129123aea7fe74fbd8ce1ae5d7ef20afac",
+      "correctionReviewSha256": "ac9026818dde8bedd9b1fbdba45b4db2e69bb8b335a7eaa4ddc96daee3a1fe7e",
+      "frozenHarnessInputCount": 22,
+      "frozenMatchesReviewedCorrectionAndRecordedBeforeAfter": true,
+      "productionPublicationInputsIdentical": true,
+      "sourceRevision": "4e066942f6e244345fe908970b81446f9e08f64e",
+      "sourceTreeEntriesMatched": 69,
+      "stagedPayloadCount": 9,
+      "stagedPayloadInventoryBeforeAfterIdentical": true,
+      "stagedReceiptSha256": "38b2269eca162f121fd3996c56df8b894ae2f43cedeb08fcc627032cf70eaa43"
+    },
+    "method": "Independent read-only review of all six terminated JVM logs including shutdown tails before judging PASS; independently recomputed actual graph/JAR/compiled-fixture/frozen-input/git bindings and cross-checked per-phase loader/provider/resource/business observations. No runner classification helper imported or matrix rerun.",
+    "reviewedAtUtc": "2026-09-08T08:11:13.596855+00:00",
+    "sha256": "ef0ed77c73334ea9beb054a3f56829883023763631fd38b57b6be3c06c3b4e05"
+  },
+  "limitations": [
+    "A13 automatic discovery and public capture rejection occur sequentially inside one fresh JVM per exact runtime, not independent pristine capture-first JVMs.",
+    "Negative cells instantiate no datasource or operation SQL; zero driver counters are bounded action-sentinel evidence, not an independent audit of arbitrary driver activity.",
+    "A12 contains one synchronous non-batch PreparedStatement operation per exact runtime after database initialization and warm-up. Counts cover real driver execute delegations and separately reported hook attempts; no performance or concurrency conclusion.",
+    "Positive logs retain ordinary Hikari fixed-size-pool/direct-instantiation warnings; no uncaught thread failures or raw linkage errors appear in the complete terminated logs.",
+    "The exact 553 staged adapter package has null Implementation-Version; exact SS runtime anchors and independently pinned JAR identity are verified.",
+    "Recorded class-resource lists cover hook resources; core entry/bridge singleton-resource constraints are assertions in the frozen fixture, not a complete persisted per-class resource enumeration.",
+    "Local staged consumption does not establish public Maven availability, release approval, arbitrary plugin-container support, complete route plans, transaction commit, or independent adoption."
+  ],
+  "predecessor": {
+    "correctionReviewSha256": "ac9026818dde8bedd9b1fbdba45b4db2e69bb8b335a7eaa4ddc96daee3a1fe7e",
+    "correctionScope": "Retain controlled URLClassLoaders through process shutdown; reject uncaught-thread output in full terminated JVM logs; actual-tail regression. No production changes or new cases.",
+    "independentReviewSha256": "d48a5f26d074464bc1a655df725718da06582f83aa9a1e41c72bc8ff723e8715",
+    "originalSummarySha256": "ea9dfe4196fb50849acaa604411da008fe96c11afda07dc8c34049f2b5825b1f",
+    "reason": "Both A12 JVMs reported CAPTURED and exit 0 before uncaught Testcontainers PathUtils NoClassDefFoundError at shutdown. The first runner missed the late errors.",
+    "status": "NOT_ACCEPTED"
+  },
+  "publicRepositoryConsumption": false,
+  "rawEvidenceSha256": {
+    "correction-binding.json": "d9fba0394dfd76fd79ac1505c5bd70129123aea7fe74fbd8ce1ae5d7ef20afac",
+    "evidence/fixture-inputs-after.json": "e7aef5e33dad2344f5581025cc42a3e61c0b1baaaa35a6cf361d462b0a853f86",
+    "evidence/fixture-inputs-before.json": "e7aef5e33dad2344f5581025cc42a3e61c0b1baaaa35a6cf361d462b0a853f86",
+    "evidence/invocation.json": "e6bb1c0f564050dcfd884ff20ce2b107fdc638225679942bdc2b65e73eff737d",
+    "evidence/source-binding-after.json": "19af815919c131b8d40f92640a41c25c9fafbba747a69a870c0a349825af943b",
+    "evidence/source-binding-before.json": "19af815919c131b8d40f92640a41c25c9fafbba747a69a870c0a349825af943b",
+    "evidence/staged-payloads-after.json": "1884e979fdc1daa748283ec14aba6ae4b003e67392ce6fba86fdb1f07830537d",
+    "evidence/staged-payloads-before.json": "1884e979fdc1daa748283ec14aba6ae4b003e67392ce6fba86fdb1f07830537d",
+    "evidence/summary.json": "4c608b8de1b0e9e4624560eddf354150931b291351fe944822db6c071ac28034",
+    "evidence/toolchain.txt": "32072b4943d4bac46ddb51fb0441f11cc133edcee6f0756532f9ef23cf75c2bd",
+    "independent-result-review.json": "ef0ed77c73334ea9beb054a3f56829883023763631fd38b57b6be3c06c3b4e05",
+    "runner.log": "adafb88e83df8fd4efd9b74ccce42d7a743b443531512dac869b8bed0e850c8f",
+    "wrapper-record.json": "b59ab26c897099aa3ebda563cc6d41f263ea95979413edcfea8d2831637d7410"
+  },
+  "reproduction": {
+    "argv": [
+      "python3",
+      "scripts/verify-runtime-lifecycle-consumer.py",
+      "--repository",
+      "<REVIEWED_STAGED_REPOSITORY>",
+      "--staged-receipt",
+      "<REVIEWED_STAGED_RECEIPT>",
+      "--staged-receipt-sha256",
+      "38b2269eca162f121fd3996c56df8b894ae2f43cedeb08fcc627032cf70eaa43",
+      "--staged-source-revision",
+      "4e066942f6e244345fe908970b81446f9e08f64e",
+      "--java-home",
+      "<JAVA_17_HOME>",
+      "--gradle-distribution-zip",
+      "<GRADLE_8_14_4_ZIP>",
+      "--evidence-directory",
+      "<NEW_EVIDENCE_DIRECTORY_OUTSIDE_CHECKOUT>"
+    ],
+    "pathNormalization": "Local checkout/cache/JDK/repository paths are placeholders; exact original argv and environment are retained in the hashed raw invocation and wrapper record."
+  },
+  "routeContractVersion": "0.2.0",
+  "sourceRevision": "4e066942f6e244345fe908970b81446f9e08f64e",
+  "stagedArtifacts": [
+    {
+      "module": "routecontract-core",
+      "name": "routecontract-core-0.2.0.jar",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.jar",
+      "sha256": "1863b422179b0447035642bfa5a679ffa0f75201ac3bf6c261558f32849ba598"
+    },
+    {
+      "module": "routecontract-core",
+      "name": "routecontract-core-0.2.0.pom",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.pom",
+      "sha256": "ccf3a3854e9f369facb1fe63eabc7303c507a7df2a6438372fc77259428519ce"
+    },
+    {
+      "module": "routecontract-core",
+      "name": "routecontract-core-0.2.0.module",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.module",
+      "sha256": "e55bb3827ac2898db74cd2277d7c6d46fbd9bebe207688bd3e9377b6a8afadc2"
+    },
+    {
+      "module": "routecontract-shardingsphere-5.5",
+      "name": "routecontract-shardingsphere-5.5-0.2.0.jar",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.jar",
+      "sha256": "6d139b136e714cb3dfd033aa47dfcbfedffd3e87f6f5aaa2c7762975a714f64e"
+    },
+    {
+      "module": "routecontract-shardingsphere-5.5",
+      "name": "routecontract-shardingsphere-5.5-0.2.0.pom",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.pom",
+      "sha256": "d6a5232c2d43ec109fc04924635af245b930c99e449c13bd7949c8f62a518945"
+    },
+    {
+      "module": "routecontract-shardingsphere-5.5",
+      "name": "routecontract-shardingsphere-5.5-0.2.0.module",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.module",
+      "sha256": "fec11718c25ed03ebc2209039ce5fc351bf73d175bd4d8e72483e9a5f01ceb2e"
+    },
+    {
+      "module": "routecontract-shardingsphere-5.5.2",
+      "name": "routecontract-shardingsphere-5.5.2-0.2.0.jar",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.jar",
+      "sha256": "752090d09ac287c5a21c2118b9c79f4077efc72a7d624b72ed5690303fdf2c18"
+    },
+    {
+      "module": "routecontract-shardingsphere-5.5.2",
+      "name": "routecontract-shardingsphere-5.5.2-0.2.0.pom",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.pom",
+      "sha256": "baa1a36766d63969f38a90d6ba3c6b9f3d6004e230ed42f2a8778053bc172a3f"
+    },
+    {
+      "module": "routecontract-shardingsphere-5.5.2",
+      "name": "routecontract-shardingsphere-5.5.2-0.2.0.module",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.module",
+      "sha256": "9be237af25dd3d2b8fbe5c09561d7e6a194cc493bdda23413d5de6ed486417c7"
+    }
+  ],
+  "stagedReceiptSha256": "38b2269eca162f121fd3996c56df8b894ae2f43cedeb08fcc627032cf70eaa43",
+  "status": "ACCEPTED_WITH_STATED_SCOPE"
+}

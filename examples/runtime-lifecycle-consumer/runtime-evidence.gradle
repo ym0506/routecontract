@@ -1,0 +1,48 @@
+// Applied to a copied, unchanged staged consumer build with its existing exact-runtime lock.
+// This task compiles the probe; it never executes the original consumer's JUnit suite.
+tasks.register('prepareRuntimeLifecycleClasspath') {
+    dependsOn 'testClasses', 'verifySelectedGraph'
+    doLast {
+        def selectedRuntime = providers.gradleProperty('routecontractRuntime').get()
+        def selectedAdapter = selectedRuntime == '5.5.2'
+                ? 'routecontract-shardingsphere-5.5.2' : 'routecontract-shardingsphere-5.5'
+        def sha = { file -> java.security.MessageDigest.getInstance('SHA-256')
+                .digest(file.bytes).encodeHex().toString() }
+        def graphs = [:]
+        [configurations.testCompileClasspath, configurations.testRuntimeClasspath].each { configuration ->
+            def resolution = configuration.incoming.resolutionResult
+            def components = resolution.allComponents.collect { it.id }
+            if (components.any { !(it instanceof org.gradle.api.artifacts.component.ModuleComponentIdentifier)
+                    && it != resolution.root.id }) {
+                throw new GradleException('Lifecycle consumer cannot resolve a source/project dependency')
+            }
+            def artifacts = configuration.resolvedConfiguration.resolvedArtifacts.collect { artifact -> [
+                group: artifact.moduleVersion.id.group, module: artifact.name,
+                version: artifact.moduleVersion.id.version, path: artifact.file.canonicalPath,
+                sha256: sha(artifact.file)
+            ] }.sort { a, b -> "${a.group}:${a.module}" <=> "${b.group}:${b.module}" }
+            def ours = artifacts.findAll { it.group == 'io.github.ym0506.routecontract' }
+            if (ours.collect { "${it.module}:${it.version}" }.sort()
+                    != ["routecontract-core:0.2.0", "${selectedAdapter}:0.2.0"].sort()) {
+                throw new GradleException('Lifecycle classpath must contain only the selected coordinated core/adapter')
+            }
+            ours.each { artifact ->
+                if (artifact.sha256 != providers.gradleProperty("routecontractSha256.${artifact.module}").get()) {
+                    throw new GradleException('Lifecycle classpath differs from reviewed first-party JAR bytes')
+                }
+            }
+            def sharding = artifacts.findAll { it.group == 'org.apache.shardingsphere' }
+            if (sharding.empty || sharding.any { it.version != selectedRuntime }) {
+                throw new GradleException('Lifecycle compile and runtime graphs must both use the exact SS version')
+            }
+            graphs[configuration.name] = artifacts
+        }
+        def output = layout.buildDirectory.file('runtime-lifecycle-classpath.json').get().asFile
+        output.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson([
+            runtime: selectedRuntime,
+            classes: sourceSets.test.output.classesDirs.files.collect { it.canonicalPath }.sort(),
+            compileArtifacts: graphs.testCompileClasspath,
+            artifacts: graphs.testRuntimeClasspath
+        ])) + '\n'
+    }
+}

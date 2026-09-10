@@ -2,16 +2,28 @@
 
 This post-publication check supports only stable `0.1.x` releases from `0.1.3`
 onwards, using `io.github.ym0506.routecontract:routecontract-shardingsphere-5.5`.
-It does not accept the separate 0.2 core/adapters. Preparing or testing these
-commands does not establish publication. Public installation of the candidate
-remains **unverified** until the real checks complete.
+It does not accept the separate 0.2 core/adapters. Published 0.1.3 has completed
+the [public byte readback and independent consumer checks](evidence/release-0.1.3-central.md).
+For each new candidate, preparing or testing these commands does not establish
+publication: its public installation remains **unverified** until its own real
+checks complete.
 
 Before networking, `scripts/verify-public-release-central-readback.py` invokes
-the existing schema-1 `prepare-central-upload-bundle.py` verifier against the
+the preserved schema-1
+[`legacy/central-v0_1_3/prepare-central-upload-bundle.py`](../scripts/legacy/central-v0_1_3/prepare-central-upload-bundle.py)
+verifier against the
 signed staging repository, reviewed five-payload manifest, exact bundle receipt
 and public-key-only GnuPG home. It snapshots verified bundle and receipt bytes,
 rejecting changes after verification. A receipt's `VERIFIED` string alone is
 insufficient.
+
+Existing 0.1.3 bundle receipts bind the verifier's exact file bytes and basename.
+Both remain unchanged from the published release source; the directory only
+separates that verifier from the top-level schema-2 bundle tool used by unreleased
+0.2 development. Do not rename or edit the preserved file, rewrite an existing
+receipt, or feed a 0.2 coordinate set to this 0.1 readback command. Its focused
+signed-input tests use an independent schema-1 fixture, so changes to the 0.2
+fixture cannot silently change the release family under test.
 
 The command compares all 30 uploaded files: five payloads, their five detached
 signatures and twenty payload checksum sidecars. URLs come only from this

@@ -733,22 +733,42 @@ class InstallReleaseAssetsTest(unittest.TestCase):
             for element in metadata.getroot().iter()
             if element.tag.rsplit("}", 1)[-1] == "trust"
         ]
-        self.assertEqual(1, len(rules))
-        rule = rules[0]
-        self.assertEqual("true", rule.attrib.get("regex"))
+        expected_reasons = {
+            "^routecontract-core$": (
+                "the same-checkout verifier publishes this reviewed first-party core "
+                "beside the exact adapter into an isolated repository; public "
+                "consumption still requires a verified immutable release or Maven "
+                "Central publication"
+            ),
+            "^routecontract-shardingsphere-5[.]5$": (
+                "the same-checkout verifier publishes this reviewed exact adapter "
+                "beside core into an isolated repository; legacy public asset "
+                "consumption separately requires install-release-assets.py "
+                "verification, and future public split consumption requires a "
+                "verified immutable release or Maven Central publication"
+            ),
+        }
+        self.assertEqual(2, len(rules))
         self.assertEqual(
-            "^io[.]github[.]ym0506[.]routecontract$", rule.attrib.get("group")
+            set(expected_reasons), {rule.attrib.get("name") for rule in rules}
         )
-        self.assertEqual(
-            "^routecontract-shardingsphere-5[.]5$", rule.attrib.get("name")
-        )
-        version_pattern = rule.attrib["version"]
-        self.assertIsNotNone(re.fullmatch(version_pattern, "1.2.3"))
-        self.assertIsNotNone(re.fullmatch(version_pattern, "1.2.3-rc1"))
-        for rejected in ("1.2.3-SNAPSHOT", "1.2.3-rc0", "1.2.3-beta1"):
-            self.assertIsNone(re.fullmatch(version_pattern, rejected))
+        for rule in rules:
+            with self.subTest(name=rule.attrib.get("name")):
+                self.assertEqual("true", rule.attrib.get("regex"))
+                self.assertEqual(
+                    "^io[.]github[.]ym0506[.]routecontract$",
+                    rule.attrib.get("group"),
+                )
+                self.assertEqual(
+                    expected_reasons[rule.attrib["name"]], rule.attrib.get("reason")
+                )
+                version_pattern = rule.attrib["version"]
+                self.assertIsNotNone(re.fullmatch(version_pattern, "1.2.3"))
+                self.assertIsNotNone(re.fullmatch(version_pattern, "1.2.3-rc1"))
+                for rejected in ("1.2.3-SNAPSHOT", "1.2.3-rc0", "1.2.3-beta1"):
+                    self.assertIsNone(re.fullmatch(version_pattern, rejected))
 
-    def test_accepts_current_git_archive_source_shape(self) -> None:
+    def test_rejects_unreleased_split_git_archive_in_legacy_installer(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
             assets = root / "release"
@@ -775,8 +795,9 @@ class InstallReleaseAssetsTest(unittest.TestCase):
 
             result = self.run_installer(assets, repository, home=root / "home")
 
-            self.assertEqual(0, result.returncode, result.stderr)
-            self.assertIn(f"{GROUP_ID}:{ARTIFACT_ID}:{VERSION}", result.stdout)
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("missing canonical source paths", result.stderr)
+            self.assertFalse(repository.exists())
 
     def test_accepts_reviewed_routecontract_pilot_source_set_shape(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
@@ -1880,8 +1901,11 @@ class InstallReleaseAssetsTest(unittest.TestCase):
             "./scripts/run-final-supply-chain-scan.sh --revision \"${GITHUB_SHA}\"",
             "'supply-chain-evidence.json'",
             'test ! -e "${evidence_dir}/osv-raw.json"',
-            ")\" = '17'",
+            ")\" = '23'",
+            "routecontract-core-cyclonedx.json",
+            "routecontract-shardingsphere-5.5.2-cyclonedx.json",
             "routecontract-mysql-example-cyclonedx.json",
+            "routecontract-mysql-5.5.2-example-cyclonedx.json",
             "scripts/validate-official-cyclonedx.py",
             "docker image ls --digests --no-trunc --format "
             "'{{.Repository}}|{{.Digest}}|{{.ID}}'",
@@ -1893,6 +1917,7 @@ class InstallReleaseAssetsTest(unittest.TestCase):
             '"\\"(mysql|docker\\\\.io/library/mysql)'
             '@${expected_mysql_digest}\\""',
             "./scripts/verify-release-assets-consumer.sh \\",
+            "0.2 publication is blocked: the legacy single-artifact Release consumer",
         ):
             self.assertIn(required_contract, workflow)
         consumer = RELEASE_CONSUMER.read_text(encoding="utf-8")

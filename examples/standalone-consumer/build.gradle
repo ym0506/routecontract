@@ -44,9 +44,10 @@ repositories {
 
 dependencyLocking {
     lockAllConfigurations()
-    // The first-party artifact is published into a checksum-verified temporary
+    // The first-party artifacts are published into a checksum-verified temporary
     // repository by the parent build and intentionally follows its release
     // group/version. Third-party dependencies remain locked below.
+    ignoredDependencies.add("${routeContractGroup}:routecontract-core")
     ignoredDependencies.add("${routeContractGroup}:routecontract-shardingsphere-5.5")
 }
 
@@ -119,7 +120,9 @@ tasks.named('test') {
     useJUnitPlatform()
     maxParallelForks = 1
     systemProperty 'api.version', '1.44'
-    systemProperty 'routecontract.artifactJarName',
+    systemProperty 'routecontract.coreJarName',
+            "routecontract-core-${routeContractVersion}.jar"
+    systemProperty 'routecontract.adapterJarName',
             "routecontract-shardingsphere-5.5-${routeContractVersion}.jar"
     testLogging {
         events 'passed', 'skipped', 'failed'

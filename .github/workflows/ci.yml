@@ -17,7 +17,7 @@ jobs:
   build-and-sbom:
     name: Java 17 / MySQL integration / SBOM
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    timeout-minutes: 60
 
     steps:
       - name: Check out source
@@ -131,6 +131,125 @@ jobs:
           ./gradlew --no-daemon --no-build-cache clean check assemble
           validateOfficialCycloneDxSbom
 
+      - name: Verify complete core, adapter and MySQL result coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/summarize-test-results.py \
+            --revision "${GITHUB_SHA}" \
+            --results-dir routecontract-core/build/test-results/test \
+            --results-dir routecontract-shardingsphere-5.5/build/test-results/test \
+            --results-dir routecontract-shardingsphere-5.5.2/build/test-results/test \
+            --results-dir examples/mysql/build/test-results/test \
+            --results-dir examples/mysql-5.5.2/build/test-results/test \
+            --output build/ci-evidence/test-summary.txt
+
+      - name: Select stable coordinated CI preparation
+        id: coordinated_ci_version
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          import re
+
+          versions = re.findall(r"^version = '([^'\n]+)'$", Path('build.gradle').read_text(), re.MULTILINE)
+          if len(versions) != 1:
+              raise SystemExit('Expected one literal source version for CI preparation dispatch')
+          version = versions[0]
+          enabled = re.fullmatch(r'0\.2\.(0|[1-9][0-9]*)', version) is not None
+          with Path(os.environ['GITHUB_OUTPUT']).open('a') as output:
+              output.write('enabled=' + str(enabled).lower() + '\n')
+              if enabled:
+                  output.write('version=' + version + '\n')
+          PY
+
+      - name: Scan exact source for coordinated CI preparation
+        if: steps.coordinated_ci_version.outputs.enabled == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse --verify HEAD)" = "${GITHUB_SHA}"
+          test -z "$(git status --porcelain=v1 --untracked-files=all --ignore-submodules=none)"
+          ./scripts/run-final-supply-chain-scan.sh --revision "${GITHUB_SHA}"
+
+      - name: Collect and verify coordinated unsigned CI preparation
+        if: steps.coordinated_ci_version.outputs.enabled == 'true'
+        id: coordinated_ci_candidate
+        shell: bash
+        env:
+          COORDINATED_CI_VERSION: ${{ steps.coordinated_ci_version.outputs.version }}
+        run: |
+          set -euo pipefail
+          staging_root="${RUNNER_TEMP}/routecontract-coordinated-ci-staging"
+          test ! -e "${staging_root}"
+          test ! -L "${staging_root}"
+          mkdir -m 700 "${staging_root}"
+          unsigned_repository="${staging_root}/repository"
+          test ! -e "${unsigned_repository}"
+          test ! -L "${unsigned_repository}"
+          ./gradlew --no-daemon --no-build-cache --no-configuration-cache publishRouteContractCentralStaging \
+            -ProutecontractCentralSigning=false \
+            -ProutecontractCentralStagingDirectory="${unsigned_repository}"
+          python3 scripts/prepare-coordinated-release-evidence.py collect \
+            --repository "${unsigned_repository}" --source-root "$PWD" \
+            --version "${COORDINATED_CI_VERSION}" --revision "${GITHUB_SHA}" \
+            --java-home "${JAVA_HOME}" --output "$PWD/build/coordinated-ci-preparation"
+          python3 scripts/prepare-coordinated-release-evidence.py verify \
+            --source-root "$PWD" --version "${COORDINATED_CI_VERSION}" \
+            --revision "${GITHUB_SHA}" --java-home "${JAVA_HOME}" \
+            --output "$PWD/build/coordinated-ci-preparation"
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          manifest = Path('build/coordinated-ci-preparation/candidate-payloads.json')
+          payload = manifest.read_bytes()
+          candidate = json.loads(payload)
+          if candidate['sourceRevision'] != os.environ['GITHUB_SHA']:
+              raise SystemExit('CI context must match the verified candidate revision')
+          event_name = os.environ['GITHUB_EVENT_NAME']
+          is_pull_request = event_name == 'pull_request'
+          event = json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_text()) if is_pull_request else {}
+          context = {
+              'formatVersion': 1,
+              'kind': 'routecontract-ci-preparation-context',
+              'eventName': event_name,
+              'testedRevision': candidate['sourceRevision'],
+              'sourceTree': candidate['sourceTree'],
+              'testedRevisionRole': 'pull-request-merge' if is_pull_request else 'checked-out-commit',
+              'pullRequestHeadRevision': event['pull_request']['head']['sha'] if is_pull_request else None,
+              'runId': os.environ['GITHUB_RUN_ID'],
+              'runAttempt': os.environ['GITHUB_RUN_ATTEMPT'],
+              'candidateArtifactName': 'routecontract-coordinated-ci-preparation-' + candidate['sourceRevision'],
+              'candidateManifestSha256': hashlib.sha256(payload).hexdigest(),
+              'reviewed': candidate['reviewed'],
+              'signed': candidate['signed'],
+              'published': candidate['published'],
+              'publicationHeld': candidate['publicationHeld'],
+              'humanReview': None,
+              'boundary': 'Unsigned CI preparation for the checked-out commit; a PR merge SHA is not a release tag or approval.',
+          }
+          output = Path('build/ci-evidence/coordinated-preparation-context.json')
+          output.parent.mkdir(parents=True, exist_ok=True)
+          with output.open('x') as stream:
+              json.dump(context, stream, indent=2, sort_keys=True)
+              stream.write('\n')
+          PY
+          echo 'available=true' >> "${GITHUB_OUTPUT}"
+
+      - name: Upload coordinated unsigned CI preparation
+        if: steps.coordinated_ci_candidate.outputs.available == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: routecontract-coordinated-ci-preparation-${{ github.sha }}
+          path: build/coordinated-ci-preparation/
+          if-no-files-found: error
+          retention-days: 90
+
       - name: Verify printed Gradle and Maven installation configuration
         shell: bash
         timeout-minutes: 12
@@ -196,8 +315,8 @@ jobs:
             grep -Fxq "version = '${next_version}'" "${build_file}"
           }
 
-          publish_task=':routecontract-shardingsphere-5.5:publishMavenJavaPublicationToCentralStagingRepository'
-          for blocked_version in 0.1.0 0.1.1-SNAPSHOT; do
+          publish_task=':publishRouteContractCentralStaging'
+          for blocked_version in 0.1.2 0.2.0-SNAPSHOT; do
             set_version "${blocked_version}"
             blocked_repository="${smoke_root}/blocked-${blocked_version}"
             if (
@@ -215,13 +334,36 @@ jobs:
               exit 1
             fi
             grep -Fq \
-              'signed Central staging requires a stable SemVer of at least 0.1.1' \
+              'signed Central staging requires a stable SemVer strictly greater than 0.1.2' \
               "${smoke_root}/blocked.log"
             test ! -e "${blocked_repository}"
+            test ! -e "${smoke_root}/.blocked-${blocked_version}.routecontract-work"
           done
 
-          smoke_version='0.1.1'
+          smoke_version='0.2.0'
           set_version "${smoke_version}"
+          direct_repository="${smoke_root}/direct-repository"
+          direct_tasks=(
+            ':routecontract-core:publishMavenJavaPublicationToCentralStagingRepository'
+            ':routecontract-shardingsphere-5.5:publishMavenJavaPublicationToCentralStagingRepository'
+            ':routecontract-shardingsphere-5.5.2:publishMavenJavaPublicationToCentralStagingRepository'
+          )
+          if (
+            cd "${source_root}"
+            ./gradlew --no-daemon --no-build-cache --no-configuration-cache \
+              "${direct_tasks[@]}" \
+              -ProutecontractCentralStagingDirectory="${direct_repository}" \
+              -ProutecontractCentralSigning=false
+          ) > "${smoke_root}/direct.log" 2>&1; then
+            echo 'direct per-project staging unexpectedly bypassed the aggregate' >&2
+            exit 1
+          fi
+          grep -Fq \
+            'run :publishRouteContractCentralStaging instead of a per-project task' \
+            "${smoke_root}/direct.log"
+          test ! -e "${direct_repository}"
+          test ! -e "${smoke_root}/.direct-repository.routecontract-work"
+
           existing_repository="${smoke_root}/existing-repository"
           symlink_target="${smoke_root}/symlink-target"
           symlink_repository="${smoke_root}/symlink-repository"
@@ -271,16 +413,24 @@ jobs:
             test "${actual}" = "${expected}"
           }
 
-          coordinate="io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/${smoke_version}"
-          unsigned_version="${unsigned_repository}/${coordinate}"
-          signed_version="${signed_repository}/${coordinate}"
-          artifact="routecontract-shardingsphere-5.5-${smoke_version}"
-          artifacts=(
-            "${artifact}.jar" "${artifact}-sources.jar" "${artifact}-javadoc.jar"
-            "${artifact}.pom" "${artifact}.module"
+          artifact_ids=(
+            routecontract-core
+            routecontract-shardingsphere-5.5
+            routecontract-shardingsphere-5.5.2
           )
-          python3 - "${unsigned_version}" "${signed_version}" \
-            "${artifacts[@]}" <<'PY'
+          verified_payloads=0
+          verified_signatures=0
+          for artifact_id in "${artifact_ids[@]}"; do
+            coordinate="io/github/ym0506/routecontract/${artifact_id}/${smoke_version}"
+            unsigned_version="${unsigned_repository}/${coordinate}"
+            signed_version="${signed_repository}/${coordinate}"
+            artifact="${artifact_id}-${smoke_version}"
+            artifacts=(
+              "${artifact}.jar" "${artifact}-sources.jar" "${artifact}-javadoc.jar"
+              "${artifact}.pom" "${artifact}.module"
+            )
+            python3 - "${unsigned_version}" "${signed_version}" \
+              "${artifacts[@]}" <<'PY'
           import os
           import sys
           from pathlib import Path
@@ -321,42 +471,49 @@ jobs:
           inspect_version(sys.argv[1], False)
           inspect_version(sys.argv[2], True)
           PY
-          for name in "${artifacts[@]}"; do
-            unsigned_file="${unsigned_version}/${name}"
-            signed_file="${signed_version}/${name}"
-            test -f "${unsigned_file}"
-            test -f "${signed_file}"
-            cmp -s "${unsigned_file}" "${signed_file}"
-            test ! -e "${unsigned_file}.asc"
-            test -f "${signed_file}.asc"
-            signature_status="$(
-              gpg --homedir "${gnupg_home}" --options "${gnupg_options}" \
-                --batch --status-fd 1 \
-                --verify "${signed_file}.asc" "${signed_file}" 2>/dev/null
-            )"
-            printf '%s\n' "${signature_status}" |
-              awk -v expected_fingerprint="${fingerprint}" '
-                $1 == "[GNUPG:]" && $2 == "VALIDSIG" {
-                    count += 1
-                    if (NF != 12 || $3 != expected_fingerprint) {
-                        invalid = 1
-                    }
-                    if ($10 != "9" || $12 != expected_fingerprint) {
-                        invalid = 1
-                    }
-                }
-                END { exit !(count == 1 && invalid != 1) }
-              '
-            for algorithm in md5 sha1 sha256 sha512; do
-              verify_checksum "${unsigned_file}" "${algorithm}"
-              verify_checksum "${signed_file}" "${algorithm}"
-              if test -e "${signed_file}.asc.${algorithm}"; then
-                verify_checksum "${signed_file}.asc" "${algorithm}"
-              fi
+            for name in "${artifacts[@]}"; do
+              unsigned_file="${unsigned_version}/${name}"
+              signed_file="${signed_version}/${name}"
+              test -f "${unsigned_file}"
+              test -f "${signed_file}"
+              cmp -s "${unsigned_file}" "${signed_file}"
+              test ! -e "${unsigned_file}.asc"
+              test -f "${signed_file}.asc"
+              signature_status="$(
+                gpg --homedir "${gnupg_home}" --options "${gnupg_options}" \
+                  --batch --status-fd 1 \
+                  --verify "${signed_file}.asc" "${signed_file}" 2>/dev/null
+              )"
+              printf '%s\n' "${signature_status}" |
+                awk -v expected_fingerprint="${fingerprint}" '
+                  $1 == "[GNUPG:]" && $2 == "VALIDSIG" {
+                      count += 1
+                      if (NF != 12 || $3 != expected_fingerprint) {
+                          invalid = 1
+                      }
+                      if ($10 != "9" || $12 != expected_fingerprint) {
+                          invalid = 1
+                      }
+                  }
+                  END { exit !(count == 1 && invalid != 1) }
+                '
+              for algorithm in md5 sha1 sha256 sha512; do
+                verify_checksum "${unsigned_file}" "${algorithm}"
+                verify_checksum "${signed_file}" "${algorithm}"
+                if test -e "${signed_file}.asc.${algorithm}"; then
+                  verify_checksum "${signed_file}.asc" "${algorithm}"
+                fi
+              done
+              verified_payloads="$((verified_payloads + 1))"
+              verified_signatures="$((verified_signatures + 1))"
             done
           done
+          test "${verified_payloads}" = '15'
+          test "${verified_signatures}" = '15'
+          test ! -e "${smoke_root}/.unsigned-repository.routecontract-work"
+          test ! -e "${smoke_root}/.signed-repository.routecontract-work"
 
-          bundle_version='0.1.3'
+          bundle_version='0.2.1'
           set_version "${bundle_version}"
           bundle_repository="${smoke_root}/bundle-repository"
           (
@@ -370,43 +527,54 @@ jobs:
               -Psigning.gnupg.optionsFile="${gnupg_options}" \
               -Psigning.gnupg.keyName="${fingerprint}!"
           )
-          bundle_coordinate="io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/${bundle_version}"
-          bundle_version_directory="${bundle_repository}/${bundle_coordinate}"
-          bundle_artifact="routecontract-shardingsphere-5.5-${bundle_version}"
-          bundle_artifacts=(
-            "${bundle_artifact}.jar" "${bundle_artifact}-sources.jar"
-            "${bundle_artifact}-javadoc.jar" "${bundle_artifact}.pom"
-            "${bundle_artifact}.module"
-          )
+          test ! -e "${smoke_root}/.bundle-repository.routecontract-work"
 
           # This manifest is a synthetic CI fixture, not release approval evidence.
           smoke_manifest="${smoke_root}/reviewed-payloads.json"
-          python3 - "${bundle_version_directory}" "${smoke_manifest}" \
-            "${bundle_version}" "${bundle_artifacts[@]}" <<'PY'
+          python3 - "${bundle_repository}" "${smoke_manifest}" \
+            "${bundle_version}" "${artifact_ids[@]}" <<'PY'
           import hashlib
           import json
           import sys
           from pathlib import Path
 
-          version_directory = Path(sys.argv[1])
+          repository = Path(sys.argv[1])
           manifest = Path(sys.argv[2])
           version = sys.argv[3]
-          names = sorted(sys.argv[4:])
+          artifact_ids = sys.argv[4:]
           payloads = []
-          for name in names:
-              payload = (version_directory / name).read_bytes()
-              payloads.append(
-                  {
-                      "name": name,
-                      "size": len(payload),
-                      "sha256": hashlib.sha256(payload).hexdigest(),
-                  }
+          for artifact_id in artifact_ids:
+              stem = f"{artifact_id}-{version}"
+              names = sorted(
+                  (
+                      f"{stem}.jar",
+                      f"{stem}-sources.jar",
+                      f"{stem}-javadoc.jar",
+                      f"{stem}.pom",
+                      f"{stem}.module",
+                  )
               )
+              version_directory = (
+                  repository
+                  / "io/github/ym0506/routecontract"
+                  / artifact_id
+                  / version
+              )
+              for name in names:
+                  payload = (version_directory / name).read_bytes()
+                  payloads.append(
+                      {
+                          "artifactId": artifact_id,
+                          "name": name,
+                          "size": len(payload),
+                          "sha256": hashlib.sha256(payload).hexdigest(),
+                      }
+                  )
           value = {
-              "schemaVersion": 1,
-              "coordinate": {
+              "schemaVersion": 2,
+              "coordinateSet": {
                   "groupId": "io.github.ym0506.routecontract",
-                  "artifactId": "routecontract-shardingsphere-5.5",
+                  "artifactIds": artifact_ids,
                   "version": version,
               },
               "payloads": payloads,
@@ -418,8 +586,8 @@ jobs:
           PY
 
           bundle_output="${smoke_root}/bundle-output"
-          bundle="${bundle_output}/${bundle_artifact}-central-upload.zip"
-          receipt="${bundle_output}/${bundle_artifact}-central-upload-receipt.json"
+          bundle="${bundle_output}/routecontract-${bundle_version}-central-upload.zip"
+          receipt="${bundle_output}/routecontract-${bundle_version}-central-upload-receipt.json"
           python3 -I "${source_root}/scripts/prepare-central-upload-bundle.py" build \
             --repository "${bundle_repository}" \
             --reviewed-payload-manifest "${smoke_manifest}" \
@@ -434,8 +602,67 @@ jobs:
             --public-gpg-home "${public_gnupg_home}" \
             --expected-primary-fingerprint "${fingerprint}"
 
+      - name: Verify staged core and adapters with independent MySQL consumers
+        shell: bash
+        timeout-minutes: 15
+        run: |
+          set -euo pipefail
+          python scripts/verify-staged-split-artifact-consumer.py \
+            --repository "${RUNNER_TEMP}/routecontract-central-smoke/unsigned-repository" \
+            --evidence-directory "${RUNNER_TEMP}/routecontract-staged-split-consumers"
+
+      - name: Verify staged adapters through independent Maven MySQL consumers
+        shell: bash
+        timeout-minutes: 15
+        env:
+          SSL_CERT_FILE: /etc/ssl/certs/ca-certificates.crt
+        run: |
+          set -euo pipefail
+          test -r "${SSL_CERT_FILE}"
+          python scripts/verify-staged-maven-artifact-consumer.py \
+            --repository "${RUNNER_TEMP}/routecontract-central-smoke/unsigned-repository" \
+            --evidence-directory "${RUNNER_TEMP}/routecontract-staged-maven-consumers" \
+            --java-home "${JAVA_HOME}"
+
+      - name: Verify old bytecode and public API migration through the adapter POM
+        shell: bash
+        timeout-minutes: 15
+        run: |
+          set -euo pipefail
+          python scripts/verify-public-api-migration.py \
+            --legacy-repository "${RUNNER_TEMP}/routecontract-local-v012" \
+            --repository "${RUNNER_TEMP}/routecontract-central-smoke/unsigned-repository" \
+            --evidence-directory "${RUNNER_TEMP}/routecontract-api-migration"
+
       - name: Verify same-checkout Maven publication consumer
         run: ./scripts/verify-standalone-consumer.sh
+
+      - name: Verify Gradle split-artifact consumers
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/ci-evidence
+          summary="build/ci-evidence/gradle-split-consumer-summary.txt"
+          partial="${summary}.partial"
+          test ! -e "${summary}"
+          test ! -e "${partial}"
+          python3 -I scripts/verify-gradle-split-artifact-consumer.py > "${partial}"
+          mv "${partial}" "${summary}"
+          cat "${summary}"
+
+      - name: Verify Maven split-artifact consumers
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/ci-evidence
+          summary="build/ci-evidence/maven-split-consumer-summary.txt"
+          partial="${summary}.partial"
+          test ! -e "${summary}"
+          test ! -e "${partial}"
+          MAVEN_BIN="${MAVEN_HOME}/bin/mvn" \
+            python3 -I scripts/verify-maven-split-artifact-consumer.py > "${partial}"
+          mv "${partial}" "${summary}"
+          cat "${summary}"
 
       - name: Verify isolated Maven 3.9.14 onboarding pilot
         shell: bash
@@ -493,13 +720,22 @@ jobs:
         with:
           name: routecontract-test-evidence-${{ github.sha }}
           path: |
+            routecontract-core/build/test-results/test/*.xml
             routecontract-shardingsphere-5.5/build/test-results/test/*.xml
+            routecontract-shardingsphere-5.5.2/build/test-results/test/*.xml
+            examples/mysql-5.5.2/build/test-results/test/*.xml
+            examples/mysql-5.5.2/build/routecontract-552-evidence/*.md
+            examples/mysql-5.5.2/build/routecontract-552-evidence/*.json
             examples/mysql/build/test-results/test/*.xml
             examples/mysql/build/routecontract-demo/review.md
             examples/mysql/build/routecontract-demo/review.json
             examples/standalone-consumer/build/test-results/test/*.xml
             build/ci-evidence/environment.txt
             build/ci-evidence/maven-pilot-summary.txt
+            build/ci-evidence/test-summary.txt
+            build/ci-evidence/coordinated-preparation-context.json
+            build/ci-evidence/gradle-split-consumer-summary.txt
+            build/ci-evidence/maven-split-consumer-summary.txt
           if-no-files-found: warn
           retention-days: 90
 
@@ -512,6 +748,59 @@ jobs:
             ${{ runner.temp }}/routecontract-local-install-consumers/summary.json
             ${{ runner.temp }}/routecontract-local-install-consumers/*/build/test-results/test/*.xml
             ${{ runner.temp }}/routecontract-local-install-consumers/*/target/surefire-reports/*.xml
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Upload minimized Maven staged-consumer evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: routecontract-staged-maven-consumer-evidence-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/routecontract-staged-maven-consumers/summary.json
+            ${{ runner.temp }}/routecontract-staged-maven-consumers/staged-receipt.json
+            ${{ runner.temp }}/routecontract-staged-maven-consumers/5.5.*/summary.json
+            ${{ runner.temp }}/routecontract-staged-maven-consumers/5.5.*/resolved-graph.json
+            ${{ runner.temp }}/routecontract-staged-maven-consumers/5.5.*/reports/**/*.json
+            ${{ runner.temp }}/routecontract-staged-maven-consumers/5.5.*/reports/**/*.md
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Upload minimized public API migration evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: routecontract-api-migration-evidence-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/routecontract-api-migration/summary.json
+            ${{ runner.temp }}/routecontract-api-migration/artifact-receipts.json
+            ${{ runner.temp }}/routecontract-api-migration/old-mysql-bytecode.json
+            ${{ runner.temp }}/routecontract-api-migration/0.*/mysql-evidence/0.*/*.json
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Retain exact staged Gradle metadata for byte-level review
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: routecontract-staged-metadata-evidence-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/routecontract-central-smoke/unsigned-repository/io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.module
+            ${{ runner.temp }}/routecontract-central-smoke/unsigned-repository/io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.module
+            ${{ runner.temp }}/routecontract-central-smoke/unsigned-repository/io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.module
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Upload staged split-artifact consumer evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: routecontract-staged-split-consumer-evidence-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/routecontract-staged-split-consumers/summary.json
+            ${{ runner.temp }}/routecontract-staged-split-consumers/staged-receipt.json
+            ${{ runner.temp }}/routecontract-staged-split-consumers/5.5.*/junit/*.xml
+            ${{ runner.temp }}/routecontract-staged-split-consumers/5.5.*/reports/**
           if-no-files-found: warn
           retention-days: 90
 

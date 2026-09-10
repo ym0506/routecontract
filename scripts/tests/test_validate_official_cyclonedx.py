@@ -63,14 +63,29 @@ GOLDEN_PAIRS = (
         "build/reports/verified-sbom/aggregate/bom.xml",
     ),
     (
-        "published",
+        "core",
+        "build/reports/verified-sbom/routecontract-core/bom.json",
+        "build/reports/verified-sbom/routecontract-core/bom.xml",
+    ),
+    (
+        "adapter553",
         "build/reports/verified-sbom/routecontract-shardingsphere-5.5/bom.json",
         "build/reports/verified-sbom/routecontract-shardingsphere-5.5/bom.xml",
     ),
     (
-        "example",
+        "adapter552",
+        "build/reports/verified-sbom/routecontract-shardingsphere-5.5.2/bom.json",
+        "build/reports/verified-sbom/routecontract-shardingsphere-5.5.2/bom.xml",
+    ),
+    (
+        "mysql553",
         "build/reports/verified-sbom/mysql-example/bom.json",
         "build/reports/verified-sbom/mysql-example/bom.xml",
+    ),
+    (
+        "mysql552",
+        "build/reports/verified-sbom/mysql-5.5.2-example/bom.json",
+        "build/reports/verified-sbom/mysql-5.5.2-example/bom.xml",
     ),
 )
 
@@ -213,7 +228,7 @@ class OfficialCycloneDxValidatorTest(unittest.TestCase):
             ),
         )
 
-    def test_downloads_to_checksum_address_and_runs_exact_six_validations(self) -> None:
+    def test_downloads_to_checksum_address_and_runs_exact_twelve_validations(self) -> None:
         with mock.patch.object(
             MODULE.urllib.request,
             "urlopen",
@@ -232,7 +247,7 @@ class OfficialCycloneDxValidatorTest(unittest.TestCase):
                 ),
             ):
                 self.assertEqual(
-                    6, MODULE.validate_repository(self.repository, offline=False)
+                    12, MODULE.validate_repository(self.repository, offline=False)
                 )
 
         download.assert_called_once()
@@ -249,7 +264,7 @@ class OfficialCycloneDxValidatorTest(unittest.TestCase):
                     (name, "xml", self.repository / xml_relative),
                 )
             )
-        self.assertEqual(7, len(self.commands))
+        self.assertEqual(13, len(self.commands))
         for command, (_, format_name, path) in zip(
             self.commands[1:], expected_documents, strict=True
         ):
@@ -273,10 +288,16 @@ class OfficialCycloneDxValidatorTest(unittest.TestCase):
             [
                 "aggregate",
                 "aggregate",
-                "published",
-                "published",
-                "example",
-                "example",
+                "core",
+                "core",
+                "adapter553",
+                "adapter553",
+                "adapter552",
+                "adapter552",
+                "mysql553",
+                "mysql553",
+                "mysql552",
+                "mysql552",
             ],
             [name for name, _, _ in expected_documents],
         )
@@ -288,7 +309,14 @@ class OfficialCycloneDxValidatorTest(unittest.TestCase):
         external_root.mkdir()
         supplied: list[tuple[str, Path, Path]] = []
         expected_paths: list[Path] = []
-        for role in ("example", "aggregate", "published"):
+        for role in (
+            "mysql552",
+            "mysql553",
+            "core",
+            "aggregate",
+            "adapter552",
+            "adapter553",
+        ):
             json_relative = Path(f"renamed-{role}.cdx.json")
             xml_relative = Path(f"renamed-{role}.cdx.xml")
             for relative in (json_relative, xml_relative):
@@ -303,7 +331,7 @@ class OfficialCycloneDxValidatorTest(unittest.TestCase):
             ),
         ):
             self.assertEqual(
-                6,
+                12,
                 MODULE.validate_repository(
                     self.repository,
                     offline=True,
@@ -314,7 +342,7 @@ class OfficialCycloneDxValidatorTest(unittest.TestCase):
         download.assert_not_called()
         expected_paths = [
             external_root / f"renamed-{role}.cdx.{format_name}"
-            for role in ("aggregate", "published", "example")
+            for role in MODULE.EXPECTED_PAIR_ROLES
             for format_name in ("json", "xml")
         ]
         self.assertEqual(expected_paths, [Path(command[3]) for command in self.commands[1:]])
@@ -324,8 +352,11 @@ class OfficialCycloneDxValidatorTest(unittest.TestCase):
         input_root.mkdir()
         good = (
             ("aggregate", Path("aggregate.json"), Path("aggregate.xml")),
-            ("published", Path("published.json"), Path("published.xml")),
-            ("example", Path("example.json"), Path("example.xml")),
+            ("core", Path("core.json"), Path("core.xml")),
+            ("adapter553", Path("published.json"), Path("published.xml")),
+            ("adapter552", Path("published552.json"), Path("published552.xml")),
+            ("mysql553", Path("example.json"), Path("example.xml")),
+            ("mysql552", Path("example552.json"), Path("example552.xml")),
         )
         for supplied_pairs, supplied_root in ((good, None), (None, input_root)):
             with self.subTest(
@@ -342,17 +373,20 @@ class OfficialCycloneDxValidatorTest(unittest.TestCase):
                         input_root=supplied_root,
                     )
         cases = (
-            ("missing", good[:2]),
-            ("duplicate", (good[0], good[0], good[2])),
-            ("unexpected", (good[0], good[1], ("other", Path("o.json"), Path("o.xml")))),
+            ("missing", good[:5]),
+            ("duplicate", (good[0], good[0], *good[2:])),
+            (
+                "unexpected",
+                (*good[:5], ("other", Path("o.json"), Path("o.xml"))),
+            ),
             ("absolute", (("aggregate", input_root / "a.json", Path("a.xml")), *good[1:])),
             ("traversal", (("aggregate", Path("../a.json"), Path("a.xml")), *good[1:])),
             (
                 "same file",
                 (
                     ("aggregate", Path("shared.json"), Path("aggregate.xml")),
-                    ("published", Path("shared.json"), Path("published.xml")),
-                    good[2],
+                    ("core", Path("shared.json"), Path("core.xml")),
+                    *good[2:],
                 ),
             ),
         )
@@ -376,7 +410,7 @@ class OfficialCycloneDxValidatorTest(unittest.TestCase):
                 Path(f"{role}.json"),
                 Path(f"{role}.xml"),
             )
-            for role in ("aggregate", "published", "example")
+            for role in MODULE.EXPECTED_PAIR_ROLES
         )
         for role, json_relative, xml_relative in pairs:
             (input_root / json_relative).write_text(f"{role}:json\n", encoding="utf-8")
@@ -450,7 +484,7 @@ class OfficialCycloneDxValidatorTest(unittest.TestCase):
             ),
         ):
             self.assertEqual(
-                6, MODULE.validate_repository(self.repository, offline=True)
+                12, MODULE.validate_repository(self.repository, offline=True)
             )
         download.assert_not_called()
 
@@ -700,7 +734,10 @@ class OfficialCycloneDxValidatorTest(unittest.TestCase):
                     stdout=MODULE.EXPECTED_VERSION_OUTPUT,
                     stderr="",
                 )
-            if arguments[4:6] == ["--input-format", "xml"] and "routecontract" in arguments[3]:
+            if (
+                arguments[4:6] == ["--input-format", "xml"]
+                and "routecontract-shardingsphere-5.5" in arguments[3]
+            ):
                 return subprocess.CompletedProcess(
                     arguments,
                     1,
@@ -710,7 +747,7 @@ class OfficialCycloneDxValidatorTest(unittest.TestCase):
             return subprocess.CompletedProcess(arguments, 0, stdout="", stderr="")
 
         with self.assertRaisesRegex(
-            MODULE.CycloneDxValidationError, "published/xml"
+            MODULE.CycloneDxValidationError, "adapter553/xml"
         ) as caught:
             self.run_validator(offline=True, process_side_effect=fail_published_xml)
         self.assertNotIn("synthetic-sensitive", str(caught.exception))
@@ -775,19 +812,31 @@ class OfficialCycloneDxValidatorTest(unittest.TestCase):
             "a.json",
             "a.xml",
             "--pair",
-            "published",
+            "core",
+            "c.json",
+            "c.xml",
+            "--pair",
+            "adapter553",
             "p.json",
             "p.xml",
             "--pair",
-            "example",
+            "adapter552",
+            "p552.json",
+            "p552.xml",
+            "--pair",
+            "mysql553",
             "e.json",
             "e.xml",
+            "--pair",
+            "mysql552",
+            "e552.json",
+            "e552.xml",
         ]
         with (
             mock.patch.object(
                 MODULE, "_repository_root_from_script", return_value=self.repository
             ),
-            mock.patch.object(MODULE, "validate_repository", return_value=6) as validate,
+            mock.patch.object(MODULE, "validate_repository", return_value=12) as validate,
         ):
             self.assertEqual(0, MODULE.main(explicit_arguments))
         validate.assert_called_once_with(
@@ -795,8 +844,11 @@ class OfficialCycloneDxValidatorTest(unittest.TestCase):
             offline=True,
             sbom_pairs=(
                 ("aggregate", Path("a.json"), Path("a.xml")),
-                ("published", Path("p.json"), Path("p.xml")),
-                ("example", Path("e.json"), Path("e.xml")),
+                ("core", Path("c.json"), Path("c.xml")),
+                ("adapter553", Path("p.json"), Path("p.xml")),
+                ("adapter552", Path("p552.json"), Path("p552.xml")),
+                ("mysql553", Path("e.json"), Path("e.xml")),
+                ("mysql552", Path("e552.json"), Path("e552.xml")),
             ),
             input_root=self.repository,
         )
@@ -820,10 +872,10 @@ class OfficialCycloneDxValidatorTest(unittest.TestCase):
 
 @unittest.skipUnless(
     os.environ.get("ROUTECONTRACT_REAL_CYCLONEDX") == "1",
-    "set ROUTECONTRACT_REAL_CYCLONEDX=1 for a real pinned CLI and six-file probe",
+    "set ROUTECONTRACT_REAL_CYCLONEDX=1 for a real pinned CLI and twelve-file probe",
 )
 class RealOfficialCycloneDxValidatorTest(unittest.TestCase):
-    def test_current_generated_six_files_with_real_cli(self) -> None:
+    def test_current_generated_twelve_files_with_real_cli(self) -> None:
         required = [
             REPOSITORY_ROOT / relative
             for _, json_relative, xml_relative in MODULE.SBOM_PAIRS
@@ -831,9 +883,9 @@ class RealOfficialCycloneDxValidatorTest(unittest.TestCase):
         ]
         missing = [str(path) for path in required if not path.is_file()]
         if missing:
-            self.skipTest("generate the six verified SBOMs first: " + ", ".join(missing))
+            self.skipTest("generate the twelve verified SBOMs first: " + ", ".join(missing))
         self.assertEqual(
-            6,
+            12,
             MODULE.validate_repository(REPOSITORY_ROOT.resolve(), offline=False),
         )
 

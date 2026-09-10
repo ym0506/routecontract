@@ -24,14 +24,31 @@ PACKAGE_SPEC.loader.exec_module(package_submission)
 # Keep the acceptance fixture independent of the summarizer's allowlist so a
 # newly added release suite cannot disappear from both the input and expectation.
 CURRENT_RELEASE_SUITES = {
-    "io.github.ym0506.routecontract.RouteContractTest": 18,
+    "io.github.ym0506.routecontract.api.CurrentRouteContractTest": 15,
+    "io.github.ym0506.routecontract.internal.CurrentRuntimeGuardTest": 9,
+    "io.github.ym0506.routecontract.internal.RuntimeAdapterRegistryTest": 9,
+    "io.github.ym0506.routecontract.manifest.ManifestReviewReportTest": 13,
+    "io.github.ym0506.routecontract.manifest.ManifestRuntimeCompatibilityMatrixTest": 606,
+    "io.github.ym0506.routecontract.structure.CorePublicationStructureTest": 3,
+    "io.github.ym0506.routecontract.CurrentRouteContractCompatibilityTest": 4,
+    "io.github.ym0506.routecontract.RouteContractTest": 19,
+    "io.github.ym0506.routecontract.ShardingSphereRuntimeIdentityTest": 3,
+    "io.github.ym0506.routecontract.manifest.ObservedExecutionManifestTest": 22,
+    "io.github.ym0506.routecontract.shardingsphere553.internal.FreshJvmGuardFailureTest": 2,
+    "io.github.ym0506.routecontract.shardingsphere553.internal.ShardingSphere553PreflightTest": 10,
+    "io.github.ym0506.routecontract.structure.ArtifactIsolationTest": 6,
+    "io.github.ym0506.routecontract.shardingsphere552.internal.FreshJvmCompatibilityFailureTest": 4,
+    "io.github.ym0506.routecontract.shardingsphere552.internal.FreshJvmGuardFailureTest": 2,
+    "io.github.ym0506.routecontract.shardingsphere552.internal.FreshJvmMixedAnchorTest": 2,
+    "io.github.ym0506.routecontract.shardingsphere552.internal.RouteContract552HookContainmentTest": 3,
+    "io.github.ym0506.routecontract.shardingsphere552.internal.ShardingSphere552PreflightTest": 10,
+    "io.github.ym0506.routecontract.structure.ArtifactIsolation552Test": 10,
     "io.github.ym0506.routecontract.example.DataSourceProxyComparisonMySqlTest": 1,
     "io.github.ym0506.routecontract.example.FailureBoundaryMySqlTest": 1,
     "io.github.ym0506.routecontract.example.ObservedExecutionRegressionCorpusMySqlTest": 7,
     "io.github.ym0506.routecontract.example.OperationCorrelationMySqlTest": 5,
-    "io.github.ym0506.routecontract.internal.ShardingSphere553PreflightTest": 3,
-    "io.github.ym0506.routecontract.manifest.ManifestReviewReportTest": 10,
-    "io.github.ym0506.routecontract.manifest.ObservedExecutionManifestTest": 17,
+    "io.github.ym0506.routecontract.example552.Exact552OperationContractMySqlTest": 7,
+    "io.github.ym0506.routecontract.example552.Exact552ObservedExecutionRegressionCorpusMySqlTest": 7,
 }
 
 
@@ -84,12 +101,12 @@ class SummarizeTestResultsTest(unittest.TestCase):
         core.mkdir()
         mysql.mkdir()
         for suite, tests in CURRENT_RELEASE_SUITES.items():
-            destination = mysql if ".example." in suite else core
+            destination = mysql if ".example" in suite else core
             self.write_suite(
                 destination,
                 suite,
                 tests,
-                captured_output=secret if secret and ".example." in suite else None,
+                captured_output=secret if secret and ".example" in suite else None,
             )
         return [core, mysql]
 
@@ -108,11 +125,16 @@ class SummarizeTestResultsTest(unittest.TestCase):
             self.assertTrue(first.endswith("\n"))
             self.assertIn("format=routecontract-test-summary-v1\n", first)
             self.assertIn(f"revision={self.revision}\n", first)
-            self.assertIn("suite_count=8\n", first)
-            self.assertIn("test_count=62\n", first)
+            self.assertIn("suite_count=25\n", first)
+            self.assertIn("test_count=780\n", first)
             self.assertIn(
                 "suite=io.github.ym0506.routecontract.manifest.ManifestReviewReportTest"
-                "|tests=10|failures=0|errors=0|skipped=0\n",
+                "|tests=13|failures=0|errors=0|skipped=0\n",
+                first,
+            )
+            self.assertIn(
+                "suite=io.github.ym0506.routecontract.manifest.ManifestRuntimeCompatibilityMatrixTest"
+                "|tests=606|failures=0|errors=0|skipped=0\n",
                 first,
             )
             self.assertIn("failure_count=0\nerror_count=0\nskipped_count=0\n", first)
@@ -175,6 +197,51 @@ class SummarizeTestResultsTest(unittest.TestCase):
 
             with self.assertRaisesRegex(
                 summarize_test_results.SummaryError, "test count changed"
+            ):
+                summarize_test_results.build_summary(self.revision, directories)
+
+    def test_prior_inventory_without_a22_is_no_longer_complete(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            directories = self.complete_results(Path(raw))
+            suite = "io.github.ym0506.routecontract.manifest.ManifestRuntimeCompatibilityMatrixTest"
+            (directories[0] / f"TEST-{suite}.xml").unlink()
+            with self.assertRaisesRegex(
+                summarize_test_results.SummaryError,
+                r"suite set mismatch; missing=.*ManifestRuntimeCompatibilityMatrixTest",
+            ):
+                summarize_test_results.build_summary(self.revision, directories)
+
+    def test_dropping_one_a22_case_with_consistent_xml_counts_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            directories = self.complete_results(Path(raw))
+            suite = "io.github.ym0506.routecontract.manifest.ManifestRuntimeCompatibilityMatrixTest"
+            self.write_suite(directories[0], suite, 605)
+            with self.assertRaisesRegex(
+                summarize_test_results.SummaryError,
+                r"ManifestRuntimeCompatibilityMatrixTest test count changed: expected 606, found 605",
+            ):
+                summarize_test_results.build_summary(self.revision, directories)
+
+    def test_duplicate_a22_suite_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            directories = self.complete_results(Path(raw))
+            suite = "io.github.ym0506.routecontract.manifest.ManifestRuntimeCompatibilityMatrixTest"
+            self.write_suite(directories[1], suite, 606)
+            with self.assertRaisesRegex(
+                summarize_test_results.SummaryError,
+                r"duplicate JUnit suite: .*ManifestRuntimeCompatibilityMatrixTest",
+            ):
+                summarize_test_results.build_summary(self.revision, directories)
+
+    def test_rejects_adapter552_results_missing_the_two_publication_checks(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            directories = self.complete_results(Path(raw))
+            suite = "io.github.ym0506.routecontract.structure.ArtifactIsolation552Test"
+            self.write_suite(directories[0], suite, 8)
+
+            with self.assertRaisesRegex(
+                summarize_test_results.SummaryError,
+                r"ArtifactIsolation552Test test count changed: expected 10, found 8",
             ):
                 summarize_test_results.build_summary(self.revision, directories)
 

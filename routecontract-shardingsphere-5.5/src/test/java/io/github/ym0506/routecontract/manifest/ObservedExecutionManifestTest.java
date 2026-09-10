@@ -5,6 +5,7 @@ import io.github.ym0506.routecontract.CaptureStatus;
 import io.github.ym0506.routecontract.PhysicalExecutionAttempt;
 import io.github.ym0506.routecontract.RouteContractViolationException;
 import io.github.ym0506.routecontract.RouteSnapshot;
+import io.github.ym0506.routecontract.ShardingSphereRuntimeIdentity;
 import io.github.ym0506.routecontract.ThreadRole;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -51,7 +52,12 @@ class ObservedExecutionManifestTest {
         ManifestCodec codec = new ManifestCodec();
         byte[] encoded = codec.encode(manifest);
         String json = new String(encoded, StandardCharsets.UTF_8);
-        String expected = "{\"schemaVersion\":1,\"operationId\":\"checkout\","
+        String expected = "{\"schemaVersion\":2,\"runtimeIdentity\":{"
+                + "\"adapterId\":\"apache-shardingsphere-jdbc/sql-execution-hook\","
+                + "\"adapterContractVersion\":1,"
+                + "\"infraExecutorImplementationVersion\":\"5.5.3\","
+                + "\"infraSpiImplementationVersion\":\"5.5.3\"},"
+                + "\"operationId\":\"checkout\","
                 + "\"captureStatus\":\"COMPLETE\",\"policy\":{"
                 + "\"maxObservedPhysicalAttempts\":4,"
                 + "\"maxDistinctObservedDataSourceNames\":2,"
@@ -81,6 +87,78 @@ class ObservedExecutionManifestTest {
     }
 
     @Test
+    void legacySchemaOneDecodeEncodeIsByteStableAndCarriesImplicit553Identity() throws Exception {
+        assertEquals(6, ObservedExecutionManifest.class.getConstructor(
+                int.class,
+                String.class,
+                CaptureStatus.class,
+                ManifestPolicy.class,
+                ManifestCounts.class,
+                List.class).getParameterCount());
+        ManifestCodec codec = new ManifestCodec();
+        byte[] schemaTwo = codec.encode(manifest(
+                "legacy-operation", FINGERPRINT_A, ManifestPolicy.strict(1, 1)));
+        String explicitIdentity = "\"schemaVersion\":2,\"runtimeIdentity\":{"
+                + "\"adapterId\":\"apache-shardingsphere-jdbc/sql-execution-hook\","
+                + "\"adapterContractVersion\":1,"
+                + "\"infraExecutorImplementationVersion\":\"5.5.3\","
+                + "\"infraSpiImplementationVersion\":\"5.5.3\"},";
+        byte[] schemaOne = new String(schemaTwo, StandardCharsets.UTF_8)
+                .replace(explicitIdentity, "\"schemaVersion\":1,")
+                .getBytes(StandardCharsets.UTF_8);
+
+        ObservedExecutionManifest decoded = codec.decode(schemaOne);
+
+        assertEquals(1, decoded.schemaVersion());
+        assertEquals(ShardingSphereRuntimeIdentity.SHARDINGSPHERE_5_5_3, decoded.runtimeIdentity());
+        assertArrayEquals(schemaOne, codec.encode(decoded));
+        ObservedExecutionManifest current = manifest(
+                "current-operation", FINGERPRINT_A, ManifestPolicy.strict(1, 1));
+        assertThrows(IllegalArgumentException.class, () -> new ObservedExecutionManifest(
+                ObservedExecutionManifest.CURRENT_SCHEMA_VERSION,
+                current.operationId(),
+                current.captureStatus(),
+                current.policy(),
+                current.counts(),
+                current.attempts()));
+    }
+
+    @Test
+    void strictDecoderRejectsMalformedOrSchemaInconsistentRuntimeIdentity() throws Exception {
+        ManifestCodec codec = new ManifestCodec();
+        String canonical = new String(codec.encode(manifest(
+                "runtime-identity", FINGERPRINT_A, ManifestPolicy.strict(1, 1))),
+                StandardCharsets.UTF_8);
+        String identity = "\"runtimeIdentity\":{"
+                + "\"adapterId\":\"apache-shardingsphere-jdbc/sql-execution-hook\","
+                + "\"adapterContractVersion\":1,"
+                + "\"infraExecutorImplementationVersion\":\"5.5.3\","
+                + "\"infraSpiImplementationVersion\":\"5.5.3\"},";
+
+        List<String> malformed = List.of(
+                canonical.replace(identity, ""),
+                canonical.replace("\"adapterId\":\"apache-shardingsphere-jdbc/sql-execution-hook\",", ""),
+                canonical.replace(
+                        "\"adapterId\":\"apache-shardingsphere-jdbc/sql-execution-hook\"",
+                        "\"adapterId\":\" \""),
+                canonical.replace("\"adapterContractVersion\":1", "\"adapterContractVersion\":0"),
+                canonical.replace(
+                        "\"infraExecutorImplementationVersion\":\"5.5.3\"",
+                        "\"infraExecutorImplementationVersion\":null"),
+                canonical.replace(
+                        "\"infraSpiImplementationVersion\":\"5.5.3\"",
+                        "\"infraSpiImplementationVersion\":\"5.5.3\",\"unknown\":true"));
+        for (String invalid : malformed) {
+            assertThrows(ManifestFormatException.class,
+                    () -> codec.decode(invalid.getBytes(StandardCharsets.UTF_8)));
+        }
+
+        String schemaOneWithExplicitIdentity = canonical.replace("\"schemaVersion\":2", "\"schemaVersion\":1");
+        assertThrows(ManifestFormatException.class,
+                () -> codec.decode(schemaOneWithExplicitIdentity.getBytes(StandardCharsets.UTF_8)));
+    }
+
+    @Test
     void strictDecoderRejectsTamperedCountsDuplicateFieldsAndUnknownProperties() throws Exception {
         ManifestCodec codec = new ManifestCodec();
         ObservedExecutionManifest manifest = manifest(
@@ -93,13 +171,13 @@ class ObservedExecutionManifestTest {
         assertThrows(ManifestFormatException.class,
                 () -> codec.decode(tamperedCount.getBytes(StandardCharsets.UTF_8)));
         String duplicate = canonical.replace(
-                "{\"schemaVersion\":1",
-                "{\"schemaVersion\":1,\"schemaVersion\":1");
+                "{\"schemaVersion\":2",
+                "{\"schemaVersion\":2,\"schemaVersion\":2");
         assertThrows(ManifestFormatException.class,
                 () -> codec.decode(duplicate.getBytes(StandardCharsets.UTF_8)));
         String unknown = canonical.replace(
-                "{\"schemaVersion\":1",
-                "{\"unknown\":true,\"schemaVersion\":1");
+                "{\"schemaVersion\":2",
+                "{\"unknown\":true,\"schemaVersion\":2");
         assertThrows(ManifestFormatException.class,
                 () -> codec.decode(unknown.getBytes(StandardCharsets.UTF_8)));
     }
@@ -115,6 +193,7 @@ class ObservedExecutionManifestTest {
                 1);
         ObservedExecutionManifest oversized = new ObservedExecutionManifest(
                 ObservedExecutionManifest.CURRENT_SCHEMA_VERSION,
+                ShardingSphereRuntimeIdentity.SHARDINGSPHERE_5_5_3,
                 "oversized",
                 CaptureStatus.COMPLETE,
                 ManifestPolicy.strict(1, 1),
@@ -277,7 +356,8 @@ class ObservedExecutionManifestTest {
         ManifestPolicy policy = ManifestPolicy.budgetOnly(3, 2);
         ObservedExecutionManifest approved = manifest("checkout", FINGERPRINT_A, policy);
         ObservedExecutionManifest incompatibleIncomplete = new ObservedExecutionManifest(
-                2,
+                3,
+                ShardingSphereRuntimeIdentity.SHARDINGSPHERE_5_5_3,
                 "checkout",
                 CaptureStatus.INCOMPLETE,
                 policy,
@@ -339,6 +419,120 @@ class ObservedExecutionManifestTest {
                         ManifestDiffCode.ATTEMPT_BUDGET_EXCEEDED,
                         ManifestDiffCode.DATA_SOURCE_BUDGET_EXCEEDED),
                 policyResult.diffs().stream().map(ManifestDiff::code).toList());
+    }
+
+    @Test
+    void legacy553AndExplicit553MatchBut552NeverSilentlySharesTheBaseline() {
+        ManifestPolicy policy = ManifestPolicy.strict(1, 1);
+        ObservedExecutionManifest current553 = manifest("checkout", FINGERPRINT_A, policy);
+        ObservedExecutionManifest legacy553 = new ObservedExecutionManifest(
+                1,
+                current553.operationId(),
+                current553.captureStatus(),
+                current553.policy(),
+                current553.counts(),
+                current553.attempts());
+        ObservedExecutionManifest current552 = new ObservedExecutionManifest(
+                2,
+                ShardingSphereRuntimeIdentity.SHARDINGSPHERE_5_5_2,
+                current553.operationId(),
+                current553.captureStatus(),
+                current553.policy(),
+                current553.counts(),
+                current553.attempts());
+
+        ManifestVerificationResult legacyTo553 = new ManifestVerifier().verify(legacy553, current553);
+        ManifestVerificationResult legacyTo552 = new ManifestVerifier().verify(legacy553, current552);
+
+        assertEquals(VerificationStatus.MATCH, legacyTo553.status());
+        assertEquals(VerificationStatus.INCOMPATIBLE, legacyTo552.status());
+        assertEquals(List.of(ManifestDiffCode.RUNTIME_IDENTITY_MISMATCH),
+                legacyTo552.diffs().stream().map(ManifestDiff::code).toList());
+        assertEquals("RCM005", ManifestDiffCode.RUNTIME_IDENTITY_MISMATCH.stableCode());
+    }
+
+    @Test
+    void snapshotRuntimeMismatchIsRejectedBeforeAliasResolutionOrEligibilityChecks() {
+        ManifestPolicy policy = ManifestPolicy.strict(1, 1);
+        ObservedExecutionManifest approved553 = manifest("checkout", FINGERPRINT_A, policy);
+        RouteSnapshot captured553 = snapshot(
+                "checkout",
+                CaptureStatus.COMPLETE,
+                List.of(attempt(
+                        "unaliased",
+                        FINGERPRINT_A,
+                        List.of(Long.class.getName()),
+                        ThreadRole.TRUNK,
+                        AttemptOutcome.CALLBACK_RETURNED,
+                        null)));
+        RouteSnapshot captured552 = new RouteSnapshot(
+                captured553.schemaVersion(),
+                ShardingSphereRuntimeIdentity.SHARDINGSPHERE_5_5_2,
+                captured553.operationId(),
+                captured553.status(),
+                captured553.observedPhysicalAttemptCount(),
+                captured553.callbackReturnedCount(),
+                captured553.callbackFailureCount(),
+                captured553.unknownOutcomeCount(),
+                captured553.trunkThreadFlagCount(),
+                captured553.workerThreadFlagCount(),
+                captured553.observedDataSourceNames(),
+                captured553.attempts(),
+                captured553.collectorDiagnostics());
+
+        ManifestVerificationResult result = new ManifestVerifier().verify(
+                approved553,
+                captured552,
+                DataSourceAliases.of(Map.of()));
+
+        assertEquals(VerificationStatus.INCOMPATIBLE, result.status());
+        assertEquals(List.of(ManifestDiffCode.RUNTIME_IDENTITY_MISMATCH),
+                result.diffs().stream().map(ManifestDiff::code).toList());
+    }
+
+    @Test
+    void compatibilityFindingsUseSchemaRuntimeMismatchOperationEligibilityPrecedence() {
+        ManifestPolicy policy = ManifestPolicy.strict(1, 1);
+        ObservedExecutionManifest candidate553 = manifest("candidate-operation", FINGERPRINT_A, policy);
+        ShardingSphereRuntimeIdentity unsupported = new ShardingSphereRuntimeIdentity(
+                ShardingSphereRuntimeIdentity.SQL_EXECUTION_HOOK_ADAPTER_ID,
+                ShardingSphereRuntimeIdentity.CURRENT_ADAPTER_CONTRACT_VERSION,
+                "5.5.4",
+                "5.5.4");
+        ObservedExecutionManifest unsupportedApproved = new ObservedExecutionManifest(
+                3,
+                unsupported,
+                "approved-operation",
+                CaptureStatus.INCOMPLETE,
+                policy,
+                new ManifestCounts(0, 0, 0, 0, 0),
+                List.of());
+
+        ManifestVerificationResult unsupportedResult = new ManifestVerifier()
+                .verify(unsupportedApproved, candidate553);
+
+        assertEquals(VerificationStatus.INCOMPATIBLE, unsupportedResult.status());
+        assertEquals(List.of(
+                        ManifestDiffCode.UNSUPPORTED_SCHEMA,
+                        ManifestDiffCode.UNSUPPORTED_RUNTIME_IDENTITY,
+                        ManifestDiffCode.OPERATION_ID_MISMATCH,
+                        ManifestDiffCode.APPROVED_MANIFEST_NOT_ELIGIBLE),
+                unsupportedResult.diffs().stream().map(ManifestDiff::code).toList());
+        assertEquals("RCM004", ManifestDiffCode.UNSUPPORTED_RUNTIME_IDENTITY.stableCode());
+
+        ObservedExecutionManifest approved552 = new ObservedExecutionManifest(
+                2,
+                ShardingSphereRuntimeIdentity.SHARDINGSPHERE_5_5_2,
+                "approved-operation",
+                candidate553.captureStatus(),
+                candidate553.policy(),
+                candidate553.counts(),
+                candidate553.attempts());
+        ManifestVerificationResult mismatchResult = new ManifestVerifier().verify(approved552, candidate553);
+        assertEquals(List.of(
+                        ManifestDiffCode.RUNTIME_IDENTITY_MISMATCH,
+                        ManifestDiffCode.OPERATION_ID_MISMATCH),
+                mismatchResult.diffs().stream().map(ManifestDiff::code).toList());
     }
 
     @Test
@@ -557,6 +751,7 @@ class ObservedExecutionManifestTest {
         }
         return new RouteSnapshot(
                 RouteSnapshot.CURRENT_SCHEMA_VERSION,
+                ShardingSphereRuntimeIdentity.SHARDINGSPHERE_5_5_3,
                 operation,
                 status,
                 attempts.size(),

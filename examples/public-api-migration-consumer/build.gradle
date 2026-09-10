@@ -1,0 +1,165 @@
+import groovy.json.JsonOutput
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
+import org.gradle.api.artifacts.result.ResolvedDependencyResult
+import java.security.MessageDigest
+
+plugins { id 'java' }
+
+def routeGroup = 'io.github.ym0506.routecontract'
+def adapter = 'routecontract-shardingsphere-5.5'
+def routeVersion = providers.gradleProperty('routecontractVersion').get()
+if (!(routeVersion in ['0.1.2', '0.2.0'])) { throw new GradleException('Unsupported migration version') }
+def exactRuntime = '5.5.3'
+def repositoryPath = file(providers.gradleProperty('routecontractRepository').get()).canonicalFile
+if (!repositoryPath.isDirectory()) { throw new GradleException('Expected supplied Maven-style repository') }
+def expectedModules = routeVersion == '0.1.2' ? [adapter] : [adapter, 'routecontract-core']
+def expectedHashes = expectedModules.collectEntries { module ->
+    def value = providers.gradleProperty("routecontractSha256.${module}").get()
+    if (!(value ==~ /[0-9a-f]{64}/)) { throw new GradleException('Expected exact first-party SHA-256') }
+    [(module): value]
+}
+repositories {
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'suppliedMigrationRepository'
+                url = repositoryPath.toURI()
+                // The public 0.1.2 asset has no .module; this lane explicitly verifies the POM edge.
+                metadataSources { mavenPom(); artifact(); ignoreGradleMetadataRedirection() }
+            }
+        }
+        filter { includeGroup routeGroup }
+    }
+    mavenCentral { content { excludeGroup routeGroup } }
+}
+dependencyLocking { lockAllConfigurations(); lockMode = LockMode.STRICT }
+dependencies {
+    testImplementation("${routeGroup}:${adapter}:${routeVersion}")
+    testImplementation platform('com.fasterxml.jackson:jackson-bom:2.18.9')
+    testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:${exactRuntime}") {
+        exclude group: 'org.locationtech.jts.io', module: 'jts-io-common'
+    }
+    testRuntimeOnly "org.apache.shardingsphere:shardingsphere-infra-url-absolutepath:${exactRuntime}"
+    testRuntimeOnly "org.apache.shardingsphere:shardingsphere-infra-data-source-pool-hikari:${exactRuntime}"
+    testRuntimeOnly "org.apache.shardingsphere:shardingsphere-standalone-mode-repository-${exactRuntime == '5.5.2' ? 'jdbc' : 'memory'}:${exactRuntime}"
+    testRuntimeOnly "org.apache.shardingsphere:shardingsphere-sharding-core:${exactRuntime}"
+    testRuntimeOnly "org.apache.shardingsphere:shardingsphere-parser-sql-${exactRuntime == '5.5.2' ? '' : 'engine-'}sql92:${exactRuntime}"
+    testRuntimeOnly "org.apache.shardingsphere:shardingsphere-parser-sql-${exactRuntime == '5.5.2' ? '' : 'engine-'}mysql:${exactRuntime}"
+    testRuntimeOnly "org.apache.shardingsphere:shardingsphere-authority-simple:${exactRuntime}"
+    testRuntimeOnly('com.mysql:mysql-connector-j:26.7.0') {
+        exclude group: 'com.google.protobuf', module: 'protobuf-java'
+    }
+    testRuntimeOnly 'com.zaxxer:HikariCP:6.2.1'
+    testImplementation platform('org.junit:junit-bom:5.14.3')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.testcontainers:junit-jupiter:1.21.4'
+    testImplementation 'org.testcontainers:mysql:1.21.4'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testRuntimeOnly 'org.slf4j:slf4j-simple:2.0.17'
+    constraints {
+        testImplementation('org.apache.commons:commons-compress:1.26.0')
+        if (exactRuntime == '5.5.2') {
+            testImplementation('commons-logging:commons-logging:1.2') { version { strictly '1.2' } }
+        }
+        if (exactRuntime == '5.5.3') {
+            testImplementation('net.hydromatic:aggdesigner-algorithm:6.1') { version { strictly '6.1' } }
+            testImplementation('net.minidev:json-smart:2.4.10') { version { strictly '2.4.10' } }
+            testImplementation('net.minidev:accessors-smart:2.4.9') { version { strictly '2.4.9' } }
+            testImplementation('org.apache.calcite:calcite-core:1.42.0') { version { strictly '1.42.0' } }
+            testImplementation('org.apache.calcite:calcite-linq4j:1.42.0') { version { strictly '1.42.0' } }
+        }
+    }
+}
+
+[configurations.testCompileClasspath, configurations.testRuntimeClasspath].each { configuration ->
+    configuration.resolutionStrategy.eachDependency { detail ->
+        if (detail.requested.group == 'org.apache.shardingsphere' && detail.requested.version != exactRuntime) {
+            throw new GradleException("RC_MIGRATION_RUNTIME_REJECTED: ${detail.requested}")
+        }
+        if (detail.requested.group == routeGroup && detail.requested.version != routeVersion) {
+            throw new GradleException("RC_MIGRATION_VERSION_REJECTED: ${detail.requested}")
+        }
+    }
+}
+def sha256 = { file -> MessageDigest.getInstance('SHA-256').digest(file.bytes).encodeHex().toString() }
+def graph = tasks.register('verifyMigrationGraph') {
+    doLast {
+        def runtime = configurations.testRuntimeClasspath
+        def direct = runtime.allDependencies.findAll { it.group == routeGroup }.collect { it.name }
+        if (direct != [adapter]) { throw new GradleException('Request only the existing adapter GAV; no direct core') }
+        def selected = runtime.resolvedConfiguration.resolvedArtifacts
+        def firstParty = selected.findAll { it.moduleVersion.id.group == routeGroup }
+        if (firstParty.collect { it.name }.sort() != expectedModules.sort()
+                || firstParty.any { it.moduleVersion.id.version != routeVersion }) {
+            throw new GradleException('Unexpected first-party selected graph')
+        }
+        firstParty.each { artifact ->
+            if (sha256(artifact.file) != expectedHashes[artifact.name]) {
+                throw new GradleException("RC_MIGRATION_ARTIFACT_MISMATCH: ${artifact.name}")
+            }
+        }
+        def resolution = runtime.incoming.resolutionResult
+        def components = resolution.allComponents.findAll { it.id != resolution.root.id }
+        if (components.any { !(it.id instanceof ModuleComponentIdentifier) }) {
+            throw new GradleException('Source/project component in independent consumer')
+        }
+        def sharding = components.findAll { it.id.group == 'org.apache.shardingsphere' }
+        if (sharding.empty || sharding.any { it.id.version != exactRuntime }) {
+            throw new GradleException('Selected ShardingSphere graph must be exact 5.5.3')
+        }
+        if (routeVersion == '0.2.0') {
+            def owner = components.find { it.id.group == routeGroup && it.id.module == adapter }
+            if (!owner.dependencies.any { it instanceof ResolvedDependencyResult
+                    && it.selected.id instanceof ModuleComponentIdentifier
+                    && it.selected.id.group == routeGroup && it.selected.id.module == 'routecontract-core'
+                    && it.selected.id.version == routeVersion }) {
+                throw new GradleException('Core was not resolved transitively from the adapter POM')
+            }
+        }
+        def compile = configurations.testCompileClasspath
+        def compileFirstParty = compile.resolvedConfiguration.resolvedArtifacts.findAll { it.moduleVersion.id.group == routeGroup }
+        if (compileFirstParty.collect { it.name }.sort() != expectedModules.sort()) {
+            throw new GradleException('RC_MIGRATION_COMPILE_API_MISSING: adapter POM must expose core on the compile classpath')
+        }
+        compileFirstParty.each { artifact ->
+            if (artifact.moduleVersion.id.version != routeVersion || sha256(artifact.file) != expectedHashes[artifact.name]) {
+                throw new GradleException('Compile classpath first-party bytes disagree with supplied artifacts')
+            }
+        }
+        def output = layout.buildDirectory.file('migration-graph.json').get().asFile
+        output.parentFile.mkdirs()
+        output.text = JsonOutput.prettyPrint(JsonOutput.toJson([
+            version: routeVersion, directRouteContractDependencies: direct,
+            transitiveCore: routeVersion == '0.2.0',
+            components: components.collect { it.id.toString() }.sort(),
+            artifacts: selected.collect { [coordinate: it.moduleVersion.id.toString(),
+                file: it.file.absolutePath, sha256: sha256(it.file)] }.sort { it.coordinate },
+            classpath: runtime.files.collect { it.absolutePath },
+            compileClasspath: compile.files.collect { it.absolutePath }
+        ])) + '\n'
+        println "ROUTECONTRACT_MIGRATION_POM_GRAPH_VERIFIED version=${routeVersion} direct=adapter transitiveCore=${routeVersion == '0.2.0'}"
+    }
+}
+java { toolchain { languageVersion = JavaLanguageVersion.of(17) } }
+tasks.withType(JavaCompile).configureEach {
+    options.release = 17
+    options.encoding = 'UTF-8'
+    options.compilerArgs += ['-Xlint:all', '-Werror']
+}
+def oldClasses = providers.gradleProperty('routecontractOldClasses')
+if (oldClasses.present) { sourceSets.test.java.setSrcDirs([]) }
+tasks.named('test') {
+    dependsOn graph
+    if (oldClasses.present) {
+        testClassesDirs = files(file(oldClasses.get()))
+        classpath = files(testClassesDirs, sourceSets.test.output.resourcesDir) + configurations.testRuntimeClasspath
+    }
+    useJUnitPlatform()
+    maxParallelForks = 1
+    systemProperty 'api.version', '1.44'
+    systemProperty 'routecontract.version', routeVersion
+    systemProperty 'routecontract.legacySha256', providers.gradleProperty('routecontractLegacySha256').get()
+    systemProperty 'routecontract.coreSha256', expectedHashes.get('routecontract-core', '')
+    systemProperty 'routecontract.adapterSha256', expectedHashes[adapter]
+    testLogging { events 'passed', 'failed', 'skipped'; showStandardStreams = true }
+}

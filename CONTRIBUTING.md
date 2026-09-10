@@ -63,7 +63,8 @@ repository or CI. An ephemeral throwaway CI key may test signing configuration
 only; never upload or artifact it or treat it as release evidence.
 
 For a local publication-wiring check only, stage an unsigned candidate in a
-new private directory:
+new private directory. The supplied repository path and every existing parent
+must be canonical, normalized and free of symbolic links:
 
 ```bash
 (
@@ -72,14 +73,27 @@ staging_parent=/absolute/path/to/new-private-central-smoke
 test ! -e "${staging_parent}"
 mkdir -m 700 "${staging_parent}"
 ./gradlew --no-daemon --no-build-cache --no-configuration-cache \
-  :routecontract-shardingsphere-5.5:publishMavenJavaPublicationToCentralStagingRepository \
+  :publishRouteContractCentralStaging \
   -ProutecontractCentralStagingDirectory="${staging_parent}/repository" \
   -ProutecontractCentralSigning=false
 )
 ```
 
-This smoke test uses no release key or Portal credential, performs no network
-publication and is not evidence of a signed candidate or public availability.
+This smoke test stages `routecontract-core` and the exact 5.5.3 and 5.5.2
+adapters together. The build rejects per-project Central staging tasks, even if
+all three are named on the command line. It first writes the coordinated set to
+the absent hidden `.repository.routecontract-work` sibling, verifies all three
+payload sets and their configured signature state, then atomically renames that
+directory to `repository`. The final path therefore never represents a known
+partial set.
+Finalization requires `/usr/bin/python3` and the platform's descriptor-anchored
+no-replace rename primitive; an unsupported or unavailable primitive fails
+closed as a HOLD.
+If the build fails, is interrupted or reports an ambiguous move result, preserve
+both paths as a HOLD, do not retry the same path, and do not automatically
+delete or rename either path. Reconcile them read-only first. The smoke test uses
+no release key or Portal credential, performs no network publication and is not
+evidence of a signed candidate or public availability.
 
 ## Release feedback
 

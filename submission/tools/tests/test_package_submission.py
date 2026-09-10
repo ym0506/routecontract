@@ -1044,7 +1044,7 @@ class SubmissionClaimTextTest(unittest.TestCase):
             )
             self.assertEqual(
                 1,
-                workflow.count(
+                quick_start_block.count(
                     'git status --porcelain=v1 --untracked-files=all '
                     "--ignore-submodules=none"
                 ),

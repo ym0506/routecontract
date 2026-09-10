@@ -35,13 +35,17 @@ routecontract_group_path="${routecontract_group//./\/}"
     --no-build-cache \
     --stacktrace \
     "-Dmaven.repo.local=$temporary_maven_repository" \
+    :routecontract-core:publishToMavenLocal \
     :routecontract-shardingsphere-5.5:publishToMavenLocal
 
+published_core_artifact="$temporary_maven_repository/$routecontract_group_path/routecontract-core/$routecontract_version/routecontract-core-$routecontract_version.jar"
+published_core_pom="$temporary_maven_repository/$routecontract_group_path/routecontract-core/$routecontract_version/routecontract-core-$routecontract_version.pom"
 published_artifact="$temporary_maven_repository/$routecontract_group_path/routecontract-shardingsphere-5.5/$routecontract_version/routecontract-shardingsphere-5.5-$routecontract_version.jar"
 published_pom="$temporary_maven_repository/$routecontract_group_path/routecontract-shardingsphere-5.5/$routecontract_version/routecontract-shardingsphere-5.5-$routecontract_version.pom"
 
-if [[ ! -f "$published_artifact" || ! -f "$published_pom" ]]; then
-    echo "Published RouteContract coordinate is incomplete in $temporary_maven_repository" >&2
+if [[ ! -f "$published_core_artifact" || ! -f "$published_core_pom" \
+    || ! -f "$published_artifact" || ! -f "$published_pom" ]]; then
+    echo "Published RouteContract core and adapter coordinates are incomplete in $temporary_maven_repository" >&2
     exit 1
 fi
 

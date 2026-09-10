@@ -1,0 +1,380 @@
+{
+  "formatVersion": 1,
+  "date": "2026-09-08",
+  "status": "VERIFIED",
+  "scope": "Gradle portion of ADR A-24; local reviewed unsigned 0.2.0 staging",
+  "evidenceLabels": [
+    "verified - MySQL",
+    "verified - ShardingSphere-JDBC 5.5.2",
+    "verified - ShardingSphere-JDBC 5.5.3"
+  ],
+  "sourceRevision": "4e066942f6e244345fe908970b81446f9e08f64e",
+  "environment": {
+    "os": "macOS",
+    "buildTool": "Gradle",
+    "gradleVersion": "8.14.4",
+    "javaVersion": "17.0.15",
+    "javaFeature": 17,
+    "compiledClassfileMajor": 61,
+    "mysqlVersion": "8.4.11",
+    "testcontainersVersion": "1.21.4"
+  },
+  "profiles": [
+    {
+      "dsl": "groovy",
+      "shardingSphereVersion": "5.5.2",
+      "cases": 7,
+      "actualMySqlJUnitTests": 6
+    },
+    {
+      "dsl": "groovy",
+      "shardingSphereVersion": "5.5.3",
+      "cases": 7,
+      "actualMySqlJUnitTests": 6
+    },
+    {
+      "dsl": "kotlin",
+      "shardingSphereVersion": "5.5.2",
+      "cases": 7,
+      "actualMySqlJUnitTests": 6
+    },
+    {
+      "dsl": "kotlin",
+      "shardingSphereVersion": "5.5.3",
+      "cases": 7,
+      "actualMySqlJUnitTests": 6
+    }
+  ],
+  "counts": {
+    "plannedCases": 28,
+    "completedCases": 28,
+    "positiveCases": 8,
+    "negativeAndControlCases": 20,
+    "actualMySqlJUnitTests": 24,
+    "junitFailures": 0,
+    "junitErrors": 0,
+    "junitSkipped": 0,
+    "executionsPerCaseInCompleteRun": 1
+  },
+  "evidenceSha256": {
+    "rawSummary": "b9b8afedffaf2312ac9fcdd446f1728ee0d08e47f7b6070de81e0d8d7670b2d7",
+    "independentRawAudit": "5a1dcbba757143581495ac354c5d835a49b1d6328b5e823a8670a5aaf46899dd",
+    "reviewedStagingReceipt": "38b2269eca162f121fd3996c56df8b894ae2f43cedeb08fcc627032cf70eaa43",
+    "executedInputManifest": "e27b51ba5e1ed45e5cd12b3cccf728634b3a4f3fb7390b31bbdf1b29f770d279"
+  },
+  "checks": {
+    "reviewedPayloadCount": 9,
+    "closedPrimeEndpointBeforeOffline": true,
+    "actualSelectedJavaNetworkBarrierProved": true,
+    "fixedMySqlAndRyukNoPullPolicyInvocationsVerified": true,
+    "sameProfileOnlineOfflineArtifactsAndReports": true,
+    "frozenPrimeCachesUnchanged": true,
+    "exactNativeChecksumFailures": true,
+    "protectedOriginAndSeparateDisabledPolicyControl": true,
+    "exactRuntimePolicyCausesAndCorrectNonAnchorAnchors": true,
+    "negativesAndControlsDidNotCompileOrRunConsumerTests": true
+  },
+  "cases": [
+    {
+      "dsl": "groovy",
+      "shardingSphereVersion": "5.5.2",
+      "case": "online",
+      "status": "PASS",
+      "result": "MYSQL_AND_REPORTS_VERIFIED",
+      "nativeExitCode": 0,
+      "actualMySqlJUnitTests": 3,
+      "caseReceiptSha256": "0d0f45c306bd08991860c5f5abb315fd5f1516ded29734374a310875e86ce193"
+    },
+    {
+      "dsl": "groovy",
+      "shardingSphereVersion": "5.5.2",
+      "case": "offline",
+      "status": "PASS",
+      "result": "MYSQL_AND_REPORTS_VERIFIED",
+      "nativeExitCode": 0,
+      "actualMySqlJUnitTests": 3,
+      "caseReceiptSha256": "5f971884603b99443030f9b273af0b1bb091d413b8fa5ec2f8b18ee6d9248cde"
+    },
+    {
+      "dsl": "groovy",
+      "shardingSphereVersion": "5.5.2",
+      "case": "bad-checksum",
+      "status": "PASS",
+      "result": "NATIVE_CHECKSUM_REJECTED",
+      "nativeExitCode": 1,
+      "actualMySqlJUnitTests": 0,
+      "caseReceiptSha256": "06ee73e812f1a8190ee13b6d698aa58bc5e1667444390a2011fda5195348c5d3"
+    },
+    {
+      "dsl": "groovy",
+      "shardingSphereVersion": "5.5.2",
+      "case": "wrong-origin",
+      "status": "PASS",
+      "result": "WRONG_ORIGIN_REJECTED",
+      "nativeExitCode": 1,
+      "actualMySqlJUnitTests": 0,
+      "caseReceiptSha256": "5af8796a910f231e23491f60c61feb5283265b01948813464083e652bf946b4b"
+    },
+    {
+      "dsl": "groovy",
+      "shardingSphereVersion": "5.5.2",
+      "case": "origin-control",
+      "status": "PASS",
+      "result": "UNPROTECTED_ORIGIN_CONTROL_RESOLVED",
+      "nativeExitCode": 0,
+      "actualMySqlJUnitTests": 0,
+      "caseReceiptSha256": "184ffbb6726408ad835b604253e6f98ac38c99d44d2f991ffa164a75a24c98f0"
+    },
+    {
+      "dsl": "groovy",
+      "shardingSphereVersion": "5.5.2",
+      "case": "wrong-anchor",
+      "status": "PASS",
+      "result": "EXACT_RUNTIME_POLICY_REJECTED",
+      "nativeExitCode": 0,
+      "actualMySqlJUnitTests": 0,
+      "caseReceiptSha256": "cb21ad33425eef6fd428de6ecb5964ea7ecd1a3d70edcd9bf004a42e7b5e9249"
+    },
+    {
+      "dsl": "groovy",
+      "shardingSphereVersion": "5.5.2",
+      "case": "wrong-non-anchor",
+      "status": "PASS",
+      "result": "EXACT_RUNTIME_POLICY_REJECTED",
+      "nativeExitCode": 0,
+      "actualMySqlJUnitTests": 0,
+      "caseReceiptSha256": "dec4caeca0bbd9260ca013cbd8904734989a68c44924d596a7f3e88dfc30dee5"
+    },
+    {
+      "dsl": "groovy",
+      "shardingSphereVersion": "5.5.3",
+      "case": "online",
+      "status": "PASS",
+      "result": "MYSQL_AND_REPORTS_VERIFIED",
+      "nativeExitCode": 0,
+      "actualMySqlJUnitTests": 3,
+      "caseReceiptSha256": "04a9e6a924e53130152e3de97e4f7910fb2727473994c1868825a482e1cf7e18"
+    },
+    {
+      "dsl": "groovy",
+      "shardingSphereVersion": "5.5.3",
+      "case": "offline",
+      "status": "PASS",
+      "result": "MYSQL_AND_REPORTS_VERIFIED",
+      "nativeExitCode": 0,
+      "actualMySqlJUnitTests": 3,
+      "caseReceiptSha256": "173c0f064c18445af55cf7a5c5887bae7aab367aea8a7563fcd903ef3a8c19ac"
+    },
+    {
+      "dsl": "groovy",
+      "shardingSphereVersion": "5.5.3",
+      "case": "bad-checksum",
+      "status": "PASS",
+      "result": "NATIVE_CHECKSUM_REJECTED",
+      "nativeExitCode": 1,
+      "actualMySqlJUnitTests": 0,
+      "caseReceiptSha256": "351766190855a66586aaf10e58fe4149457881bad83cfbb42550c0968aa489cb"
+    },
+    {
+      "dsl": "groovy",
+      "shardingSphereVersion": "5.5.3",
+      "case": "wrong-origin",
+      "status": "PASS",
+      "result": "WRONG_ORIGIN_REJECTED",
+      "nativeExitCode": 1,
+      "actualMySqlJUnitTests": 0,
+      "caseReceiptSha256": "e6a57f890662f32d74fe6dd1e09aea31bcd84ed643d16b9506b2fdac8d506425"
+    },
+    {
+      "dsl": "groovy",
+      "shardingSphereVersion": "5.5.3",
+      "case": "origin-control",
+      "status": "PASS",
+      "result": "UNPROTECTED_ORIGIN_CONTROL_RESOLVED",
+      "nativeExitCode": 0,
+      "actualMySqlJUnitTests": 0,
+      "caseReceiptSha256": "d503f3c3cc0df85d5690ff36c479440c7fb03907e7aa17cc6b7edc2ad8d6f091"
+    },
+    {
+      "dsl": "groovy",
+      "shardingSphereVersion": "5.5.3",
+      "case": "wrong-anchor",
+      "status": "PASS",
+      "result": "EXACT_RUNTIME_POLICY_REJECTED",
+      "nativeExitCode": 0,
+      "actualMySqlJUnitTests": 0,
+      "caseReceiptSha256": "1873bfaff8723e50a960ad323b54d5adf29f62bcefd85dc451431139caff56dc"
+    },
+    {
+      "dsl": "groovy",
+      "shardingSphereVersion": "5.5.3",
+      "case": "wrong-non-anchor",
+      "status": "PASS",
+      "result": "EXACT_RUNTIME_POLICY_REJECTED",
+      "nativeExitCode": 0,
+      "actualMySqlJUnitTests": 0,
+      "caseReceiptSha256": "3468e32d3ffbebee8d5e24eef831ea3366c8371831652fa638cb59a5df65b3bb"
+    },
+    {
+      "dsl": "kotlin",
+      "shardingSphereVersion": "5.5.2",
+      "case": "online",
+      "status": "PASS",
+      "result": "MYSQL_AND_REPORTS_VERIFIED",
+      "nativeExitCode": 0,
+      "actualMySqlJUnitTests": 3,
+      "caseReceiptSha256": "bee8a765a2fe8fb98037d1776e9784c1a517b7b4e2d8774f76dceb36392690ef"
+    },
+    {
+      "dsl": "kotlin",
+      "shardingSphereVersion": "5.5.2",
+      "case": "offline",
+      "status": "PASS",
+      "result": "MYSQL_AND_REPORTS_VERIFIED",
+      "nativeExitCode": 0,
+      "actualMySqlJUnitTests": 3,
+      "caseReceiptSha256": "1af0a6269c2868d7ea6ce049d0cc01ccbd181fffcbd609a7a3a59a9156ac93cb"
+    },
+    {
+      "dsl": "kotlin",
+      "shardingSphereVersion": "5.5.2",
+      "case": "bad-checksum",
+      "status": "PASS",
+      "result": "NATIVE_CHECKSUM_REJECTED",
+      "nativeExitCode": 1,
+      "actualMySqlJUnitTests": 0,
+      "caseReceiptSha256": "8b9aa44ff83bffa77e5311988cb63dd7783eef760a9067fd9650056b07305b35"
+    },
+    {
+      "dsl": "kotlin",
+      "shardingSphereVersion": "5.5.2",
+      "case": "wrong-origin",
+      "status": "PASS",
+      "result": "WRONG_ORIGIN_REJECTED",
+      "nativeExitCode": 1,
+      "actualMySqlJUnitTests": 0,
+      "caseReceiptSha256": "e0354ab3f4a9cfd8849fa044916deadba40fc6a71381fd5193af3aeba9007ff8"
+    },
+    {
+      "dsl": "kotlin",
+      "shardingSphereVersion": "5.5.2",
+      "case": "origin-control",
+      "status": "PASS",
+      "result": "UNPROTECTED_ORIGIN_CONTROL_RESOLVED",
+      "nativeExitCode": 0,
+      "actualMySqlJUnitTests": 0,
+      "caseReceiptSha256": "9d5c661b1204bfee9e961e39105635737b0a8cf65b3619f3b1c712add407cb0d"
+    },
+    {
+      "dsl": "kotlin",
+      "shardingSphereVersion": "5.5.2",
+      "case": "wrong-anchor",
+      "status": "PASS",
+      "result": "EXACT_RUNTIME_POLICY_REJECTED",
+      "nativeExitCode": 0,
+      "actualMySqlJUnitTests": 0,
+      "caseReceiptSha256": "59af8dadb5dd99df37eccab94e68454878559790d1071db81408b74676ae4ba1"
+    },
+    {
+      "dsl": "kotlin",
+      "shardingSphereVersion": "5.5.2",
+      "case": "wrong-non-anchor",
+      "status": "PASS",
+      "result": "EXACT_RUNTIME_POLICY_REJECTED",
+      "nativeExitCode": 0,
+      "actualMySqlJUnitTests": 0,
+      "caseReceiptSha256": "0a6da0cd2c4d9a604e0ce91313955cab1955926c612223f43051ae8d6cf22a98"
+    },
+    {
+      "dsl": "kotlin",
+      "shardingSphereVersion": "5.5.3",
+      "case": "online",
+      "status": "PASS",
+      "result": "MYSQL_AND_REPORTS_VERIFIED",
+      "nativeExitCode": 0,
+      "actualMySqlJUnitTests": 3,
+      "caseReceiptSha256": "6b43ac36b0ee407efcb3f637b0648b40e21edade8befac5426cc3644c23941f9"
+    },
+    {
+      "dsl": "kotlin",
+      "shardingSphereVersion": "5.5.3",
+      "case": "offline",
+      "status": "PASS",
+      "result": "MYSQL_AND_REPORTS_VERIFIED",
+      "nativeExitCode": 0,
+      "actualMySqlJUnitTests": 3,
+      "caseReceiptSha256": "6c76af3b7a2db4686903d8a7ada21531a1cd9c55f4fd79df8c8c3e934c6a7244"
+    },
+    {
+      "dsl": "kotlin",
+      "shardingSphereVersion": "5.5.3",
+      "case": "bad-checksum",
+      "status": "PASS",
+      "result": "NATIVE_CHECKSUM_REJECTED",
+      "nativeExitCode": 1,
+      "actualMySqlJUnitTests": 0,
+      "caseReceiptSha256": "9097958335f68f8509d77a600a8b77f282bde0a1a78fd67c605b7047a9ab4d8d"
+    },
+    {
+      "dsl": "kotlin",
+      "shardingSphereVersion": "5.5.3",
+      "case": "wrong-origin",
+      "status": "PASS",
+      "result": "WRONG_ORIGIN_REJECTED",
+      "nativeExitCode": 1,
+      "actualMySqlJUnitTests": 0,
+      "caseReceiptSha256": "52c425200e94fe5b808c74dcbca4118231df03f0e0b69e07d716fc43e09c3563"
+    },
+    {
+      "dsl": "kotlin",
+      "shardingSphereVersion": "5.5.3",
+      "case": "origin-control",
+      "status": "PASS",
+      "result": "UNPROTECTED_ORIGIN_CONTROL_RESOLVED",
+      "nativeExitCode": 0,
+      "actualMySqlJUnitTests": 0,
+      "caseReceiptSha256": "fdfd888d67d95bdcb71d857bc28778f3a6abf6558148a2a051f52da296a2bbb8"
+    },
+    {
+      "dsl": "kotlin",
+      "shardingSphereVersion": "5.5.3",
+      "case": "wrong-anchor",
+      "status": "PASS",
+      "result": "EXACT_RUNTIME_POLICY_REJECTED",
+      "nativeExitCode": 0,
+      "actualMySqlJUnitTests": 0,
+      "caseReceiptSha256": "f182149ad0b8ea0e62dfd342858fdc2d86573eed367a26098322c00c077c07e5"
+    },
+    {
+      "dsl": "kotlin",
+      "shardingSphereVersion": "5.5.3",
+      "case": "wrong-non-anchor",
+      "status": "PASS",
+      "result": "EXACT_RUNTIME_POLICY_REJECTED",
+      "nativeExitCode": 0,
+      "actualMySqlJUnitTests": 0,
+      "caseReceiptSha256": "02a522071f19a723954429ab47247c3f409e76e571b005f7fbbe47d4c8610a0d"
+    }
+  ],
+  "failureHistory": {
+    "initialAttempt": {
+      "status": "FAILED",
+      "completedCasesBeforeFailure": 6,
+      "failedCase": "groovy / 5.5.2 / wrong-non-anchor",
+      "cause": "Groovy report string concatenation was interpreted as unary String.positive().",
+      "fix": "Parenthesize the existing string expression; runtime policy unchanged.",
+      "separateFreshDiagnostic": "PASS; one case only",
+      "offlineStartupRetry": "One Testcontainers internal MySQL retry after a local JDBC EOF; the initial attempt remains separate."
+    },
+    "priorAttemptAuditSha256": "f955361ef8f2569847ab964ddd48d4e3b6c7dc132f096d878cf3051e4be62e31",
+    "completeRunStartupRetryObservedCases": 0
+  },
+  "limitations": [
+    "Maven Java17/21 acceptance and whole ADR A-24 closure require their separate evidence.",
+    "These local unsigned staged-byte results do not establish public 0.2 availability or external user adoption.",
+    "The offline barrier covers the sandboxed build/JVM descendants and fixed no-pull fixture, with required loopback and local Docker access; it does not isolate global Docker/container networking.",
+    "One complete run per listed case; this is not a longevity or broader platform/JDK compatibility claim.",
+    "Expected native exit1 in checksum and protected-origin cases is accepted only with the audited exact failure cause.",
+    "Raw execution details remain private; this projection contains only allowlisted results and evidence digests."
+  ]
+}

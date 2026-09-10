@@ -4,7 +4,8 @@
       <verify-metadata>true</verify-metadata>
       <verify-signatures>false</verify-signatures>
       <trusted-artifacts>
-         <trust group="^io[.]github[.]ym0506[.]routecontract$" name="^routecontract-shardingsphere-5[.]5$" version="^(0|[1-9][0-9]{0,8})[.](0|[1-9][0-9]{0,8})[.](0|[1-9][0-9]{0,8})(-rc[1-9][0-9]{0,5})?$" regex="true" reason="install-release-assets.py verifies this exact first-party group and non-SNAPSHOT stable or strict rcN coordinate against the public Release SHA256SUMS before the isolated consumer resolves it"/>
+         <trust group="^io[.]github[.]ym0506[.]routecontract$" name="^routecontract-core$" version="^(0|[1-9][0-9]{0,8})[.](0|[1-9][0-9]{0,8})[.](0|[1-9][0-9]{0,8})(-rc[1-9][0-9]{0,5})?$" regex="true" reason="the same-checkout verifier publishes this reviewed first-party core beside the exact adapter into an isolated repository; public consumption still requires a verified immutable release or Maven Central publication"/>
+         <trust group="^io[.]github[.]ym0506[.]routecontract$" name="^routecontract-shardingsphere-5[.]5$" version="^(0|[1-9][0-9]{0,8})[.](0|[1-9][0-9]{0,8})[.](0|[1-9][0-9]{0,8})(-rc[1-9][0-9]{0,5})?$" regex="true" reason="the same-checkout verifier publishes this reviewed exact adapter beside core into an isolated repository; legacy public asset consumption separately requires install-release-assets.py verification, and future public split consumption requires a verified immutable release or Maven Central publication"/>
       </trusted-artifacts>
    </configuration>
    <components>

@@ -1,0 +1,408 @@
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
+import org.gradle.api.artifacts.result.UnresolvedDependencyResult
+import org.gradle.api.artifacts.result.ResolvedDependencyResult
+import org.gradle.api.attributes.*
+import org.gradle.api.attributes.java.TargetJvmVersion
+import java.security.MessageDigest
+import groovy.json.JsonOutput
+
+plugins {
+    id 'java'
+}
+
+def routeGroup = 'io.github.ym0506.routecontract'
+def publicModeValue = providers.gradleProperty('routecontractPublicConsumer').getOrElse('false')
+if (!(publicModeValue in ['true', 'false'])) {
+    throw new GradleException('routecontractPublicConsumer must be true or false')
+}
+def publicMode = publicModeValue == 'true'
+def routeVersion = publicMode ? providers.gradleProperty('routecontractVersion').get() : '0.2.0'
+if (!(routeVersion ==~ /0\.2\.(0|[1-9][0-9]*)/)) {
+    throw new GradleException('Public consumer requires a strict stable 0.2.x version')
+}
+def evidencePrefix = publicMode ? 'PUBLIC' : 'STAGED'
+def exactRuntime = providers.gradleProperty('routecontractRuntime').get()
+if (!(exactRuntime in ['5.5.2', '5.5.3'])) {
+    throw new GradleException('routecontractRuntime must be exactly 5.5.2 or 5.5.3')
+}
+def adapter = exactRuntime == '5.5.2' ? 'routecontract-shardingsphere-5.5.2' : 'routecontract-shardingsphere-5.5'
+def otherRuntime = exactRuntime == '5.5.2' ? '5.5.3' : '5.5.2'
+def otherAdapter = exactRuntime == '5.5.2' ? 'routecontract-shardingsphere-5.5' : 'routecontract-shardingsphere-5.5.2'
+def suppliedRepository = providers.gradleProperty('routecontractRepository').orNull
+def suppliedRepositoryUrl = providers.gradleProperty('routecontractRepositoryUrl').orNull
+def loopbackRepository = suppliedRepositoryUrl != null
+def repositoryUri = null
+if (publicMode) {
+    if (suppliedRepository != null || suppliedRepositoryUrl != null) {
+        throw new GradleException('Public consumer rejects supplied repository paths or URLs')
+    }
+} else {
+    if ((suppliedRepository == null) == (suppliedRepositoryUrl == null)) {
+        throw new GradleException('Supply exactly one of routecontractRepository and routecontractRepositoryUrl')
+    }
+    if (loopbackRepository) {
+        def match = suppliedRepositoryUrl =~ /http:\/\/127\.0\.0\.1:([1-9][0-9]{0,4})\/?/
+        if (!match.matches() || match.group(1).toInteger() > 65535) {
+            throw new GradleException('routecontractRepositoryUrl must be canonical http://127.0.0.1:<1-65535>[/]')
+        }
+        repositoryUri = new URI(suppliedRepositoryUrl)
+    } else {
+        def suppliedPath = new File(suppliedRepository)
+        if (!suppliedPath.isAbsolute()) {
+            throw new GradleException('routecontractRepository must be an absolute staged directory')
+        }
+        def repositoryPath = suppliedPath.canonicalFile
+        if (!repositoryPath.isDirectory()) {
+            throw new GradleException('routecontractRepository must be an existing staged directory')
+        }
+        repositoryUri = repositoryPath.toURI()
+    }
+}
+def expectedHashes = ['routecontract-core', adapter].collectEntries { module ->
+    def value = providers.gradleProperty("routecontractSha256.${module}").get()
+    if (!(value ==~ /[0-9a-f]{64}/)) {
+        throw new GradleException('Supply the reviewed SHA-256 for each selected first-party JAR')
+    }
+    [(module): value]
+}
+
+repositories {
+    if (publicMode) {
+        maven {
+            name = 'anonymousMavenCentral'
+            url = uri('https://repo.maven.apache.org/maven2')
+            metadataSources { gradleMetadata(); mavenPom() }
+        }
+    } else {
+        exclusiveContent {
+            forRepository {
+                maven {
+                    name = 'reviewedStaging'
+                    url = repositoryUri
+                    allowInsecureProtocol = loopbackRepository
+                    metadataSources { gradleMetadata(); mavenPom() }
+                }
+            }
+            filter { includeGroup routeGroup }
+        }
+        mavenCentral { content { excludeGroup routeGroup } }
+    }
+}
+
+dependencyLocking {
+    lockAllConfigurations()
+    lockMode = LockMode.STRICT
+}
+
+dependencies {
+    if (!publicMode) {
+        testImplementation("${routeGroup}:routecontract-core:${routeVersion}")
+    }
+    testImplementation("${routeGroup}:${adapter}:${routeVersion}")
+    testImplementation platform('com.fasterxml.jackson:jackson-bom:2.18.9')
+    testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:${exactRuntime}") {
+        exclude group: 'org.locationtech.jts.io', module: 'jts-io-common'
+    }
+    testRuntimeOnly "org.apache.shardingsphere:shardingsphere-infra-url-absolutepath:${exactRuntime}"
+    testRuntimeOnly "org.apache.shardingsphere:shardingsphere-infra-data-source-pool-hikari:${exactRuntime}"
+    testRuntimeOnly "org.apache.shardingsphere:shardingsphere-standalone-mode-repository-${exactRuntime == '5.5.2' ? 'jdbc' : 'memory'}:${exactRuntime}"
+    testRuntimeOnly "org.apache.shardingsphere:shardingsphere-sharding-core:${exactRuntime}"
+    testRuntimeOnly "org.apache.shardingsphere:shardingsphere-parser-sql-${exactRuntime == '5.5.2' ? '' : 'engine-'}sql92:${exactRuntime}"
+    testRuntimeOnly "org.apache.shardingsphere:shardingsphere-parser-sql-${exactRuntime == '5.5.2' ? '' : 'engine-'}mysql:${exactRuntime}"
+    testRuntimeOnly "org.apache.shardingsphere:shardingsphere-authority-simple:${exactRuntime}"
+    testRuntimeOnly('com.mysql:mysql-connector-j:26.7.0') {
+        exclude group: 'com.google.protobuf', module: 'protobuf-java'
+    }
+    testRuntimeOnly 'com.zaxxer:HikariCP:6.2.1'
+    testImplementation platform('org.junit:junit-bom:5.14.3')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.testcontainers:junit-jupiter:1.21.4'
+    testImplementation 'org.testcontainers:mysql:1.21.4'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testRuntimeOnly 'org.slf4j:slf4j-simple:2.0.17'
+    constraints {
+        testImplementation('org.apache.commons:commons-compress:1.26.0')
+        if (exactRuntime == '5.5.2') {
+            testImplementation('commons-logging:commons-logging:1.2') { version { strictly '1.2' } }
+            // Patch the exact552 workload without introducing absent dependency modules.
+            testImplementation('com.google.protobuf:protobuf-java:4.31.1') { version { strictly '4.31.1' } }
+            testImplementation('org.apache.calcite:calcite-core:1.42.0') { version { strictly '1.42.0' } }
+            testImplementation('org.apache.calcite:calcite-linq4j:1.42.0') { version { strictly '1.42.0' } }
+            testImplementation('org.apache.calcite.avatica:avatica-core:1.28.0') { version { strictly '1.28.0' } }
+            testImplementation('org.apache.calcite.avatica:avatica-metrics:1.28.0') { version { strictly '1.28.0' } }
+            testImplementation('net.hydromatic:aggdesigner-algorithm:6.1') { version { strictly '6.1' } }
+            testImplementation('net.minidev:json-smart:2.5.2') { version { strictly '2.5.2' } }
+            testImplementation('net.minidev:accessors-smart:2.5.2') { version { strictly '2.5.2' } }
+            testImplementation('org.apache.commons:commons-lang3:3.18.0') { version { strictly '3.18.0' } }
+            testImplementation('org.apache.httpcomponents.core5:httpcore5:5.4.3') { version { strictly '5.4.3' } }
+            testImplementation('org.apache.httpcomponents.core5:httpcore5-h2:5.4.3') { version { strictly '5.4.3' } }
+            testImplementation('org.apache.httpcomponents.client5:httpclient5:5.6.3') { version { strictly '5.6.3' } }
+        }
+        if (exactRuntime == '5.5.3') {
+            testImplementation('net.hydromatic:aggdesigner-algorithm:6.1') { version { strictly '6.1' } }
+            testImplementation('net.minidev:json-smart:2.4.10') { version { strictly '2.4.10' } }
+            testImplementation('net.minidev:accessors-smart:2.4.9') { version { strictly '2.4.9' } }
+            testImplementation('org.apache.calcite:calcite-core:1.42.0') { version { strictly '1.42.0' } }
+            testImplementation('org.apache.calcite:calcite-linq4j:1.42.0') { version { strictly '1.42.0' } }
+        }
+    }
+}
+
+def enforceExactGraph = { configuration ->
+    configuration.resolutionStrategy.eachDependency { detail ->
+        if (detail.requested.group == 'org.apache.shardingsphere' && detail.requested.version != exactRuntime) {
+            throw new GradleException("RC_STAGED_RUNTIME_REJECTED: expected ${exactRuntime}; requested ${detail.requested}")
+        }
+        if (detail.requested.group == routeGroup && detail.requested.version != routeVersion) {
+            throw new GradleException("RC_STAGED_LEGACY_REQUEST_REJECTED: only coordinated ${routeVersion}; requested ${detail.requested}")
+        }
+    }
+    configuration.resolutionStrategy.componentSelection.all { selection ->
+        if (selection.candidate.group == 'org.apache.shardingsphere' && selection.candidate.version != exactRuntime) {
+            selection.reject("RC_STAGED_RUNTIME_REJECTED: exact ${exactRuntime} required")
+        }
+    }
+}
+[configurations.testCompileClasspath, configurations.testRuntimeClasspath].each(enforceExactGraph)
+
+def sha256 = { file -> MessageDigest.getInstance('SHA-256').digest(file.bytes).encodeHex().toString() }
+def verifyGraph = tasks.register('verifySelectedGraph') {
+    doLast {
+        def runtime = configurations.testRuntimeClasspath
+        def artifacts = runtime.resolvedConfiguration.resolvedArtifacts
+        def selected = artifacts.findAll { it.moduleVersion.id.group == routeGroup }
+        def expected = ["${routeGroup}:routecontract-core:${routeVersion}", "${routeGroup}:${adapter}:${routeVersion}"].sort()
+        if (selected.collect { it.moduleVersion.id.toString() }.sort() != expected) {
+            throw new GradleException('Expected exactly the coordinated core and selected adapter JARs')
+        }
+        selected.each { artifact ->
+            if (sha256(artifact.file) != expectedHashes[artifact.name]) {
+                throw new GradleException("RC_STAGED_ARTIFACT_MISMATCH: ${artifact.name}")
+            }
+        }
+        def compileSelected = configurations.testCompileClasspath.resolvedConfiguration.resolvedArtifacts
+                .findAll { it.moduleVersion.id.group == routeGroup }
+        if (compileSelected.collect { it.moduleVersion.id.toString() }.sort() != expected) {
+            throw new GradleException('RC_STAGED_COMPILE_CORE_MISSING: compile classpath must contain exact core and adapter')
+        }
+        compileSelected.each { artifact ->
+            if (sha256(artifact.file) != expectedHashes[artifact.name]) {
+                throw new GradleException("RC_STAGED_ARTIFACT_MISMATCH: ${artifact.name}")
+            }
+        }
+        def compileResolution = configurations.testCompileClasspath.incoming.resolutionResult
+        def compileComponents = compileResolution.allComponents.collect { it.id }
+        if (compileComponents.any { !(it instanceof ModuleComponentIdentifier) && it != compileResolution.root.id }) {
+            throw new GradleException('A source/project component appeared in the independent consumer')
+        }
+        def compileSharding = compileComponents.findAll {
+            it instanceof ModuleComponentIdentifier && it.group == 'org.apache.shardingsphere'
+        }
+        if (compileSharding.empty || compileSharding.any { it.version != exactRuntime }) {
+            throw new GradleException('RC_STAGED_RUNTIME_REJECTED: selected compile graph is not exact')
+        }
+        if (publicMode) {
+            def direct = runtime.allDependencies.findAll { it.group == routeGroup }.collect { it.name }
+            if (direct != [adapter]) {
+                throw new GradleException('RC_PUBLIC_DIRECT_CORE_REJECTED: request only the selected adapter')
+            }
+            def resolution = runtime.incoming.resolutionResult
+            def owner = resolution.allComponents.find { it.id instanceof ModuleComponentIdentifier
+                    && it.id.group == routeGroup && it.id.module == adapter }
+            if (owner == null || !owner.dependencies.any { it instanceof ResolvedDependencyResult
+                    && it.selected.id instanceof ModuleComponentIdentifier
+                    && it.selected.id.group == routeGroup && it.selected.id.module == 'routecontract-core'
+                    && it.selected.id.version == routeVersion }) {
+                throw new GradleException('RC_PUBLIC_TRANSITIVE_CORE_MISSING: published adapter must supply core')
+            }
+        }
+        def components = runtime.incoming.resolutionResult.allComponents.collect { it.id }
+        if (components.any { !(it instanceof ModuleComponentIdentifier) && it != runtime.incoming.resolutionResult.root.id }) {
+            throw new GradleException('A source/project component appeared in the independent consumer')
+        }
+        def sharding = components.findAll { it instanceof ModuleComponentIdentifier && it.group == 'org.apache.shardingsphere' }
+        if (sharding.empty || sharding.any { it.version != exactRuntime }) {
+            throw new GradleException('RC_STAGED_RUNTIME_REJECTED: selected graph is not exact')
+        }
+        def output = layout.buildDirectory.file('routecontract-consumer-evidence/resolved-graph.txt').get().asFile
+        output.parentFile.mkdirs()
+        output.text = components.findAll { it instanceof ModuleComponentIdentifier }.collect { it.toString() }.sort().join('\n') + '\n'
+        def firstParty = [compile: compileSelected, runtime: selected].collectEntries { scope, values ->
+            [(scope): values.collect { artifact ->
+                [coordinate: artifact.moduleVersion.id.toString(), name: artifact.file.name,
+                 sha256: sha256(artifact.file), byteCount: artifact.file.length()]
+            }.sort { it.coordinate }]
+        }
+        new File(output.parentFile, 'resolved-first-party.json').text = JsonOutput.prettyPrint(JsonOutput.toJson(firstParty)) + '\n'
+        println "ROUTECONTRACT_${evidencePrefix}_GRAPH_VERIFIED version=${exactRuntime} artifacts=2 shardingsphereComponents=${sharding.size()}"
+    }
+}
+
+java { toolchain { languageVersion = JavaLanguageVersion.of(17) } }
+tasks.withType(JavaCompile).configureEach {
+    dependsOn verifyGraph
+    options.release = 17
+    options.encoding = 'UTF-8'
+    options.compilerArgs += ['-Xlint:all', '-Werror']
+}
+tasks.named('test', Test) {
+    dependsOn verifyGraph
+    javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(17) }
+    systemProperty 'java.net.preferIPv4Stack', 'true'
+    def privateHome = providers.environmentVariable('ROUTECONTRACT_A24_PRIVATE_HOME').orNull
+    if (privateHome != null) {
+        if (!new File(privateHome).isAbsolute()) {
+            throw new GradleException('ROUTECONTRACT_A24_PRIVATE_HOME must be absolute')
+        }
+        systemProperty 'user.home', privateHome
+    }
+    doFirst {
+        if (javaLauncher.get().metadata.languageVersion.asInt() != 17) {
+            throw new GradleException('A24 requires a Java 17 test launcher')
+        }
+        println "ROUTECONTRACT_${evidencePrefix}_TEST_LAUNCHER_CONFIGURED languageVersion=17 ipv4=true"
+    }
+    useJUnitPlatform()
+    maxParallelForks = 1
+    systemProperty 'api.version', '1.44'
+    systemProperty 'routecontract.expectedRuntime', exactRuntime
+    systemProperty 'routecontract.version', routeVersion
+    systemProperty 'routecontract.coreSha256', expectedHashes['routecontract-core']
+    systemProperty 'routecontract.adapterSha256', expectedHashes[adapter]
+    testLogging { events 'passed', 'failed', 'skipped'; showStandardStreams = true }
+}
+
+// Detached negative configurations deliberately avoid positive locks so policy/capability
+// rejection is the tested failure, rather than an unrelated lock mismatch.
+def rejected = { configuration, marker ->
+    configuration.resolutionStrategy.deactivateDependencyLocking()
+    configuration.attributes {
+        attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_RUNTIME))
+        attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category, Category.LIBRARY))
+        attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, LibraryElements.JAR))
+        attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling, Bundling.EXTERNAL))
+        attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 17)
+    }
+    def unresolved = configuration.incoming.resolutionResult.allDependencies.findAll { it instanceof UnresolvedDependencyResult }
+    def chains = unresolved.collect { failure ->
+        def parts = []
+        for (def cause = failure.failure; cause != null; cause = cause.cause) { parts.add(cause.message) }
+        parts.join('\n')
+    }
+    def messages = chains.join('\n')
+    if (unresolved.empty || chains.any { !it.contains(marker) }
+            || ['Dependency verification failed', 'Could not GET ', 'Could not find '].any { messages.contains(it) }) {
+        throw new GradleException("Negative case did not fail solely through ${marker}: ${messages}")
+    }
+    if (marker == 'conflict on capability') {
+        def expectedConflicts = [
+                "conflict on capability '${routeGroup}:routecontract-shardingsphere-hook-adapter:1'",
+                "conflict on capability '${routeGroup}:routecontract-shardingsphere-5.5:${routeVersion}'"]
+        if (chains.any { failure -> !expectedConflicts.any { failure.contains(it) } }) {
+            throw new GradleException("Dual-adapter rejection did not name a reviewed adapter capability: ${messages}")
+        }
+    }
+    chains.join('\n')
+}
+def writeRuntimeRejectionMetadata = { configuration, module, correctAnchors, filename ->
+    def wrongCoordinate = "org.apache.shardingsphere:${module}:${otherRuntime}"
+    def unresolved = configuration.incoming.resolutionResult.allDependencies
+            .findAll { it instanceof UnresolvedDependencyResult }
+    def matching = unresolved.findAll { it.attempted.displayName == wrongCoordinate }
+    if (matching.empty) {
+        throw new GradleException("Negative did not reject the actual requested selector ${wrongCoordinate}")
+    }
+    def failureMessages = matching.collect { dependency ->
+        def parts = []
+        for (def cause = dependency.failure; cause != null; cause = cause.cause) { parts.add(cause.message) }
+        parts.join('\n')
+    }
+    if (failureMessages.any { !it.contains('RC_STAGED_RUNTIME_REJECTED') }) {
+        throw new GradleException('The injected wrong selector was not rejected by the whole-group policy')
+    }
+    def selected = configuration.incoming.resolutionResult.allComponents.collect { it.id }
+            .findAll { it instanceof ModuleComponentIdentifier }
+    def selectedAdapter = selected.find { it.group == routeGroup && it.module == adapter && it.version == routeVersion }
+    if (selectedAdapter == null) {
+        throw new GradleException('Runtime negative omitted the selected adapter')
+    }
+    def output = layout.buildDirectory.file("routecontract-consumer-evidence/${filename}").get().asFile
+    output.parentFile.mkdirs()
+    output.text = JsonOutput.prettyPrint(JsonOutput.toJson([
+            runtime: exactRuntime, selectedAdapter: selectedAdapter.toString(),
+            requestedWrongCoordinate: wrongCoordinate, actualUnresolvedSelector: matching.first().attempted.displayName,
+            failureMessages: failureMessages, correctAnchors: correctAnchors])) + '\n'
+}
+def wrongAnchorEvidence = {
+    def module = 'shardingsphere-infra-executor'
+    def negative = configurations.detachedConfiguration(
+            dependencies.create("${routeGroup}:${adapter}:${routeVersion}"),
+            dependencies.create("org.apache.shardingsphere:${module}:${otherRuntime}"))
+    enforceExactGraph(negative)
+    def failure = rejected(negative, 'RC_STAGED_RUNTIME_REJECTED')
+    writeRuntimeRejectionMetadata(negative, module, [], 'wrong-anchor.json')
+    "case=wrong-version-${module}\n" + failure
+}
+def wrongNonAnchorEvidence = {
+    def anchors = ['shardingsphere-infra-executor', 'shardingsphere-infra-spi',
+            exactRuntime == '5.5.2' ? 'shardingsphere-infra-database-core' : 'shardingsphere-database-connector-core']
+    def requests = [dependencies.create("${routeGroup}:${adapter}:${routeVersion}")]
+    anchors.each { anchor ->
+        def dependency = dependencies.create("org.apache.shardingsphere:${anchor}:${exactRuntime}")
+        dependency.transitive = false
+        requests.add(dependency)
+    }
+    def wrongNonAnchor = dependencies.create("org.apache.shardingsphere:shardingsphere-infra-common:${otherRuntime}")
+    wrongNonAnchor.transitive = false
+    requests.add(wrongNonAnchor)
+    def negative = configurations.detachedConfiguration(*requests)
+    enforceExactGraph(negative)
+    def failure = rejected(negative, 'RC_STAGED_RUNTIME_REJECTED')
+    def selectedIds = negative.incoming.resolutionResult.allComponents.collect { it.id }
+            .findAll { it instanceof ModuleComponentIdentifier }
+    if (!selectedIds.any { it.group == routeGroup && it.module == adapter && it.version == routeVersion }) {
+        throw new GradleException('Non-anchor negative omitted the selected adapter')
+    }
+    def selectedAnchors = selectedIds.findAll { it.group == 'org.apache.shardingsphere' && it.module in anchors }
+    if (selectedAnchors.collect { it.module }.sort() != anchors.sort()
+            || selectedAnchors.any { it.version != exactRuntime }) {
+        throw new GradleException('Non-anchor negative did not retain all three correct anchors')
+    }
+    writeRuntimeRejectionMetadata(negative, 'shardingsphere-infra-common',
+            selectedAnchors.collect { it.toString() }.sort(), 'wrong-non-anchor.json')
+    ('case=wrong-version-shardingsphere-infra-common\n'
+            + "correctAnchors=${selectedAnchors.collect { it.toString() }.sort().join(',')}\n" + failure)
+}
+[['verifyWrongAnchor', 'wrong-anchor.txt', wrongAnchorEvidence,
+  "WRONG_ANCHOR_REJECTED version=${exactRuntime} module=shardingsphere-infra-executor"],
+ ['verifyWrongNonAnchor', 'wrong-non-anchor.txt', wrongNonAnchorEvidence,
+  "WRONG_NON_ANCHOR_REJECTED version=${exactRuntime} module=shardingsphere-infra-common correctAnchors=3"]].each { definition ->
+    tasks.register(definition[0]) {
+        doLast {
+            def output = layout.buildDirectory.file("routecontract-consumer-evidence/${definition[1]}").get().asFile
+            output.parentFile.mkdirs()
+            output.text = definition[2]() + '\n'
+            println "ROUTECONTRACT_${evidencePrefix}_${definition[3]}"
+        }
+    }
+}
+tasks.register('verifyRejectedGraphs') {
+    doLast {
+        def evidence = [wrongAnchorEvidence(), wrongNonAnchorEvidence()]
+        [[adapter, otherAdapter], [otherAdapter, adapter]].each { order ->
+            def requests = order.collect { module ->
+                dependencies.create("${routeGroup}:${module}:${routeVersion}")
+            }
+            def negative = configurations.detachedConfiguration(*requests)
+            evidence.add("case=ordinary-dual-adapter order=${order.join(',')}\n" + rejected(negative, 'conflict on capability'))
+        }
+        def legacy = configurations.detachedConfiguration(dependencies.create("${routeGroup}:routecontract-shardingsphere-5.5:0.1.2"))
+        enforceExactGraph(legacy)
+        evidence.add('case=legacy-request\n' + rejected(legacy, 'RC_STAGED_LEGACY_REQUEST_REJECTED'))
+        def output = layout.buildDirectory.file('routecontract-consumer-evidence/negative-graphs.txt').get().asFile
+        output.parentFile.mkdirs()
+        output.text = evidence.join('\n\n') + '\n'
+        println "ROUTECONTRACT_${evidencePrefix}_NEGATIVES_VERIFIED version=${exactRuntime} cases=5"
+    }
+}
+tasks.named('check') { dependsOn 'verifyRejectedGraphs' }
