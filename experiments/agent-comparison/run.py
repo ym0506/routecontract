@@ -25,7 +25,7 @@ ARCHIVE_URL = ("https://archive.apache.org/dist/shardingsphere/5.5.3/"
 ARCHIVE_SHA512 = ("6538bf650cbdb1813814e1922b6c2072246c4595cb07322f793d5592c86be8759"
                   "49529ab6a00553c15f72a0b17e2d23628f6e8b5da9fb189a72ce8c4cfb37839")
 ARCHIVE_BYTES = 46_741_869
-TEST_CLASS = "org.example.agentcomparison.AgentComparisonMySqlTest"
+TEST_CLASS = "io.github.ym0506.routecontract.experiments.agentcomparison.AgentComparisonMySqlTest"
 ORACLE = {"schemaVersion": 1, "operations": 20, "logicalStatements": 40,
           "controlExpectedAttempts": 20, "fanOutExpectedAttempts": 40,
           "expectedPhysicalAttempts": 60, "proxyObservedAttempts": 60,
