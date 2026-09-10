@@ -1,0 +1,69 @@
+name: Shadow INSERT SELECT reproduction
+
+on:
+  pull_request:
+    paths:
+      - 'experiments/shadow-insert-select/**'
+      - '.github/workflows/shadow-insert-select.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'experiments/shadow-insert-select/**'
+      - '.github/workflows/shadow-insert-select.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: shadow-reproduction-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  reproduce:
+    name: Released 5.5.3 / MySQL / wrong destination
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Java 17
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: '17.0.20+101'
+          verify-signature: true
+
+      - name: Install Maven 3.9.14
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="${RUNNER_TEMP}/apache-maven-3.9.14-bin.tar.gz"
+          curl --disable --fail --location --silent --show-error --retry 3 \
+            --connect-timeout 15 --max-time 300 --output "$archive" \
+            https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.14/apache-maven-3.9.14-bin.tar.gz
+          printf '%s  %s\n' \
+            d50af8ab5e6005b46a07f0ce9d3719e67cfdf898da988a84871304cd59fb1af0fef2f99dea709e6e66f21f732f905979b5c2dce6b6860406f60a70e84d9cf0b8 \
+            "$archive" | sha512sum --check --strict
+          tar -xzf "$archive" -C "$RUNNER_TEMP"
+          printf '%s\n' "${RUNNER_TEMP}/apache-maven-3.9.14/bin" >> "$GITHUB_PATH"
+
+      - name: Verify controls and the exact contract failure
+        run: python3 experiments/shadow-insert-select/verify.py
+
+      - name: Show selected evidence
+        shell: bash
+        run: |
+          printf '### Released-version JDBC reproduction\n\n' >> "$GITHUB_STEP_SUMMARY"
+          printf 'Three MySQL controls passed. The primary-only contract failed for the expected shadow destination.\n\n' >> "$GITHUB_STEP_SUMMARY"
+          printf 'Original report: apache/shardingsphere#39750. This does not validate its proposed patch or establish external adoption.\n' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Keep selected results without connection details
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: shadow-insert-select-evidence
+          path: experiments/shadow-insert-select/build/verification/evidence.json
+          if-no-files-found: error
