@@ -52,6 +52,12 @@ or a complete routing plan.
 [Run this example](#quick-start) · [Read the report without installing anything](docs/evidence/ci-review-report-example.md) ·
 [Inspect the query](examples/first-project/src/test/java/io/github/ym0506/routecontract/examples/firstproject/OrderRepository.java)
 
+**A reported upstream defect:** [INSERT SELECT can return “1 row affected” while
+writing to the shadow database](experiments/shadow-insert-select/README.md).
+The released-5.5.3 MySQL reproduction shows why checking the expected data-source
+name matters even when the result and execution count stay equal. It credits the
+original reporter and includes both control cases and the failing contract command.
+
 ## Install 0.1.3
 
 For an existing **Java 17 or 21 · ShardingSphere-JDBC 5.5.3** test project.

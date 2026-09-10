@@ -25,3 +25,12 @@ Required evidence before publishing a result:
 
 This is an independent issue reproduction, not external product adoption, proof
 of the upstream fix, Proxy coverage, a performance test, or a library release.
+
+## Public CI follow-through
+
+The standalone runner must verify both Maven exit codes and the exact JUnit
+outcomes, including the three physical-destination results and the specific
+primary-versus-shadow failure. A startup error, skipped test, missing result or
+different exception must fail verification. Publish selected evidence only.
+README navigation must make the experiment discoverable without claiming the
+upstream fix is tested, merged, or a RouteContract contribution.

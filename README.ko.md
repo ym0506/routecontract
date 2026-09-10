@@ -51,6 +51,11 @@ JUnit·Maven·Gradle 테스트가 실패하므로 CI에서도 변경을 확인�
 [예제 실행](#quick-start) · [설치 없이 리포트 보기](docs/evidence/ci-review-report-example.md) ·
 [예제 쿼리 소스](examples/first-project/src/test/java/io/github/ym0506/routecontract/examples/firstproject/OrderRepository.java)
 
+**공개된 실제 버그의 재현:** [INSERT SELECT가 “1행 처리 성공”을 반환하면서 shadow DB에
+쓰는 사례](experiments/shadow-insert-select/README.md)를 실제 MySQL·공개 5.5.3에서 확인했습니다.
+결과와 실행 횟수가 같아도 대상 DB 이름 검사가 필요한 이유를 보여 줍니다. 원래 보고자의
+기여를 명시했으며 정상 대조군과 계약 검사가 실패하는 명령을 함께 제공합니다.
+
 ## Install 0.1.3
 
 기존 **Java 17 또는 21 · ShardingSphere-JDBC 5.5.3** 테스트 프로젝트에 추가하세요.

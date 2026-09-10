@@ -67,6 +67,21 @@ SHA-256 before starting the databases. Runtime logs stay in ignored `target/`;
 [evidence.json](evidence.json) contains only selected versions, counts and the
 expected failure, without connection details.
 
+### Verify both outcomes together
+
+```bash
+python3 verify.py
+```
+
+This runs both commands with clean test output and checks the exact JUnit cases,
+physical-destination results and failure reason. It exits successfully only if the
+three controls pass and the enforcing command fails for the expected primary-name
+violation. A setup failure or skipped test is rejected. Its selected report is
+`build/verification/evidence.json`; raw Maven logs stay in ignored `build/`.
+
+The [dedicated GitHub Actions workflow](../../.github/workflows/shadow-insert-select.yml)
+runs this verifier on changes to the experiment and can also be started manually.
+
 ## What this proves
 
 - **Verified — MySQL / ShardingSphere-JDBC 5.5.3:** the reported wrong-destination
