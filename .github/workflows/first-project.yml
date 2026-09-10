@@ -177,6 +177,10 @@ jobs:
           mkdir -p build/lifecycle-evidence/restored
           cp build/routecontract/* build/lifecycle-evidence/restored/
 
+      - name: Verify direct Java assertions without manifest changes
+        id: direct
+        run: python3 ../../submission/tools/verify_first_project_direct_assertions.py "$BUILD_TOOL"
+
       - name: Show the demonstration summary
         if: always()
         env:
@@ -184,9 +188,12 @@ jobs:
           MATCH_OUTCOME: ${{ steps.match.outcome }}
           RANGE_OUTCOME: ${{ steps.range.outcome }}
           RESTORED_OUTCOME: ${{ steps.restored.outcome }}
+          DIRECT_OUTCOME: ${{ steps.direct.outcome }}
         run: |
           python3 ../../submission/tools/summarize_first_project.py \
             build/lifecycle-evidence >> "$GITHUB_STEP_SUMMARY"
+          printf '\nDirect Java assertions (pass → fail → pass; existing manifest files unchanged): **%s**.\n' \
+            "$DIRECT_OUTCOME" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Keep example results
         if: always()

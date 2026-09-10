@@ -105,10 +105,47 @@ mvn -B test -Droutecontract.query=range
 변경이라면 쿼리·샤딩 설정을 확인하고, 의도하지 않은 추가 실행은 수정합니다. 의도한 변경이면
 새 기준을 검토합니다.
 
+## 자신의 테스트와 CI로 옮기기
+
+실행 횟수부터 검사하려면 Java 테스트 코드에 기대값을 적으면 됩니다. **JSON 기준 파일은 선택 사항입니다.**
+[Central 테스트 의존성](../README.md#install-013)을 추가하고, 기존 ShardingSphere 설정을 유지한 채
+동기식 repository/service 호출 한 개를 감쌉니다.
+
+```java
+var captured = RouteContract.captureResult("orders.find-paid", () -> orders.findPaidOrders("equality"));
+assertEquals(expectedOrders, captured.value());
+RouteAssertions.assertThat(captured.snapshot())
+        .hasAtMostObservedPhysicalAttempts(1)
+        .hasAtMostDistinctObservedDataSourceNames(1);
+```
+
+`RouteContract`와 `RouteAssertions`는 `io.github.ym0506.routecontract`에서, `assertEquals`는
+JUnit에서 import합니다. `orders`와 `expectedOrders`는 기존 테스트의 조회 객체와 기대 반환값입니다.
+호출과 허용 상한은 자기 테스트의 데이터·샤딩 설정을 보고 정하세요. 위의 최대 1은 이 합성 예제의
+기준입니다. 수집이 불완전하거나 상한을 넘으면 일반 테스트와 CI 빌드가 실패합니다.
+
+같은 예제에서 이 방식을 실행할 수 있습니다. 빌드 도구 하나를 선택하세요.
+
+```bash
+mvn -B test -Droutecontract.mode=assert
+# 또는:
+../../gradlew -p . test --rerun-tasks -ProutecontractMode=assert
+```
+
+Maven에는 `-Droutecontract.query=range`, Gradle에는 `-ProutecontractQuery=range`를 추가하면
+같은 주문 반환을 확인한 뒤 `expected at most 1 observed physical attempts, but observed 2`로
+실패합니다. 원래 명령을 다시 실행하면 통과합니다. 이 모드에서는 콘솔이나 JUnit 결과를 읽으세요.
+JSON 기준·candidate·리포트를 읽거나 쓰지 않으므로, 기존 리포트 파일은 이전 실행의 결과입니다.
+First project 워크플로도 이 방식의 통과 → 실패 → 원복을 검사합니다.
+
+위 두 assertion은 횟수만 검사합니다. SQL fingerprint, 파라미터 타입 형태, 저장된 데이터 소스 집합을
+비교하거나 리포트의 `RCM` 코드를 만들지는 않습니다. 그 비교와 Markdown/JSON 리포트가 필요하면
+아래 기준 파일 절차를 사용하세요. Java 17과 테스트 런타임의 정확한 ShardingSphere 5.5.3 조건은 같습니다.
+
 ## 첫 기준을 직접 검토하기
 
-앞의 예제에는 **baseline**, 즉 예상 실행과 허용 상한을 검토해 저장한 JSON 파일이 있습니다.
-**candidate**는 이번 실행에서 관측한 내용을 담은 파일입니다. 자기 테스트에 처음 적용할 때는
+기본 check 모드 예제에는 **baseline**, 즉 예상 실행과 허용 상한을 검토해 저장한 JSON 파일이 있습니다.
+**candidate**는 이번 실행에서 관측한 내용을 담은 파일입니다. 자기 테스트에서 JSON 비교를 선택했다면
 candidate를 만들고 검토한 뒤 그 테스트의 기준으로 삼습니다. 아래에서는 새 경로로 이 과정을
 연습합니다.
 
@@ -169,17 +206,11 @@ mvn -B test -Droutecontract.baseline=baselines/first-review.approved.json
 `MATCH`가 나와야 합니다. 기준 파일이 없으면 비교는 실패하며, candidate를 기준으로 자동
 승인하지 않습니다.
 
-## 자신의 테스트와 CI로 옮기기
+### JSON 비교를 CI에 연결하기
 
-1. 기존 프로젝트에 [Central 테스트 의존성](../README.md#install-013)을 추가합니다.
-   ShardingSphere와 데이터 소스 구성은 기존 것을 사용하며, 테스트 런타임의 모든
-   ShardingSphere 모듈 버전이 정확히 5.5.3이어야 합니다.
-2. 대표 repository/service 호출을 `RouteContract.captureResult`로 감싸고, candidate를 쓰기
-   전에 반환값을 기존 assertion으로 검증합니다. `capture` 내부에서 업무 결과를 검증하는
-   방법도 가능합니다. 자신의 테스트 fixture를 사용하세요.
-3. 작업 ID, 데이터 소스의 민감하지 않은 별칭, 실행 예산을 정합니다. candidate와 baseline
-   경로를 분리하고, 첫 candidate는 담당자가 직접 검토합니다.
-4. 일반 테스트에서는 `ManifestReviewReport.compare`로 비교하고 리포트를 저장한 뒤
+1. 기존 호출과 반환값 검증을 유지합니다. 작업 ID, 데이터 소스의 민감하지 않은 별칭, 실행 예산을
+   정합니다. candidate와 baseline 경로를 분리하고, 첫 candidate는 담당자가 직접 검토합니다.
+2. 일반 테스트에서는 `ManifestReviewReport.compare`로 비교하고 리포트를 저장한 뒤
    `ManifestAssertions.assertMatched`를 호출합니다. CI는 검토한 기준을 사용하는 check
    모드로 실행합니다.
 

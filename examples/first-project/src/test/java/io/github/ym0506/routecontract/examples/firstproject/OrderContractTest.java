@@ -35,6 +35,19 @@ class OrderContractTest {
 
     @BeforeAll
     static void setUp() throws Exception {
+        if (Runtime.version().feature() != 17) {
+            throw new IllegalArgumentException("Use a Java 17 JDK for this ShardingSphere-JDBC 5.5.3 example");
+        }
+        mode = option("routecontract.mode", "check", List.of("assert", "capture", "check"));
+        query = option("routecontract.query", "equality", List.of("equality", "range"));
+        if (!mode.equals("assert")) {
+            prepareManifestFiles();
+        }
+        fixture = new OrderFixture();
+        fixture.start();
+    }
+
+    private static void prepareManifestFiles() throws Exception {
         baseline = Path.of(System.getProperty("routecontract.baseline",
                 "baselines/find-paid-orders-by-user.approved.json")).toAbsolutePath().normalize();
         // Protect the selected baseline even if someone points it at a generated output file.
@@ -47,13 +60,6 @@ class OrderContractTest {
             }
             Files.deleteIfExists(output);
         }
-        if (Runtime.version().feature() != 17) {
-            throw new IllegalArgumentException("Use a Java 17 JDK for this ShardingSphere-JDBC 5.5.3 example");
-        }
-        mode = option("routecontract.mode", "check", List.of("capture", "check"));
-        query = option("routecontract.query", "equality", List.of("equality", "range"));
-        fixture = new OrderFixture();
-        fixture.start();
     }
 
     @AfterAll
@@ -71,6 +77,17 @@ class OrderContractTest {
         // Keep the application's business assertion independent of hook outcomes.
         assertEquals(List.of(new OrderRepository.Order(201L, 3L, "PAID")), captured.value());
         System.out.println("Business assertion passed: the exact expected order was returned.");
+
+        if (mode.equals("assert")) {
+            System.out.println("Direct assertions: observed attempts="
+                    + captured.snapshot().observedPhysicalAttemptCount() + ", data sources="
+                    + captured.snapshot().observedDataSourceNames().size() + "; allowed maximum=1 each.");
+            RouteAssertions.assertThat(captured.snapshot())
+                    .hasAtMostObservedPhysicalAttempts(1)
+                    .hasAtMostDistinctObservedDataSourceNames(1);
+            System.out.println("Direct assertions passed. No JSON baseline or report was used.");
+            return;
+        }
 
         ManifestStore store = new ManifestStore();
         var approved = mode.equals("check") && Files.exists(baseline) ? store.read(baseline) : null;

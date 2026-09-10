@@ -3,7 +3,7 @@
 A standalone example using **RouteContract 0.1.3 from Maven Central**, **Java 17**, exact
 **ShardingSphere-JDBC 5.5.3**, and two disposable **MySQL 8.4.11** containers.
 
-[Walkthrough: capture, review, check and CI](../../docs/first-project.md) ·
+[Walkthrough: direct assertions, optional JSON comparison and CI](../../docs/first-project.md) ·
 [한국어](../../docs/first-project.ko.md) · [Synthetic baseline review](baselines/README.md)
 
 **Try without local setup:** [fork and run First project in your browser](../../docs/first-project.md#try-in-your-browser).
@@ -26,27 +26,34 @@ baseline. Expect **MATCH** in `build/routecontract/review.md` and `review.json`.
 
 | Action | Maven option | Gradle option |
 | --- | --- | --- |
+| Check explicit Java limits without JSON files | `-Droutecontract.mode=assert` | `-ProutecontractMode=assert` |
 | Capture an unapproved candidate | `-Droutecontract.mode=capture` | `-ProutecontractMode=capture` |
 | Use another reviewed baseline | `-Droutecontract.baseline=baselines/first-review.approved.json` | `-ProutecontractBaseline=baselines/first-review.approved.json` |
 | Demonstrate the intentional failing query | `-Droutecontract.query=range` | `-ProutecontractQuery=range` |
 
-Check mode and the equality query are the defaults. Capture writes only
+Check mode and the equality query are the defaults. **Assert mode** keeps the business assertion
+and checks at most one observed attempt and one data source directly. It does not read, write or
+remove baseline/candidate/report files; read its console or JUnit result, not an older JSON report.
+The `range` query still fails, with `expected at most 1 observed physical attempts, but observed 2`.
+[Use these assertions in your own test](../../docs/first-project.md#adapt-one-existing-test).
+
+Capture writes only
 `build/routecontract/candidate.json`; it never approves or updates a baseline. Follow the
 [review step](../../docs/first-project.md#capture-and-review-your-first-baseline) before creating one.
 Check mode writes the candidate and both reports, then fails the ordinary test if it does not match.
 Every invocation observes a fresh database operation; consecutive Gradle runs do not reuse cached
-or up-to-date test results. Known prior candidate/report files are removed when JUnit starts, before database setup.
+or up-to-date test results. In capture/check modes, known prior candidate/report files are removed when JUnit starts, before database setup.
 A dependency or compiler failure happens earlier; do not read an old report as that run's result.
 
 The `range` variant uses `BETWEEN 3 AND 3` instead of `= 3`. The exact business row still matches,
 but the configured inline sharding algorithm allows range queries across both data sources:
-**1 → 2 hook-reported physical JDBC execution attempts**, **POLICY_VIOLATION**, **RCM201/RCM202**.
+**1 → 2 hook-reported physical JDBC execution attempts**. Check mode reports **POLICY_VIOLATION**, **RCM201/RCM202**.
 That build is supposed to fail. A dependency, Docker or compilation error is not this demonstration.
 
 ## Adapt the test
 
 - [OrderContractTest.java](src/test/java/io/github/ym0506/routecontract/examples/firstproject/OrderContractTest.java) shows the integration:
-  capture the return value, keep the business assertion, write a candidate, render reports, assert match.
+  capture the return value, keep the business assertion, then check Java limits directly or compare a reviewed JSON baseline.
 - [OrderRepository.java](src/test/java/io/github/ym0506/routecontract/examples/firstproject/OrderRepository.java) contains the equality/range query.
 - [OrderFixture.java](src/test/java/io/github/ym0506/routecontract/examples/firstproject/OrderFixture.java) and
   [sharding.yaml](src/test/resources/sharding.yaml) provision this demonstration's disposable databases.
