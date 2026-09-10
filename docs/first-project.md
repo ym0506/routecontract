@@ -113,11 +113,50 @@ The generated report is replaced on each run; the included baseline remains unch
 For a real change, inspect the SQL and sharding configuration. Fix unintended extra execution,
 or review an updated expectation when the change is intentional.
 
+## Adapt one existing test
+
+For execution-count checks, keep the expectations in your Java test. **A JSON baseline is optional.**
+Add the [Central test dependency](../README.md#install-013), retain your existing ShardingSphere
+setup and wrap one synchronous repository/service call. For example:
+
+```java
+var captured = RouteContract.captureResult("orders.find-paid", () -> orders.findPaidOrders("equality"));
+assertEquals(expectedOrders, captured.value());
+RouteAssertions.assertThat(captured.snapshot())
+        .hasAtMostObservedPhysicalAttempts(1)
+        .hasAtMostDistinctObservedDataSourceNames(1);
+```
+
+Import `RouteContract` and `RouteAssertions` from `io.github.ym0506.routecontract`, and
+`assertEquals` from JUnit. Here `orders` and `expectedOrders` belong to your existing test;
+replace the operation and expected limits with ones you have reviewed for that fixture.
+The limit of one above belongs to this guide's synthetic example. These assertions reject
+incomplete captures as well as counts above the limit, and failures fail the ordinary test/CI build.
+
+Run the included example this way with either build tool:
+
+```bash
+mvn -B test -Droutecontract.mode=assert
+# Or:
+../../gradlew -p . test --rerun-tasks -ProutecontractMode=assert
+```
+
+Add `-Droutecontract.query=range` for Maven or `-ProutecontractQuery=range` for Gradle to see
+the same order returned followed by `expected at most 1 observed physical attempts, but observed 2`.
+Rerun the original command to pass again. Read the console or JUnit result in this mode: it does
+not read or write a JSON baseline, candidate or review report. Any existing report belongs to a
+previous run. The direct-assertion lifecycle is also checked by the First project workflow.
+
+The two assertions above check counts only. They do not compare SQL fingerprints, parameter-type
+shapes or a saved data-source set, and do not produce the manifest report's `RCM` codes.
+If you need those comparisons and Markdown/JSON reports, use the baseline workflow below.
+All ShardingSphere modules in the test runtime must still be exactly **5.5.3** on **Java 17**.
+
 ## Capture and review your first baseline
 
-The demo above uses an existing **baseline**: the reviewed JSON file that records expected
-execution and allowed counts. A **candidate** records the current run. When adding a check to
-your own test, first capture a candidate and review it before establishing that test's baseline.
+The default check mode uses an existing **baseline**: the reviewed JSON file that records expected
+execution and allowed counts. A **candidate** records the current run. If you choose JSON
+comparison for your own test, first capture a candidate and review it before establishing its baseline.
 You can rehearse that process below with a new path, using the same build tool:
 
 <details>
@@ -184,21 +223,17 @@ mvn -B test -Droutecontract.baseline=baselines/first-review.approved.json
 Expect `MATCH`. If the baseline is missing, check mode must fail and leave a candidate for review.
 Creating a candidate must never silently substitute for that review.
 
-## Adapt one existing test
+### Connect JSON comparison to your test
 
-Use the example's test as a working reference. In your existing project:
+Use [OrderContractTest](../examples/first-project/src/test/java/io/github/ym0506/routecontract/examples/firstproject/OrderContractTest.java)
+as a working reference for the optional saved comparison:
 
-1. Add the [Central test dependency](../README.md#install-013). Keep your application's existing
-   ShardingSphere and data-source setup; the test runtime must use 5.5.3 throughout the
-   ShardingSphere dependency group.
-2. Put one representative repository/service call inside `RouteContract.captureResult`. Assert its
-   returned value before writing a candidate or comparing a contract, as the example does.
-   Alternatively use `capture` and keep the business assertion inside its operation.
-3. Give the operation a stable ID. Map every observed data-source name to a non-sensitive alias
+1. Keep the operation and returned-value assertion from your test. Map every observed data-source
+   name to a non-sensitive alias
    with `DataSourceAliases`, and choose `ManifestPolicy.strict` budgets for that operation.
-4. Write the candidate with `ManifestStore.writeCandidate`, using separate candidate and baseline
+2. Write the candidate with `ManifestStore.writeCandidate`, using separate candidate and baseline
    paths. Capture the initial candidate locally and have the project owner review it.
-5. In the normal test, compare the reviewed baseline with the new candidate using
+3. In the normal test, compare the reviewed baseline with the new candidate using
    `ManifestReviewReport.compare`. Write its Markdown/JSON output, then call
    `ManifestAssertions.assertMatched(report.verification())` so a non-match fails the build.
 
@@ -208,8 +243,8 @@ explains the API in detail.
 
 ## Keep the result beside CI
 
-Run **check mode** in CI with the reviewed baseline committed to the repository. Capture mode is
-an explicit local preparation step. Start with a clean checkout and a fresh build-output directory.
+For JSON comparison, run **check mode** in CI with the reviewed baseline committed to the repository.
+Capture mode is an explicit local preparation step. Start with a clean checkout and a fresh build-output directory.
 
 After your ordinary test step, use an always-running step to display a report if it was produced:
 
