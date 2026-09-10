@@ -6,7 +6,7 @@ Maven이나 Gradle로 실행할 수 있는 테스트 예제입니다. 쿼리를 
 반환되지만 데이터 소스를 한 곳 더 조회하는 상황을 만들고, RouteContract의 추가 검사가
 실패하는 것을 확인합니다. DB 설정과 검토된 기준 파일이 예제에 들어 있습니다.
 
-**Maven Central의 RouteContract 0.1.3**, **Java 17**,
+**Maven Central의 RouteContract 0.1.3**, **Java 17 또는 21**,
 정확히 **ShardingSphere-JDBC 5.5.3**을 사용합니다. 지원 범위는 동기식·비배치
 `PreparedStatement` 호출입니다.
 
@@ -24,8 +24,8 @@ GitHub가 제공하는 실행 환경에서 작동하므로 **컴퓨터에 따로
 2. **자신의 fork**에서 **Actions**를 엽니다. 활성화 안내가 나오면 Actions를 활성화한 뒤
    workflow 목록에서 **First project**를 선택합니다.
 3. **Run workflow**를 누르고 `main` 브랜치와 기본값 **Maven**으로 실행합니다.
-   **Gradle**, **Both**도 선택할 수 있습니다. 예전에 만든 fork에 `build_tool` 선택이 없다면
-   먼저 main 브랜치를 동기화하세요.
+   **Gradle**, **Both**도 선택할 수 있습니다. Java는 **17**(기본값), **21**, **Both** 중 선택합니다.
+   예전에 만든 fork에 이 선택 항목이 없다면 먼저 main 브랜치를 동기화하세요.
 4. 새 실행을 열고 완료 후 **Summary**에서 세 단계를 확인합니다.
 
    | 단계 | 정확히 검증하는 업무 행 | 관측 실행 시도 / 별칭 | 계약 결과 |
@@ -38,7 +38,7 @@ GitHub가 제공하는 실행 환경에서 작동하므로 **컴퓨터에 따로
    자체는 실패합니다. 의존성·컴파일·Docker 오류는 계약 거부로 인정하지 않으며, 확인하지
    못한 단계는 요약에 `Not verified`로 표시합니다.
 5. 실행 화면의 **Artifacts**에서 **first-project-Maven** 또는 **first-project-Gradle**을
-   내려받습니다. `build/lifecycle-evidence/` 아래 `match/`, `range/`, `restored/`에 각 단계의
+   내려받습니다. Java 21 결과에는 **-java21** 접미사가 붙습니다. `build/lifecycle-evidence/` 아래 `match/`, `range/`, `restored/`에 각 단계의
    `candidate.json`, `review.json`, `review.md`를 보관합니다. `range/review.md`부터 보세요.
 
 workflow는 capture가 없는 기준 파일을 자동 승인하지 않는지도 확인합니다. 비교에는 예제의
@@ -50,7 +50,7 @@ workflow는 capture가 없는 기준 파일을 자동 승인하지 않는지도 
 
 ## 예제 실행
 
-로컬 실행에는 Java 17과 실행 중인 Docker가 필요합니다. 처음에는 의존성과 MySQL 이미지를
+로컬 실행에는 Java 17 또는 21과 실행 중인 Docker가 필요합니다. 처음에는 의존성과 MySQL 이미지를
 내려받으므로 시간이 더 걸릴 수 있습니다.
 
 ```bash
@@ -64,6 +64,12 @@ cd routecontract/examples/first-project
 | --- | --- |
 | Maven 3.9.x | `mvn -B test` |
 | Gradle wrapper | `../../gradlew -p . test --rerun-tasks` |
+
+Maven은 `JAVA_HOME`으로 선택한 Java 17 또는 21로 예제를 컴파일하고 실행합니다.
+Gradle 기본값은 Java 17입니다. 설치된 Java 21을 쓰려면 이 문서의 **모든** Gradle 명령에
+`-ProutecontractJavaVersion=21`을 추가하거나, 셸 세션에 `ROUTECONTRACT_EXAMPLE_JAVA_VERSION=21`을
+설정하세요. 테스트는 실제 JVM, 예제 클래스 버전, Central 배포 JAR이 맞는지도 확인합니다.
+[런타임 검증과 한계](java21-runtime-acceptance.md)를 참고하세요.
 
 기본 실행은 예제에 포함된 검토된 기준 파일과 비교합니다. 업무 결과 assertion과 계약 비교가
 통과하고, `build/routecontract/review.md`와 `review.json`에 `MATCH`가 나와야 합니다.
@@ -140,7 +146,7 @@ First project 워크플로도 이 방식의 통과 → 실패 → 원복을 검�
 
 위 두 assertion은 횟수만 검사합니다. SQL fingerprint, 파라미터 타입 형태, 저장된 데이터 소스 집합을
 비교하거나 리포트의 `RCM` 코드를 만들지는 않습니다. 그 비교와 Markdown/JSON 리포트가 필요하면
-아래 기준 파일 절차를 사용하세요. Java 17과 테스트 런타임의 정확한 ShardingSphere 5.5.3 조건은 같습니다.
+아래 기준 파일 절차를 사용하세요. Java 17 또는 21과 테스트 런타임의 정확한 ShardingSphere 5.5.3 조건은 같습니다.
 
 ## 첫 기준을 직접 검토하기
 

@@ -7,7 +7,7 @@ its predicate makes it query an extra configured data source. RouteContract make
 execution assertion fail while keeping the order assertion. The example below has the database
 setup and reviewed expectation file ready to use.
 
-This guide uses **RouteContract 0.1.3 from Maven Central**, **Java 17** and exact
+This guide uses **RouteContract 0.1.3 from Maven Central**, **Java 17 or 21** and exact
 **ShardingSphere-JDBC 5.5.3**. It covers synchronous, non-batch `PreparedStatement` calls.
 [Run locally](#run-the-published-dependency) to see pass → fail → pass, or use the browser steps below.
 For a preview without running anything, [read the report](evidence/ci-review-report-example.md).
@@ -21,8 +21,8 @@ build tool run on GitHub's hosted runner; **no local installation is required**.
 2. In **your fork**, open **Actions**. Enable Actions if GitHub asks you to, then select
    **First project** from the workflow list.
 3. Click **Run workflow**, keep the `main` branch and default **Maven**, then run it.
-   You can choose **Gradle** or **Both** instead. If `build_tool` is missing in an older fork,
-   sync its main branch first.
+   You can choose **Gradle** or **Both** instead. Select Java **17** (default), **21**, or **Both**.
+   If these choices are missing in an older fork, sync its main branch first.
 4. Open the new run and read its **Summary** once it finishes:
 
    | Stage | Exact business row | Observed attempts / aliases | Contract |
@@ -35,6 +35,7 @@ build tool run on GitHub's hosted runner; **no local installation is required**.
    The range-query test itself fails. Dependency, compiler or Docker failures cannot count as
    that rejection; an unfinished stage appears as not verified in the summary.
 5. Download **first-project-Maven** or **first-project-Gradle** from the run's **Artifacts**.
+   Java 21 artifacts have a **-java21** suffix.
    Under `build/lifecycle-evidence/`, `match/`, `range/` and `restored/` retain each verified
    stage's `candidate.json`, `review.json` and `review.md`. Start with `range/review.md`.
 
@@ -47,7 +48,7 @@ its default branch. See GitHub's [manual-run instructions](https://docs.github.c
 
 ## Run the published dependency
 
-For local execution, install Java 17 and start Docker. The first run downloads Java dependencies
+For local execution, install Java 17 or 21 and start Docker. The first run downloads Java dependencies
 and the MySQL image.
 
 Clone the examples, then choose **one** build tool. The example lives on the repository's main
@@ -69,6 +70,12 @@ mvn -B test
 ```bash
 ../../gradlew -p . test --rerun-tasks
 ```
+
+Maven compiles and runs the example with the JDK selected by `JAVA_HOME`; use Java 17 or 21.
+Gradle defaults to Java 17. To use an installed Java 21 JDK, add `-ProutecontractJavaVersion=21`
+to **each** Gradle command in this guide, or set `ROUTECONTRACT_EXAMPLE_JAVA_VERSION=21`
+for the shell session. The test verifies its actual JVM, compiled consumer class and unchanged
+Central JAR. See the [runtime checks and limitations](java21-runtime-acceptance.md).
 
 The default check uses the example's reviewed synthetic baseline. Expect a passing test and
 `MATCH` in `build/routecontract/review.md` and `review.json`. The test also asserts that the query
@@ -150,7 +157,7 @@ previous run. The direct-assertion lifecycle is also checked by the First projec
 The two assertions above check counts only. They do not compare SQL fingerprints, parameter-type
 shapes or a saved data-source set, and do not produce the manifest report's `RCM` codes.
 If you need those comparisons and Markdown/JSON reports, use the baseline workflow below.
-All ShardingSphere modules in the test runtime must still be exactly **5.5.3** on **Java 17**.
+All ShardingSphere modules in the test runtime must still be exactly **5.5.3** on **Java 17 or 21**.
 
 ## Capture and review your first baseline
 
@@ -269,7 +276,7 @@ CI artifact policy. [CI review reports](ci-review-report.md#ci-use) explains the
 | What you see | Next step |
 | --- | --- |
 | Docker cannot start | Start the Docker engine and confirm your normal Testcontainers test works. |
-| Dependency resolution or compilation fails | Check Java 17 and the whole ShardingSphere runtime graph for exact 5.5.3. |
+| Dependency resolution or compilation fails | Check Java 17 or 21 and the whole ShardingSphere runtime graph for exact 5.5.3. |
 | Baseline is missing | Run capture locally, review the candidate, then create the baseline explicitly. |
 | Capture has no eligible observation | Confirm that the selected operation actually reaches supported synchronous, non-batch JDBC execution. |
 | `RCM201` / `RCM202` | Execution attempts / distinct data sources exceed the baseline limit. Compare actual and allowed counts, then inspect the SQL and sharding rules. |

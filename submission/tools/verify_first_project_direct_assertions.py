@@ -3,6 +3,7 @@
 
 import hashlib
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -13,6 +14,7 @@ EXAMPLE = Path(__file__).resolve().parents[2] / "examples" / "first-project"
 TEST_NAME = "paidOrdersKeepTheirBusinessResultAndExecutionContract"
 CLASS_NAME = "io.github.ym0506.routecontract.examples.firstproject.OrderContractTest"
 VIOLATION = "io.github.ym0506.routecontract.RouteContractViolationException"
+PUBLIC_JAR_SHA256 = "9e883e618eb09d9ecf30814151bb4b0a43eba02c78d288cc582fa7e57e6edba2"
 
 
 def manifest_files():
@@ -29,6 +31,9 @@ def main():
     if len(sys.argv) != 2 or sys.argv[1] not in ("Maven", "Gradle"):
         raise SystemExit("usage: verify_first_project_direct_assertions.py Maven|Gradle")
     build = sys.argv[1]
+    expected_java = int(os.environ.get("ROUTECONTRACT_EXAMPLE_JAVA_VERSION", "17"))
+    if expected_java not in (17, 21):
+        raise SystemExit("ROUTECONTRACT_EXAMPLE_JAVA_VERSION must be 17 or 21")
     evidence = EXAMPLE / "build/lifecycle-evidence/direct-assertions" / build.lower()
     evidence.mkdir(parents=True, exist_ok=True)
     for name in ("summary.json", "match.log", "match.xml", "range.log", "range.xml",
@@ -66,6 +71,9 @@ def main():
         cases = suite.findall("testcase")
         assert len(cases) == 1 and cases[0].get("name") in (TEST_NAME, TEST_NAME + "()")
         output = log.read_text(encoding="utf-8")
+        runtime_marker = (f"ROUTECONTRACT_RUNTIME java={expected_java} classMajor={expected_java + 44} "
+                          f"libraryClassMajor=61 jarSha256={PUBLIC_JAR_SHA256}")
+        assert runtime_marker in output, f"Actual JVM/classfile/public artifact not verified: {stage}"
         assert "Business assertion passed: the exact expected order was returned." in output
         assert f"Direct assertions: observed attempts={count}, data sources={count};" in output
         if query == "range":
@@ -83,7 +91,9 @@ def main():
         print(f"{build}: direct {stage} verified ({count} attempts / {count} data sources)", flush=True)
 
     (evidence / "summary.json").write_text(json.dumps({
-        "buildTool": build, "libraryVersion": "0.1.3", "stages": stages,
+        "buildTool": build, "libraryVersion": "0.1.3", "javaFeature": expected_java,
+        "exampleClassMajor": expected_java + 44, "libraryClassMajor": 61,
+        "publicJarSha256": PUBLIC_JAR_SHA256, "stages": stages,
         "protectedFiles": before, "baselineArgumentIgnored": command[-1],
     }, indent=2) + "\n", encoding="utf-8")
 

@@ -26,7 +26,7 @@ routes equality by `user_id % 2` and enables range queries across the configured
 It does not mean every `BETWEEN` query behaves this way.
 
 **Start with the [current 0.1.3 MySQL example](first-project.md#run-the-published-dependency).**
-It uses Java 17, Maven or Gradle, and Docker, and downloads the released library from Maven Central.
+It uses Java 17 or 21, Maven or Gradle, and Docker, and downloads the released library from Maven Central.
 The database setup and a reviewed expectation for this example are included.
 
 <a id="성공-기준--what-success-means"></a>
@@ -47,7 +47,7 @@ To inspect the output without running anything, [read the example report](eviden
 
 ## Add it to an existing test
 
-For **Java 17 and exact ShardingSphere-JDBC 5.5.3**, add the [0.1.3 test dependency](../README.md#install-013)
+For **Java 17 or 21 and exact ShardingSphere-JDBC 5.5.3**, add the [0.1.3 test dependency](../README.md#install-013)
 and [wrap one repository or service call](first-project.md#adapt-one-existing-test). Keep your existing
 ShardingSphere setup and returned-value assertion. The supported calls are synchronous, non-batch
 `PreparedStatement` operations.
@@ -69,7 +69,7 @@ SQL이나 샤딩 설정을 바꾼 뒤 반환된 주문은 같아도, 조회하�
 기존 반환값 검사는 그대로 두고, 실행 시도와 사용한 데이터 소스가 정한 기준에 맞는지도 검사합니다.
 
 [현재 0.1.3 MySQL 예제 실행](first-project.ko.md#예제-실행)부터 시작하세요.
-Java 17, Maven 또는 Gradle, Docker가 필요합니다. DB 구성과 이 예제에서 사용할 기준 파일은
+Java 17 또는 21, Maven 또는 Gradle, Docker가 필요합니다. DB 구성과 이 예제에서 사용할 기준 파일은
 이미 준비되어 있습니다. 이 기준 파일을 자기 프로젝트의 기준으로 그대로 복사하지는 마세요.
 
 1. 정상 쿼리를 실행하면 주문 검증과 실행 검사가 모두 통과하고 `MATCH`가 나옵니다.
@@ -85,7 +85,7 @@ Java 17, Maven 또는 Gradle, Docker가 필요합니다. DB 구성과 이 예제
 Docker를 설치하기 어렵다면 [자기 GitHub fork에서 같은 예제 실행](first-project.ko.md#try-in-your-browser)을
 선택할 수 있습니다. 동작을 확인했다면 [기존 테스트 한 개에 적용](first-project.ko.md#자신의-테스트와-ci로-옮기기)으로
 이어가세요. 자기 테스트의 반환값·실행 기준은 직접 검토해야 합니다.
-현재 지원 범위는 Java 17·정확히 ShardingSphere-JDBC 5.5.3의 동기식·비배치 `PreparedStatement`입니다.
+현재 지원 범위는 Java 17 또는 21·정확히 ShardingSphere-JDBC 5.5.3의 동기식·비배치 `PreparedStatement`입니다.
 
 [설치 전 질문이나 적용 도움](https://github.com/ym0506/routecontract/discussions/76)은 사용 버전과
 짧은 질문으로 시작해도 됩니다. 비공개 SQL·바인딩 값·접속 정보·전체 로그를 공개할 필요는 없습니다.

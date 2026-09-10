@@ -2,7 +2,7 @@
 
 ## Development prerequisites
 
-- JDK 17
+- JDK 17 to compile the library; JDK 21 as well for the additional runtime check
 - Docker for MySQL integration tests
 - Git, Python 3, Bash or equivalent POSIX tooling, and network access for public release checks
 
@@ -25,6 +25,17 @@ Run the complete unit, real-MySQL integration and SBOM checks with:
 ```bash
 ./gradlew --no-daemon --no-build-cache clean check validateOfficialCycloneDxSbom
 ```
+
+To keep Java 17 library bytecode and run the existing core/MySQL tests on Java 21:
+
+```bash
+./gradlew --no-daemon --no-build-cache --no-configuration-cache --rerun-tasks \
+  -ProutecontractTestJavaVersion=21 \
+  :routecontract-shardingsphere-5.5:test :mysql-example:test
+```
+
+Both JDKs must be available to Gradle. The [runtime acceptance record](docs/java21-runtime-acceptance.md)
+explains actual-JVM verification and the public Central Maven/Gradle matrix.
 
 Verify that a standalone consumer can resolve and run this checkout's generated Maven publication
 from an isolated temporary repository rather than use an in-repository Gradle project dependency with:

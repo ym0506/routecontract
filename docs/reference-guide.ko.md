@@ -16,7 +16,7 @@ RouteContract는 [ShardingSphere-JDBC](https://github.com/apache/shardingsphere)
 포함된 MySQL 예제는 같은 행을 반환하면서 관측된 실행 시도가 `1 → 2`로 늘어나는 변경을
 `RCM201`·`RCM202`로 거부합니다. 실행 증가가 의도한 변경인지는 담당자가 검토합니다.
 
-**지원:** Java 17 · 정확히 ShardingSphere-JDBC 5.5.3 · 동기식·비배치 `PreparedStatement`.
+**지원:** Java 17 또는 21 · 정확히 ShardingSphere-JDBC 5.5.3 · 동기식·비배치 `PreparedStatement`.
 [실행 경계와 한계](../docs/start-here.md#도입-전에-확인할-세-가지--check-fit)를 먼저 확인하세요.
 
 ## 시작하기
@@ -26,7 +26,7 @@ RouteContract는 [ShardingSphere-JDBC](https://github.com/apache/shardingsphere)
 | 먼저 동작 보기 | [2분 54초 시연 영상 보기](https://www.youtube.com/watch?v=pcgvNNxd1mM) · [실제 비교 결과](../examples/manifests/README.md) — 설치 불필요 |
 | CI에서 읽을 리포트 확인 | [Markdown 미리보기](../docs/evidence/ci-review-report-example.md) · [v0.1.3으로 직접 생성](../docs/ci-review-report.md#try-the-released-report-without-docker) — Git·Java 17, Docker 불필요 |
 | 같은 결과인데 실행이 달라지는 사례 재현 | [아래 Quick Start](#quick-start) — Git, Java 17, Docker 필요 |
-| 내 프로젝트의 테스트 한 개에 적용 | [Maven Central에서 0.1.3 설치](#install-013) — 기존 Java 17 · ShardingSphere-JDBC 5.5.3 테스트 |
+| 내 프로젝트의 테스트 한 개에 적용 | [Maven Central에서 0.1.3 설치](#install-013) — 기존 Java 17 또는 21 · ShardingSphere-JDBC 5.5.3 테스트 |
 | 적용 가능성 질문·경험 공유 | [짧은 피드백](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml) — 설치나 공개 저장소 없이 참여 가능 |
 
 최신 [정식 `v0.1.3`](https://github.com/ym0506/routecontract/releases/tag/v0.1.3)은
@@ -41,9 +41,10 @@ GitHub Release와 Maven Central에서 사용할 수 있습니다. 아래 MySQL Q
 
 ## Install 0.1.3
 
-[공개 파일 검증과 Gradle·Maven 설치 결과](../docs/evidence/release-0.1.3-central.md)를 확인할 수 있습니다.
+[공개 파일 검증과 Gradle·Maven 설치 결과](../docs/evidence/release-0.1.3-central.md)와
+현재 [Java 17/21 런타임 검증](java21-runtime-acceptance.md)을 확인할 수 있습니다.
 
-기존 **Java 17 · ShardingSphere-JDBC 5.5.3** 테스트에 의존성을 추가하세요.
+기존 **Java 17 또는 21 · ShardingSphere-JDBC 5.5.3** 테스트에 의존성을 추가하세요.
 기존 ShardingSphere·데이터 소스 설정과 업무 결과 assertion은 유지합니다.
 
 Gradle Groovy / Kotlin DSL:
