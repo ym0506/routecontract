@@ -205,6 +205,7 @@ Independent integration and repeat use have not yet been verified.
 | Review failures in CI | [Report guide and CLI](docs/ci-review-report.md) · [Example report](docs/evidence/ci-review-report-example.md) |
 | Understand what is observed | [Architecture](docs/architecture.md) · [Specification](docs/specification.md) |
 | Compare with existing tools | [Tool comparison](docs/competitive-analysis.md) · [Measured datasource-proxy fixture](docs/empirical-comparison.md) |
+| Inspect capture cleanup | [Repeated operations, retained-object controls and limitations](docs/capture-retention.md) |
 | Inspect observer cost | [Public 0.1.3: three conditions, raw measurements and limitations](docs/observer-cost.md) |
 | Examine application code | [Three evaluations: destination changes, query budgets and existing tests](docs/application-evaluations.md) · [한국어](docs/application-evaluations.ko.md) · Author-run experiments |
 | Inspect release evidence | [v0.1.3 Central verification](docs/evidence/release-0.1.3-central.md) · [Evidence matrix](docs/evidence-matrix.md) |
