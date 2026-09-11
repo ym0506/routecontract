@@ -1,6 +1,7 @@
 # This is a Gradle generated file for dependency locking.
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
+# To regenerate this file, run: ./gradlew :mysql-example:dependencies --write-locks
 com.alibaba:transmittable-thread-local:2.14.2=testCompileClasspath,testRuntimeClasspath
 com.cedarsoftware:java-util:4.90.0=testCompileClasspath,testRuntimeClasspath
 com.fasterxml.jackson.core:jackson-annotations:2.18.9=testCompileClasspath

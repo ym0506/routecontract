@@ -395,8 +395,9 @@ setting a generator's `enabled` flag to false can omit its publication artifact.
 
 After staging, compare each seeded and staged payload's size and SHA-256 with
 the reviewed CI bytes. A successful Gradle exit alone is insufficient: require
-the existing schema-1 bundle builder and verifier to validate the exact 55-file
-staging inventory, all checksums, five SHA-384 primary-key signatures and the
+the schema-1 bundle builder and verifier to validate the 35 required staging
+files and any allowed signature-checksum sidecars, every present checksum,
+five SHA-384 primary-key signatures and the
 30-entry upload bundle. These checks also reject missing stronger checksum
 sidecars if Gradle's `org.gradle.internal.publish.checksums.insecure` property is
 enabled or a checksum write fails. No payload hash mismatch may be repaired by
@@ -476,11 +477,16 @@ path:
 - one detached ASCII-armored primary-key signature for each payload; and
 - `.md5`, `.sha1`, `.sha256` and `.sha512` sidecars for each payload.
 
-The local Gradle staging tree also contains four checksum sidecars for each
-`.asc` file and artifact-level `maven-metadata.xml` plus four checksums. The tool
-requires that exact local-only inventory, verifies every checksum and detached
-signature, and excludes those 25 files from the upload ZIP. Signature sidecars
-do not need checksums, and repository-level metadata is local publication
+The local Gradle staging tree also requires artifact-level `maven-metadata.xml`
+plus four checksums. Gradle 9.7.1 omits checksums for `.asc` files, as documented
+by the [Maven Publish plugin](https://docs.gradle.org/current/userguide/publishing_maven.html).
+The tool also accepts the older output's four checksum sidecars per signature;
+only these exact paths are optional, and every present sidecar is verified.
+Payloads, their four checksums, all five detached signatures and metadata remain
+mandatory. The receipt records only files actually excluded: five metadata files
+plus any signature-checksum sidecars (25 excluded files for the full older
+inventory). The upload ZIP always has the same 30-entry contract. Signature
+sidecars do not need checksums, and repository-level metadata is local publication
 bookkeeping rather than version payload. Any other file, directory, symlink or
 special file fails closed.
 
