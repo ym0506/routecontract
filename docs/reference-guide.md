@@ -8,10 +8,10 @@ Detailed reproduction and compatibility notes. For the current installation and 
 
 **The result can stay the same while database execution changes.**
 
-RouteContract is a Java test library that compares physical JDBC execution attempts reported by
-[ShardingSphere-JDBC](https://github.com/apache/shardingsphere)'s `SQLExecutionHook` with a reviewed
-baseline. Keep your business-result assertions and check changes to observed execution counts and
-data-source sets in CI.
+RouteContract is a Java test library that checks physical JDBC execution attempts reported by
+[ShardingSphere-JDBC](https://github.com/apache/shardingsphere)'s `SQLExecutionHook` against reviewed
+expectations. Keep your business-result assertions and check observed counts and data-source sets
+with Java assertions. A saved manifest is optional when you also want structural comparison and reports.
 
 The included MySQL example returns the same row while observed attempts grow from `1 → 2`;
 the contract rejects it with `RCM201` and `RCM202`. Review whether that change is intentional.
@@ -23,21 +23,19 @@ Read the [execution boundary and limitations](../docs/start-here.md#도입-전�
 
 | Your goal | Start here |
 | --- | --- |
-| See what it does | [Watch the 2:54 demo](https://www.youtube.com/watch?v=pcgvNNxd1mM) · [Actual comparison](../examples/manifests/README.md) — no installation |
-| See the report a CI reviewer reads | [Markdown preview](../docs/evidence/ci-review-report-example.md) · [Generate it with v0.1.3](../docs/ci-review-report.md#try-the-released-report-without-docker) — Git and Java 17, no Docker |
-| Reproduce the same-result, changed-execution case | [Quick Start below](#quick-start) — Git, Java 17, Docker |
-| Apply it to one test in your project | [Install 0.1.3 from Maven Central](#install-013) — existing Java 17 or 21 / ShardingSphere-JDBC 5.5.3 test |
+| Understand the result without installing anything | [Read the CI report](evidence/ci-review-report-example.md) |
+| Run pass → fail → pass with the public library | [First project with 0.1.3](first-project.md) — Java 17 or 21, Maven/Gradle and Docker |
+| Try it without local Java or Docker | [Run in your own GitHub fork](first-project.md#try-in-your-browser) |
+| Apply it to an existing test | [Central dependency](#install-013), then [adapt one operation](first-project.md#adapt-one-existing-test); a JSON baseline is optional |
 | Ask about fit or share an experience | [Short feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml) — no installation or public repository required |
 
-The latest [v0.1.3 release](https://github.com/ym0506/routecontract/releases/tag/v0.1.3) includes
-Markdown/JSON [CI review reports](../docs/ci-review-report.md) and `ManifestReviewCli`, and is available
-through GitHub Release assets and Maven Central. The MySQL Quick Start below, local installer and
-existing integration guides remain pinned to verified v0.1.2. Use the v0.1.3 report path above
-to try the reports. Private projects can use the library in their own environment.
+The current public release is **0.1.3**. The first-project guide uses that release from Maven
+Central and covers direct Java assertions and optional Markdown/JSON comparison reports.
+The old 0.1.2 commands remain below in closed historical sections for reproducibility.
 Keep SQL, bind values, connection details and full logs out of public feedback.
-See [how to get help and record use](../docs/user-feedback.md).
+See [how to get help and record use](user-feedback.md).
 
-![A verified real-MySQL case where the business result stays the same while observed attempts and reviewed data-source aliases change from one to two, producing RCM201 and RCM202](../submission/assets/baseline-candidate.png)
+![The same order is returned while observed execution attempts and data sources rise from one to two.](assets/execution-comparison.svg)
 
 ## Install 0.1.3
 
@@ -72,8 +70,39 @@ Wrap one synchronous non-batch `PreparedStatement` operation as in the
 [usage example below](#smallest-usage-example). RouteContract neither supplies ShardingSphere nor
 forces its whole dependency graph; every ShardingSphere module in the test runtime must be exactly 5.5.3.
 
-The v0.1.2 Quick Start, local installer and Maven starter below remain pinned reproduction paths.
-Installing 0.1.3 does not require that installer or a clone of this repository.
+Installing 0.1.3 does not require the historical local installer or a repository clone.
+Use the [first-project guide](first-project.md) for the current Maven and Gradle examples.
+
+## Run 0.1.3
+
+Use Java 17 or 21, Maven 3.9.x and a running Docker engine. The first run downloads dependencies
+and the MySQL image. From a new checkout:
+
+```bash
+git clone https://github.com/ym0506/routecontract.git
+cd routecontract/examples/first-project
+mvn -B test
+```
+
+Expect the exact business row and a `MATCH` report in `build/routecontract/review.md`.
+Then run the same-result range query:
+
+```bash
+mvn -B test -Droutecontract.query=range
+```
+
+This command must fail with `POLICY_VIOLATION`, `RCM201` and `RCM202` after the business
+assertion passes. A dependency, compiler or Docker failure does not demonstrate that rejection.
+Run `mvn -B test` again to restore `MATCH`. The included baseline is reviewed for this synthetic
+fixture only. See [the full guide](first-project.md) for Gradle, Java 21 selection, direct assertions
+and your own baseline review.
+
+<details>
+<summary>Historical 0.1.2 Quick Start and isolated integration tooling</summary>
+
+These commands retain their original version and verification boundary. They are not prerequisites
+for current installation. The [archived 2:54 demonstration](https://www.youtube.com/watch?v=pcgvNNxd1mM)
+also belongs to this earlier workflow.
 
 ## Quick Start
 
@@ -273,6 +302,8 @@ After a first run—or after deciding that the current scope is not a fit—use 
 [short feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)
 to share a success, blocker, unsupported setup, or not-a-fit result. Do not put raw SQL, bind values,
 JDBC URLs, real topology, full logs, or other sensitive information in the public Issue.
+
+</details>
 
 </details>
 
@@ -530,9 +561,12 @@ The ShardingSphere SPI method name `finishSuccess()` does not mean that a transa
 
 ## v0.1 support boundary
 
+This section describes public **0.1.3**. See the [Java 17/21 runtime evidence](java21-runtime-acceptance.md);
+the historical 0.1.2 installer and assisted runner keep their own documented limits.
+
 This problem is not limited to one ORM or repository API. Apache ShardingSphere-JDBC can be used with direct JDBC and integration surfaces such as MyBatis, JPA, and Hibernate; RouteContract's capture API is not ORM-specific. That describes the problem and API surface, not verified end-to-end compatibility with each of MyBatis, JPA, and Hibernate.
 
-- Java 17
+- Java 17 or 21
 - Apache ShardingSphere-JDBC **exactly 5.5.3**
 - Synchronous `PreparedStatement` operations that return normally and whose caller is not interrupted when capture closes
 - Integration verification against MySQL 8.4.11
@@ -555,6 +589,17 @@ After a parallel execution failure, ShardingSphere 5.5.3 may not wait for every 
 One capture retains at most 10,000 physical execution attempts. At the next attempt, it stops growing the retained set and becomes `INCOMPLETE` with the `RC_ATTEMPT_LIMIT_EXCEEDED` diagnostic.
 
 ## Dependency and Release compatibility details
+
+For public **0.1.3**, use the [Central coordinate above](#install-013) and inspect your existing
+ShardingSphere runtime graph for exact 5.5.3. RouteContract does not embed ShardingSphere or
+align all of its modules for the consumer. The [public release evidence](evidence/release-0.1.3-central.md)
+and [Java 17/21 consumer checks](java21-runtime-acceptance.md) describe the tested lanes.
+
+<details>
+<summary>Historical 0.1.2 dependency graph, local installation and Javadoc evidence</summary>
+
+The following versions and constraints describe the recorded release/fixture build, not a list
+of new dependencies to add to a current application.
 
 The exact coordinate in the postpublication-verified stable `v0.1.2` Release is
 `io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.2`; it is not claimed to exist
@@ -581,14 +626,15 @@ does not guarantee the same classifier-asset version. These assets are not
 main-JAR/runtime dependencies; see [THIRD_PARTY.md](../THIRD_PARTY.md) for the
 shipped-file inventory.
 
+</details>
+
 ## Data minimization and security
 
 Snapshots and manifests do not store raw SQL, parameter values, connection properties, or exception messages. However, data-source names, operation IDs, Java type names, and unsalted SQL fingerprints can still be sensitive engineering metadata. A SHA-256 fingerprint is not anonymization. v0.1 therefore assumes deterministic `PreparedStatement` tests that do not inline confidential literals. See [SECURITY.md](../SECURITY.md) for details.
 
 ## Contributing and extension gates
 
-If you are reviewing the `v0.1.2` documentation, Quick Start, Release installation, or fit for the
-first time, use the [short feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)
+If you are trying public `0.1.3`, adapting one existing test, or asking about fit, use the [short feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)
 for a successful, blocked, unsupported, or not-a-fit outcome. Private-project experiences are welcome;
 you can describe your current verification method or a missing capability without installing anything.
 [Record the use stage separately from its evidence](../docs/user-feedback.md#recording-use-and-evidence).
