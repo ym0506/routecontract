@@ -1,6 +1,6 @@
 # Repeated capture lifecycle and live objects
 
-Status: **planned** until a completed run receipt is linked. This is a diagnostic
+Status: [a completed 300,000-operation diagnostic and its limits](../../../docs/capture-retention.md) are recorded. This is a diagnostic
 experiment against public RouteContract 0.1.3, not a production leak-free claim.
 It reuses the first-project MySQL fixture and the observer-cost dependency POM;
 it does not modify the library or time a JMH benchmark.

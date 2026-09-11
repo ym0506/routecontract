@@ -37,7 +37,9 @@ structure while preserving the application's existing result assertions.
   CPU, latency and incomplete captures under stated concurrency and workload. Do not infer
   production performance from the existing correctness corpus. The [first local experiment](observer-cost.md)
   records operation time and estimated allocation for absent/idle/capture-plus-checks. Timing
-  direction varies between blocks; retained heap, CPU, report cost and concurrency remain unmeasured.
+  direction varies between blocks. A [separate lifecycle diagnostic](capture-retention.md) checks live per-capture
+  object counts after repeated operations on four caller threads. Object-graph retained size,
+  long-duration behavior, CPU, report cost and concurrency-related performance remain unmeasured.
 - **Baseline evolution.** Human review stays explicit. A future version migration tool must show
   compatibility/semantic differences and never silently bless new fingerprints.
 - **Failure explanation.** Stable findings and next steps must reflect the verifier's precedence.
