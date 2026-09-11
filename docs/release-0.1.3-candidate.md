@@ -1,17 +1,26 @@
-# 0.1.3 Central candidate
+# 0.1.3 Central publication record
 
-Status: **planned, unpublished**. This candidate uses the existing single
+Status: **published on GitHub and Maven Central**. The immutable
+[v0.1.3 GitHub Release](https://github.com/ym0506/routecontract/releases/tag/v0.1.3)
+and its twelve assets passed [public readback and release verification](evidence/release-0.1.3-github.md).
+The [Central evidence record](evidence/release-0.1.3-central.md) records the signed bundle,
+Portal deployment, public readback and consumer results, including the prepublication
+Portal candidate-byte download exception. It does not claim every prepublication gate passed.
+The [publication tracking issue](https://github.com/ym0506/routecontract/issues/36) retains the sequence.
+This release uses the existing single
 `io.github.ym0506.routecontract:routecontract-shardingsphere-5.5` artifact and
-exact ShardingSphere-JDBC 5.5.3 support. It adds the current development
-Markdown/JSON report API and ordinary Central distribution after verification.
+exact ShardingSphere-JDBC 5.5.3 support. Its Markdown/JSON report API is included
+in the GitHub release and the same library is available through Central.
 The core split and 5.5.2 adapter remain separate unreleased 0.2 work.
 
 The immutable v0.1.2 release, its installer pins and contest evidence remain
-historical release evidence. The currently published user instructions continue
-to point to v0.1.2 until the new version passes anonymous public consumption.
-This candidate does not activate a new contest recruitment window.
+historical release evidence. Existing local-install and assisted-pilot instructions
+remain pinned to v0.1.2; the [released report example](ci-review-report.md) uses v0.1.3.
+Use the [ordinary Central dependency](../README.md#install-013) for current installation.
+This release does not activate a new contest recruitment window.
 
-Acceptance before publication:
+Original acceptance requirements, retained for audit; completion evidence and exceptions
+are recorded separately above:
 
 1. Existing Java/MySQL, Python, source-archive, public-asset consumer and official
    SBOM checks pass for the final clean revision using the documented exact JDK.

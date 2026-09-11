@@ -12,26 +12,35 @@ where the same result needs `1 → 2` observed attempts.
 
 | 목적 / Goal | 시작점 / Start | 필요한 것 / Requirements |
 | --- | --- | --- |
-| 동작 이해 / Understand | [2분 54초 데모 / Demo](https://www.youtube.com/watch?v=pcgvNNxd1mM) | 설치 없음 / No installation |
-| 실제 DB 반례 재현 / Reproduce | [정식판 Quick Start / Released Quick Start](../README.en.md#quick-start) | Git, Java 17, Docker, network |
-| CI 결과 검토 / Review a CI result | [Markdown·JSON 리포트 / Review reports](ci-review-report.md) | 개발 소스 + Java 17 / Development source + Java 17 |
-| Release 자산 설치 / Install | [짧은 설치 명령 / Local installer](install-local.md) | Python 3.10+, curl, POSIX, network |
-| 내 테스트에 도입 / Integrate | [지원 범위와 빌드 경로 / Integration guide](first-integration.md) | Java 17, 기존 테스트 / Existing test |
+| 동작 이해 / Understand | [20초 영어 설명 / 20-second interactive explanation](https://routecontract.ym56.chatgpt.site) · [애플리케이션 실험](application-evaluations.ko.md) / [Application evaluations](application-evaluations.md) | 설치 없음; 설명 페이지는 DB를 실행하지 않습니다 / No installation; the explanation does not run a database |
+| 브라우저에서 체험 / Try in your browser | [v0.1.3 MySQL 시연](first-project.ko.md#try-in-your-browser) / [v0.1.3 MySQL demonstration](first-project.md#try-in-your-browser) | GitHub 계정·fork의 Actions 권한 / GitHub account and Actions access in your fork; no local installation |
+| 실제 DB 반례 재현 / Reproduce | [v0.1.2 고정 Quick Start / Pinned Quick Start](reference-guide.md#quick-start) | Git, Java 17, Docker, network |
+| CI 결과 검토 / Review a CI result | [미리보기 / Preview](evidence/ci-review-report-example.md) · [v0.1.3 리포트 생성 / Generate a report](ci-review-report.md#try-the-released-report-without-docker) | 미리보기는 설치 없음; 생성은 Git·Java 17·network / No install to preview; Git, Java 17 and network to generate |
+| v0.1.3 설치 / Install v0.1.3 | [Maven Central 의존성 / Maven Central dependency](../README.md#install-013) | Java 17, ShardingSphere-JDBC 5.5.3, Gradle/Maven |
+| v0.1.3 첫 통합 / First v0.1.3 project | [첫 프로젝트](first-project.ko.md) · [First project](first-project.md) | Java 17, Docker, Gradle/Maven; candidate → 검토 / review → CI |
+| v0.1.2 자산 설치 / Install v0.1.2 assets | [고정 로컬 설치 명령 / Pinned local installer](install-local.md) | Python 3.10+, curl, POSIX, network |
+| v0.1.2 통합 참고 / v0.1.2 integration reference | [지원 범위와 빌드 경로 / Integration guide](first-integration.md) | Java 17, 기존 테스트 / Existing test |
 | 질문·경험 공유 / Ask or share | [짧은 피드백 / Short feedback](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml), [도움받기 / Get help](user-feedback.md) | 설치 불필요 / No installation |
 | 기여 / Contribute | [기여 지침 / Contributor guide](../CONTRIBUTING.md), [다음 단계 / Roadmap](product-roadmap.md) | 재현 가능한 문제 / Reproducible problem |
 
 ## 도입 전에 확인할 세 가지 / Check fit
 
-1. **버전 / Version:** 정식 v0.1.2는 ShardingSphere-JDBC **5.5.3** 대상입니다.
+1. **버전 / Version:** 최신 정식 v0.1.3은 ShardingSphere-JDBC **5.5.3** 대상이며 Markdown·JSON 리포트를 포함합니다.
    5.5.2 어댑터와 코어 분리는 [PR #62](https://github.com/ym0506/routecontract/pull/62)의 미출시 작업입니다.
 2. **실행 경계 / Execution boundary:** 동기·non-batch `PreparedStatement` 작업을 대상으로 합니다.
    Proxy, 임의 async, batch, reactive와 완전한 라우팅 계획 검증은 지원 주장에 포함되지 않습니다.
-3. **설치 / Distribution:** v0.1.2는 Maven Central에 없습니다. 현재는 검증된 GitHub Release 자산을
-   사용합니다. 상세 가이드에서 Gradle 또는 Maven 한 경로만 선택하세요.
+3. **설치 / Distribution:** v0.1.3은 GitHub Release와 Maven Central에서 사용할 수 있습니다.
+   [일반 테스트 의존성 설치](../README.md#install-013)와 [Central 검증 기록](evidence/release-0.1.3-central.md)을 참고하세요.
+   [첫 프로젝트 가이드](first-project.ko.md)는 v0.1.3으로 기준 검토와 CI 비교까지 연결합니다.
+   기존 로컬 설치·파일럿 도구는 v0.1.2에 고정된 과거 참고 자료입니다.
 
-Released v0.1.2 supports exact ShardingSphere-JDBC 5.5.3 and synchronous non-batch
-`PreparedStatement` operations. Core separation and the 5.5.2 adapter remain unreleased.
-Use verified GitHub Release assets until Central publication is independently confirmed.
+Released v0.1.3 supports exact ShardingSphere-JDBC 5.5.3 and synchronous non-batch
+`PreparedStatement` operations, and includes Markdown/JSON reports. Use its
+[ordinary Maven Central test dependency](../README.md#install-013); see the
+[public verification record](evidence/release-0.1.3-central.md). Follow the [first-project guide](first-project.md)
+for candidate capture, baseline review and CI comparison with v0.1.3. Earlier local-install and
+assisted-pilot tooling remains pinned to v0.1.2 as historical reference.
+Core separation and the 5.5.2 adapter remain unreleased.
 
 ## 성공 기준 / What success means
 

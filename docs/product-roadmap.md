@@ -1,6 +1,6 @@
 # RouteContract product roadmap
 
-Planning snapshot: 2026-09-07. Items below are not release or delivery promises.
+Planning snapshot: 2026-09-08. Items below are not release or delivery promises.
 The August contest schedule in [development-plan.md](development-plan.md) is historical;
 this document describes subsequent product work. Released scope remains in the README.
 
@@ -18,9 +18,9 @@ structure while preserving the application's existing result assertions.
 
 | Order | Outcome | Completion evidence | Current boundary |
 | --- | --- | --- | --- |
-| 1 | Understand a result without a stack trace | JSON/Markdown reports agree with the verifier; real-MySQL same-result `1 → 2`; same-count drift; incomplete capture; strict non-match exit | [Development report feature](ci-review-report.md), not v0.1.2 |
-| 2 | Choose one short onboarding path | Newcomer identifies fit, runs one example, explains the rejection; record time and failure as well as success | [Start here](start-here.md); external usability unverified |
-| 3 | Install through ordinary Gradle/Maven coordinates | Exact release resolved from public Central with empty caches and no credentials in both consumers | v0.1.2 not on Central; existing signed staging work is not publication |
+| 1 | Understand a result without a stack trace | JSON/Markdown reports agree with the verifier; real-MySQL same-result `1 → 2`; same-count drift; incomplete capture; strict non-match exit | Released in [v0.1.3](ci-review-report.md) |
+| 2 | Choose one short onboarding path | Newcomer identifies fit, runs one example, explains the rejection; record time and failure as well as success | [First project with v0.1.3](first-project.md); external usability unverified |
+| 3 | Install through ordinary Gradle/Maven coordinates | Exact release resolved from public Central with empty caches and no credentials in both consumers | v0.1.3 published; [public readback and consumer evidence](evidence/release-0.1.3-central.md) |
 | 4 | Support exact version lanes | Review [PR #62](https://github.com/ym0506/routecontract/pull/62); real DB tests and wrong-version/dual-adapter failures in each lane | Candidate supports 5.5.2/5.5.3; not released |
 | 5 | Demonstrate repeated independent value | External developer uses a reviewed baseline and candidate check in their own project, then on a later real change; record assistance and verification separately | Private projects qualify; public case studies require separate evidence and permission |
 | 6 | Offer shared review history if needed | At least three independent teams repeatedly need cross-run review and agree to a bounded pilot | Hypothesis; no hosted-service or revenue claim |
@@ -35,7 +35,9 @@ structure while preserving the application's existing result assertions.
 - **Observer cost.** Compare library absent, present with capture disabled, capture enabled, and
   enabled with report generation outside the timed operation. Measure allocation/retention,
   CPU, latency and incomplete captures under stated concurrency and workload. Do not infer
-  production performance from the existing correctness corpus.
+  production performance from the existing correctness corpus. The [first local experiment](observer-cost.md)
+  records operation time and estimated allocation for absent/idle/capture-plus-checks. Timing
+  direction varies between blocks; retained heap, CPU, report cost and concurrency remain unmeasured.
 - **Baseline evolution.** Human review stays explicit. A future version migration tool must show
   compatibility/semantic differences and never silently bless new fingerprints.
 - **Failure explanation.** Stable findings and next steps must reflect the verifier's precedence.

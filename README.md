@@ -1,201 +1,95 @@
-# RouteContract for ShardingSphere-JDBC
+<h1 align="center">
+  <img src="docs/assets/routecontract-banner.png" alt="RouteContract — Test the execution behind the result." width="900">
+</h1>
 
-[한국어](README.md) | [English](README.en.md) | [처음 오셨나요? / Start here](docs/start-here.md) | [Roadmap](docs/product-roadmap.md)
+<p align="center">
+  <a href="https://github.com/ym0506/routecontract/actions/workflows/ci.yml?query=branch%3Amain"><img src="https://github.com/ym0506/routecontract/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
+  <a href="https://central.sonatype.com/artifact/io.github.ym0506.routecontract/routecontract-shardingsphere-5.5/0.1.3"><img src="https://img.shields.io/badge/Maven_Central-0.1.3-277DA1" alt="Maven Central 0.1.3"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache_2.0-182C38" alt="Apache License 2.0"></a>
+</p>
 
-[![CI](https://github.com/ym0506/routecontract/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ym0506/routecontract/actions/workflows/ci.yml?query=branch%3Amain)
+<p align="center">
+  <a href="#see-it-work">How it works</a> · <a href="#install-013">Install</a> · <a href="#usage">Usage</a> · <a href="#documentation">Documentation</a> · <a href="README.ko.md">한국어</a>
+</p>
 
-**같은 결과를 반환해도 DB 실행은 달라질 수 있습니다.**
+**The query result can stay the same while database execution changes.**
 
-RouteContract는 [ShardingSphere-JDBC](https://github.com/apache/shardingsphere)의
-`SQLExecutionHook`이 보고한 물리 JDBC 실행 시도를 사람이 검토한 기준과 비교하는 Java 테스트
-라이브러리입니다. 기존 업무 결과 assertion을 유지하면서, 실행 시도 수나 관측된 데이터 소스
-집합의 변화도 CI에서 검사합니다.
+RouteContract is a Java test library for [Apache ShardingSphere-JDBC](https://github.com/apache/shardingsphere).
+It records physical JDBC execution attempts reported by `SQLExecutionHook` and compares them
+with explicit budgets and a human-reviewed baseline. Keep your existing result assertions;
+add a check for changes in observed execution counts, data sources and rewritten-SQL structure.
 
-포함된 MySQL 예제는 같은 행을 반환하면서 관측된 실행 시도가 `1 → 2`로 늘어나는 변경을
-`RCM201`·`RCM202`로 거부합니다. 실행 증가가 의도한 변경인지는 담당자가 검토합니다.
+In the included MySQL example, the same row is returned while observed attempts increase
+from **1 to 2**. RouteContract catches the change in CI.
 
-**지원:** Java 17 · 정확히 ShardingSphere-JDBC 5.5.3 · 동기식·비배치 `PreparedStatement`.
-[실행 경계와 한계](docs/start-here.md#도입-전에-확인할-세-가지--check-fit)를 먼저 확인하세요.
+## See it work
 
-## 시작하기
+![Illustration of the verified MySQL fixture: the same business row, physical JDBC execution attempts 1 to 2 and observed data-source aliases 1 to 2; the strict contract rejects the candidate with RCM201 and RCM202.](docs/assets/execution-comparison.svg)
 
-| 하고 싶은 일 | 시작점 |
-| --- | --- |
-| 먼저 동작 보기 | [2분 54초 시연 영상 보기](https://www.youtube.com/watch?v=pcgvNNxd1mM) · [실제 비교 결과](examples/manifests/README.md) — 설치 불필요 |
-| 같은 결과인데 실행이 달라지는 사례 재현 | [아래 Quick Start](#quick-start) — Git, Java 17, Docker 필요 |
-| 내 프로젝트의 테스트 한 개에 적용 | [짧은 설치 명령](docs/install-local.md) · [버전·빌드 경로 선택](docs/start-here.md) · [Maven starter](examples/maven-pilot/README.md#review-only-starter-bundle) |
-| 적용 가능성 질문·경험 공유 | [짧은 피드백](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml) — 설치나 공개 저장소 없이 참여 가능 |
+This illustration summarizes the [checked-in MySQL manifests](examples/manifests/README.md).
+The counts describe **hook-reported physical JDBC execution attempts and observed aliases**.
+They do not measure physical tables, a complete route plan or performance.
 
-정식 `v0.1.2`는 Maven Central에 없으며 검증된 GitHub Release 자산을 사용합니다.
-새 Markdown·JSON CI 리포트는 [개발 소스의 기능](docs/ci-review-report.md)으로 정식판에 포함되지 않습니다.
-비공개 프로젝트도 자신의 환경에서 사용할 수 있습니다. 공개 피드백에는 SQL·바인딩 값·접속 정보·전체 로그를 넣지 마세요.
-[도움받는 방법과 사용 사례 기록 기준](docs/user-feedback.md)을 확인할 수 있습니다.
+The [application evaluations](docs/application-evaluations.md) also show **equal counts
+with a changed data source**, and two MyBatis queries returning the same order with
+different execution budgets. These are maintainer-run synthetic experiments.
 
-![같은 업무 결과에서 승인본과 candidate의 관측 실행 시도 및 data-source alias가 1에서 2로 달라져 RCM201과 RCM202가 발생한 실제 MySQL 검증](submission/assets/baseline-candidate.png)
+[20-second interactive explanation](https://routecontract.ym56.chatgpt.site) ·
+[Run the MySQL demo in your browser](docs/first-project.md#try-in-your-browser) ·
+[Inspect the CI report](docs/evidence/ci-review-report-example.md) ·
+[Apply v0.1.3 to one test](docs/first-project.md) ·
+[Ask whether it fits your project](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)
 
-## Quick Start
+## Install 0.1.3
 
-필수 조건은 Git, Java 17, 실행 중인 Docker daemon, Bash/POSIX 도구와 실행 가능한 Gradle
-Wrapper입니다. 최초 실행은 공개 tag, Gradle·Maven Central 의존성과 로컬에 없는
-digest-pinned MySQL container image를 내려받기 위한 네트워크가 필요할 수 있습니다.
+For an existing **Java 17 · ShardingSphere-JDBC 5.5.3** test project.
+Supported operations are **synchronous, non-batch `PreparedStatement`** calls.
 
-```bash
-(
-set -euo pipefail
-source_dir="routecontract-v0.1.2"
-test ! -e "${source_dir}"
-test ! -L "${source_dir}"
-git clone --quiet --depth 1 --branch v0.1.2 --single-branch \
-  https://github.com/ym0506/routecontract.git "${source_dir}"
-test "$(git -C "${source_dir}" cat-file -t refs/tags/v0.1.2)" = tag
-test "$(git -C "${source_dir}" rev-parse refs/tags/v0.1.2)" = 6adacbe04d60b3af83d9067a14a878d26a6c90f5
-test "$(git -C "${source_dir}" rev-parse 'refs/tags/v0.1.2^{}')" = fc4fdd16c21574afa1150654ce354cf8004b138b
-test "$(git -C "${source_dir}" rev-parse HEAD)" = fc4fdd16c21574afa1150654ce354cf8004b138b
-test -z "$(git -C "${source_dir}" status --short)"
-cd "${source_dir}"
-./scripts/quickstart-demo.sh
-)
+**Gradle** — Groovy or Kotlin DSL:
+
+```kotlin
+repositories { mavenCentral() }
+
+dependencies {
+    testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.3")
+}
 ```
 
-이 명령은 실제 MySQL에서 business result가 그대로인 `1 → 2` 관측 실행 회귀를 검증한 뒤,
-같은 candidate를 CI gate에 넣어 `RCM201`·`RCM202` 거부를 확인합니다. 마지막에
-`[ROUTECONTRACT QUICKSTART VERIFIED]`, `realMysqlDemoExit 0`,
-`intentionalCiGateExit 1`, `quickstartExit 0`이 출력되면 예상한 전체 흐름이 통과한 것입니다.
-
 <details>
-<summary>정확한 종료 코드와 출력 경계</summary>
+<summary><strong>Maven</strong> — add to your pom.xml dependencies</summary>
 
-내부 CI gate의 종료 코드 `1`은 의도한 계약 거부이고, quickstart 자체의 `0`은 그 거부까지
-정확히 검증했다는 뜻입니다. preflight나 검증이 실패하면 quickstart는 `2`로 종료하며, 원문
-SQL·parameter·connection 정보가 섞일 수 있는 하위 프로세스 원문은 화면에 다시 출력하지 않습니다.
+```xml
+<dependency>
+  <groupId>io.github.ym0506.routecontract</groupId>
+  <artifactId>routecontract-shardingsphere-5.5</artifactId>
+  <version>0.1.3</version>
+  <scope>test</scope>
+</dependency>
+```
 
 </details>
 
-<details>
-<summary>기존 프로젝트에 통합하기: Gradle·Maven 상세 절차</summary>
+Keep your existing ShardingSphere and data-source configuration. Every ShardingSphere module
+in the test runtime must be **exactly 5.5.3**; RouteContract does not supply ShardingSphere or
+align its dependency graph. No repository clone or local installer is needed for this dependency.
 
-## 다음 단계: 첫 통합 가능성 검토하기
+<a id="smallest-usage-example"></a>
+<a id="가장-작은-사용-예"></a>
 
-Quick Start가 통과했다면 [첫 실제 통합 가이드](docs/first-integration.md)의 지원 경계와 중단
-조건을 확인하고, 기존 ShardingSphere-JDBC 5.5.3 통합 테스트에서 business assertion을 유지할
-대표 operation 하나를 고르세요. 가이드는 격리된 Gradle Groovy·Gradle Kotlin DSL 또는
-Maven 3.9.14 pilot에서 capture → candidate → 사람 승인 baseline → candidate check를 연결합니다. 저장소별 빌드 격리와
-사람 검토가 필요하므로 완료 시간을 약속하지 않습니다.
-`v0.1.2`는 Maven Central에 게시되어 있지 않으므로 가이드는 검증된 GitHub Release 자산을
-별도 로컬 Maven repository에 설치하는 현재 경로를 사용합니다.
+## Usage
 
-Maven 사용자는 [검토용 starter bundle](examples/maven-pilot/README.md#review-only-starter-bundle)을
-먼저 사용하세요. 기존 테스트·operation·예산·alias를 지정하면 검토할 patch와 다음 명령을 생성합니다.
-생성기는 대상 저장소를 변경하거나 baseline을 승인하지 않습니다. runner가 필요한 Maven과
-정확한 Release 자산을 설치하므로 별도 설치를 먼저 할 필요는 없습니다.
-
-Gradle 사용자 또는 설치를 별도로 검증하려는 사용자의 공개 설치 경로는 아래와 같습니다. `install_root`는 신뢰할 수 있는 기존 canonical
-parent 아래의 정규화된 절대 경로의 새 디렉터리로 바꾸고, 그 아래 `maven` 경로가
-`~/.m2/repository` 또는 그 하위가 되지 않게 하세요. 공개 HTTPS 네트워크, Bash와 POSIX
-tools, `curl`, Python 3.10 이상이 필요하지만 GitHub
-로그인·token·API·GitHub CLI는 필요하지 않습니다.
-
-```bash
-(
-set -euo pipefail
-install_root="/absolute/path/to/new-routecontract-v0.1.2-install"
-helper_url="https://raw.githubusercontent.com/ym0506/routecontract/a11c5ca1df41e4a0d25d6e211dd2274e35d5b593/scripts/install-public-v0_1_2.py"
-expected_helper_size="33309"
-expected_helper_sha256="bec71208b138765bbc017589cb04ef0159e015364616e14dc19c633873b9ecb8"
-
-python3 -I -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 2)'
-test ! -e "${install_root}"
-test ! -L "${install_root}"
-mkdir -m 700 "${install_root}"
-helper="${install_root}/install-public-v0_1_2.py"
-repository_dir="${install_root}/maven"
-curl --disable --proto '=https' --proto-redir '=https' --tlsv1.2 \
-  --fail --silent --show-error --retry 3 --connect-timeout 15 --max-time 120 \
-  --max-redirs 0 --max-filesize "${expected_helper_size}" \
-  --output - "${helper_url}" | \
-  python3 -I -c '
-import os
-import sys
-
-destination = sys.argv[1]
-expected_size = int(sys.argv[2])
-payload = sys.stdin.buffer.read(expected_size + 1)
-if len(payload) != expected_size:
-    raise SystemExit(
-        f"wrapper byte count mismatch: expected {expected_size}, got {len(payload)}"
-    )
-flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
-descriptor = os.open(destination, flags, 0o600)
-try:
-    os.fchmod(descriptor, 0o600)
-    view = memoryview(payload)
-    while view:
-        written = os.write(descriptor, view)
-        if written <= 0:
-            raise OSError("wrapper write made no progress")
-        view = view[written:]
-    os.fsync(descriptor)
-finally:
-    os.close(descriptor)
-' "${helper}" "${expected_helper_size}"
-test -f "${helper}"
-test ! -L "${helper}"
-actual_helper_size="$(python3 -I -c \
-  'import pathlib,sys; print(pathlib.Path(sys.argv[1]).stat().st_size)' "${helper}")"
-test "${actual_helper_size}" = "${expected_helper_size}"
-actual_helper_sha256="$(python3 -I -c \
-  'import hashlib,pathlib,sys; print(hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes()).hexdigest())' \
-  "${helper}")"
-test "${actual_helper_sha256}" = "${expected_helper_sha256}"
-python3 -I "${helper}" --repository "${repository_dir}"
-)
-```
-
-성공하면 exact `io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.2`
-coordinate에 payload 4개와 SHA-1·SHA-256 sidecar 8개가 생깁니다. commit-pinned 공개 wrapper는
-불변 Release payload를 바꾸지 않고 고정 해시로 검증된 post-tag checksum helper를 호출합니다.
-`2026-12-05 UTC` evidence-review 만료도 그대로 적용됩니다. 어느 단계에서든 실패하면
-`install_root` 전체를 조사용으로 보존하고, 고치거나 재사용하지 말고 다른 새 절대 경로에서
-다시 시작하세요. 실패가 path-binding change를 보고했다면 원래 경로가 보존된 reservation을
-더 이상 가리키지 않을 수 있습니다. 원래 경로나 이동된 reservation 어느 쪽도 고치거나
-삭제하거나 재사용하지 마세요.
-
-중요: 불변 `v0.1.2` Release 본문과 해당 tag에 포함된 README는 아직 `v0.1.0` 온보딩
-경로를 가리킵니다. 지금 보고 있는 `main` 문서와 가이드는 `v0.1.2` 자산을 소비하기 위한
-release 이후 bridge이며, `v0.1.2` 자체가 완결된 불변 온보딩 Release라는 뜻이 아닙니다.
-tag 이후에 추가된 각 helper와 verifier는 해당 구현의 exact bridge-commit permalink와 문서에
-적힌 SHA-256에 함께 고정되어 있습니다.
-
-긴 가이드를 처음부터 끝까지 읽지 말고, 다음 순서로 필요한 부분만 사용하세요.
-
-1. [고정된 Release 자산을 설치](docs/first-integration.md#2-install-the-exact-v012-release-assets)합니다.
-2. 빌드에 맞춰 [Gradle Groovy lane](docs/first-integration.md#gradle-groovy-dsl-opt-in-lane),
-   [Gradle Kotlin DSL lane](docs/first-integration.md#gradle-kotlin-dsl-opt-in-lane), 또는
-   [Maven 3.9.14 lane](docs/first-integration.md#maven-3914-opt-in-profile-lane) 하나만 선택합니다.
-3. 공통 단계인 [대표 operation](docs/first-integration.md#3-add-one-representative-operation) →
-   [사람의 baseline 승인](docs/first-integration.md#4-review-and-approve-the-first-baseline) →
-   [CI candidate check](docs/first-integration.md#5-run-the-candidate-check-in-ci)로 이동합니다.
-
-Maven 사용자는 체크인된 [두 모듈 reference fixture](examples/maven-pilot/README.md)를 먼저
-실행해 자신의 저장소와 다른 지점을 확인할 수 있습니다. 어떤 lane에도 정확히 맞지 않으면
-일반 예시를 억지로 붙이지 말고 그 지점에서 중단하세요.
-Maven pilot 두 테스트를 준비한 뒤에는 [6개 필드 예제 JSON](examples/maven-pilot/assisted-pilot.example.json)을
-복사하고 [one-command runner](examples/maven-pilot/README.md#one-command-runner-for-an-adapted-external-maven-pilot)로
-기존 검증기의 12개 입력을 직접 조립하지 않고 `review`·`matched` 경계를 실행할 수 있습니다.
-
-처음 실행했거나 현재 환경에는 맞지 않는다고 판단했다면
-[짧은 피드백 양식](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)에
-성공·막힌 지점·지원 범위 밖·필요 없음 중 어느 결과든 짧게 남길 수 있습니다. 공개 Issue에는
-원문 SQL, bind 값, JDBC URL, 실제 topology, full log 같은 민감 정보를 넣지 마세요.
-
-</details>
-
-## 가장 작은 사용 예
+Wrap one operation in an existing integration test:
 
 ```java
+import io.github.ym0506.routecontract.RouteAssertions;
+import io.github.ym0506.routecontract.RouteContract;
+import io.github.ym0506.routecontract.RouteSnapshot;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 RouteSnapshot snapshot = RouteContract.capture("orders.find-by-user-id", () -> {
-    Order actual = orderQueryService.findByUserId(3L);
-    assertEquals(201L, actual.id()); // 기존 기능 assertion도 그대로 둡니다.
+    Order actual = orderRepository.findByUserId(3L);
+    assertEquals(201L, actual.id()); // Keep the business-result assertion.
 });
 
 RouteAssertions.assertThat(snapshot)
@@ -205,329 +99,103 @@ RouteAssertions.assertThat(snapshot)
         .observesExactlyDataSourceNames("ds_1");
 ```
 
-## 승인 manifest와 structural manifest diff
+`Order` and `orderRepository` stand for your existing test fixture. The operation must use the
+supported JDBC execution scope; adapt the operation, expected result, data-source name and
+budget to your fixture. A hook callback returning does not prove a transaction committed.
 
-하나의 application operation 동안 `SQLExecutionHook`으로 **보고된 물리 JDBC 실행 시도**를 결정적인 manifest로 만들고, operation별 실행 예산과 구조 필드를 회귀 계약으로 검증합니다. **structural manifest diff**는 시도 수·alias·callback outcome·exact rewritten-SQL fingerprint·parameter 구조 비교이며 SQL 의미 동치나 complete route plan을 판정하지 않습니다.
+<a id="approved-manifests-and-structural-manifest-diffs"></a>
 
-```java
-DataSourceAliases aliases = DataSourceAliases.of(Map.of(
-        "ds_0", "orders-a",
-        "ds_1", "orders-b"));
-ManifestPolicy policy = ManifestPolicy.strict(1, 1);
+### Review a baseline, then check it in CI
 
-ObservedExecutionManifest candidate = ObservedExecutionManifest.from(
-        snapshot, aliases, policy);
+1. Capture a representative operation and write a **candidate manifest**.
+2. Review its observations, non-sensitive data-source aliases and budgets in version control.
+3. Approve the baseline explicitly. Compare subsequent candidates against that baseline in CI.
 
-Path approvedPath = Path.of("route-contracts/orders.find-by-user-id.json");
-Path candidatePath = Path.of("build/routecontract/orders.find-by-user-id.candidate.json");
-new ManifestStore().writeCandidate(approvedPath, candidatePath, candidate);
+Candidates never approve themselves. Intentional changes need a new review.
+Follow [one project from Central install to a failing CI check](docs/first-project.md),
+with runnable Maven and Gradle examples.
+The [manifest example](docs/reference-guide.md#approved-manifests-and-structural-manifest-diffs)
+shows the Java API; [CI review reports](docs/ci-review-report.md) add Markdown or JSON output
+with stable diagnostic codes and investigation steps.
 
-ObservedExecutionManifest approved = new ManifestStore().read(approvedPath);
-ManifestVerificationResult result = new ManifestVerifier().verify(approved, candidate);
-ManifestAssertions.assertMatched(result); // mismatch이면 stable RCM code와 함께 CI 실패
-```
+<a id="quick-start"></a>
 
-candidate 기록은 approved 파일을 자동으로 덮어쓰지 않습니다. 변경이 의도된 경우 사람이 diff를 검토한 뒤 명시적으로 승인본을 교체해야 합니다.
+## Try an example
 
-실제 MySQL equality 기준과 같은 결과를 반환하는 `BETWEEN` candidate의 canonical JSON 및
-검증기 출력은 [examples/manifests](examples/manifests/README.md)에 있습니다. 통합 테스트가
-매번 이 파일들을 다시 생성해 byte-for-byte 일치와 stable RCM code를 동반한 결정적
-structural manifest diff를 확인합니다.
+| Try it | Requirements | What to expect |
+| --- | --- | --- |
+| [Run in your browser](docs/first-project.md#try-in-your-browser) | GitHub account; Actions access in your fork | Hosted MySQL demonstration: `MATCH → POLICY_VIOLATION → MATCH`. No local installation. |
+| [Generate the v0.1.3 CI report](docs/ci-review-report.md#try-the-released-report-without-docker) | Git, Java 17; initial dependency downloads | Compares committed manifests; writes `POLICY_VIOLATION` with `RCM201` / `RCM202`. The example deliberately fails the check. No Docker. |
+| [Reproduce the MySQL change](docs/reference-guide.md#quick-start) | Git, Java 17, Docker; initial downloads | Historical **v0.1.2** demo, pinned to its immutable tag. The wrapper succeeds after verifying the expected contract rejection. |
+| [Run the v0.1.3 first-project example](docs/first-project.md) | Git, Java 17, Docker; Maven or the Gradle wrapper | Capture a candidate, review a baseline, see `MATCH`, then reproduce the same-result `1 → 2` failure. Adapt one existing test. |
 
 <details>
-<summary>alias 신뢰 경계와 strict/budgetOnly 정책 상세</summary>
+<summary>Earlier recorded walkthrough · 2:54 · Korean captions</summary>
 
-data-source alias mapping 역시 승인 계약의 일부인 신뢰 설정입니다. manifest에는 호출자가 제공한 alias가 저장되므로, alias에는 비민감한 고정 이름만 사용해야 합니다. 실제 data-source 이름을 alias로 그대로 재사용하면 그 이름이 노출되고, 다른 실제 data source를 기존 alias로 조용히 재매핑하면 drift를 숨길 수 있습니다. mapping은 manifest와 함께 version control에서 검토해야 합니다.
-
-- `ManifestPolicy.strict(...)`: fingerprint를 포함한 구조 signature 변화도 차단합니다.
-- `ManifestPolicy.budgetOnly(...)`: 시도 수·data-source 집합·callback outcome 변화는 차단하고, signature-only 변화는 `REVIEW_REQUIRED`로 남깁니다.
-- canonical JSON에는 timestamp, UUID, thread 배치, 원문 SQL, parameter 값, exception message가 들어가지 않습니다. data source는 호출자가 제공한 alias로만 기록되며, 그 alias의 비민감성은 호출자의 책임입니다.
-
-같은 행, 관측 시도 `1`, 같은 data source를 보존하면서 추가 filter와 predicate 순서를 바꾼
-MySQL fixture에서는 fingerprint와 parameter type 순서만 달라졌습니다. 이는 그 fixture의
-관측 결과일 뿐 두 SQL의 일반적인 의미 동치를 주장하지 않습니다.
-
-| 정책 | 이 signature-only 변화의 결과 | 선택 시 tradeoff |
-|---|---|---|
-| `strict` | `DRIFT`, `RCM301`·`RCM302` blocking, assertion 실패 | 작은 rewritten-SQL 구조 변화도 검토·승인하게 하지만, 의도적 변화도 baseline 갱신 전까지 CI를 막음 |
-| `budgetOnly` | `REVIEW_REQUIRED`, `RCM301`·`RCM302` non-blocking, `passesBlockingChecks=true` | 예산·data-source 집합·callback outcome은 계속 막지만 signature-only 변화는 CI를 통과시키므로 수동 검토를 놓치면 구조 회귀를 허용할 수 있음 |
-
-위 예시의 `ManifestAssertions.assertMatched(result)`는 `REVIEW_REQUIRED`도 거부합니다. signature-only
-변화를 의도적으로 CI에서 허용하는 `budgetOnly` 정책이라면 그 선택을 코드에 드러내기 위해
-`ManifestAssertions.assertPassesBlockingChecks(result)`를 사용해야 합니다.
+[Watch the original demo](https://www.youtube.com/watch?v=pcgvNNxd1mM).
+This recording includes earlier release and CI screens. Use the v0.1.3 guides above for
+current installation and reproduction commands.
 
 </details>
 
-## 검증된 핵심 시나리오
+## Supported scope
 
-| 시나리오 | 실제 검증 결과 |
-|---|---|
-| 동일 값 `=` → `BETWEEN` | 비즈니스 행은 같고, 관측 시도 `1 → 2`, data source `[ds_1] → [ds_0, ds_1]` |
-| 공개 이슈 #38456에서 영감을 받아 축소·수정한 fixture | JOIN과 subquery의 결과는 모두 `COUNT=1`, 관측 시도는 각각 `1`과 `8`; 원 이슈의 충실한 재현 주장은 아님 |
-| 설정 회귀 | table strategy 제거 시 실행 수와 data source는 같지만 SQL fingerprint drift 검출 |
-| 결정성 | corpus 8개를 각 20회 실행한 160 captures에서 case별 구조 signature 1개 |
-| 동시에 열린 caller-operation scope | single-attempt/multi-attempt scope 20쌍에서 교차 귀속 0건; 물리 callback의 시간상 중첩은 강제하거나 측정하지 않음 |
-| 범용 JDBC 도구 비교 | datasource-proxy 외부 배치는 callback `1 → 1`, 물리 DS별 배치는 `1 → 2`, RouteContract도 `1 → 2` |
-| 격리된 소비자 빌드 | 같은 checkout에서 임시 Maven 저장소에 생성한 JAR와 POM만 사용하는 standalone consumer에서 SPI 자동 발견과 MySQL 실행 통과. 외부 채택 증거는 아님 |
-| 격리된 Maven 3.9.14 pilot | Java 17 기본 셀과 명시적 Java 21 호환성 셀에서 inactive profile, fresh cache, SHA-256 음성 검증, exact ShardingSphere-JDBC 5.5.3/MySQL 8.4.11 candidate와 mechanical match를 같은 checkout에서 검증. 사람 승인·외부 사용자·adoption 증거는 아님 |
+| Area | Published v0.1.3 |
+| --- | --- |
+| Java | 17 |
+| ShardingSphere | JDBC, **exactly 5.5.3** |
+| Execution | Synchronous, non-batch `PreparedStatement` operations that return normally, without caller interruption |
+| Database verification | MySQL 8.4.11; [published Gradle and Maven consumer evidence](docs/evidence/release-0.1.3-central.md) |
+| Checks | Capture completeness, callback outcomes, attempt/data-source budgets, structural manifest differences |
+| CI output | Java assertions, deterministic Markdown/JSON reports, `ManifestReviewCli` |
 
-현재 checkout의 전체 검증:
+Proxy, batch, reactive execution, application-owned async propagation and SQL Federation
+coverage are outside this release's scope. Operations with no observed SQL, callback failures
+or caller interruption cannot establish a passing contract. See the
+[full capture boundary](docs/reference-guide.md#v01-support-boundary).
 
-```bash
-./gradlew --no-daemon --no-build-cache clean check assemble validateOfficialCycloneDxSbom
-./scripts/verify-standalone-consumer.sh
-./scripts/verify-maven-pilot.sh
-./scripts/verify-maven-pilot.sh --java 21
-```
+**Project status:** v0.1.3 is published on Maven Central. The
+[0.2 core/adapter split](https://github.com/ym0506/routecontract/pull/62) is in development;
+5.5.2 support is unreleased. Published consumer checks are maintainer-run evidence.
+Independent integration and repeat use have not yet been verified.
 
-첫 명령은 Java 17, ShardingSphere-JDBC 5.5.3, digest로 고정한 MySQL 8.4.11 Testcontainers 환경에서 core 및 MySQL corpus 테스트를 실행하고 JAR·Javadoc·SBOM을 생성합니다. 두 번째 명령은 별도 소비자 테스트 1개를 실행합니다. 세 번째와 네 번째 명령은 exact Apache Maven 3.9.14가 필요하며 동일한 격리 profile-off/checksum/candidate 경로를 각각 Java 17 기본값과 Java 21 runtime·classfile-major-65 모드로 검증합니다. Java 21 셀은 immutable v0.1.2와 exact ShardingSphere-JDBC 5.5.3/MySQL 8.4.11의 same-checkout 호환성 증거이며 외부 assisted runner·starter의 Java 17 경계를 넓히지 않습니다. 모두 Docker가 필요합니다.
+## Documentation
 
-## 기존 도구와의 정확한 차이
+| Topic | Guide |
+| --- | --- |
+| Find your next step | [Start here](docs/start-here.md) |
+| Apply the released library to one project | [First project](docs/first-project.md) · [한국어](docs/first-project.ko.md) |
+| API, policies and detailed reproduction | [Detailed guide](docs/reference-guide.md) · [한국어 상세 가이드](docs/reference-guide.ko.md) |
+| Review failures in CI | [Report guide and CLI](docs/ci-review-report.md) · [Example report](docs/evidence/ci-review-report-example.md) |
+| Understand what is observed | [Architecture](docs/architecture.md) · [Specification](docs/specification.md) |
+| Compare with existing tools | [Tool comparison](docs/competitive-analysis.md) · [Measured datasource-proxy fixture](docs/empirical-comparison.md) |
+| Inspect observer cost | [Public 0.1.3: three conditions, raw measurements and limitations](docs/observer-cost.md) |
+| Examine application code | [Three evaluations: destination changes, query budgets and existing tests](docs/application-evaluations.md) · [한국어](docs/application-evaluations.ko.md) · Author-run experiments |
+| Inspect release evidence | [v0.1.3 Central verification](docs/evidence/release-0.1.3-central.md) · [Evidence matrix](docs/evidence-matrix.md) |
+| Explore earlier integration tooling | [v0.1.2 integration guide](docs/first-integration.md) — pinned historical workflow |
+| Contribute | [Contributing](CONTRIBUTING.md) · [Roadmap](docs/product-roadmap.md) |
 
-RouteContract의 차별점은 ShardingSphere-JDBC 5.5.3이 보고한 관측값을 caller가 정한 application operation 단위로 묶고, worker 상관관계 → value-minimized manifest → 사람 승인 → 결정적 structural diff → stable RCM code → CI assertion까지 하나의 반복 가능한 workflow로 제공하는 데 있습니다.
+### Data handling
 
-- ShardingSphere-Proxy의 `PREVIEW SQL`, 그리고 ShardingSphere의 `sql-show`·Agent는 계획·로그·운영 telemetry를 제공합니다.
-- ShardingSphere Audit는 built-in 알고리즘 기준으로 인식 가능한 sharding condition의 존재를 검사합니다.
-- Sniffy와 datasource-proxy는 SQL 수 검증 또는 사용자 정의 JDBC 수집을 제공합니다.
-- RouteContract는 이 도구들을 대체하지 않습니다. structural manifest diff는 manifest 구조 필드 비교이지 SQL semantic diff가 아닙니다.
+Snapshots and manifests omit raw SQL, bind values, connection properties and exception
+messages. Operation IDs, type names, data-source names and SQL fingerprints can still contain
+sensitive engineering information; fingerprints are not anonymization. Use non-sensitive
+aliases and synthetic test inputs. Read [SECURITY.md](SECURITY.md) before sharing evidence.
 
-datasource-proxy도 충분히 신뢰할 수 있는 직접 구현 대안입니다. 모든 물리 data source를 감싸고 애플리케이션이 상관관계·최소화·canonicalization·diff·assertion을 직접 더하면 비슷한 좁은 검사를 만들 수 있으며, RouteContract의 제한된 기여는 모든 물리 data source wrapper 없이 5.5.3용으로 이 승인 workflow를 패키징한 데 있습니다.
+## Help shape the next release
 
-근거와 한계는 [competitive-analysis.md](docs/competitive-analysis.md)에, 측정한 datasource-proxy fixture는 [empirical-comparison.md](docs/empirical-comparison.md)에 있습니다.
+Using ShardingSphere-JDBC? [Tell us your version and how you test SQL or configuration changes](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml).
+A short description of a missing check or installation blocker is useful; no installation or
+public repository is required to start the conversation. Keep private SQL, bind values,
+connection details and full logs out of public issues.
 
-## 코드·공개 증거 경계
+For a reproducible bug, use the [issue forms](https://github.com/ym0506/routecontract/issues/new/choose)
+with a minimal synthetic fixture. See [how we record use and feedback](docs/user-feedback.md).
 
-코드 지도(대표 경계이며, 디렉터리 전체를 한 역할로 분류하지 않습니다):
+## License
 
-| 경계 | 대표 경로 | 역할 |
-|---|---|---|
-| 배포 라이브러리 | `routecontract-shardingsphere-5.5/src/main` | Release JAR에 들어가는 consumer API와 5.5.3 SPI provider이다. |
-| 공개 검증·예제 | `routecontract-shardingsphere-5.5/src/test`, `examples/` | unit·real-MySQL·standalone-consumer fixture이며 배포 JAR에 포함되지 않는다. |
-| 혼합 자동화 | `scripts/`, `.github/workflows/`, `security/`, `gradle/` | `scripts/`에는 사용자용 Quick Start·Release-asset 설치 도구와 maintainer용 release·공급망·시연 검증 도구가 함께 있다. 모두 consumer runtime API는 아니다. |
-| 검증·제출 보조 | `submission/`, `scripts/video-demo-session.sh`, `docs/evidence-matrix.md` | 증거 추적·결과보고서·재현 패키징 자료이며 배포 제품이 아니다. |
+[Apache License 2.0](LICENSE). [Third-party notices](THIRD_PARTY.md) ·
+[Prior-work disclosure](ORIGIN_AND_PRIOR_WORK.md) · [AI-assistance disclosure](AI_ASSISTANCE.md).
 
-이 소스는 안정판 대상 project version `0.1.3`과 대응 tag 이름 `v0.1.3`을 선언합니다.
-이 버전 문자열이나 checkout만으로 annotated tag, 공개·불변 non-prerelease
-Release, 동일 revision의 release-evidence run 또는 외부 사용자 결과를 증명하지는 않습니다.
-공개 자산은 [릴리스 절차](RELEASING.md)에 따라 tag·Release·evidence run의 revision 일치와
-게시 후 검증을 모두 확인한 뒤 사용합니다.
-
-<details>
-<summary>역사적 RC와 공개 CI의 정확한 증거 경계</summary>
-
-`v0.1.0-rc1`은 최초 release-evidence 시도를 보존하는 역사적 annotated tag입니다. 해당 run은
-digest로 받은 MySQL image를 mutable local tag로 다시 찾는 단계에서 실패했고 Release를 만들지
-않았습니다. RC1을 활성화된 설치 후보로 사용하거나 그 tag를 이동하지 않습니다.
-`v0.1.0-rc2`는 그 실패를 수정한 뒤 [고정 activation record](docs/evidence/independent-rc-activation-v0.1.0-rc2.json)로
-활성화한 역사적 prerelease입니다. 그 자산과 RC 대상 결과는 안정 `v0.1.0` 검증이나
-adoption으로 승격하지 않습니다.
-
-이전 공개 CI snapshot의 50개 정상 테스트와 같은 checkout의 격리 소비자 테스트 1개는 [main revision
-`54f1c92`의 CI](https://github.com/ym0506/routecontract/actions/runs/31501026857)에서
-실패·오류·skip 0건으로 확인됐습니다. 이 과거 run은 RC2 revision이나 Release 자산을 검증하지
-않으며, 안정 `v0.1.0` revision이나 그 Release 자산도 검증하지 않습니다. 격리 소비자 결과도
-외부 채택 증거가 아닙니다. 자세한 환경·원시 artifact·한계는 [공개 CI 증거 기록](docs/public-ci-evidence.md)에
-있습니다. 이는 운영환경 지원·일반적 성능을 뜻하지 않습니다.
-
-</details>
-
-<details>
-<summary>Maven Central 배포 전 Release 자산을 설치하는 상세 절차</summary>
-
-## 공개 Release 자산을 registry 없이 사용하기
-
-이 경로는 annotated `v0.1.2` tag, 공개·불변 non-prerelease Release, 동일 revision의
-성공한 release-evidence run과 정확한 자산 집합이 모두 존재한 뒤 사용할 수 있습니다.
-기본 경로는 post-tag bridge commit과 SHA-256·정확한 크기로 고정한 공개 wrapper가 Release
-자산을 내려받아 검증하고, `~/.m2`가 아닌 빈 절대경로에 exact coordinate를 설치하는 방식입니다.
-[첫 실제 통합 가이드의 2단계](docs/first-integration.md#2-install-the-exact-v012-release-assets)는
-로그인·토큰·GitHub API 없이 이 짧은 경로와 자산별 수동 감사 fallback을 모두 제공합니다.
-
-설치기가 출력한 로컬 Maven repository와 RouteContract 의존성을 기본 빌드에 바로 추가하지
-마세요. [Gradle Groovy DSL](docs/first-integration.md#gradle-groovy-dsl-opt-in-lane)과
-[Gradle Kotlin DSL](docs/first-integration.md#gradle-kotlin-dsl-opt-in-lane) 경로는 pilot property가
-있을 때만 별도 source set·task·repository를 활성화하며, 같은 가이드는 inactive-by-default
-profile·fresh consumer cache·repository-scoped SHA-256을 쓰는 Maven 3.9.14 경로를 함께
-제공합니다. 세 경로 모두 대표 fixture의 기존 ShardingSphere-JDBC 5.5.3 의존성을 재사용하며,
-평상시 build와 IDE sync는 pilot과 로컬 Release repository 없이 성공해야 합니다. 선택한
-경로에서 검증한 범위를 벗어나는 build layout·toolchain·repository·graph·classloader는 아직
-fit blocker입니다.
-
-immutable `v0.1.2` 설치기에 포함된 MySQL OCI package-level 수동 검토는 UTC
-`2026-12-05`까지만 유효합니다. `2026-12-06` UTC부터 installer는 fail-closed로 중단하며,
-그때는 검토가 갱신된 더 최신 immutable Release를 사용해야 합니다. 만료 검사를 우회하지
-마세요.
-
-<details>
-<summary>tag-pinned 내부 설치기가 검증하는 정확한 공급망 경계</summary>
-
-commit-pinned 공개 wrapper는 HTTPS로 자산을 받습니다. 그 뒤 wrapper가 호출하는 tag-pinned
-내부 설치기는 네트워크를 사용하지 않습니다. 내부 설치기는 공개 자산의 정확한 파일 목록, `SHA256SUMS`,
-sanitized supply-chain evidence와 공개 SBOM/POM의 hash 결합, non-SNAPSHOT POM 좌표,
-parent·relocation 없는 POM, JAR의 namespace-path와 sources JAR의 Java package 검사,
-source ZIP의 단일 버전 root,
-`LICENSE`·`NOTICE`, 모든 Java 파일의 관례적 source root·first-party package·경로-선언 일치,
-compiled `.class` 및 JTS/Mahout 이름·package 경계, canonical `ym0506` provider namespace를
-먼저 검증한 후 main/sources/Javadoc JAR와 POM만 명시한 Maven
-레이아웃에 복사합니다. 기존 좌표는 덮어쓰지 않으며 관례적인 `~/.m2/repository`와 그 하위 경로를
-target으로 지정하면 거부합니다. 그 뒤 wrapper의 고정 해시 post-tag helper가 payload byte를
-바꾸지 않고 정확한 SHA-1·SHA-256 sidecar 8개만 만듭니다. 체크섬은 다운로드 무결성을 확인할
-뿐 게시자 신원을 인증하지 않으므로, 자산은
-반드시 해당 tag의 공개 Release에서 받아야 합니다. 이 검사는 이름·경로·선언 package·의존성
-경계이며 이름을 바꾸거나 복사한 코드의 의미적 출처를 판정하지 않습니다. release archive가
-최종 tag의 tracked Git tree와
-내용·경로·실행 권한이 동일하다는
-증명은 최종 제출 packaging gate가 별도로 수행합니다.
-
-</details>
-
-같은 source checkout에서 그 저장소만 RouteContract 전용 repository로 사용해 실제 MySQL
-소비자까지 검증하려면 별도의 빈 target으로 다음을 실행합니다. 이 검증은 release packaging
-증거이지 외부 사용자의 채택 증거는 아닙니다.
-
-```bash
-./scripts/verify-release-assets-consumer.sh \
-  /absolute/path/to/downloaded-release-assets \
-  /absolute/path/to/empty-verification-maven
-```
-
-가장 짧은 business-green / contract-red 데모만 실행하려면 다음 한 명령을 사용합니다.
-
-```bash
-./scripts/run-demo.sh
-```
-
-동일한 비즈니스 결과에서 equality를 같은 값의 range로 바꿨을 때 관측 시도가 `1 → 2`,
-data source가 `1 → 2`로 늘고 strict manifest가 `RCM201`·`RCM202`로 CI 실패하는 실제
-MySQL 시나리오를 실행합니다. 이 명령은 예상된 위반을 검증하는 테스트이므로 성공 종료합니다.
-
-검증된 manifest 두 파일만 읽어 실제 CI gate의 비정상 종료를 재현하려면 다음 명령을
-사용합니다. Docker 없이 `RCM201`·`RCM202`를 출력하고 의도적으로 종료 코드 `1`을 반환하며,
-전용 fixture라서 일반 `test`와 `check`에는 포함되지 않습니다.
-
-```bash
-./scripts/demo-manifest-ci-failure.sh
-```
-
-실제 MySQL에서 canonical 파일을 재생성·대조한 다음 같은 승인본으로 build가 실패하는 전체
-흐름을 한 명령에서 보려면 아래 스크립트를 사용합니다. 앞 단계가 모두 정상이어도 마지막
-계약 assertion 때문에 의도적으로 종료 코드 `1`을 반환합니다.
-
-```bash
-./scripts/demo-end-to-end-ci-failure.sh
-```
-
-</details>
-
-## 정확한 증거 경계
-
-관측하는 항목:
-
-- hook이 보고한 data-source 이름
-- hook이 보고한 rewritten SQL 원문의 SHA-256 fingerprint
-- parameter 개수와 Java type 이름
-- trunk/worker flag
-- start, callback return, callback failure, terminal callback 미확인 상태
-
-관측하거나 증명하지 않는 항목:
-
-- 전체 route plan 또는 `RouteContext`
-- 계획된 execution unit 전체와 모든 target shard
-- 정확한 물리 table 수
-- 자동 `FULL_ROUTE`/`BROADCAST` 판정
-- transaction commit 또는 비즈니스 성공
-
-`finishSuccess()`라는 ShardingSphere SPI 메서드명은 transaction commit이나 비즈니스 성공을 뜻하지 않습니다. RouteContract의 `CALLBACK_RETURNED`는 ShardingSphere 5.5.3이 물리 `executeSQL` 반환 뒤 해당 hook provider에 `finishSuccess`를 보고했다는 뜻으로만 사용합니다. 둘러싼 JDBC operation·transaction·application action의 완료도 증명하지 않습니다.
-
-## v0.1 지원 범위
-
-이 문제는 특정 ORM이나 repository API에 한정되지 않습니다. Apache ShardingSphere-JDBC는 direct JDBC와 MyBatis·JPA·Hibernate 같은 연결 방식에서 사용할 수 있고, RouteContract의 capture API도 ORM 전용이 아닙니다. 이는 문제와 capture API가 ORM 비종속적이라는 뜻이며, MyBatis·JPA·Hibernate별 end-to-end 호환성을 검증했다는 뜻은 아닙니다.
-
-- Java 17
-- Apache ShardingSphere-JDBC **정확히 5.5.3**
-- 정상 반환하고 capture 종료 시 caller가 interrupt되지 않은 동기식 `PreparedStatement`
-- MySQL 8.4.11 기반 통합 검증
-- 서로 다른 caller thread의 동시 operation 및 테스트 fixture의 multi-attempt worker callback
-
-지원 범위 밖:
-
-- ShardingSphere-Proxy
-- JDBC batch와 reactive 실행
-- 애플리케이션 자체 `@Async` 경계
-- SQL Federation의 모든 실행 경로
-- 다른 ShardingSphere 버전
-- 정상적인 zero-SQL operation 검증
-- callback failure 또는 caller interruption이 발생한 operation의 route 계약 승인
-
-preflight는 classpath의 `shardingsphere-infra-executor`와 `shardingsphere-infra-spi`가 구현 버전 `5.5.3`을 보고하는지, service loader가 RouteContract provider를 정확히 1개 찾는지만 확인합니다. ShardingSphere runtime 전체 artifact 집합의 버전 일치를 증명하지 않습니다. 이 조건이 충족되지 않거나 capture 안에서 start callback이 관측되지 않으면 통과시키지 않습니다. Proxy·batch·reactive 등 범위 밖 실행 경로 전체를 자동 식별하거나 명시적으로 거부한다고 주장하지 않습니다.
-실패한 병렬 실행에서는 ShardingSphere 5.5.3이 이미 제출한 worker를 전부 기다리지 않을
-수 있으므로, `REPORTED_EXECUTION_FAILURE` snapshot은 진단에만 사용하고 route budget이나
-manifest match를 통과시키지 않습니다.
-
-한 capture에는 최대 10,000개의 물리 실행 시도만 보존합니다. 이를 넘으면 메모리를 계속
-늘리는 대신 `RC_ATTEMPT_LIMIT_EXCEEDED` 진단과 함께 `INCOMPLETE`로 실패합니다.
-
-## 의존성·Release 호환성 상세
-
-게시 후 검증을 통과한 안정 `v0.1.2` Release의 exact coordinate는
-`io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.2`이며 Maven Central
-게시를 주장하지 않습니다. 이 좌표를 기본 dependency graph에 바로 붙이지 말고
-[첫 실제 통합 가이드](docs/first-integration.md)의 격리된 pilot에서만 사용하세요. 그 pilot은
-기존 ShardingSphere-JDBC 5.5.3 fixture의 실제 graph를 재사용하고 전체 runtime classpath를
-검토하게 합니다.
-
-RouteContract build는 dependency embedding을 구성하지 않으며, 모듈의 `compileOnly`
-ShardingSphere/BOM 선언은 공개 POM에서 소비자 버전 제약으로 전달되지 않습니다. 검증된
-Gradle test/runtime graph에서는 sealed fixture에 따라 ShardingSphere 5.5.3 호환성 그래프의
-Jackson 2 core·databind·datatype-jdk8·datatype-jsr310 모듈이 2.18.9로 해석되고,
-Calcite Core·linq4j는 1.42.0으로 해석됩니다. JTS Core 1.19.0은 유지되지만 JTS I/O
-Common은 graph에 없어야 합니다. 단, Jackson
-3.1.5도 함께 있는 runtime에서는 두 계열이 공유하는
-`jackson-annotations`가 Jackson 3 BOM에 따라 2.21로 해석됩니다. 이 설정은 RouteContract가
-직접 사용하는 별도 `tools.jackson.core:jackson-core:3.1.5` 제품 런타임을 대체하거나
-낮추지 않습니다.
-
-exact release-evidence workflow가 고정한 Temurin 17.0.20.1+1로 만드는 stable Release
-Javadoc classifier에는 OpenJDK standard-doclet 정적 자산과 `legal/` 고지가 포함됩니다.
-일반 로컬 빌드는 Java 17만 요구하므로 같은 classifier 자산 버전을 보장하지 않습니다.
-이 자산은 main JAR/runtime 의존성이 아니며 상세 목록은
-[THIRD_PARTY.md](THIRD_PARTY.md)에 있습니다.
-
-## 정보 최소화와 보안
-
-원문 SQL, parameter 값, connection properties, exception message는 snapshot/manifest에 저장하지 않습니다. 다만 data-source 이름, operation ID, Java type 이름과 unsalted SQL fingerprint도 민감한 engineering metadata가 될 수 있습니다. SHA-256 fingerprint는 익명화가 아니므로, v0.1은 기밀 literal을 inline하지 않는 결정적 `PreparedStatement` 테스트를 전제로 합니다. 자세한 내용은 [SECURITY.md](SECURITY.md)를 확인하십시오.
-
-## 기여와 확장
-
-`v0.1.2`의 문서·Quick Start·Release 설치·실제 적용 가능성을 처음 검토했다면
-[짧은 피드백 양식](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)에
-성공, blocker, 지원 범위 밖 또는 필요 없음 중 어느 결과든 남길 수 있습니다. 비공개 프로젝트의 사용 경험도 환영합니다. 설치 없이 검증 방법이나 필요한 기능만 알려주셔도 됩니다.
-사용 단계와 확인 가능한 근거는 [별도로 기록](docs/user-feedback.md#recording-use-and-evidence)하며,
-피드백만으로 운영 사용·보안·성능·추천을 주장하지 않습니다.
-
-버그나 기능 제안은 정확한 ShardingSphere version, 사용자에게 보이는 회귀 또는 누락된
-capability, 최소화한 synthetic fixture를
-[Issue form](https://github.com/ym0506/routecontract/issues/new/choose)에 기록합니다. 구현 변경은
-failing test, 실제 MySQL 검증, 명시적인 지원 한계를 함께 제시해야 합니다.
-
-새 adapter나 reporter는 구체적인 사용자 필요, version-specific fixture, real-MySQL CI를 갖춘 뒤 검토합니다. 현재 v0.1 범위는 정확히 5.5.3으로 유지합니다. 전체 절차는 [기여 가이드](CONTRIBUTING.md)에 있습니다.
-
-## 문서와 재현 경로
-
-- [기술 명세](docs/specification.md)
-- [아키텍처와 신뢰 경계](docs/architecture.md)
-- [경쟁 도구 분석](docs/competitive-analysis.md)
-- [datasource-proxy 실증 비교](docs/empirical-comparison.md)
-- [검증 증거 매트릭스](docs/evidence-matrix.md)
-- [격리된 same-checkout Maven-publication consumer](examples/standalone-consumer/README.md)
-- [격리된 Maven 3.9.14 onboarding pilot](examples/maven-pilot/README.md)
-- [SBOM 생성과 검토](docs/sbom.md)
-- [출처·선행 작업 경계 공개](ORIGIN_AND_PRIOR_WORK.md)
-- [AI 보조 사용 공개](AI_ASSISTANCE.md)
-- [기여 가이드](CONTRIBUTING.md)
-
-## 상표와 라이선스
-
-RouteContract is an independent project and is not affiliated with or endorsed by the Apache Software Foundation. Apache ShardingSphere and Apache are trademarks of the Apache Software Foundation.
-
-RouteContract는 [Apache License 2.0](LICENSE)으로 배포합니다. 직접·테스트 의존성과 배포 포함 여부는 [THIRD_PARTY.md](THIRD_PARTY.md)를 참고하십시오.
+RouteContract is an independent project, not affiliated with or endorsed by the Apache Software
+Foundation. Apache and Apache ShardingSphere are trademarks of the Apache Software Foundation.

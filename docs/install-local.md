@@ -1,8 +1,12 @@
 # Install v0.1.2 in an existing test project
 
-Use a small local Maven repository while RouteContract is not yet on Maven Central.
+This historical v0.1.2 path uses a small local Maven repository. For current installation,
+use the [v0.1.3 Maven Central test dependency](../README.md#install-013), backed by the
+[public verification record](evidence/release-0.1.3-central.md).
 The same repository works with Gradle Groovy, Gradle Kotlin DSL and Maven. This
-installs the released **v0.1.2** library, not unreleased features from `main`.
+installs the released **v0.1.2** library. The newer **v0.1.3** GitHub release adds
+Markdown/JSON reports; use its [separate report example](ci-review-report.md#try-the-released-report-without-docker)
+to try those APIs. This installer's coordinate and verified hashes remain v0.1.2.
 
 ## Install once
 
@@ -78,7 +82,7 @@ operation and review its expected count. Import `RouteContract`, `RouteSnapshot`
 and `RouteAssertions` from `io.github.ym0506.routecontract`.
 
 For a stored baseline and comparison on subsequent changes, continue with
-[the manifest example](../README.en.md#approved-manifests-and-structural-manifest-diffs)
+[the manifest example](reference-guide.md#approved-manifests-and-structural-manifest-diffs)
 or the [integration reference](first-integration.md). Baseline review remains
 explicit; installing the library does not approve an observed execution shape.
 Framework-specific test classloaders may need their own dependency visibility configuration;

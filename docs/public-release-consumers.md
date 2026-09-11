@@ -1,8 +1,9 @@
 # Public 0.1 release consumers
 
 Status: post-publication verification commands for the single-module, exact ShardingSphere-JDBC 5.5.3 release.
-Public 0.1.3 availability and consumer results remain unverified until the commands pass against
-published bytes. This work does not change the v0.1.2 installer or the separate 0.2 adapter plan.
+See the [0.1.3 Central record](evidence/release-0.1.3-central.md) for current public availability
+and consumer evidence. The preparation, local-control and missing-version sections below retain
+their historical verification limits. The v0.1.2 installer and separate 0.2 adapter plan are unchanged.
 
 ## Acceptance contract
 
@@ -144,6 +145,33 @@ These failures establish negative availability evidence for those attempts only.
 waived checks, reviewed release-byte verification, or public MySQL evidence. Fresh positive
 Gradle and Maven runs must still use the final reviewed receipt after independent public readback.
 
-Public 0.1.3 resolver/compile, real-MySQL and CLI results remain **unverified** until the full
-commands pass against actual published bytes. Preparation and local candidate results cannot
-stand in for publication or user adoption.
+At the time of those attempts on 2026-09-07, public 0.1.3 resolver/compile, real-MySQL and CLI
+results remained **unverified**. The later successful public runs are recorded below. Preparation
+and local candidate results cannot stand in for publication or user adoption.
+
+## Verified public 0.1.3 consumption, 2026-09-08
+
+`verified - MySQL` · `verified - ShardingSphere-JDBC 5.5.3`
+
+After the independent anonymous readback matched all 30 published files to the reviewed
+signed bundle, both consumers passed using fresh caches.
+These were local macOS arm64 runs with Java 17.0.15, Python 3.12.14 and the pinned MySQL
+8.4.11 fixture, using the unchanged scripts and tests from release commit
+`f1efd71e32078dd5812268a1ad24ee73110ff61f`.
+
+| Consumer | MySQL tests | Separate-JVM CLI checks | Public result |
+| --- | --- | --- | --- |
+| Gradle 8.14.4 | 3; no failures, errors or skips | 4; Markdown/JSON MATCH exit 0 and regression exit 1 | [Summary](evidence/release-0.1.3-central/gradle-summary.json) |
+| Maven 3.9.14 | 3; no failures, errors or skips | 4; Markdown/JSON MATCH exit 0 and regression exit 1 | [Summary](evidence/release-0.1.3-central/maven-summary.json) |
+
+Both queries preserved the expected synthetic business row. The hook-reported physical JDBC
+execution attempts changed from one to two; the review changed from `MATCH` to
+`POLICY_VIOLATION` with `RCM201` and `RCM202`. The actual loaded release JAR matched the
+reviewed SHA-256. Business-result assertions remain separate from the hook observations.
+
+Use the [public consumer receipt](evidence/release-0.1.3-central/consumer-receipt.json) with the
+commands above; see the [release record](evidence/release-0.1.3-central.md) for input hashes,
+reproduction, retained evidence and the prepublication candidate-download exception.
+Maven verifies JAR/POM consumption; Gradle metadata is additionally covered by the 30-file
+readback. Gradle's redirect-origin limitation stated above remains unchanged. These checks
+prove the documented public consumption path, not independent user adoption or production use.

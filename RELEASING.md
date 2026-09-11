@@ -569,6 +569,7 @@ python3 -I scripts/verify-public-gradle-release-consumer.py \
 
 python3 -I scripts/verify-public-maven-release-consumer.py \
   --receipt /absolute/path/to/consumer-receipt.json \
+  --java-home "$JAVA_HOME" \
   --evidence-directory /absolute/path/to/new-public-maven-evidence
 ```
 
