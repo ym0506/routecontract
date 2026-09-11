@@ -187,7 +187,8 @@ def main():
     receipt = {'status': 'RUNNING', 'startedAt': datetime.now(timezone.utc).isoformat(),
                'sourceRevision': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
                'sourceInputs': {str(p.relative_to(ROOT)): sha256(p) for p in inputs},
-               'runtime': runtime, 'os': platform.system() + ' ' + platform.release(), 'arch': platform.machine(),
+               'runtime': runtime, 'maven': subprocess.check_output(['mvn', '-version'], text=True).strip(),
+               'logicalCpuCount': os.cpu_count(), 'os': platform.system() + ' ' + platform.release(), 'arch': platform.machine(),
                'docker': subprocess.check_output(['docker', 'version', '--format', '{{.Server.Version}}'], text=True).strip(),
                'smoke': args.smoke, 'callers': 4, 'forks': 1 if args.smoke else 3,
                'operationsPerFork': 320 if args.smoke else 100000, 'trials': []}
