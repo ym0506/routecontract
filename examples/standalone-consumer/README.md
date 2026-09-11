@@ -45,7 +45,14 @@ graph. The strict constraints resolve Calcite Core and linq4j to 1.42.0; JTS
 Core 1.19.0 remains, while JTS I/O Common must be absent. In this verified
 runtime, the annotations artifact shared with Jackson 3
 resolves to 2.21. The BOM does not replace or downgrade RouteContract's separate
-`tools.jackson.core:jackson-core:3.1.5` product runtime.
+`tools.jackson.core:jackson-core:3.1.6` runtime in the current-source publication.
+
+This fixture follows the current source's locked third-party graph. The
+immutable public RouteContract 0.1.3 POM still declares streaming core 3.1.5;
+running that JAR with this fixture selects the patched 3.1.6 runtime through
+the fixture's lockfile. That is a separate compatibility check. The
+[first-project example](../first-project/README.md) exercises the public
+installation path without this candidate lockfile.
 
 The verification metadata trusts only the exact RouteContract first-party
 group/artifact and a non-SNAPSHOT stable or strict `-rcN` version because
