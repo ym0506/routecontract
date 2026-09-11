@@ -11,6 +11,11 @@ on:
         type: choice
         default: Maven
         options: [Maven, Gradle, Both]
+      java_version:
+        description: Java runtime for this demonstration
+        type: choice
+        default: '17'
+        options: ['17', '21', Both]
 
 permissions:
   contents: read
@@ -21,15 +26,17 @@ concurrency:
 
 jobs:
   public-example:
-    name: Public 0.1.3 / ${{ matrix.build }} / MySQL
+    name: Public 0.1.3 / ${{ matrix.build }} / MySQL${{ matrix.java == '21' && ' / Java 21' || '' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
         build: ${{ fromJSON(github.event_name != 'workflow_dispatch' && '["Maven","Gradle"]' || inputs.build_tool == 'Gradle' && '["Gradle"]' || inputs.build_tool == 'Both' && '["Maven","Gradle"]' || '["Maven"]') }}
+        java: ${{ fromJSON(github.event_name != 'workflow_dispatch' && '["17","21"]' || inputs.java_version == '21' && '["21"]' || inputs.java_version == 'Both' && '["17","21"]' || '["17"]') }}
     env:
       BUILD_TOOL: ${{ matrix.build }}
+      ROUTECONTRACT_EXAMPLE_JAVA_VERSION: ${{ matrix.java }}
     defaults:
       run:
         working-directory: examples/first-project
@@ -40,11 +47,11 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up Java 17
+      - name: Set up Java ${{ matrix.java }}
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: temurin
-          java-version: '17.0.20+101'
+          java-version: ${{ matrix.java == '21' && '21.0.12+8.0.LTS' || '17.0.20+101' }}
           verify-signature: true
 
       - name: Set up Gradle
@@ -177,6 +184,10 @@ jobs:
           mkdir -p build/lifecycle-evidence/restored
           cp build/routecontract/* build/lifecycle-evidence/restored/
 
+      - name: Verify direct Java assertions without manifest changes
+        id: direct
+        run: python3 ../../submission/tools/verify_first_project_direct_assertions.py "$BUILD_TOOL"
+
       - name: Show the demonstration summary
         if: always()
         env:
@@ -184,18 +195,85 @@ jobs:
           MATCH_OUTCOME: ${{ steps.match.outcome }}
           RANGE_OUTCOME: ${{ steps.range.outcome }}
           RESTORED_OUTCOME: ${{ steps.restored.outcome }}
+          DIRECT_OUTCOME: ${{ steps.direct.outcome }}
         run: |
+          mkdir -p build/lifecycle-evidence
+          status=0
           python3 ../../submission/tools/summarize_first_project.py \
-            build/lifecycle-evidence >> "$GITHUB_STEP_SUMMARY"
+            build/lifecycle-evidence > build/lifecycle-evidence/summary.md || status=$?
+          cat build/lifecycle-evidence/summary.md >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
 
       - name: Keep example results
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: first-project-${{ matrix.build }}
+          name: first-project-${{ matrix.build }}${{ matrix.java == '21' && '-java21' || '' }}
           path: |
             examples/first-project/build/routecontract/
             examples/first-project/build/lifecycle-evidence/
             examples/first-project/build/test-results/
             examples/first-project/target/surefire-reports/
+          retention-days: 14
+
+  java21-runtime:
+    name: Java 21 / core and MySQL runtime
+    if: github.event_name != 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up the Java 17 library compiler
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: '17.0.20+101'
+          verify-signature: true
+
+      - name: Keep the compiler location
+        run: printf 'ROUTECONTRACT_COMPILER_HOME=%s\n' "$JAVA_HOME" >> "$GITHUB_ENV"
+
+      - name: Set up the Java 21 test runtime
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: '21.0.12+8.0.LTS'
+          verify-signature: true
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          dependency-graph: disabled
+          validate-wrappers: true
+
+      - name: Run core and real MySQL tests on Java 21
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          ./gradlew --no-daemon --no-build-cache --no-configuration-cache --rerun-tasks --info \
+            -ProutecontractTestJavaVersion=21 \
+            "-Porg.gradle.java.installations.paths=${ROUTECONTRACT_COMPILER_HOME},${JAVA_HOME}" \
+            -Porg.gradle.java.installations.auto-detect=false \
+            -Porg.gradle.java.installations.auto-download=false \
+            :routecontract-shardingsphere-5.5:test :mysql-example:test \
+            > build/java21-runtime.log 2>&1
+
+      - name: Verify the actual runtime and minimize JUnit evidence
+        if: always()
+        run: |
+          python3 submission/tools/summarize_java_runtime.py \
+            build/java21-runtime.log "$JAVA_HOME" build/java21-runtime-summary.json
+
+      - name: Keep Java 21 runtime evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: java21-core-mysql-runtime
+          path: |
+            build/java21-runtime-summary.json
+            build/java21-runtime-junit/
           retention-days: 14

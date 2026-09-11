@@ -2,7 +2,7 @@
 
 ## Development prerequisites
 
-- JDK 17
+- JDK 17 to compile the library; JDK 21 as well for the additional runtime check
 - Docker for MySQL integration tests
 - Git, Python 3, Bash or equivalent POSIX tooling, and network access for public release checks
 
@@ -25,6 +25,17 @@ Run the complete unit, real-MySQL integration and SBOM checks with:
 ```bash
 ./gradlew --no-daemon --no-build-cache clean check validateOfficialCycloneDxSbom
 ```
+
+To keep Java 17 library bytecode and run the existing core/MySQL tests on Java 21:
+
+```bash
+./gradlew --no-daemon --no-build-cache --no-configuration-cache --rerun-tasks \
+  -ProutecontractTestJavaVersion=21 \
+  :routecontract-shardingsphere-5.5:test :mysql-example:test
+```
+
+Both JDKs must be available to Gradle. The [runtime acceptance record](docs/java21-runtime-acceptance.md)
+explains actual-JVM verification and the public Central Maven/Gradle matrix.
 
 Verify that a standalone consumer can resolve and run this checkout's generated Maven publication
 from an isolated temporary repository rather than use an in-repository Gradle project dependency with:
@@ -83,8 +94,11 @@ publication and is not evidence of a signed candidate or public availability.
 
 ## Release feedback
 
-For an ordinary first review or run of stable `v0.1.2`, use the
-[Stable v0.1.2 feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml).
+For a question before installation or feedback on current stable **0.1.3**, use the
+[question or user feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml).
+You can report a test using reviewed Java execution assertions or the optional JSON-baseline
+comparison. Neither installation nor a public application repository is required to ask a question.
+The [first-project guide](docs/first-project.md#adapt-one-existing-test) covers both paths.
 Successful, blocked, unsupported, and not-a-fit outcomes are equally useful. This short form records
 self-reported usability and fit feedback; it does not by itself prove an independent run, production
 use, adoption, security, performance, or endorsement.

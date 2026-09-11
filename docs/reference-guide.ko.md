@@ -9,41 +9,40 @@
 **같은 결과를 반환해도 DB 실행은 달라질 수 있습니다.**
 
 RouteContract는 [ShardingSphere-JDBC](https://github.com/apache/shardingsphere)의
-`SQLExecutionHook`이 보고한 물리 JDBC 실행 시도를 사람이 검토한 기준과 비교하는 Java 테스트
-라이브러리입니다. 기존 업무 결과 assertion을 유지하면서, 실행 시도 수나 관측된 데이터 소스
-집합의 변화도 CI에서 검사합니다.
+`SQLExecutionHook`이 보고한 물리 JDBC 실행 시도를 사람이 검토한 기대값으로 검사하는 Java 테스트
+라이브러리입니다. 기존 업무 결과 assertion을 유지하면서 실행 시도 수와 관측된 데이터 소스를
+Java assertion으로 검사합니다. 구조 비교와 리포트가 필요하면 저장된 manifest를 선택해서 사용합니다.
 
 포함된 MySQL 예제는 같은 행을 반환하면서 관측된 실행 시도가 `1 → 2`로 늘어나는 변경을
 `RCM201`·`RCM202`로 거부합니다. 실행 증가가 의도한 변경인지는 담당자가 검토합니다.
 
-**지원:** Java 17 · 정확히 ShardingSphere-JDBC 5.5.3 · 동기식·비배치 `PreparedStatement`.
+**지원:** Java 17 또는 21 · 정확히 ShardingSphere-JDBC 5.5.3 · 동기식·비배치 `PreparedStatement`.
 [실행 경계와 한계](../docs/start-here.md#도입-전에-확인할-세-가지--check-fit)를 먼저 확인하세요.
 
 ## 시작하기
 
 | 하고 싶은 일 | 시작점 |
 | --- | --- |
-| 먼저 동작 보기 | [2분 54초 시연 영상 보기](https://www.youtube.com/watch?v=pcgvNNxd1mM) · [실제 비교 결과](../examples/manifests/README.md) — 설치 불필요 |
-| CI에서 읽을 리포트 확인 | [Markdown 미리보기](../docs/evidence/ci-review-report-example.md) · [v0.1.3으로 직접 생성](../docs/ci-review-report.md#try-the-released-report-without-docker) — Git·Java 17, Docker 불필요 |
-| 같은 결과인데 실행이 달라지는 사례 재현 | [아래 Quick Start](#quick-start) — Git, Java 17, Docker 필요 |
-| 내 프로젝트의 테스트 한 개에 적용 | [Maven Central에서 0.1.3 설치](#install-013) — 기존 Java 17 · ShardingSphere-JDBC 5.5.3 테스트 |
+| 설치 없이 검사 결과 이해하기 | [CI 리포트 읽기](evidence/ci-review-report-example.md) |
+| 공개 라이브러리로 통과 → 실패 → 통과 확인 | [0.1.3 첫 프로젝트](first-project.ko.md) — Java 17 또는 21, Maven/Gradle, Docker |
+| 로컬 Java·Docker 없이 실행 | [내 GitHub fork에서 실행](first-project.ko.md#try-in-your-browser) |
+| 기존 테스트 한 개에 적용 | [Central 의존성](#install-013)을 추가하고 [작업 한 개 감싸기](first-project.ko.md#기존-테스트-하나에-routecontract-적용하기); JSON 기준 파일은 선택 사항 |
 | 적용 가능성 질문·경험 공유 | [짧은 피드백](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml) — 설치나 공개 저장소 없이 참여 가능 |
 
-최신 [정식 `v0.1.3`](https://github.com/ym0506/routecontract/releases/tag/v0.1.3)은
-Markdown·JSON [CI 리포트](../docs/ci-review-report.md)와 `ManifestReviewCli`를 포함하며
-GitHub Release와 Maven Central에서 사용할 수 있습니다. 아래 MySQL Quick Start와 기존
-로컬 설치기·통합 가이드는 검증된 `v0.1.2` 경로에 고정되어 있습니다.
-새 리포트는 위의 `v0.1.3` 체험 경로로 확인할 수 있습니다.
-비공개 프로젝트도 자신의 환경에서 사용할 수 있습니다. 공개 피드백에는 SQL·바인딩 값·접속 정보·전체 로그를 넣지 마세요.
-[도움받는 방법과 사용 사례 기록 기준](../docs/user-feedback.md)을 확인할 수 있습니다.
+현재 공개 버전은 **0.1.3**입니다. 첫 프로젝트 가이드는 Maven Central의 이 버전을 사용하며,
+Java assertion과 선택적인 Markdown·JSON 비교 리포트를 안내합니다.
+예전 0.1.2 명령은 과거 결과 재현을 위해 아래 접힌 항목에 보존했습니다.
+공개 피드백에는 SQL·바인딩 값·접속 정보·전체 로그를 넣지 마세요.
+[도움받는 방법과 사용 사례 기록 기준](user-feedback.md)을 확인할 수 있습니다.
 
-![같은 업무 결과에서 승인본과 candidate의 관측 실행 시도 및 data-source alias가 1에서 2로 달라져 RCM201과 RCM202가 발생한 실제 MySQL 검증](../submission/assets/baseline-candidate.png)
+![같은 주문을 반환하지만 관측된 실행 시도와 데이터 소스가 하나에서 둘로 늘어난 사례.](assets/execution-comparison.svg)
 
 ## Install 0.1.3
 
-[공개 파일 검증과 Gradle·Maven 설치 결과](../docs/evidence/release-0.1.3-central.md)를 확인할 수 있습니다.
+[공개 파일 검증과 Gradle·Maven 설치 결과](../docs/evidence/release-0.1.3-central.md)와
+현재 [Java 17/21 런타임 검증](java21-runtime-acceptance.md)을 확인할 수 있습니다.
 
-기존 **Java 17 · ShardingSphere-JDBC 5.5.3** 테스트에 의존성을 추가하세요.
+기존 **Java 17 또는 21 · ShardingSphere-JDBC 5.5.3** 테스트에 의존성을 추가하세요.
 기존 ShardingSphere·데이터 소스 설정과 업무 결과 assertion은 유지합니다.
 
 Gradle Groovy / Kotlin DSL:
@@ -71,8 +70,38 @@ Maven (`pom.xml`의 `<dependencies>` 안에 추가):
 RouteContract가 ShardingSphere를 설치하거나 전체 모듈의 버전을 강제하지는 않습니다.
 테스트 runtime의 ShardingSphere 모듈은 모두 정확히 5.5.3이어야 합니다.
 
-아래 v0.1.2 Quick Start·로컬 설치기·Maven starter는 해당 버전에 고정된 재현 경로입니다.
-0.1.3 의존성 설치에 그 설치기를 실행하거나 이 저장소를 clone할 필요는 없습니다.
+0.1.3 의존성 설치에 예전 로컬 설치기를 실행하거나 저장소를 clone할 필요는 없습니다.
+현재 Maven·Gradle 예제는 [첫 프로젝트 가이드](first-project.ko.md)를 사용하세요.
+
+## 0.1.3 실행하기
+
+Java 17 또는 21, Maven 3.9.x와 실행 중인 Docker가 필요합니다. 처음에는 의존성과 MySQL 이미지를
+내려받습니다. 새 checkout에서 실행하세요.
+
+```bash
+git clone https://github.com/ym0506/routecontract.git
+cd routecontract/examples/first-project
+mvn -B test
+```
+
+정확한 업무 결과 검사와 `build/routecontract/review.md`의 `MATCH`를 확인합니다.
+이어서 같은 주문을 반환하는 범위 조회를 실행하세요.
+
+```bash
+mvn -B test -Droutecontract.query=range
+```
+
+이 명령은 업무 결과 검사가 통과한 뒤 `POLICY_VIOLATION`·`RCM201`·`RCM202`로 실패해야 합니다.
+의존성·컴파일·Docker 오류는 이 거부를 재현한 결과가 아닙니다.
+`mvn -B test`를 다시 실행하면 `MATCH`로 돌아옵니다. 포함된 기준 파일은 이 합성 데이터 예제에만
+검토된 것입니다. Gradle, Java 21 선택, 직접 assertion과 내 기준 파일 검토는
+[전체 가이드](first-project.ko.md)를 참고하세요.
+
+<details>
+<summary>과거 0.1.2 Quick Start와 격리 통합 도구</summary>
+
+아래 명령은 원래 버전과 검증 범위를 유지합니다. 현재 설치의 선행 단계가 아닙니다.
+[과거 2분 54초 시연](https://www.youtube.com/watch?v=pcgvNNxd1mM)도 이때의 절차를 다룹니다.
 
 ## Quick Start
 
@@ -231,6 +260,8 @@ Maven pilot 두 테스트를 준비한 뒤에는 [6개 필드 예제 JSON](../ex
 [짧은 피드백 양식](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)에
 성공·막힌 지점·지원 범위 밖·필요 없음 중 어느 결과든 짧게 남길 수 있습니다. 공개 Issue에는
 원문 SQL, bind 값, JDBC URL, 실제 topology, full log 같은 민감 정보를 넣지 마세요.
+
+</details>
 
 </details>
 
@@ -485,9 +516,12 @@ MySQL 시나리오를 실행합니다. 이 명령은 예상된 위반을 검증�
 
 ## v0.1 지원 범위
 
+현재 공개 **0.1.3**의 범위입니다. [Java 17/21 런타임 검증](java21-runtime-acceptance.md)을 참고하세요.
+예전 0.1.2 설치기와 assisted runner에는 각각 문서화된 별도 제약이 적용됩니다.
+
 이 문제는 특정 ORM이나 repository API에 한정되지 않습니다. Apache ShardingSphere-JDBC는 direct JDBC와 MyBatis·JPA·Hibernate 같은 연결 방식에서 사용할 수 있고, RouteContract의 capture API도 ORM 전용이 아닙니다. 이는 문제와 capture API가 ORM 비종속적이라는 뜻이며, MyBatis·JPA·Hibernate별 end-to-end 호환성을 검증했다는 뜻은 아닙니다.
 
-- Java 17
+- Java 17 또는 21
 - Apache ShardingSphere-JDBC **정확히 5.5.3**
 - 정상 반환하고 capture 종료 시 caller가 interrupt되지 않은 동기식 `PreparedStatement`
 - MySQL 8.4.11 기반 통합 검증
@@ -513,6 +547,17 @@ manifest match를 통과시키지 않습니다.
 
 ## 의존성·Release 호환성 상세
 
+현재 공개 **0.1.3**은 [위의 Central 좌표](#install-013)로 설치하고 기존 ShardingSphere runtime
+전체가 정확히 5.5.3인지 확인합니다. RouteContract가 ShardingSphere를 내장하거나 모든 모듈 버전을
+맞춰주지는 않습니다. [공개 배포 근거](evidence/release-0.1.3-central.md)와
+[Java 17/21 소비자 검증](java21-runtime-acceptance.md)에서 확인된 실행 환경을 볼 수 있습니다.
+
+<details>
+<summary>과거 0.1.2 의존성 그래프·로컬 설치·Javadoc 근거</summary>
+
+아래 버전과 제약은 당시 릴리스와 fixture 빌드의 기록입니다. 현재 애플리케이션에 새로 추가할
+의존성 목록이 아닙니다.
+
 게시 후 검증을 통과한 안정 `v0.1.2` Release의 exact coordinate는
 `io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.2`이며 Maven Central
 게시를 주장하지 않습니다. 이 좌표를 기본 dependency graph에 바로 붙이지 말고
@@ -537,13 +582,15 @@ Javadoc classifier에는 OpenJDK standard-doclet 정적 자산과 `legal/` 고�
 이 자산은 main JAR/runtime 의존성이 아니며 상세 목록은
 [THIRD_PARTY.md](../THIRD_PARTY.md)에 있습니다.
 
+</details>
+
 ## 정보 최소화와 보안
 
 원문 SQL, parameter 값, connection properties, exception message는 snapshot/manifest에 저장하지 않습니다. 다만 data-source 이름, operation ID, Java type 이름과 unsalted SQL fingerprint도 민감한 engineering metadata가 될 수 있습니다. SHA-256 fingerprint는 익명화가 아니므로, v0.1은 기밀 literal을 inline하지 않는 결정적 `PreparedStatement` 테스트를 전제로 합니다. 자세한 내용은 [SECURITY.md](../SECURITY.md)를 확인하십시오.
 
 ## 기여와 확장
 
-`v0.1.2`의 문서·Quick Start·Release 설치·실제 적용 가능성을 처음 검토했다면
+현재 공개 `0.1.3`을 실행하거나 기존 테스트에 적용했거나, 적용 가능성을 묻고 싶다면
 [짧은 피드백 양식](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)에
 성공, blocker, 지원 범위 밖 또는 필요 없음 중 어느 결과든 남길 수 있습니다. 비공개 프로젝트의 사용 경험도 환영합니다. 설치 없이 검증 방법이나 필요한 기능만 알려주셔도 됩니다.
 사용 단계와 확인 가능한 근거는 [별도로 기록](../docs/user-feedback.md#recording-use-and-evidence)하며,

@@ -9,7 +9,12 @@ change. No installation, public repository, or maintainer role is needed to ask 
 Unsupported versions and not-a-fit experiences are useful too; describing them does not expand the
 released support boundary.
 
-Use the [short feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml).
+설치 전 질문이나 적용 중 막힌 부분은 [현재 0.1.3 도움 Discussion](https://github.com/ym0506/routecontract/discussions/76)에
+짧은 댓글로 남겨도 됩니다.
+
+For a conversation, reply in the [current 0.1.3 setup-help Discussion](https://github.com/ym0506/routecontract/discussions/76).
+A short comment is enough. If you prefer an issue, use the
+[short feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml).
 Only a short question or experience and the public-information check are required. For example:
 
 ```text
@@ -34,16 +39,18 @@ ShardingSphere-JDBC 5.5.2를 사용하고 있습니다.
    A demo run helps explain the tool; it is not a project integration.
 3. **Use one existing test.** Follow the [v0.1.3 first-project guide](first-project.md) ([한국어](first-project.ko.md)) in a repository
    you are authorized to modify. Keep its business assertion. The supported released boundary is
-   Java 17, exact ShardingSphere-JDBC 5.5.3 and synchronous non-batch `PreparedStatement` operations.
-   A valid first candidate establishes a pilot; the target's authorized owner or maintainer must
-   review the budgets, aliases and exact baseline before candidate checks can use that baseline.
+   Java 17 or 21, exact ShardingSphere-JDBC 5.5.3 and synchronous non-batch `PreparedStatement` operations.
+   Start with [direct Java assertions](first-project.md#adapt-one-existing-test) if you only need execution-count checks;
+   **a JSON baseline is optional**. The target's authorized reviewer chooses the expected limits for
+   that operation. If you also use JSON comparison, review its aliases, budgets and exact baseline.
 4. **Check the next real change.** After a completed integration, record whether a later SQL,
    configuration or middleware change used the check and whether the result helped a decision.
    An intentional change, false positive, blocker or decision to remove the library is useful
    feedback. Repeated unchanged demo runs do not establish this stage.
 
-Baseline approval remains the target repository's responsibility. RouteContract's maintainer,
-an assistant, a generator or CI cannot supply that approval on the target's behalf. No response,
+Reviewing execution expectations remains the target repository's responsibility, whether those
+expectations are Java assertions or a JSON baseline. RouteContract's maintainer, an assistant,
+a generator or CI cannot approve them on the target's behalf. No response,
 integration-completion time or compatibility outside the stated scope is promised.
 
 ## Recording use and evidence
@@ -54,13 +61,13 @@ been inspected; lack of public links does not mean lack of use.
 
 | Dimension | Record | Meaning |
 | --- | --- | --- |
-| Use stage | Conversation / demo / project pilot / completed integration / repeat use | Pilot: valid candidate from one own-project operation. Integration: target-approved baseline and successful check. Repeat use: check on a later real change. |
+| Use stage | Conversation / demo / project pilot / completed integration / repeat use | Pilot: valid capture from one own-project operation. Integration: target-reviewed execution expectations (Java assertions or a JSON baseline) and a successful test. Repeat use: check on a later real change. |
 | Assistance | Maintainer-assisted / independently completed / unknown | Identify who performed the relevant step. A maintainer's fixture is not an external user's project. |
 | Verification | Self-reported / inspected result / publicly reproducible evidence | State exactly what was inspected, at which revision and in which environment; do not promote a report to verified use automatically. |
 | Publication permission | Not granted / approved scope | A public comment is not blanket permission to name an employer, publish a case study or describe an endorsement. |
 
 For a publicly inspectable integration, link the source revision, dependency, representative test,
-reviewed baseline and its approval record, and successful CI run for that revision. Preserve the
+reviewed Java assertions or optional JSON baseline and the corresponding review record, plus a successful CI run for that revision. Preserve the
 actual environment label: H2 does not verify MySQL. Private details are not required for public
 feedback, and publication is not a prerequisite for local or private-CI use.
 

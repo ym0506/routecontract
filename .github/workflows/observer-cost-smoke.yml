@@ -38,6 +38,13 @@ jobs:
           set -euo pipefail
           python3 examples/observer-cost/run.py --smoke \
             --output "${RUNNER_TEMP}/observer-cost-smoke"
+      - name: Check capture cleanup and retained-result sensitivity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 examples/observer-cost/retention/run.py --smoke \
+            --maven-repository "${RUNNER_TEMP}/observer-cost-smoke/m2" \
+            --output "${RUNNER_TEMP}/capture-retention-smoke"
       - name: Preserve smoke evidence without dependency caches
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -49,5 +56,8 @@ jobs:
             ${{ runner.temp }}/observer-cost-smoke/block-*.json
             ${{ runner.temp }}/observer-cost-smoke/block-*.log
             ${{ runner.temp }}/observer-cost-smoke/build.log
+            ${{ runner.temp }}/capture-retention-smoke/run.json
+            ${{ runner.temp }}/capture-retention-smoke/trial-*/checkpoints.json
+            ${{ runner.temp }}/capture-retention-smoke/build.log
           if-no-files-found: warn
           retention-days: 30

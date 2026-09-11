@@ -56,10 +56,15 @@ dependencies {
     }
 }
 
-java { toolchain { languageVersion = JavaLanguageVersion.of(17) } }
+def exampleJavaVersion = providers.gradleProperty('routecontractJavaVersion')
+        .orElse(providers.environmentVariable('ROUTECONTRACT_EXAMPLE_JAVA_VERSION')).getOrElse('17')
+if (!(exampleJavaVersion in ['17', '21'])) {
+    throw new GradleException('routecontractJavaVersion must be 17 or 21')
+}
+java { toolchain { languageVersion = JavaLanguageVersion.of(Integer.parseInt(exampleJavaVersion)) } }
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
-    options.release = 17
+    options.release = Integer.parseInt(exampleJavaVersion)
     options.compilerArgs += ['-Xlint:all', '-Werror']
 }
 tasks.named('test') {

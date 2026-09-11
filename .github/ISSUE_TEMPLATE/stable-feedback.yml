@@ -37,6 +37,7 @@ body:
         - Read documentation or asked about fit
         - Ran a RouteContract demo
         - Captured a candidate from one operation in my own project
+        - Passed a test with reviewed Java execution assertions in my own project
         - Used a target-approved baseline and successfully checked a candidate in my own project
         - Used the check again on a later real project change
         - Stopped or not sure
