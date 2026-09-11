@@ -1140,7 +1140,7 @@ jackson_versions = {
     if coordinate["group"] == "com.fasterxml.jackson"
     or coordinate["group"].startswith("com.fasterxml.jackson.")
 }
-if jackson_versions != {"2.18.9"}:
+if jackson_versions != {"2.18.10"}:
     raise SystemExit(f"unexpected FasterXML Jackson versions: {sorted(jackson_versions)}")
 jackson = [
     coordinate for coordinate in coordinates

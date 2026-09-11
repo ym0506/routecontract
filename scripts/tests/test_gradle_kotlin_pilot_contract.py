@@ -119,7 +119,7 @@ class GradleKotlinPilotContractTest(unittest.TestCase):
             'includeModule(',
             'add(pilot.implementationConfigurationName, expectedRouteContractCoordinate)',
             'routeContractArtifact.file.toPath().toRealPath()',
-            'enforcedPlatform("com.fasterxml.jackson:jackson-bom:2.18.9")',
+            'enforcedPlatform("com.fasterxml.jackson:jackson-bom:2.18.10")',
             '"com.mysql:mysql-connector-j:26.7.0"',
             '"org.testcontainers:junit-jupiter:1.21.4"',
             '"org.testcontainers:mysql:1.21.4"',

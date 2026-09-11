@@ -3,7 +3,8 @@
 RouteContract is licensed under Apache-2.0. The dependencies below keep their
 own licenses. This file is a human-readable inventory of the dependencies
 declared directly by this repository, selected reviewed transitive metadata,
-and the pinned report-builder runtime closure, as of 2026-08-24; it is not a
+and the pinned report-builder runtime closure, as of 2026-08-24, with the
+Jackson 2 compatibility alignment requalified at 2.18.10 on 2026-09-12. It is not a
 substitute for the machine-readable SBOM or the license text shipped by each
 dependency.
 
@@ -18,18 +19,18 @@ published library's declared runtime profile.
 
 | Component | Version | Gradle scope | License |
 |---|---:|---|---|
-| Jackson 2 compatibility BOM (`com.fasterxml.jackson`) | 2.18.9 | `compileOnly` (also `testImplementation`) | Apache-2.0 |
+| Jackson 2 compatibility BOM (`com.fasterxml.jackson`) | 2.18.10 | `compileOnly` (also `testImplementation`) | Apache-2.0 |
 | Apache ShardingSphere `shardingsphere-infra-executor` | 5.5.3 | `compileOnly` (also `testImplementation`) | Apache-2.0 |
 | Alibaba TransmittableThreadLocal | 2.14.2 | `implementation` | Apache-2.0 |
 | Jackson Core (`tools.jackson.core`) | 3.1.5 | `implementation` | Apache-2.0 |
 
 In the verified Gradle compatibility/test graph, the `compileOnly` Jackson 2 BOM
-resolves core, databind, datatype-jdk8, and datatype-jsr310 to 2.18.9; it is not
+resolves core, databind, datatype-jdk8, and datatype-jsr310 to 2.18.10; it is not
 published as a consumer version constraint. In the verified combined test
 runtime, the annotations artifact shared with Jackson 3 resolves to 2.21.
 Consumers using ShardingSphere 5.5.3
 must supply, or already have, an equivalent Jackson 2 alignment to reproduce
-the verified 2.18.9 graph; RouteContract's POM does not provide it. It does not
+the verified 2.18.10 graph; RouteContract's POM does not provide it. It does not
 replace the separate `tools.jackson` 3.1.5 runtime dependency.
 
 ## Javadoc classifier shipped assets

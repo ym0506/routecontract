@@ -12,7 +12,7 @@ version = "0.1.2"
 repositories { mavenCentral() }
 
 dependencies {
-    testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))
+    testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.10"))
     testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:5.5.3") {
         exclude(group = "org.locationtech.jts.io", module = "jts-io-common")
         exclude(group = "com.google.protobuf", module = "protobuf-java")
@@ -176,7 +176,7 @@ if (routeContractPilotEnabled.get()) {
         add(routeContractPilotArtifactOrigin.name, expectedRouteContractCoordinate)
         add(
             pilot.implementationConfigurationName,
-            enforcedPlatform("com.fasterxml.jackson:jackson-bom:2.18.9")
+            enforcedPlatform("com.fasterxml.jackson:jackson-bom:2.18.10")
         )
         add(
             pilot.implementationConfigurationName,
@@ -466,13 +466,13 @@ if (routeContractPilotEnabled.get()) {
                 artifactGroup.startsWith("com.fasterxml.jackson.")
         }
         if (jackson2.isEmpty() || jackson2.any { artifact ->
-                artifact.moduleVersion.id.version != "2.18.9" ||
+                artifact.moduleVersion.id.version != "2.18.10" ||
                     artifact.extension != "jar" || artifact.classifier != null
             }
         ) {
             throw GradleException(
                 "Every resolved FasterXML Jackson artifact must be an unclassified " +
-                    "JAR exactly at 2.18.9"
+                    "JAR exactly at 2.18.10"
             )
         }
         listOf(

@@ -1469,7 +1469,7 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             'version { strictly("1.42.0") }',
             'version { strictly("2.4.10") }',
             'version { strictly("2.4.9") }',
-            'enforcedPlatform("com.fasterxml.jackson:jackson-bom:2.18.9")',
+            'enforcedPlatform("com.fasterxml.jackson:jackson-bom:2.18.10")',
             'artifactGroup == "com.fasterxml.jackson" ||',
             'artifactGroup.startsWith("com.fasterxml.jackson.")',
             'artifact.extension != "jar" || artifact.classifier != null',
@@ -1507,7 +1507,7 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             "same-checkout fixture and its synthetic match are CI scaffolding, not human approval or\nexternal adoption",
             "scripts/prepare_maven_v0_1_2_checksums.py",
             "https://raw.githubusercontent.com/ym0506/routecontract/2264b6e6292ee80f131148f2acef601cbaede096/scripts/prepare_maven_v0_1_2_checksums.py",
-            "https://raw.githubusercontent.com/ym0506/routecontract/2264b6e6292ee80f131148f2acef601cbaede096/scripts/verify-external-maven-integration.sh",
+            "https://raw.githubusercontent.com/ym0506/routecontract/917fadf86f3d47b8c5177bbdd372070e985d57d6/scripts/verify-external-maven-integration.sh",
             "transport URL is pinned to the exact bridge implementation commit",
             "exact\ntwelve-file coordinate inventory",
             "private, single-writer directory",
@@ -1663,7 +1663,7 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             '("net.minidev", "json-smart", "2.4.10")',
             '("net.minidev", "accessors-smart", "2.4.9")',
             "required=False",
-            'jackson_versions != {"2.18.9"}',
+            'jackson_versions != {"2.18.10"}',
             "FasterXML Jackson dependencies must be unclassified JARs in an allowed scope",
             '("org.locationtech.jts.io", "jts-io-common")',
             '("com.google.protobuf", "protobuf-java")',
@@ -1699,7 +1699,7 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
 
         expected_managed = {
             ("com.fasterxml.jackson", "jackson-bom"): (
-                "2.18.9",
+                "2.18.10",
                 "pom",
                 "import",
             ),
@@ -1861,7 +1861,7 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
                 "[INFO] |  +- org.apache.shardingsphere:shardingsphere-infra-executor:jar:5.5.3:compile",
                 "[INFO] |  +- org.apache.calcite:calcite-core:jar:1.42.0:compile",
                 "[INFO] |  \\- org.apache.calcite:calcite-linq4j:jar:1.42.0:compile",
-                "[INFO] +- com.fasterxml.jackson.core:jackson-databind:jar:2.18.9:runtime",
+                "[INFO] +- com.fasterxml.jackson.core:jackson-databind:jar:2.18.10:runtime",
                 "[INFO] \\- com.google.protobuf:protobuf-java-util:jar:4.33.5:test",
                 "",
             )
@@ -1953,16 +1953,16 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
                     "[INFO] +- net.minidev:json-smart:jar:2.4.10:runtime",
                 ),
                 "jackson pom type": valid_graph_with_minidev.replace(
-                    "jackson-databind:jar:2.18.9:runtime",
-                    "jackson-databind:pom:2.18.9:runtime",
+                    "jackson-databind:jar:2.18.10:runtime",
+                    "jackson-databind:pom:2.18.10:runtime",
                 ),
                 "jackson classifier": valid_graph_with_minidev.replace(
-                    "jackson-databind:jar:2.18.9:runtime",
-                    "jackson-databind:jar:tests:2.18.9:runtime",
+                    "jackson-databind:jar:2.18.10:runtime",
+                    "jackson-databind:jar:tests:2.18.10:runtime",
                 ),
                 "jackson provided scope": valid_graph_with_minidev.replace(
-                    "jackson-databind:jar:2.18.9:runtime",
-                    "jackson-databind:jar:2.18.9:provided",
+                    "jackson-databind:jar:2.18.10:runtime",
+                    "jackson-databind:jar:2.18.10:provided",
                 ),
                 "Jackson group prefix collision": valid_graph_with_minidev.replace(
                     "com.fasterxml.jackson.core:jackson-databind",
@@ -2015,9 +2015,11 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             "134b265709ac071dedd395da269426d83f1972f602c3b3f7d2201eecc525e204",
             "https://raw.githubusercontent.com/ym0506/routecontract/v0.1.2/scripts/install-release-assets.py",
             "https://raw.githubusercontent.com/ym0506/routecontract/2264b6e6292ee80f131148f2acef601cbaede096/scripts/prepare_maven_v0_1_2_checksums.py",
-            "https://raw.githubusercontent.com/ym0506/routecontract/2264b6e6292ee80f131148f2acef601cbaede096/scripts/verify-external-maven-integration.sh",
+            "https://raw.githubusercontent.com/ym0506/routecontract/917fadf86f3d47b8c5177bbdd372070e985d57d6/scripts/verify-external-maven-integration.sh",
             "verify-external-maven-integration.sh",
-            "69f233a5935f36a2e9068c25517fc3f15df4ef7da119e7a02feb9184df49e472",
+            hashlib.sha256(
+                (REPOSITORY_ROOT / "scripts" / "verify-external-maven-integration.sh").read_bytes()
+            ).hexdigest(),
             'bash "${tool_dir}/verify-external-maven-integration.sh"',
         ):
             self.assertIn(required, maven_ci_block)
