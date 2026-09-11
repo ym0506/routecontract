@@ -197,18 +197,12 @@ jobs:
           RESTORED_OUTCOME: ${{ steps.restored.outcome }}
           DIRECT_OUTCOME: ${{ steps.direct.outcome }}
         run: |
+          mkdir -p build/lifecycle-evidence
+          status=0
           python3 ../../submission/tools/summarize_first_project.py \
-            build/lifecycle-evidence >> "$GITHUB_STEP_SUMMARY"
-          printf '\nDirect Java assertions (pass → fail → pass; existing manifest files unchanged): **%s**.\n' \
-            "$DIRECT_OUTCOME" >> "$GITHUB_STEP_SUMMARY"
-          if test "$DIRECT_OUTCOME" = success; then
-            printf '\nVerified test JVM: Java %s; consumer classfile: %s; public 0.1.3 library classfile: 61.\n' \
-              "$ROUTECONTRACT_EXAMPLE_JAVA_VERSION" "$((ROUTECONTRACT_EXAMPLE_JAVA_VERSION + 44))" \
-              >> "$GITHUB_STEP_SUMMARY"
-          else
-            printf '\nJava %s runtime verification did not complete successfully.\n' \
-              "$ROUTECONTRACT_EXAMPLE_JAVA_VERSION" >> "$GITHUB_STEP_SUMMARY"
-          fi
+            build/lifecycle-evidence > build/lifecycle-evidence/summary.md || status=$?
+          cat build/lifecycle-evidence/summary.md >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
 
       - name: Keep example results
         if: always()
