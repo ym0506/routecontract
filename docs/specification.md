@@ -190,6 +190,10 @@ Before concurrency support is published:
 - an injected collector runtime exception does not escape the direct hook callback and makes the
   capture `INCOMPLETE`; this `verified - unit` gate does not claim an unchanged SQL result;
 - Java 17 Linux CI passes on the exact supported dependency set.
+- a separate Java 21 Maven compatibility cell runs a representative operation against exact
+  ShardingSphere-JDBC 5.5.3 and digest-pinned MySQL 8.4.11, with the fixture's main and test classes
+  compiled to classfile major 65. This same-checkout gate does not by itself broaden the external
+  assisted-runner or starter boundary or establish external adoption.
 
 The concurrency claim is limited to normally returned, non-interrupted synchronous
 `PreparedStatement` operations. ShardingSphere 5.5.3 may return early from failure and interruption

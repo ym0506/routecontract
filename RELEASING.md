@@ -80,10 +80,18 @@ workflow. The workflow:
   child exit `1`;
 - runs unit and real MySQL integration tests without reusing cached task results;
 - generates `test-summary.txt` from the resulting JUnit XML and fails unless
-  the exact seven expected suites contain 52 passing, non-skipped tests; the
+  the exact eight expected library and MySQL suites contain 62 passing, non-skipped tests;
+  the standalone consumer runs separately and is not included in this count. The
   fixed summary records the Git revision and per-suite counts but deliberately
   omits test names, timings, hostnames, paths, ports, SQL and captured output;
 - builds reproducible-order JARs and the generated Maven POM;
+- for stable `0.1.x` versions from `0.1.3` onwards, also generates Gradle Module
+  Metadata and retains the exact three JARs, POM and `.module` as a separate
+  `routecontract-central-candidate-COMMIT` Actions artifact. Its sixth file,
+  `candidate-payloads.json`, records observed names, sizes, hashes and the tagged
+  revision with `reviewed`, `signed` and `published` all false. Review this
+  artifact together with the successful whole run; it does not change the
+  twelve GitHub Release assets or the existing 17-file evidence artifact;
 - generates direct and aggregate CycloneDX JSON/XML SBOMs and fails unless
   every first-party component declares Apache-2.0, Connector/J includes its
   Universal FOSS Exception and MySQL example BOMs contain the digest-pinned,
@@ -240,11 +248,346 @@ or a corrected later stable patch selected by the final manifest, must use a
 new stable tag/revision/evidence run with `prerelease=false`; never retag or
 promote RC assets as if they were the final stable evidence.
 
-The v0.1 packaging gate requires no signature assets because no signing
-workflow or key-management policy is implemented. Add signing only in a future
-release with an explicit design and verification path. Do not imply SLSA
+The v0.1 packaging gate requires no signature assets in the twelve-file
+GitHub Release asset set. The separate Central staging procedure below adds
+signatures only to the Central upload bundle and does not change the historical
+GitHub asset contract. Do not imply SLSA
 provenance or reproducible builds unless those properties have been separately
 implemented and verified.
+
+## Future Maven Central publication (a separately approved later release)
+
+The immutable GitHub Releases `v0.1.0` and `v0.1.2` remain unchanged and are
+not published to Maven Central. This section applies only to a later stable
+version selected through a separate release approval. It does not authorize
+overwriting, retagging, or describing `0.1.0` or `0.1.2` as a Central artifact,
+and it does not plan or authorize another release by itself.
+
+The current selected candidate is [0.1.3](docs/release-0.1.3-candidate.md),
+using the existing single artifact and exact ShardingSphere-JDBC 5.5.3 support.
+The separate 0.2 core/adapter split is not part of this release. Selection is
+not publication or approval of bytes that have not yet been produced.
+
+Use the current official [Central publishing guide](https://central.sonatype.org/publish/publish-portal-guide/),
+[Portal API documentation](https://central.sonatype.org/publish/publish-portal-api/)
+and [GPG requirements](https://central.sonatype.org/publish/requirements/gpg/)
+at action time. Portal fields and response shapes can change; this checklist
+records required invariants rather than copying an unstable JSON schema.
+
+### Approval-bound candidate
+
+Before any upload, record and independently compare:
+
+- a stable project version strictly greater than `0.1.2`; its annotated `vVERSION` tag
+  object OID, raw-object size and SHA-256; its peeled commit and tree; and the
+  public `main` commit from which that tag was created;
+- the successful release-evidence workflow identity and file SHA-256, run ID,
+  `run_attempt` and `head_sha`, plus every evidence artifact ID, digest and flat
+  filename allowlist, all bound to that peeled commit; also record the exact
+  source checkout and clean-tree result;
+- the generated POM coordinates and required project, license, developer and
+  SCM metadata; Gradle Module Metadata; main, sources and Javadoc JARs; direct
+  and aggregate CycloneDX JSON/XML SBOMs; supply-chain policy result; and the
+  exact name, size and SHA-256 of every reviewed file;
+- the source and Javadoc JAR contents, first-party package namespace, notices,
+  and absence of credentials, private paths, generated local state and
+  unrelated artifacts; and
+- Central Portal namespace ownership showing `io.github.ym0506` as verified.
+
+Any mismatch creates a new candidate. Do not repair an already uploaded or
+published coordinate in place. Later upload, validation and Publish checks bind
+to the immutable tag, peeled commit, tree and workflow run; unrelated later
+development may advance `main`.
+
+### Signing and local staging
+
+The release signature uses the reviewed protected OpenPGP primary key selected
+by its full uppercase fingerprint. Keep the private key and passphrase in a
+protected maintainer-controlled GnuPG home; let `gpg-agent` request the
+passphrase. Never store private-key material, passphrases or Central
+credentials in Git, Gradle properties, shell history, command output, CI logs
+or artifacts. Shell tracing must remain disabled. Recording the public primary
+fingerprint and verified signature status in the private release receipt is
+expected.
+
+Central's current GPG requirements require the signing-capable primary key and
+do not accept a signing subkey. Therefore the command below selects the exact
+reviewed 40-hex primary fingerprint with `!`. If that official rule changes,
+review the new rule before changing the release procedure.
+
+CI may generate an ephemeral throwaway key only to test signing configuration.
+That key and its signatures are test data, are never uploaded or retained as
+artifacts, and are not release evidence.
+
+From a fresh detached checkout of the reviewed tag, use a new private staging
+parent and the checked-in Wrapper:
+
+```bash
+(
+set -e
+release_version=REPLACE_WITH_SEPARATELY_APPROVED_LATER_STABLE_VERSION
+staging_parent=/absolute/path/to/new-private-central-staging
+reviewed_primary_fingerprint=REPLACE_WITH_40_UPPERCASE_HEX
+test ! -e "${staging_parent}"
+mkdir -m 700 "${staging_parent}"
+gpg_options="${staging_parent}/gpg-options"
+printf '%s\n' \
+  'no-auto-key-retrieve' \
+  'digest-algo SHA384' > "${gpg_options}"
+chmod 600 "${gpg_options}"
+GNUPGHOME=/absolute/path/to/protected-gnupg-home ./gradlew \
+  --no-daemon --no-build-cache --no-configuration-cache \
+  :routecontract-shardingsphere-5.5:publishMavenJavaPublicationToCentralStagingRepository \
+  -ProutecontractCentralStagingDirectory="${staging_parent}/repository" \
+  -ProutecontractCentralSigning=true \
+  -Psigning.gnupg.executable=gpg \
+  -Psigning.gnupg.optionsFile="${gpg_options}" \
+  -Psigning.gnupg.keyName="${reviewed_primary_fingerprint}!"
+)
+```
+
+#### Stage the reviewed CI payload bytes without rebuilding
+
+This is an alternative to rebuilding the payloads in the command above. Start
+with another fresh detached checkout if that command has already run.
+
+For the final candidate, use the five payloads retained by the exact tagged
+Linux/Temurin release-evidence run. A local JDK can generate different Javadoc
+bytes. In a fresh detached checkout of that same tag, first verify the downloaded
+Actions artifact digest and each payload's name, size and SHA-256 against the
+reviewed five-payload manifest. Copy those exact bytes into the publication's
+expected output locations:
+
+```bash
+release_version=REPLACE_WITH_REVIEWED_TAG_VERSION
+reviewed_payload_directory=/absolute/path/to/reviewed-five-payloads
+release_module=routecontract-shardingsphere-5.5
+release_base="${release_module}-${release_version}"
+test ! -e "${release_module}/build"
+mkdir -p "${release_module}/build/libs" \
+  "${release_module}/build/publications/mavenJava"
+for suffix in .jar -sources.jar -javadoc.jar; do
+  cp "${reviewed_payload_directory}/${release_base}${suffix}" \
+    "${release_module}/build/libs/${release_base}${suffix}"
+done
+cp "${reviewed_payload_directory}/${release_base}.pom" \
+  "${release_module}/build/publications/mavenJava/pom-default.xml"
+cp "${reviewed_payload_directory}/${release_base}.module" \
+  "${release_module}/build/publications/mavenJava/module.json"
+```
+
+Recheck all five seeded files against the same reviewed manifest before
+signing. Add these exclusions to the signed local-staging command above:
+
+```bash
+  -x :routecontract-shardingsphere-5.5:jar \
+  -x :routecontract-shardingsphere-5.5:sourcesJar \
+  -x :routecontract-shardingsphere-5.5:javadocJar \
+  -x :routecontract-shardingsphere-5.5:generatePomFileForMavenJavaPublication \
+  -x :routecontract-shardingsphere-5.5:generateMetadataFileForMavenJavaPublication
+```
+
+First add `--dry-run` and require exactly `signMavenJavaPublication` followed by
+`publishMavenJavaPublicationToCentralStagingRepository`. Then run the identical
+command without `--dry-run`, while the staging repository is still absent.
+Do not add `clean`, `assemble` or `check` to this signing invocation. Use `-x`;
+setting a generator's `enabled` flag to false can omit its publication artifact.
+
+After staging, compare each seeded and staged payload's size and SHA-256 with
+the reviewed CI bytes. A successful Gradle exit alone is insufficient: require
+the existing schema-1 bundle builder and verifier to validate the exact 55-file
+staging inventory, all checksums, five SHA-384 primary-key signatures and the
+30-entry upload bundle. These checks also reject missing stronger checksum
+sidecars if Gradle's `org.gradle.internal.publish.checksums.insecure` property is
+enabled or a checksum write fails. No payload hash mismatch may be repaired by
+replacing the approved manifest with locally regenerated hashes.
+
+This flow was exercised with Gradle 8.14.4, macOS JDK 17.0.15, synthetic supplied
+payloads and a disposable test key: only the two signing/publication tasks ran,
+all five seeded and staged bytes matched, no classes/Javadoc output was created,
+and the existing 55-file/30-entry verification passed. This is local fixture
+evidence; final CI payloads and protected-key signatures still need their own
+checks.
+
+Before upload, recheck the official list of Central-supported keyservers and
+distribute the exact public primary key to one currently supported server. In a
+fresh empty private `GNUPGHOME`, receive/import it from that same server using
+only read-only retrieval, then require the exact reviewed uppercase 40-hex
+primary fingerprint and a signing-capable, current, nonexpired and nonrevoked
+primary key. Stop if any condition or retrieval fails.
+
+Confirm the staged version equals `${release_version}`. Reject symlinks,
+special files, nested surprises, unexpected names and files outside the one
+coordinate. Recompute every checksum over its named staged file and compare the
+result, then use only the fresh keyring above to verify every detached signature
+against the reviewed primary fingerprint. Compare the POM, Gradle Module
+Metadata and three JAR bytes with the approval-bound evidence. Gradle
+repository-level `maven-metadata.xml` is local bookkeeping and is not part of
+the version upload bundle.
+
+The direct and aggregate SBOMs and supply-chain policy result remain
+evidence-only files: bind their exact names, sizes and bytes to the private
+candidate receipt, but exclude them from the Central bundle. If a future
+publication design intentionally adds any of them as Maven artifacts, review
+that change first and include them in the upload allowlist and public readback.
+
+### Credential-free deterministic upload bundle
+
+After the signed staging tree and public-key-only verification home pass the
+checks above, use `scripts/prepare-central-upload-bundle.py`. The script has no
+HTTP client, Portal credential input, signing operation or publication mode. It
+only reads one local Gradle Maven staging repository, a separately reviewed
+payload manifest and a public-key-only GnuPG home, then creates a deterministic
+ZIP plus a path-free receipt in a new absent output directory.
+All file and directory arguments must be absolute normalized canonical paths;
+the tool rejects a symlink in any argument's existing path.
+Manifest, staging, tool, bundle, receipt and created output files must each be
+regular files with exactly one hard link. Repository traversal stays anchored
+to opened directories with `O_NOFOLLOW` and compares directory identities
+before and after every read. The output directory is mode `0700`; its two files
+are mode `0600`. A write, readback or descriptor-close failure closes every
+descriptor it can and fails without any failure-time rename, unlink or directory
+removal. The new output directory may therefore remain partial at the requested
+path and must be inspected and removed manually before a fresh attempt. This
+conservative rule prevents cleanup races from deleting or replacing unrelated
+objects.
+Secret-material names in the public GnuPG home fail even when they are symlink
+aliases or dangling links.
+The tool exports the exact verified public key into a tool-created private,
+public-only temporary GnuPG home and uses that snapshot for every signature
+check, so signature verification does not reopen the caller's keyring.
+
+The reviewed payload manifest is a strict canonical JSON document with schema
+version `1`, the exact `io.github.ym0506.routecontract` group,
+`routecontract-shardingsphere-5.5` artifact, one stable SemVer strictly greater
+than `0.1.2`, and exactly five lexicographically ordered payload records. Each
+record has only `name`, `size` and `sha256`. The five records are the POM,
+Gradle Module Metadata, main JAR, sources JAR and Javadoc JAR. The manifest must
+be produced and approved as part of the approval-bound candidate; the bundle
+tool never creates or edits it and does not turn computed staging hashes into
+approval. Use the separate five-payload candidate artifact retained by the
+tagged workflow and review its exact Gradle Module Metadata bytes. The
+`v0.1.2` release evidence does not retain these bytes and cannot be substituted.
+
+The upload ZIP contains exactly 30 regular files under the one Maven version
+path:
+
+- the five reviewed payloads;
+- one detached ASCII-armored primary-key signature for each payload; and
+- `.md5`, `.sha1`, `.sha256` and `.sha512` sidecars for each payload.
+
+The local Gradle staging tree also contains four checksum sidecars for each
+`.asc` file and artifact-level `maven-metadata.xml` plus four checksums. The tool
+requires that exact local-only inventory, verifies every checksum and detached
+signature, and excludes those 25 files from the upload ZIP. Signature sidecars
+do not need checksums, and repository-level metadata is local publication
+bookkeeping rather than version payload. Any other file, directory, symlink or
+special file fails closed.
+
+The ZIP uses lexicographic entry order, stored entries, the fixed ZIP epoch,
+regular mode `0644`, no directory entries, no archive comment and no extra
+fields. For identical signed staging bytes and reviewed manifest, its bytes and
+SHA-256 are identical. The receipt is canonical sorted JSON and binds the exact
+manifest bytes, tool bytes, coordinate, primary fingerprint, ZIP name, byte
+count, SHA-256 and every entry name, size and SHA-256. It explicitly records
+that credentials, upload, validation, Publish, public readback and availability
+are outside its scope.
+
+Use a fresh GnuPG home containing only the independently retrieved public key.
+The tool rejects secret-key material and verifies exactly one SHA-384 detached
+signature per payload from the expected 40-character uppercase primary
+fingerprint. It never retrieves a key or follows a network path.
+
+```bash
+python3 -I scripts/prepare-central-upload-bundle.py build \
+  --repository /absolute/path/to/new-private-central-staging/repository \
+  --reviewed-payload-manifest /absolute/path/to/reviewed-payloads.json \
+  --public-gpg-home /absolute/path/to/fresh-public-only-gnupg-home \
+  --expected-primary-fingerprint REPLACE_WITH_40_UPPERCASE_HEX \
+  --output-directory /absolute/path/to/new-private-central-bundle
+
+python3 -I scripts/prepare-central-upload-bundle.py verify \
+  --repository /absolute/path/to/new-private-central-staging/repository \
+  --bundle /absolute/path/to/new-private-central-bundle/routecontract-shardingsphere-5.5-VERSION-central-upload.zip \
+  --receipt /absolute/path/to/new-private-central-bundle/routecontract-shardingsphere-5.5-VERSION-central-upload-receipt.json \
+  --reviewed-payload-manifest /absolute/path/to/reviewed-payloads.json \
+  --public-gpg-home /absolute/path/to/fresh-public-only-gnupg-home \
+  --expected-primary-fingerprint REPLACE_WITH_40_UPPERCASE_HEX
+```
+
+The receipt is local bundle evidence only. Independently compare its reviewed
+manifest binding, tag, commit, tree, workflow run, release evidence and public
+key facts with the approval-bound candidate before recording upload intent.
+Never pass the bundle to a network client merely because this verifier succeeds.
+The CLI success marker uses the version and both SHA-256 values returned by the
+same completed build or verification operation; it never reopens those paths to
+construct a later attestation.
+
+### Portal upload, validation and publication
+
+1. Create one exact upload bundle containing only the reviewed Maven version
+   payload, each payload's detached signature and required payload checksum
+   sidecars. Record its SHA-256 and filename allowlist in a private receipt that
+   contains no credential.
+2. Upload once as `USER_MANAGED`, never automatic publication. Record an
+   upload-intent entry before the request and then the returned deployment ID
+   and observed result without editing earlier receipt entries.
+3. Wait for Portal validation. A maintainer must inspect the exact deployment
+   ID, namespace, version, component files, signatures and reported errors,
+   and compare downloadable candidate bytes with the local reviewed bundle.
+4. Record publish intent, then issue one explicit Publish action for that exact
+   validated deployment. Do not use a retrying client for upload or Publish.
+5. If an upload or Publish times out, loses its response, or otherwise has an
+   ambiguous result, do not repeat the mutation. Reconcile only with read-only
+   status, deployment listing and byte-download checks. Record the observed
+   state; if the outcome cannot be proved, stop and make no availability
+   claim.
+
+Central credentials must never be stored or logged; supply them only as
+action-time inputs and do not print them. Authenticated HTTP requests must use
+the exact `central.sonatype.com` HTTPS origin and must not follow redirects.
+Remove the credential from the environment immediately after the action.
+
+### Public readback and availability claim
+
+After Portal reports publication, wait for the coordinate to appear through
+the official public Maven Central repository. Fetch the exact POM, Gradle
+metadata, main/sources/Javadoc JARs and other published version files without
+authentication and compare them byte-for-byte with the reviewed staged
+payload. A Portal success response alone is not public-availability evidence.
+
+For the single-artifact stable `0.1.x` line from `0.1.3` onwards, run the
+[public byte readback](docs/public-release-central-verification.md) against the
+reviewed signed bundle. It verifies all 30 public files and only then emits
+`consumer-receipt.json`. Run both [independent public consumers](docs/public-release-consumers.md)
+from the clean reviewed source checkout using that receipt:
+
+```bash
+python3 -I scripts/verify-public-gradle-release-consumer.py \
+  --receipt /absolute/path/to/consumer-receipt.json \
+  --evidence-directory /absolute/path/to/new-public-gradle-evidence
+
+python3 -I scripts/verify-public-maven-release-consumer.py \
+  --receipt /absolute/path/to/consumer-receipt.json \
+  --java-home "$JAVA_HOME" \
+  --evidence-directory /absolute/path/to/new-public-maven-evidence
+```
+
+Each command creates its own absent cache and copied consumer outside the
+checkout, pins the first-party bytes to the receipt, and requires three real
+MySQL tests plus the shared CLI assertions. Consumers must not use
+`mavenLocal()`, a file repository, a project
+dependency, a composite build, an authenticated deployment endpoint or an old
+cache. Claim Maven Central availability only after both unauthenticated byte
+readback and both fresh-cache consumers pass. A missing version or failed
+consumer remains unverified; local staging or fixture-only success cannot
+substitute for either public run.
+
+Published Central coordinates are immutable. If any published byte, metadata,
+signature or verification result is wrong, preserve the evidence, stop using
+that version, fix the cause and release a higher stable version with a new
+tag, tree, CI run, signatures and deployment. Never delete and reuse the
+version.
 
 ## Known supply-chain boundaries
 

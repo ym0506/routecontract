@@ -20,10 +20,10 @@
   },
   "database": {
     "ecosystem": "Maven",
-    "generation": "1787253515001981",
-    "lastModified": "2026-08-20T19:18:35.128Z",
-    "sha256": "16b3d790e7a304193924285b5cbf65f672a9ab6efe32339d7bc7fa9dd1d7b46f",
-    "size": 10090910,
-    "url": "https://osv-vulnerabilities.storage.googleapis.com/Maven/all.zip?generation=1787253515001981"
+    "generation": "1788523358826365",
+    "lastModified": "2026-09-04T12:02:38.956Z",
+    "sha256": "bc2546e64b47af11125e1c35a07ef66afa28716de2cf48f28bf50aa66a0fcf7d",
+    "size": 10285259,
+    "url": "https://osv-vulnerabilities.storage.googleapis.com/Maven/all.zip?generation=1788523358826365"
   }
 }

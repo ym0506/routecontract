@@ -17,7 +17,7 @@ jobs:
   build-and-sbom:
     name: Java 17 / MySQL integration / SBOM
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 40
 
     steps:
       - name: Check out source
@@ -26,7 +26,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up JDK 17
-        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
         with:
           distribution: temurin
           java-version: '17.0.20+101'
@@ -70,6 +70,41 @@ jobs:
           architecture: x64
           check-latest: false
 
+      - name: Install exact Apache Maven 3.9.14
+        shell: bash
+        timeout-minutes: 10
+        run: |
+          set -euo pipefail
+          maven_archive="${RUNNER_TEMP}/apache-maven-3.9.14-bin.tar.gz"
+          maven_home="${RUNNER_TEMP}/apache-maven-3.9.14"
+          maven_url="https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.14/apache-maven-3.9.14-bin.tar.gz"
+          expected_sha512="d50af8ab5e6005b46a07f0ce9d3719e67cfdf898da988a84871304cd59fb1af0fef2f99dea709e6e66f21f732f905979b5c2dce6b6860406f60a70e84d9cf0b8"
+
+          test ! -e "${maven_archive}"
+          test ! -L "${maven_archive}"
+          test ! -e "${maven_home}"
+          test ! -L "${maven_home}"
+          curl --disable --proto '=https' --tlsv1.2 --fail --location \
+            --silent --show-error --retry 3 --connect-timeout 15 --max-time 300 \
+            --remove-on-error \
+            --max-filesize 20971520 \
+            --output "${maven_archive}" \
+            "${maven_url}"
+          printf '%s  %s\n' "${expected_sha512}" "${maven_archive}" \
+            | sha512sum --check --strict
+          tar --extract --gzip --file "${maven_archive}" --directory "${RUNNER_TEMP}"
+          test -d "${maven_home}"
+          test ! -L "${maven_home}"
+          test -f "${maven_home}/bin/mvn"
+          test ! -L "${maven_home}/bin/mvn"
+          test -x "${maven_home}/bin/mvn"
+          maven_version="$("${maven_home}/bin/mvn" -version 2>&1)"
+          printf '%s\n' "${maven_version}" | grep -Fqx \
+            'Apache Maven 3.9.14 (996c630dbc656c76214ce58821dcc58be960875b)'
+          printf '%s\n' "${maven_version}" | grep -Eq '^Java version: 17\.'
+          printf 'MAVEN_HOME=%s\n' "${maven_home}" >> "${GITHUB_ENV}"
+          printf '%s\n' "${maven_home}/bin" >> "${GITHUB_PATH}"
+
       - name: Install checksum-locked report-package test dependencies
         shell: bash
         run: |
@@ -96,8 +131,326 @@ jobs:
           ./gradlew --no-daemon --no-build-cache clean check assemble
           validateOfficialCycloneDxSbom
 
+      - name: Verify printed Gradle and Maven installation configuration
+        shell: bash
+        timeout-minutes: 12
+        run: |
+          set -euo pipefail
+          local_repository="${RUNNER_TEMP}/routecontract-local-v012"
+          consumer_work="${RUNNER_TEMP}/routecontract-local-install-consumers"
+          python -I scripts/install-local.py --repository "${local_repository}"
+          python -I scripts/verify-local-install-consumers.py \
+            --repository "${local_repository}" --work-dir "${consumer_work}"
+
+      - name: Smoke-test local Maven Central staging and signing
+        shell: bash
+        run: |
+          set -euo pipefail
+          smoke_root="${RUNNER_TEMP}/routecontract-central-smoke"
+          source_root="${smoke_root}/source"
+          gnupg_home="${smoke_root}/gnupg"
+          public_gnupg_home="${smoke_root}/public-gnupg"
+          ambient_gnupg_home="${smoke_root}/ambient-gnupg"
+          gnupg_options="${smoke_root}/gpg-options"
+          test ! -e "${smoke_root}"
+          mkdir -p \
+            "${source_root}" "${gnupg_home}" "${public_gnupg_home}" \
+            "${ambient_gnupg_home}"
+          chmod 700 \
+            "${smoke_root}" "${source_root}" "${gnupg_home}" \
+            "${public_gnupg_home}" "${ambient_gnupg_home}"
+          printf '%s\n' \
+            'no-auto-key-retrieve' \
+            'digest-algo SHA384' > "${gnupg_options}"
+          printf '%s\n' \
+            'no-auto-key-retrieve' \
+            'digest-algo SHA512' > "${gnupg_home}/gpg.conf"
+          chmod 600 "${gnupg_options}" "${gnupg_home}/gpg.conf"
+          git archive --format=tar HEAD | tar -xf - -C "${source_root}"
+
+          export GNUPGHOME="${ambient_gnupg_home}"
+          gpg --homedir "${gnupg_home}" --options "${gnupg_options}" \
+            --batch --pinentry-mode loopback --passphrase '' \
+            --quick-generate-key \
+            'RouteContract CI signing smoke <ci-signing-smoke@example.invalid>' \
+            rsa2048 sign 0
+          fingerprint="$(
+            gpg --homedir "${gnupg_home}" --options "${gnupg_options}" \
+              --batch --with-colons --fixed-list-mode --fingerprint \
+              --list-secret-keys | awk -F: '$1 == "fpr" { print $10; exit }'
+          )"
+          [[ "${fingerprint}" =~ ^[0-9A-F]{40}$ ]]
+          public_key="${smoke_root}/signing-public-key.asc"
+          gpg --homedir "${gnupg_home}" --options "${gnupg_options}" \
+            --batch --armor --export "${fingerprint}" > "${public_key}"
+          gpg --no-options --homedir "${public_gnupg_home}" --batch \
+            --import "${public_key}"
+
+          set_version() {
+            local next_version="$1"
+            local build_file="${source_root}/build.gradle"
+            test "$(grep -Ec "^version = '[^']+'$" "${build_file}")" = '1'
+            perl -0pi -e \
+              "s/^version = '[^']+'\$/version = '${next_version}'/m" \
+              "${build_file}"
+            grep -Fxq "version = '${next_version}'" "${build_file}"
+          }
+
+          publish_task=':routecontract-shardingsphere-5.5:publishMavenJavaPublicationToCentralStagingRepository'
+          for blocked_version in 0.1.0 0.1.1-SNAPSHOT; do
+            set_version "${blocked_version}"
+            blocked_repository="${smoke_root}/blocked-${blocked_version}"
+            if (
+              cd "${source_root}"
+              ./gradlew --no-daemon --no-build-cache --no-configuration-cache \
+                "${publish_task}" \
+                -ProutecontractCentralStagingDirectory="${blocked_repository}" \
+                -ProutecontractCentralSigning=true \
+                -Psigning.gnupg.executable=gpg \
+                -Psigning.gnupg.homeDir="${gnupg_home}" \
+                -Psigning.gnupg.optionsFile="${gnupg_options}" \
+                -Psigning.gnupg.keyName="${fingerprint}!"
+            ) > "${smoke_root}/blocked.log" 2>&1; then
+              echo "signed staging unexpectedly accepted ${blocked_version}" >&2
+              exit 1
+            fi
+            grep -Fq \
+              'signed Central staging requires a stable SemVer of at least 0.1.1' \
+              "${smoke_root}/blocked.log"
+            test ! -e "${blocked_repository}"
+          done
+
+          smoke_version='0.1.1'
+          set_version "${smoke_version}"
+          existing_repository="${smoke_root}/existing-repository"
+          symlink_target="${smoke_root}/symlink-target"
+          symlink_repository="${smoke_root}/symlink-repository"
+          mkdir "${existing_repository}" "${symlink_target}"
+          ln -s "${symlink_target}" "${symlink_repository}"
+          for rejected_repository in "${existing_repository}" "${symlink_repository}"; do
+            if (
+              cd "${source_root}"
+              ./gradlew --no-daemon --no-build-cache --no-configuration-cache \
+                "${publish_task}" \
+                -ProutecontractCentralStagingDirectory="${rejected_repository}" \
+                -ProutecontractCentralSigning=false
+            ) > "${smoke_root}/existing.log" 2>&1; then
+              echo "staging unexpectedly accepted an existing path" >&2
+              exit 1
+            fi
+            grep -Fq 'Central staging repository must be a new absent path' \
+              "${smoke_root}/existing.log"
+          done
+          test -z "$(find "${existing_repository}" "${symlink_target}" -mindepth 1 -print -quit)"
+
+          unsigned_repository="${smoke_root}/unsigned-repository"
+          signed_repository="${smoke_root}/signed-repository"
+          (
+            cd "${source_root}"
+            ./gradlew --no-daemon --no-build-cache --no-configuration-cache \
+              "${publish_task}" \
+              -ProutecontractCentralStagingDirectory="${unsigned_repository}" \
+              -ProutecontractCentralSigning=false
+            ./gradlew --no-daemon --no-build-cache --no-configuration-cache \
+              "${publish_task}" \
+              -ProutecontractCentralStagingDirectory="${signed_repository}" \
+              -ProutecontractCentralSigning=true \
+              -Psigning.gnupg.executable=gpg \
+              -Psigning.gnupg.homeDir="${gnupg_home}" \
+              -Psigning.gnupg.optionsFile="${gnupg_options}" \
+              -Psigning.gnupg.keyName="${fingerprint}!"
+          )
+
+          verify_checksum() {
+            local file="$1"
+            local algorithm="$2"
+            local expected actual
+            test -f "${file}.${algorithm}"
+            expected="$(tr -d '\r\n' < "${file}.${algorithm}")"
+            actual="$("${algorithm}sum" "${file}" | awk '{print $1}')"
+            test "${actual}" = "${expected}"
+          }
+
+          coordinate="io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/${smoke_version}"
+          unsigned_version="${unsigned_repository}/${coordinate}"
+          signed_version="${signed_repository}/${coordinate}"
+          artifact="routecontract-shardingsphere-5.5-${smoke_version}"
+          artifacts=(
+            "${artifact}.jar" "${artifact}-sources.jar" "${artifact}-javadoc.jar"
+            "${artifact}.pom" "${artifact}.module"
+          )
+          python3 - "${unsigned_version}" "${signed_version}" \
+            "${artifacts[@]}" <<'PY'
+          import os
+          import sys
+          from pathlib import Path
+
+          checksums = ("md5", "sha1", "sha256", "sha512")
+          bases = sys.argv[3:]
+
+          def inspect_version(path_value, signed):
+              path = Path(path_value)
+              if path.is_symlink() or not path.is_dir():
+                  raise SystemExit(f"version directory is not a real directory: {path}")
+              actual = set()
+              with os.scandir(path) as entries:
+                  for entry in entries:
+                      if entry.is_symlink() or not entry.is_file(follow_symlinks=False):
+                          raise SystemExit(f"non-regular version payload: {entry.path}")
+                      actual.add(entry.name)
+              required = set()
+              optional = set()
+              for base in bases:
+                  required.add(base)
+                  required.update(f"{base}.{algorithm}" for algorithm in checksums)
+                  if signed:
+                      required.add(f"{base}.asc")
+                      # Signature checksums are optional local Gradle output,
+                      # not a Central semantic requirement.
+                      optional.update(
+                          f"{base}.asc.{algorithm}" for algorithm in checksums
+                      )
+              missing = required - actual
+              unexpected = actual - required - optional
+              if missing or unexpected:
+                  raise SystemExit(
+                      f"version inventory mismatch: missing={sorted(missing)} "
+                      f"unexpected={sorted(unexpected)}"
+                  )
+
+          inspect_version(sys.argv[1], False)
+          inspect_version(sys.argv[2], True)
+          PY
+          for name in "${artifacts[@]}"; do
+            unsigned_file="${unsigned_version}/${name}"
+            signed_file="${signed_version}/${name}"
+            test -f "${unsigned_file}"
+            test -f "${signed_file}"
+            cmp -s "${unsigned_file}" "${signed_file}"
+            test ! -e "${unsigned_file}.asc"
+            test -f "${signed_file}.asc"
+            signature_status="$(
+              gpg --homedir "${gnupg_home}" --options "${gnupg_options}" \
+                --batch --status-fd 1 \
+                --verify "${signed_file}.asc" "${signed_file}" 2>/dev/null
+            )"
+            printf '%s\n' "${signature_status}" |
+              awk -v expected_fingerprint="${fingerprint}" '
+                $1 == "[GNUPG:]" && $2 == "VALIDSIG" {
+                    count += 1
+                    if (NF != 12 || $3 != expected_fingerprint) {
+                        invalid = 1
+                    }
+                    if ($10 != "9" || $12 != expected_fingerprint) {
+                        invalid = 1
+                    }
+                }
+                END { exit !(count == 1 && invalid != 1) }
+              '
+            for algorithm in md5 sha1 sha256 sha512; do
+              verify_checksum "${unsigned_file}" "${algorithm}"
+              verify_checksum "${signed_file}" "${algorithm}"
+              if test -e "${signed_file}.asc.${algorithm}"; then
+                verify_checksum "${signed_file}.asc" "${algorithm}"
+              fi
+            done
+          done
+
+          bundle_version='0.1.3'
+          set_version "${bundle_version}"
+          bundle_repository="${smoke_root}/bundle-repository"
+          (
+            cd "${source_root}"
+            ./gradlew --no-daemon --no-build-cache --no-configuration-cache \
+              "${publish_task}" \
+              -ProutecontractCentralStagingDirectory="${bundle_repository}" \
+              -ProutecontractCentralSigning=true \
+              -Psigning.gnupg.executable=gpg \
+              -Psigning.gnupg.homeDir="${gnupg_home}" \
+              -Psigning.gnupg.optionsFile="${gnupg_options}" \
+              -Psigning.gnupg.keyName="${fingerprint}!"
+          )
+          bundle_coordinate="io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/${bundle_version}"
+          bundle_version_directory="${bundle_repository}/${bundle_coordinate}"
+          bundle_artifact="routecontract-shardingsphere-5.5-${bundle_version}"
+          bundle_artifacts=(
+            "${bundle_artifact}.jar" "${bundle_artifact}-sources.jar"
+            "${bundle_artifact}-javadoc.jar" "${bundle_artifact}.pom"
+            "${bundle_artifact}.module"
+          )
+
+          # This manifest is a synthetic CI fixture, not release approval evidence.
+          smoke_manifest="${smoke_root}/reviewed-payloads.json"
+          python3 - "${bundle_version_directory}" "${smoke_manifest}" \
+            "${bundle_version}" "${bundle_artifacts[@]}" <<'PY'
+          import hashlib
+          import json
+          import sys
+          from pathlib import Path
+
+          version_directory = Path(sys.argv[1])
+          manifest = Path(sys.argv[2])
+          version = sys.argv[3]
+          names = sorted(sys.argv[4:])
+          payloads = []
+          for name in names:
+              payload = (version_directory / name).read_bytes()
+              payloads.append(
+                  {
+                      "name": name,
+                      "size": len(payload),
+                      "sha256": hashlib.sha256(payload).hexdigest(),
+                  }
+              )
+          value = {
+              "schemaVersion": 1,
+              "coordinate": {
+                  "groupId": "io.github.ym0506.routecontract",
+                  "artifactId": "routecontract-shardingsphere-5.5",
+                  "version": version,
+              },
+              "payloads": payloads,
+          }
+          manifest.write_text(
+              json.dumps(value, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+          bundle_output="${smoke_root}/bundle-output"
+          bundle="${bundle_output}/${bundle_artifact}-central-upload.zip"
+          receipt="${bundle_output}/${bundle_artifact}-central-upload-receipt.json"
+          python3 -I "${source_root}/scripts/prepare-central-upload-bundle.py" build \
+            --repository "${bundle_repository}" \
+            --reviewed-payload-manifest "${smoke_manifest}" \
+            --public-gpg-home "${public_gnupg_home}" \
+            --expected-primary-fingerprint "${fingerprint}" \
+            --output-directory "${bundle_output}"
+          python3 -I "${source_root}/scripts/prepare-central-upload-bundle.py" verify \
+            --repository "${bundle_repository}" \
+            --bundle "${bundle}" \
+            --receipt "${receipt}" \
+            --reviewed-payload-manifest "${smoke_manifest}" \
+            --public-gpg-home "${public_gnupg_home}" \
+            --expected-primary-fingerprint "${fingerprint}"
+
       - name: Verify same-checkout Maven publication consumer
         run: ./scripts/verify-standalone-consumer.sh
+
+      - name: Verify isolated Maven 3.9.14 onboarding pilot
+        shell: bash
+        timeout-minutes: 20
+        run: |
+          set -euo pipefail
+          docker info >/dev/null
+          mkdir -p build/ci-evidence
+          summary="build/ci-evidence/maven-pilot-summary.txt"
+          partial="${summary}.partial"
+          test ! -e "${summary}"
+          test ! -e "${partial}"
+          ./scripts/verify-maven-pilot.sh > "${partial}"
+          mv "${partial}" "${summary}"
+          cat "${summary}"
 
       - name: Record runner environment
         if: always()
@@ -112,6 +465,7 @@ jobs:
             java -fullversion
             java -version
             ./gradlew --version
+            mvn -version
             docker version --format 'docker_client={{.Client.Version}} docker_server={{.Server.Version}}'
           } > build/ci-evidence/environment.txt 2>&1
 
@@ -125,6 +479,14 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
+      - name: Show the real-MySQL contract review
+        if: always()
+        shell: bash
+        run: |
+          if test -f examples/mysql/build/routecontract-demo/review.md; then
+            cat examples/mysql/build/routecontract-demo/review.md >> "${GITHUB_STEP_SUMMARY}"
+          fi
+
       - name: Upload test and environment evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -133,8 +495,432 @@ jobs:
           path: |
             routecontract-shardingsphere-5.5/build/test-results/test/*.xml
             examples/mysql/build/test-results/test/*.xml
+            examples/mysql/build/routecontract-demo/review.md
+            examples/mysql/build/routecontract-demo/review.json
             examples/standalone-consumer/build/test-results/test/*.xml
             build/ci-evidence/environment.txt
+            build/ci-evidence/maven-pilot-summary.txt
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Upload installed consumer evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: routecontract-installed-consumer-evidence-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/routecontract-local-install-consumers/summary.json
+            ${{ runner.temp }}/routecontract-local-install-consumers/*/build/test-results/test/*.xml
+            ${{ runner.temp }}/routecontract-local-install-consumers/*/target/surefire-reports/*.xml
+          if-no-files-found: warn
+          retention-days: 90
+
+  maven-java21-pilot:
+    name: Maven 3.9.14 / JDK 21 / MySQL assisted pilot
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up exact JDK 21
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: '21.0.12+8.0.LTS'
+          architecture: x64
+          verify-signature: true
+
+      - name: Verify the active JDK 21 runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(java -XshowSettings:properties -version 2>&1 \
+            | sed -n 's/^[[:space:]]*java.specification.version = //p')" = '21'
+
+      - name: Set up exact Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12.14'
+          architecture: x64
+          check-latest: false
+
+      - name: Install exact Apache Maven 3.9.14
+        shell: bash
+        timeout-minutes: 10
+        run: |
+          set -euo pipefail
+          maven_archive="${RUNNER_TEMP}/apache-maven-3.9.14-bin.tar.gz"
+          maven_home="${RUNNER_TEMP}/apache-maven-3.9.14"
+          maven_url="https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.14/apache-maven-3.9.14-bin.tar.gz"
+          expected_sha512="d50af8ab5e6005b46a07f0ce9d3719e67cfdf898da988a84871304cd59fb1af0fef2f99dea709e6e66f21f732f905979b5c2dce6b6860406f60a70e84d9cf0b8"
+
+          test ! -e "${maven_archive}"
+          test ! -L "${maven_archive}"
+          test ! -e "${maven_home}"
+          test ! -L "${maven_home}"
+          curl --disable --proto '=https' --tlsv1.2 --fail --location \
+            --silent --show-error --retry 3 --connect-timeout 15 --max-time 300 \
+            --remove-on-error \
+            --max-filesize 20971520 \
+            --output "${maven_archive}" \
+            "${maven_url}"
+          printf '%s  %s\n' "${expected_sha512}" "${maven_archive}" \
+            | sha512sum --check --strict
+          tar --extract --gzip --file "${maven_archive}" --directory "${RUNNER_TEMP}"
+          test -d "${maven_home}"
+          test ! -L "${maven_home}"
+          test -f "${maven_home}/bin/mvn"
+          test ! -L "${maven_home}/bin/mvn"
+          test -x "${maven_home}/bin/mvn"
+          maven_version="$("${maven_home}/bin/mvn" -version 2>&1)"
+          printf '%s\n' "${maven_version}" | grep -Fqx \
+            'Apache Maven 3.9.14 (996c630dbc656c76214ce58821dcc58be960875b)'
+          printf '%s\n' "${maven_version}" | grep -Eq '^Java version: 21\.'
+          printf 'MAVEN_HOME=%s\n' "${maven_home}" >> "${GITHUB_ENV}"
+          printf '%s\n' "${maven_home}/bin" >> "${GITHUB_PATH}"
+
+      - name: Verify the full Java 21 Maven/MySQL compatibility cell
+        shell: bash
+        timeout-minutes: 20
+        run: |
+          set -euo pipefail
+          docker info >/dev/null
+          mkdir -p build/ci-evidence
+          summary="build/ci-evidence/maven-pilot-java21-summary.txt"
+          partial="${summary}.partial"
+          test ! -e "${summary}"
+          test ! -e "${partial}"
+          ./scripts/verify-maven-pilot.sh --java 21 > "${partial}"
+          mv "${partial}" "${summary}"
+          cat "${summary}"
+          grep -Fxq \
+            'ROUTECONTRACT_MAVEN_FIXTURE graph=PASS shardingsphere=5.5.3 jackson=2.18.9 calcite=1.42.0 minidev=2.4.x forbiddenDependencies=ABSENT' \
+            "${summary}"
+          grep -Fxq \
+            'ROUTECONTRACT_MAVEN_FIXTURE assetSource=anonymous-github-release maven=3.9.14 java=21 compiledClassMajor=65 mysql=8.4.11' \
+            "${summary}"
+          grep -Fxq \
+            'ROUTECONTRACT_MAVEN_FIXTURE evidenceBoundary=SAME_CHECKOUT_NOT_EXTERNAL_ADOPTION humanApprovedBaseline=false' \
+            "${summary}"
+          grep -Fxq '[ROUTECONTRACT MAVEN PILOT VERIFIED]' "${summary}"
+          {
+            echo "revision=${GITHUB_SHA}"
+            java -fullversion
+            java -version
+            mvn -version
+            docker version --format 'docker_client={{.Client.Version}} docker_server={{.Server.Version}}'
+          } > build/ci-evidence/maven-pilot-java21-environment.txt 2>&1
+
+      - name: Upload Java 21 Maven/MySQL evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: routecontract-maven-java21-evidence-${{ github.sha }}
+          path: |
+            build/ci-evidence/maven-pilot-java21-summary.txt
+            build/ci-evidence/maven-pilot-java21-environment.txt
+          if-no-files-found: warn
+          retention-days: 90
+
+  gradle-kotlin-pilot:
+    name: Gradle Kotlin DSL / MySQL assisted pilot
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: '17.0.20+101'
+          architecture: x64
+          verify-signature: true
+
+      - name: Verify exact Temurin runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "${JAVA_HOME}/release"
+          test "$(grep -Ec '^IMPLEMENTOR_VERSION=' "${JAVA_HOME}/release")" = '1'
+          test "$(grep -Ec '^JAVA_RUNTIME_VERSION=' "${JAVA_HOME}/release")" = '1'
+          grep -Fxq 'IMPLEMENTOR_VERSION="Temurin-17.0.20.1+1"' "${JAVA_HOME}/release"
+          grep -Fxq 'JAVA_RUNTIME_VERSION="17.0.20.1+1"' "${JAVA_HOME}/release"
+          test "$("${JAVA_HOME}/bin/java" -fullversion 2>&1)" = \
+            'openjdk full version "17.0.20.1+1"'
+          test -f "${JAVA_HOME}/jmods/jdk.javadoc.jmod"
+          test ! -L "${JAVA_HOME}/jmods/jdk.javadoc.jmod"
+          test "$(sha256sum "${JAVA_HOME}/jmods/jdk.javadoc.jmod" | awk '{print $1}')" = \
+            '4fd0541eb01b08f79a280484ec11569d87cebdf2b90a5e5b4bff695732d049ea'
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12.14'
+          architecture: x64
+          check-latest: false
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          dependency-graph: disabled
+          validate-wrappers: true
+
+      - name: Download and verify exact v0.1.2 assets once
+        shell: bash
+        run: |
+          set -euo pipefail
+          asset_dir="${RUNNER_TEMP}/routecontract-v0.1.2-assets"
+          evidence_dir="${RUNNER_TEMP}/routecontract-gradle-kotlin-evidence"
+          release_base="https://github.com/ym0506/routecontract/releases/download/v0.1.2"
+          expected_index_sha256="7849adf417f0170b08d01902b023e8b328d8796f7c2aeacc471eb7acf8e2b217"
+          assets=(
+            SHA256SUMS
+            routecontract-0.1.2-source.zip
+            routecontract-shardingsphere-5.5-0.1.2.jar
+            routecontract-shardingsphere-5.5-0.1.2-sources.jar
+            routecontract-shardingsphere-5.5-0.1.2-javadoc.jar
+            routecontract-shardingsphere-5.5.pom
+            routecontract-shardingsphere-5.5-cyclonedx.json
+            routecontract-shardingsphere-5.5-cyclonedx.xml
+            routecontract-aggregate-cyclonedx.json
+            routecontract-aggregate-cyclonedx.xml
+            supply-chain-evidence.json
+            test-summary.txt
+          )
+
+          test ! -e "${asset_dir}"
+          test ! -L "${asset_dir}"
+          test ! -e "${evidence_dir}"
+          mkdir "${asset_dir}" "${evidence_dir}"
+          for asset in "${assets[@]}"; do
+            curl --disable --proto '=https' --tlsv1.2 --fail --location \
+              --silent --show-error --retry 3 --retry-all-errors \
+              --connect-timeout 15 --max-time 300 \
+              --remove-on-error --max-filesize 5242880 \
+              --output "${asset_dir}/${asset}" \
+              "${release_base}/${asset}"
+          done
+          test "$(find "${asset_dir}" -mindepth 1 -maxdepth 1 -type f \
+            | wc -l | tr -d ' ')" = "${#assets[@]}"
+          test -z "$(find "${asset_dir}" -mindepth 1 -maxdepth 1 \
+            ! -type f -print -quit)"
+          test "$(sha256sum "${asset_dir}/SHA256SUMS" | awk '{print $1}')" = \
+            "${expected_index_sha256}"
+          {
+            printf '%s  SHA256SUMS\n' "${expected_index_sha256}"
+            cat "${asset_dir}/SHA256SUMS"
+          } > "${evidence_dir}/release-assets.sha256"
+          (
+            cd "${asset_dir}"
+            sha256sum --check --strict "${evidence_dir}/release-assets.sha256"
+          ) | tee "${evidence_dir}/release-assets-check.txt"
+          printf 'ROUTECONTRACT_RELEASE_ASSETS=%s\n' "${asset_dir}" >> "${GITHUB_ENV}"
+          printf 'ROUTECONTRACT_KOTLIN_EVIDENCE=%s\n' "${evidence_dir}" \
+            >> "${GITHUB_ENV}"
+
+      - name: Verify complete Gradle Kotlin assisted-pilot lane
+        shell: bash
+        timeout-minutes: 40
+        run: |
+          set -euo pipefail
+          docker info >/dev/null
+          summary="${ROUTECONTRACT_KOTLIN_EVIDENCE}/summary.txt"
+          partial="${summary}.partial"
+          provenance="${ROUTECONTRACT_KOTLIN_EVIDENCE}/provenance.json"
+          test -z "$(git status --porcelain=v1 --untracked-files=all \
+            --ignore-submodules=none)"
+          set +e
+          ./scripts/verify-gradle-kotlin-pilot.sh \
+            --release-assets-dir "${ROUTECONTRACT_RELEASE_ASSETS}" \
+            --provenance-output "${provenance}" \
+            > "${partial}" 2>&1
+          status="$?"
+          set -e
+          cat "${partial}"
+          if test "${status}" != 0; then
+            exit "${status}"
+          fi
+          mv "${partial}" "${summary}"
+          test -s "${provenance}"
+          test "$(grep -c '^ROUTECONTRACT_GRADLE_KOTLIN_VERIFY ' \
+            "${summary}")" = 1
+          python3 -I scripts/validate-gradle-kotlin-pilot-provenance.py \
+            "${provenance}" > "${ROUTECONTRACT_KOTLIN_EVIDENCE}/receipt-validation.txt"
+          (
+            cd "${ROUTECONTRACT_KOTLIN_EVIDENCE}"
+            sha256sum summary.txt provenance.json receipt-validation.txt \
+              > verifier-evidence.sha256
+          )
+          test -z "$(git status --porcelain=v1 --untracked-files=all \
+            --ignore-submodules=none)"
+
+      - name: Upload Gradle Kotlin pilot evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: routecontract-gradle-kotlin-evidence-${{ github.sha }}
+          path: ${{ runner.temp }}/routecontract-gradle-kotlin-evidence/
+          if-no-files-found: warn
+          retention-days: 90
+
+  gradle95-build-shape:
+    name: Gradle 9.5.1 / JDK 21 to 17 / Boot BOM isolation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up exact pilot JDK 17
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: '17.0.20+101'
+          architecture: x64
+          verify-signature: true
+
+      - name: Capture exact JDK 17 home before switching runtimes
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(java -XshowSettings:properties -version 2>&1 \
+            | sed -n 's/^[[:space:]]*java.specification.version = //p')" = '17'
+          printf 'ROUTECONTRACT_BUILD_SHAPE_JDK17_HOME=%s\n' "${JAVA_HOME}" \
+            >> "${GITHUB_ENV}"
+
+      - name: Set up exact Gradle and target JDK 21
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: '21.0.12+8.0.LTS'
+          architecture: x64
+          verify-signature: true
+
+      - name: Verify the active JDK 21 runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(java -XshowSettings:properties -version 2>&1 \
+            | sed -n 's/^[[:space:]]*java.specification.version = //p')" = '21'
+          test -x "${ROUTECONTRACT_BUILD_SHAPE_JDK17_HOME}/bin/java"
+          test "$("${ROUTECONTRACT_BUILD_SHAPE_JDK17_HOME}/bin/java" \
+            -XshowSettings:properties -version 2>&1 \
+            | sed -n 's/^[[:space:]]*java.specification.version = //p')" = '17'
+
+      - name: Set up exact Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12.14'
+          architecture: x64
+          check-latest: false
+
+      - name: Validate both Gradle wrappers
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          dependency-graph: disabled
+          validate-wrappers: true
+
+      - name: Download and verify exact v0.1.2 assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          asset_dir="${RUNNER_TEMP}/routecontract-gradle95-assets"
+          evidence_dir="${RUNNER_TEMP}/routecontract-gradle95-evidence"
+          release_base="https://github.com/ym0506/routecontract/releases/download/v0.1.2"
+          expected_index_sha256="7849adf417f0170b08d01902b023e8b328d8796f7c2aeacc471eb7acf8e2b217"
+          assets=(
+            SHA256SUMS
+            routecontract-0.1.2-source.zip
+            routecontract-shardingsphere-5.5-0.1.2.jar
+            routecontract-shardingsphere-5.5-0.1.2-sources.jar
+            routecontract-shardingsphere-5.5-0.1.2-javadoc.jar
+            routecontract-shardingsphere-5.5.pom
+            routecontract-shardingsphere-5.5-cyclonedx.json
+            routecontract-shardingsphere-5.5-cyclonedx.xml
+            routecontract-aggregate-cyclonedx.json
+            routecontract-aggregate-cyclonedx.xml
+            supply-chain-evidence.json
+            test-summary.txt
+          )
+          test ! -e "${asset_dir}"
+          test ! -e "${evidence_dir}"
+          mkdir "${asset_dir}" "${evidence_dir}"
+          for asset in "${assets[@]}"; do
+            curl --disable --proto '=https' --tlsv1.2 --fail --location \
+              --silent --show-error --retry 3 --retry-all-errors \
+              --connect-timeout 15 --max-time 300 \
+              --remove-on-error --max-filesize 5242880 \
+              --output "${asset_dir}/${asset}" "${release_base}/${asset}"
+          done
+          test "$(sha256sum "${asset_dir}/SHA256SUMS" | awk '{print $1}')" = \
+            "${expected_index_sha256}"
+          {
+            printf '%s  SHA256SUMS\n' "${expected_index_sha256}"
+            cat "${asset_dir}/SHA256SUMS"
+          } > "${evidence_dir}/release-assets.sha256"
+          (
+            cd "${asset_dir}"
+            sha256sum --check --strict "${evidence_dir}/release-assets.sha256"
+          ) > "${evidence_dir}/release-assets-check.txt"
+          printf 'ROUTECONTRACT_BUILD_SHAPE_ASSETS=%s\n' "${asset_dir}" \
+            >> "${GITHUB_ENV}"
+          printf 'ROUTECONTRACT_BUILD_SHAPE_EVIDENCE=%s\n' "${evidence_dir}" \
+            >> "${GITHUB_ENV}"
+
+      - name: Verify the two exact build-shape cells
+        shell: bash
+        timeout-minutes: 25
+        run: |
+          set -euo pipefail
+          summary="${ROUTECONTRACT_BUILD_SHAPE_EVIDENCE}/summary.txt"
+          partial="${summary}.partial"
+          receipt="${ROUTECONTRACT_BUILD_SHAPE_EVIDENCE}/build-shape-receipt.json"
+          test -z "$(git status --porcelain=v1 --untracked-files=all \
+            --ignore-submodules=none)"
+          set +e
+          ./scripts/verify-gradle95-build-shape.sh \
+            --release-assets-dir "${ROUTECONTRACT_BUILD_SHAPE_ASSETS}" \
+            --jdk17-home "${ROUTECONTRACT_BUILD_SHAPE_JDK17_HOME}" \
+            --receipt-output "${receipt}" > "${partial}" 2>&1
+          status="$?"
+          set -e
+          cat "${partial}"
+          if test "${status}" != 0; then
+            exit "${status}"
+          fi
+          mv "${partial}" "${summary}"
+          test -s "${receipt}"
+          test "$(grep -c '^ROUTECONTRACT_GRADLE95_BUILD_SHAPE_VERIFY ' \
+            "${summary}")" = 1
+          python3 -I scripts/validate-gradle95-build-shape-receipt.py \
+            "${receipt}" \
+            > "${ROUTECONTRACT_BUILD_SHAPE_EVIDENCE}/receipt-validation.txt"
+          (
+            cd "${ROUTECONTRACT_BUILD_SHAPE_EVIDENCE}"
+            sha256sum summary.txt build-shape-receipt.json receipt-validation.txt \
+              > verifier-evidence.sha256
+          )
+          test -z "$(git status --porcelain=v1 --untracked-files=all \
+            --ignore-submodules=none)"
+
+      - name: Upload Gradle 9.5.1 build-shape evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: routecontract-gradle95-build-shape-${{ github.sha }}
+          path: ${{ runner.temp }}/routecontract-gradle95-evidence/
           if-no-files-found: warn
           retention-days: 90
 

@@ -3,9 +3,79 @@
 RouteContract follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html) for public version identifiers.
 
-## Unreleased
+## [0.1.3] - 2026-09-07
 
-No changes yet.
+Published as an immutable [GitHub Release](https://github.com/ym0506/routecontract/releases/tag/v0.1.3)
+for exact ShardingSphere-JDBC 5.5.3, and now available as a Maven Central test dependency.
+See the [GitHub release verification](docs/evidence/release-0.1.3-github.md) and
+[Central publication and consumer evidence](docs/evidence/release-0.1.3-central.md).
+
+### Added
+
+- Add the `ManifestReviewReport` and `ManifestReviewCli` API for
+  Markdown/JSON comparison reports and an explicit failing CI exit code.
+- Retain exact five-payload Central candidate evidence, including Gradle Module
+  Metadata, separately from the established GitHub Release asset set.
+- Add an inactive-by-default Gradle Kotlin DSL assisted-pilot lane with exact `v0.1.2` local
+  repository provenance, real MySQL verification, missing-baseline failure, and a separate
+  synthetic match check.
+- Add a separate Java 21 Maven compatibility cell that compiles the checked-in fixture to classfile
+  major 65 and runs its full exact ShardingSphere-JDBC 5.5.3/MySQL 8.4.11 candidate workflow.
+
+### Boundaries
+
+- The fixture, CI result, and synthetic match are maintainer-side verification only. They do not
+  establish a human-approved external baseline, adoption, production use, or endorsement.
+- Java 21 evidence is limited to the checked-in same-checkout Maven fixture. The external assisted
+  runner and starter remain Java 17 only. This 5.5.3-specific adapter does not add support for any
+  other ShardingSphere version; the audited 5.5.0/5.5.2 variants require separate adapters.
+
+## [0.1.2]
+
+This section records the narrow recovery source delta prepared for stable version `0.1.2`. Its
+presence alone does not prove that an annotated tag, public immutable non-prerelease Release,
+same-revision release-evidence run, Maven Central publication, or external-user result exists.
+
+### Changed
+
+- Refresh the pinned official Maven OSV database generation after the `v0.1.1` exact-tag evidence
+  attempt stopped before Release creation because its pinned official generation returned HTTP 404.
+- Advance only the release-target source identity and its corresponding README declarations from
+  `0.1.1` / `v0.1.1` to `0.1.2` / `v0.1.2`; runtime and API behavior are unchanged.
+
+### Boundaries
+
+- The annotated `v0.1.1` tag is preserved and unmoved, and no `v0.1.1` GitHub Release was published.
+- This recovery refreshes the external OSV evidence input and source identity only; it makes no claim
+  of Maven Central availability, external users, adoption, production use, or endorsement.
+
+## [0.1.1]
+
+This section records the source delta prepared for stable version `0.1.1`. Its presence alone does not prove
+that an annotated tag, public immutable non-prerelease Release, same-revision release-evidence run,
+Maven Central publication, or external-user result exists.
+
+### Added
+
+- Add a neutral stable-feedback form and assisted-pilot onboarding for one representative operation.
+- Add isolated Gradle Groovy and Maven 3.9.14 first-integration lanes, provenance verification, and
+  checked-in Quarkiverse compatibility-pilot reproduction materials.
+- Add local Maven publication metadata, signing/staging checks, and maintainer procedures for a future
+  Maven Central deployment.
+
+### Changed
+
+- Harden CI, release-evidence, SBOM, supply-chain, isolated-consumer, and submission-package checks,
+  and surface the public demonstration and onboarding paths in both READMEs.
+
+### Boundaries
+
+- Runtime/API behavior and the supported Java 17, ShardingSphere-JDBC 5.5.3, synchronous non-batch
+  `PreparedStatement` boundary are unchanged from `0.1.0`.
+- The immutable `v0.1.0` GitHub Release remains the verified public installation path until any
+  `0.1.1` registry publication passes anonymous postpublication verification.
+- Feedback, pilot fixtures, CI success, and maintainer-local reproduction do not by themselves establish
+  external adoption, production use, or endorsement.
 
 ## [0.1.0]
 

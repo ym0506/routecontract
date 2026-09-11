@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "projectRoot": "/absolute/path/to/clean-target-repository",
+  "expectedTargetCommit": "0000000000000000000000000000000000000000",
+  "expectedPomSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "owningModule": "integration-tests",
+  "reactorSelector": "integration-tests/pom.xml",
+  "profileOffTest": "com.example.orders.OrderQueryIntegrationTest#existingBusinessAssertionPasses",
+  "profileOffTestShape": "single-non-parameterized",
+  "pilotPackage": "com.example.orders",
+  "pilotClass": "OrderQueryRouteContractTest",
+  "pilotMethod": "capturesCandidate",
+  "operationId": "orders.find-by-user-id",
+  "reviewedMaxAttempts": 1,
+  "reviewedMaxDataSources": 1,
+  "dataSourceAliases": [
+    {
+      "observedName": "ds_0",
+      "alias": "orders-shard-a"
+    },
+    {
+      "observedName": "ds_1",
+      "alias": "orders-shard-b"
+    }
+  ],
+  "shardingSphereScope": "test",
+  "javaVersion": "17",
+  "mavenVersion": "3.9.14",
+  "shardingSphereVersion": "5.5.3",
+  "routeContractVersion": "0.1.2"
+}

@@ -1,0 +1,161 @@
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
+import java.security.MessageDigest
+
+plugins { id 'java' }
+
+def routeContractGroup = 'io.github.ym0506.routecontract'
+def moduleName = 'routecontract-shardingsphere-5.5'
+def routeContractVersion = providers.gradleProperty('routecontractVersion').get()
+if (!(routeContractVersion ==~ /0\.1\.(0|[1-9][0-9]*)/)
+        || routeContractVersion.length() > 32
+        || new BigInteger(routeContractVersion.tokenize('.').last()) < 3) {
+    throw new GradleException('Expected strict stable 0.1.x version from 0.1.3 onwards')
+}
+if (providers.gradleProperty('routecontractRepository').present) {
+    throw new GradleException('Public release consumer rejects supplied repository paths and URLs')
+}
+def expectedHashes = ['jar', 'pom', 'module'].collectEntries { extension ->
+    def value = providers.gradleProperty("routecontractSha256.${extension}").get()
+    if (!(value ==~ /[0-9a-f]{64}/)) { throw new GradleException('Expected reviewed payload SHA-256') }
+    [(extension): value]
+}
+repositories {
+    maven {
+        name = 'anonymousMavenCentral'
+        url = uri('https://repo.maven.apache.org/maven2')
+        metadataSources { gradleMetadata(); mavenPom() }
+    }
+}
+configurations { reviewedReleaseMetadata { transitive = false } }
+dependencyLocking { lockAllConfigurations(); lockMode = LockMode.STRICT }
+dependencies {
+    testImplementation "${routeContractGroup}:routecontract-shardingsphere-5.5:${routeContractVersion}"
+    testImplementation platform('com.fasterxml.jackson:jackson-bom:2.18.9')
+    testImplementation('org.apache.shardingsphere:shardingsphere-jdbc:5.5.3') {
+        exclude group: 'org.locationtech.jts.io', module: 'jts-io-common'
+    }
+
+    testRuntimeOnly 'org.apache.shardingsphere:shardingsphere-infra-url-absolutepath:5.5.3'
+    testRuntimeOnly 'org.apache.shardingsphere:shardingsphere-infra-data-source-pool-hikari:5.5.3'
+    testRuntimeOnly 'org.apache.shardingsphere:shardingsphere-standalone-mode-repository-memory:5.5.3'
+    testRuntimeOnly 'org.apache.shardingsphere:shardingsphere-sharding-core:5.5.3'
+    testRuntimeOnly 'org.apache.shardingsphere:shardingsphere-parser-sql-engine-sql92:5.5.3'
+    testRuntimeOnly 'org.apache.shardingsphere:shardingsphere-parser-sql-engine-mysql:5.5.3'
+    testRuntimeOnly 'org.apache.shardingsphere:shardingsphere-authority-simple:5.5.3'
+    testRuntimeOnly 'com.zaxxer:HikariCP:6.2.1'
+    testRuntimeOnly('com.mysql:mysql-connector-j:26.7.0') {
+        exclude group: 'com.google.protobuf', module: 'protobuf-java'
+    }
+
+    testImplementation platform('org.junit:junit-bom:5.14.3')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.testcontainers:junit-jupiter:1.21.4'
+    testImplementation 'org.testcontainers:mysql:1.21.4'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testRuntimeOnly 'org.slf4j:slf4j-simple:2.0.17'
+
+    constraints {
+        testImplementation('net.hydromatic:aggdesigner-algorithm:6.1') {
+            version { strictly '6.1' }
+            because 'Align with the versions managed by the Apache ShardingSphere 5.5.3 parent POM'
+        }
+        testImplementation('net.minidev:json-smart:2.4.10') {
+            version { strictly '2.4.10' }
+            because 'Align with the versions managed by the Apache ShardingSphere 5.5.3 parent POM'
+        }
+        testImplementation('net.minidev:accessors-smart:2.4.9') {
+            version { strictly '2.4.9' }
+            because 'Align with the versions managed by the Apache ShardingSphere 5.5.3 parent POM'
+        }
+        testImplementation('org.apache.commons:commons-compress:1.26.0') {
+            because 'Testcontainers 1.21.4 requests a version with published denial-of-service advisories'
+        }
+        testImplementation('org.apache.calcite:calcite-core:1.42.0') {
+            version { strictly '1.42.0' }
+            because "Apache ShardingSphere 5.5.3 requests Calcite 1.40.0; align to the advisory-fixed 1.42.0 release verified by RouteContract's MySQL integration and standalone-consumer tests"
+        }
+        testImplementation('org.apache.calcite:calcite-linq4j:1.42.0') {
+            version { strictly '1.42.0' }
+            because "Apache ShardingSphere 5.5.3 requests Calcite 1.40.0; align to the advisory-fixed 1.42.0 release verified by RouteContract's MySQL integration and standalone-consumer tests"
+        }
+    }
+}
+
+dependencies {
+    reviewedReleaseMetadata "${routeContractGroup}:${moduleName}:${routeContractVersion}@pom"
+    reviewedReleaseMetadata "${routeContractGroup}:${moduleName}:${routeContractVersion}@module"
+}
+[configurations.testCompileClasspath, configurations.testRuntimeClasspath].each { configuration ->
+    configuration.resolutionStrategy.eachDependency { details ->
+        if (details.requested.group == 'org.apache.shardingsphere' && details.requested.version != '5.5.3') {
+            throw new GradleException("Unexpected ShardingSphere request: ${details.requested}")
+        }
+        if (details.requested.group == routeContractGroup
+                && (details.requested.name != moduleName || details.requested.version != routeContractVersion)) {
+            throw new GradleException("Unexpected first-party request: ${details.requested}")
+        }
+    }
+}
+def sha256 = { source -> MessageDigest.getInstance('SHA-256').digest(source.bytes).encodeHex().toString() }
+def verifyResolution = tasks.register('verifyPublicResolution') {
+    doLast {
+        def metadata = configurations.reviewedReleaseMetadata.resolvedConfiguration.resolvedArtifacts
+        def expectedMetadata = ['pom', 'module'].collect { "${moduleName}-${routeContractVersion}.${it}" }.sort()
+        if (metadata.collect { it.file.name }.sort() != expectedMetadata) {
+            throw new GradleException('Both reviewed public POM and module payloads must resolve')
+        }
+        metadata.each { item ->
+            if (item.moduleVersion.id.toString() != "${routeContractGroup}:${moduleName}:${routeContractVersion}"
+                    || sha256(item.file) != expectedHashes[item.extension]) {
+                throw new GradleException('Reviewed public metadata SHA-256 differs')
+            }
+        }
+        def graphEvidence = []
+        [configurations.testCompileClasspath, configurations.testRuntimeClasspath].each { configuration ->
+            def artifacts = configuration.resolvedConfiguration.resolvedArtifacts
+            def selected = artifacts.findAll { it.moduleVersion.id.group == routeContractGroup }
+            if (selected.size() != 1 || selected[0].moduleVersion.id.toString()
+                    != "${routeContractGroup}:${moduleName}:${routeContractVersion}"
+                    || selected[0].file.name != "${moduleName}-${routeContractVersion}.jar"
+                    || sha256(selected[0].file) != expectedHashes.jar) {
+                throw new GradleException('Expected sole reviewed release JAR in compile and runtime graphs')
+            }
+            def result = configuration.incoming.resolutionResult
+            def ids = result.allComponents.collect { it.id }
+            if (ids.any { !(it instanceof ModuleComponentIdentifier) && it != result.root.id }) {
+                throw new GradleException('Independent public consumer rejects project/source components')
+            }
+            def modules = ids.findAll { it instanceof ModuleComponentIdentifier }
+            def sharding = modules.findAll { it.group == 'org.apache.shardingsphere' }
+            if (sharding.empty || sharding.any { it.version != '5.5.3' }
+                    || !sharding.any { it.module == 'shardingsphere-jdbc' }) {
+                throw new GradleException('Expected exact ShardingSphere-JDBC 5.5.3 whole-group graph')
+            }
+            graphEvidence.addAll(modules.collect { "${configuration.name} ${it}" }.sort())
+        }
+        def report = layout.buildDirectory.file('routecontract-consumer-evidence/resolved-graph.txt').get().asFile
+        report.parentFile.mkdirs()
+        report.text = graphEvidence.join('\n') + '\n'
+        println "ROUTECONTRACT_PUBLIC_RELEASE_GRAPH_VERIFIED version=${routeContractVersion} runtime=5.5.3 payloads=3"
+    }
+}
+java { toolchain { languageVersion = JavaLanguageVersion.of(17) } }
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 17
+    options.compilerArgs += ['-Xlint:all', '-Werror']
+}
+tasks.named('compileTestJava') { dependsOn verifyResolution }
+tasks.named('test') {
+    dependsOn verifyResolution
+    useJUnitPlatform()
+    maxParallelForks = 1
+    systemProperty 'api.version', '1.44'
+    systemProperty 'routecontract.version', routeContractVersion
+    systemProperty "routecontract.sha256.${moduleName}", expectedHashes.jar
+    systemProperty 'routecontract.evidenceDirectory', layout.buildDirectory.dir('routecontract-consumer-evidence').get().asFile.absolutePath
+    doFirst {
+        systemProperty 'routecontract.consumerClasspath', configurations.testRuntimeClasspath.asPath
+    }
+    testLogging { events 'passed', 'skipped', 'failed'; exceptionFormat = 'full'; showStandardStreams = true }
+}

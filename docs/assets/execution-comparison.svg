@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="460" viewBox="0 0 1120 460" role="img" aria-labelledby="title description">
+  <title id="title">Same result. Different execution.</title>
+  <desc id="description">Illustration of the verified ShardingSphere-JDBC 5.5.3 and MySQL fixture. Both queries return the same business row. The equality baseline observes one physical JDBC execution attempt and one data-source alias; the same-value range candidate observes two attempts and two aliases. The strict manifest rejects the candidate with RCM201 and RCM202. Counts are hook observations, not table counts or performance measurements.</desc>
+  <rect width="1120" height="460" rx="18" fill="#faf9f6"/>
+  <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" fill="#182c38">
+    <text x="40" y="55" font-size="30" font-weight="700">Same result. Different execution.</text>
+    <text x="40" y="84" font-size="18" fill="#526672">One verified MySQL fixture · ShardingSphere-JDBC 5.5.3</text>
+    <rect x="40" y="110" width="500" height="250" rx="12" fill="#fff" stroke="#d5e2e8"/>
+    <rect x="580" y="110" width="500" height="250" rx="12" fill="#fff" stroke="#e5d8be"/>
+    <rect x="40" y="110" width="500" height="7" rx="3" fill="#277da1"/>
+    <rect x="580" y="110" width="500" height="7" rx="3" fill="#d99b32"/>
+    <text x="65" y="153" font-size="22" font-weight="700">BASELINE</text>
+    <text x="605" y="153" font-size="22" font-weight="700">CANDIDATE</text>
+    <text x="65" y="182" font-size="18" fill="#526672">Equality predicate</text>
+    <text x="605" y="182" font-size="18" fill="#526672">Same-value range predicate</text>
+    <path d="M65 202H515 M605 202H1055" stroke="#e5e9ec"/>
+    <text x="65" y="232" font-size="18" fill="#526672">Business result</text>
+    <text x="605" y="232" font-size="18" fill="#526672">Business result</text>
+    <text x="515" y="232" text-anchor="end" font-size="18" font-weight="600">Same fixture row</text>
+    <text x="1055" y="232" text-anchor="end" font-size="18" font-weight="600">Same fixture row</text>
+    <text x="65" y="271" font-size="18" fill="#526672">Observed attempts</text>
+    <text x="605" y="271" font-size="18" fill="#526672">Observed attempts</text>
+    <text x="65" y="329" font-size="49" font-weight="700" fill="#277da1">1</text>
+    <text x="605" y="329" font-size="49" font-weight="700" fill="#9a620b">2</text>
+    <text x="315" y="271" font-size="18" fill="#526672">Observed aliases</text>
+    <text x="855" y="271" font-size="18" fill="#526672">Observed aliases</text>
+    <text x="315" y="329" font-size="49" font-weight="700" fill="#277da1">1</text>
+    <text x="855" y="329" font-size="49" font-weight="700" fill="#9a620b">2</text>
+    <rect x="40" y="380" width="1040" height="52" rx="10" fill="#182c38"/>
+    <text x="65" y="414" font-size="20" fill="#fff" font-weight="600">STRICT CONTRACT · POLICY_VIOLATION</text>
+    <text x="1055" y="414" text-anchor="end" font-size="22" fill="#ffcd7a" font-weight="700">RCM201 · RCM202</text>
+  </g>
+</svg>

@@ -2,7 +2,7 @@
 """Create the fixed, privacy-minimized RouteContract release test summary.
 
 The release workflow already fails when ``clean check`` fails.  This script
-adds a second, deliberately narrow gate: all and only the seven expected JUnit
+adds a second, deliberately narrow gate: all and only the eight expected JUnit
 suites must be present, every expected test must have run, and every result
 count must be zero.  Only suite identities and aggregate counts are emitted;
 JUnit timestamps, hostnames, durations, test names and captured output are not
@@ -31,6 +31,7 @@ EXPECTED_SUITES = {
     "io.github.ym0506.routecontract.example.ObservedExecutionRegressionCorpusMySqlTest": 7,
     "io.github.ym0506.routecontract.example.OperationCorrelationMySqlTest": 5,
     "io.github.ym0506.routecontract.internal.ShardingSphere553PreflightTest": 3,
+    "io.github.ym0506.routecontract.manifest.ManifestReviewReportTest": 10,
     "io.github.ym0506.routecontract.manifest.ObservedExecutionManifestTest": 17,
 }
 

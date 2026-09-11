@@ -1,0 +1,57 @@
+name: Question or user feedback
+description: Ask about fit or share an experience. No installation or public repository required.
+title: "[feedback] "
+labels: [community, needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A short question or experience is enough. Successful, blocked, unsupported and not-a-fit outcomes are welcome, including private-project use and questions before installation.
+
+        Keep private code and artifacts in your own environment. Do not post raw SQL, bind values, credentials, connection details, full logs or screenshots. For a vulnerability, use [private reporting](https://github.com/ym0506/routecontract/security/advisories/new).
+
+        We [record use separately from verification and permission to publish](https://github.com/ym0506/routecontract/blob/main/docs/user-feedback.md#recording-use-and-evidence). A self-report is not automatically independently verified evidence or an endorsement.
+
+  - type: textarea
+    id: result
+    attributes:
+      label: What would you like to ask or share?
+      description: Your current verification method, a recent change, a blocker, or a result. A few sentences are enough.
+      placeholder: We check returned rows after SQL changes. Can this help check whether physical execution also changed?
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Versions and build tool, if known
+      description: Optional. No employer, hostname, private path or repository URL is needed.
+      placeholder: ShardingSphere-JDBC 5.5.3; Java 17; Maven; RouteContract 0.1.3
+
+  - type: dropdown
+    id: integration_stage
+    attributes:
+      label: Stage reached, if you tried the tool
+      description: Optional. Select what you actually did; the stages are not mandatory prerequisites for feedback.
+      options:
+        - Read documentation or asked about fit
+        - Ran a RouteContract demo
+        - Captured a candidate from one operation in my own project
+        - Passed a test with reviewed Java execution assertions in my own project
+        - Used a target-approved baseline and successfully checked a candidate in my own project
+        - Used the check again on a later real project change
+        - Stopped or not sure
+
+  - type: textarea
+    id: public_evidence
+    attributes:
+      label: Public links, if you want to share them
+      description: Optional. Leave blank for a private project. A test, review or CI link can help explain the result; publishing evidence is not required for use or feedback.
+
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Public-information check
+      options:
+        - label: I checked that my text and linked material do not expose private source, credentials, raw SQL, bind values, connection details, customer data, private topology, full logs, screenshots or unnecessary personal information.
+          required: true

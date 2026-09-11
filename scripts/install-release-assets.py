@@ -566,13 +566,14 @@ def declared_java_package(tokens: list[str], path: str) -> str | None:
 
 
 def expected_java_package(path: str) -> str | None:
-    """Derive a Java package from a conventional Gradle source path."""
+    """Derive a Java package from a reviewed conventional source path."""
     parts = PurePosixPath(path).parts
     matches: list[int] = []
     for index in range(len(parts) - 2):
         if parts[index : index + 3] in (
             ("src", "main", "java"),
             ("src", "test", "java"),
+            ("src", "routeContractPilot", "java"),
         ):
             matches.append(index)
     if not matches:

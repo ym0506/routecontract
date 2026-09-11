@@ -7,7 +7,12 @@ plugins {
 }
 
 group = 'io.github.ym0506.routecontract'
-version = '0.1.0'
+version = '0.1.3'
+
+def testJavaVersion = providers.gradleProperty('routecontractTestJavaVersion').getOrElse('17')
+if (!(testJavaVersion in ['17', '21'])) {
+    throw new GradleException('routecontractTestJavaVersion must be 17 or 21')
+}
 
 def apacheLicenseChoice = {
     License license = new License()
@@ -55,6 +60,13 @@ subprojects {
         }
 
         tasks.withType(Test).configureEach {
+            javaLauncher = javaToolchains.launcherFor {
+                languageVersion = JavaLanguageVersion.of(Integer.parseInt(testJavaVersion))
+            }
+            doFirst {
+                logger.lifecycle("RouteContract test JVM: ${javaLauncher.get().executablePath} "
+                        + "(Java ${javaLauncher.get().metadata.languageVersion}); library compilation remains Java 17")
+            }
             useJUnitPlatform()
             testLogging {
                 events 'passed', 'skipped', 'failed'

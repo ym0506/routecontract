@@ -1,0 +1,669 @@
+# RouteContract detailed guide
+
+Detailed reproduction and compatibility notes. For the current installation and short example, start with the [English README](../README.md).
+
+[한국어](../README.ko.md) | [English](../README.md) | [처음 오셨나요? / Start here](../docs/start-here.md) | [Roadmap](../docs/product-roadmap.md)
+
+[![CI](https://github.com/ym0506/routecontract/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ym0506/routecontract/actions/workflows/ci.yml?query=branch%3Amain)
+
+**The result can stay the same while database execution changes.**
+
+RouteContract is a Java test library that checks physical JDBC execution attempts reported by
+[ShardingSphere-JDBC](https://github.com/apache/shardingsphere)'s `SQLExecutionHook` against reviewed
+expectations. Keep your business-result assertions and check observed counts and data-source sets
+with Java assertions. A saved manifest is optional when you also want structural comparison and reports.
+
+The included MySQL example returns the same row while observed attempts grow from `1 → 2`;
+the contract rejects it with `RCM201` and `RCM202`. Review whether that change is intentional.
+
+**Supported:** Java 17 or 21 · exact ShardingSphere-JDBC 5.5.3 · synchronous non-batch `PreparedStatement`.
+Read the [execution boundary and limitations](../docs/start-here.md#도입-전에-확인할-세-가지--check-fit) before integrating.
+
+## Get started
+
+| Your goal | Start here |
+| --- | --- |
+| Understand the result without installing anything | [Read the CI report](evidence/ci-review-report-example.md) |
+| Run pass → fail → pass with the public library | [First project with 0.1.3](first-project.md) — Java 17 or 21, Maven/Gradle and Docker |
+| Try it without local Java or Docker | [Run in your own GitHub fork](first-project.md#try-in-your-browser) |
+| Apply it to an existing test | [Central dependency](#install-013), then [adapt one operation](first-project.md#adapt-one-existing-test); a JSON baseline is optional |
+| Ask about fit or share an experience | [Short feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml) — no installation or public repository required |
+
+The current public release is **0.1.3**. The first-project guide uses that release from Maven
+Central and covers direct Java assertions and optional Markdown/JSON comparison reports.
+The old 0.1.2 commands remain below in closed historical sections for reproducibility.
+Keep SQL, bind values, connection details and full logs out of public feedback.
+See [how to get help and record use](user-feedback.md).
+
+![The same order is returned while observed execution attempts and data sources rise from one to two.](assets/execution-comparison.svg)
+
+## Install 0.1.3
+
+See the [public file verification and Gradle/Maven installation results](../docs/evidence/release-0.1.3-central.md)
+and the current [Java 17/21 runtime checks](java21-runtime-acceptance.md).
+
+Add the test dependency to an existing **Java 17 or 21 / ShardingSphere-JDBC 5.5.3** project.
+Keep its ShardingSphere configuration, data-source setup and business-result assertions.
+
+Gradle Groovy / Kotlin DSL:
+
+```kotlin
+repositories { mavenCentral() }
+
+dependencies {
+    testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.3")
+}
+```
+
+Maven (add inside `<dependencies>` in `pom.xml`):
+
+```xml
+<dependency>
+  <groupId>io.github.ym0506.routecontract</groupId>
+  <artifactId>routecontract-shardingsphere-5.5</artifactId>
+  <version>0.1.3</version>
+  <scope>test</scope>
+</dependency>
+```
+
+Wrap one synchronous non-batch `PreparedStatement` operation as in the
+[usage example below](#smallest-usage-example). RouteContract neither supplies ShardingSphere nor
+forces its whole dependency graph; every ShardingSphere module in the test runtime must be exactly 5.5.3.
+
+Installing 0.1.3 does not require the historical local installer or a repository clone.
+Use the [first-project guide](first-project.md) for the current Maven and Gradle examples.
+
+## Run 0.1.3
+
+Use Java 17 or 21, Maven 3.9.x and a running Docker engine. The first run downloads dependencies
+and the MySQL image. From a new checkout:
+
+```bash
+git clone https://github.com/ym0506/routecontract.git
+cd routecontract/examples/first-project
+mvn -B test
+```
+
+Expect the exact business row and a `MATCH` report in `build/routecontract/review.md`.
+Then run the same-result range query:
+
+```bash
+mvn -B test -Droutecontract.query=range
+```
+
+This command must fail with `POLICY_VIOLATION`, `RCM201` and `RCM202` after the business
+assertion passes. A dependency, compiler or Docker failure does not demonstrate that rejection.
+Run `mvn -B test` again to restore `MATCH`. The included baseline is reviewed for this synthetic
+fixture only. See [the full guide](first-project.md) for Gradle, Java 21 selection, direct assertions
+and your own baseline review.
+
+<details>
+<summary>Historical 0.1.2 Quick Start and isolated integration tooling</summary>
+
+These commands retain their original version and verification boundary. They are not prerequisites
+for current installation. The [archived 2:54 demonstration](https://www.youtube.com/watch?v=pcgvNNxd1mM)
+also belongs to this earlier workflow.
+
+## Quick Start
+
+This MySQL demonstration is pinned to v0.1.2. To try the latest report feature first,
+use the [v0.1.3 example without Docker](../docs/ci-review-report.md#try-the-released-report-without-docker).
+
+Prerequisites are Git, Java 17, a running Docker daemon, Bash/POSIX tools, and the executable Gradle
+Wrapper. The first run may need network access for the public tag, Gradle and Maven Central
+dependencies, and the digest-pinned MySQL container image when it is not already available locally.
+
+```bash
+(
+set -euo pipefail
+source_dir="routecontract-v0.1.2"
+test ! -e "${source_dir}"
+test ! -L "${source_dir}"
+git clone --quiet --depth 1 --branch v0.1.2 --single-branch \
+  https://github.com/ym0506/routecontract.git "${source_dir}"
+test "$(git -C "${source_dir}" cat-file -t refs/tags/v0.1.2)" = tag
+test "$(git -C "${source_dir}" rev-parse refs/tags/v0.1.2)" = 6adacbe04d60b3af83d9067a14a878d26a6c90f5
+test "$(git -C "${source_dir}" rev-parse 'refs/tags/v0.1.2^{}')" = fc4fdd16c21574afa1150654ce354cf8004b138b
+test "$(git -C "${source_dir}" rev-parse HEAD)" = fc4fdd16c21574afa1150654ce354cf8004b138b
+test -z "$(git -C "${source_dir}" status --short)"
+cd "${source_dir}"
+./scripts/quickstart-demo.sh
+)
+```
+
+This command verifies the real-MySQL `1 → 2` observed-execution regression
+while the business result stays unchanged, then feeds the same candidate to
+the CI gate and checks the expected `RCM201`/`RCM202` rejection. A final
+`[ROUTECONTRACT QUICKSTART VERIFIED]`, `realMysqlDemoExit 0`,
+`intentionalCiGateExit 1`, and `quickstartExit 0` means the whole flow behaved
+as expected.
+
+<details>
+<summary>Exact exit-code and output boundary</summary>
+
+Exit `1` belongs to the intentionally rejecting inner CI gate;
+exit `0` from the quickstart means that rejection was verified. A preflight or
+verification failure exits `2`. The wrapper does not echo raw child-process
+output that could contain SQL, parameters, or connection details.
+
+</details>
+
+<details>
+<summary>v0.1.2 integration path: detailed Gradle and Maven instructions</summary>
+
+## Next step: assess a first integration
+
+After the Quick Start passes, read the support boundary and stop conditions in the
+[first real integration guide](../docs/first-integration.md), then choose one representative existing
+ShardingSphere-JDBC 5.5.3 integration test whose business assertion will remain. The guide connects
+capture → candidate → human-approved baseline → candidate check in an isolated Gradle Groovy,
+Gradle Kotlin DSL, or Maven 3.9.14 pilot. Repository-specific build isolation and human review are
+required, so no completion time is
+promised. `v0.1.2` is not published to Maven Central; the guide installs
+verified GitHub Release assets into a separate local Maven repository.
+
+### Fastest Maven path to a first candidate
+
+For a qualifying Maven repository, start with the
+[review-only starter bundle](../examples/maven-pilot/README.md#review-only-starter-bundle) instead of
+hand-writing the pilot profile and test. Bind a copy of
+[`starter.example.json`](../examples/maven-pilot/starter.example.json) to the target's clean commit,
+owning-POM SHA-256, existing Surefire test, operation identity, aliases, and budgets, then render the
+five-file review bundle from this RouteContract checkout:
+
+```bash
+python3 -I scripts/render-maven-pilot-starter.py \
+  --config /absolute/path/to/routecontract-maven-starter.json \
+  --output /absolute/path/to/new-routecontract-review-bundle
+```
+
+An authorized target maintainer must review the generated patch and apply it on a disposable
+branch, then replace only the fail-closed `fail(...)` statement containing
+`ROUTECONTRACT_STARTER_REVIEW_REQUIRED` with the existing representative operation while preserving
+its business assertion. Follow the generated `NEXT-STEPS.md` and run:
+
+```bash
+bundle_root="/absolute/path/to/new-routecontract-review-bundle"
+python3 -I scripts/run-assisted-maven-pilot.py \
+  --config "${bundle_root}/assisted-pilot.json" \
+  --expected-outcome review
+```
+
+The runner downloads Maven 3.9.14 and installs the exact `v0.1.2` assets into a private repository;
+Maven starter users do not need to run the separate installer below first. The review run must leave
+a candidate present and the approved baseline absent. This establishes a project pilot, not baseline
+approval or repeated use. An authorized target maintainer must review the exact candidate bytes and
+approve them through the repository's normal review process before running the matched check locally
+or in the team's CI. Public CI is optional for use; it can make the result independently inspectable.
+[Use and evidence are recorded separately](../docs/user-feedback.md#recording-use-and-evidence).
+
+### Gradle and manual-audit installation path
+
+For either Gradle lane, or when separately auditing the Maven repository transport, use the public
+installer below. Replace `install_root` with a new normalized
+absolute directory under a trusted existing canonical parent; its `maven` child must not be
+`~/.m2/repository` or a path below it. It needs public HTTPS network access, Bash and POSIX tools,
+`curl`, and Python 3.10 or newer, but no GitHub login, token, API call, or GitHub CLI.
+
+```bash
+(
+set -euo pipefail
+install_root="/absolute/path/to/new-routecontract-v0.1.2-install"
+helper_url="https://raw.githubusercontent.com/ym0506/routecontract/a11c5ca1df41e4a0d25d6e211dd2274e35d5b593/scripts/install-public-v0_1_2.py"
+expected_helper_size="33309"
+expected_helper_sha256="bec71208b138765bbc017589cb04ef0159e015364616e14dc19c633873b9ecb8"
+
+python3 -I -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 2)'
+test ! -e "${install_root}"
+test ! -L "${install_root}"
+mkdir -m 700 "${install_root}"
+helper="${install_root}/install-public-v0_1_2.py"
+repository_dir="${install_root}/maven"
+curl --disable --proto '=https' --proto-redir '=https' --tlsv1.2 \
+  --fail --silent --show-error --retry 3 --connect-timeout 15 --max-time 120 \
+  --max-redirs 0 --max-filesize "${expected_helper_size}" \
+  --output - "${helper_url}" | \
+  python3 -I -c '
+import os
+import sys
+
+destination = sys.argv[1]
+expected_size = int(sys.argv[2])
+payload = sys.stdin.buffer.read(expected_size + 1)
+if len(payload) != expected_size:
+    raise SystemExit(
+        f"wrapper byte count mismatch: expected {expected_size}, got {len(payload)}"
+    )
+flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+descriptor = os.open(destination, flags, 0o600)
+try:
+    os.fchmod(descriptor, 0o600)
+    view = memoryview(payload)
+    while view:
+        written = os.write(descriptor, view)
+        if written <= 0:
+            raise OSError("wrapper write made no progress")
+        view = view[written:]
+    os.fsync(descriptor)
+finally:
+    os.close(descriptor)
+' "${helper}" "${expected_helper_size}"
+test -f "${helper}"
+test ! -L "${helper}"
+actual_helper_size="$(python3 -I -c \
+  'import pathlib,sys; print(pathlib.Path(sys.argv[1]).stat().st_size)' "${helper}")"
+test "${actual_helper_size}" = "${expected_helper_size}"
+actual_helper_sha256="$(python3 -I -c \
+  'import hashlib,pathlib,sys; print(hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes()).hexdigest())' \
+  "${helper}")"
+test "${actual_helper_sha256}" = "${expected_helper_sha256}"
+python3 -I "${helper}" --repository "${repository_dir}"
+)
+```
+
+Success creates the exact
+`io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.2` coordinate with four
+payloads and eight SHA-1/SHA-256 sidecars. The commit-pinned public wrapper does not change
+immutable Release payload bytes; it invokes the fixed-hash post-tag checksum helper. The
+`2026-12-05 UTC` evidence-review expiry still applies. If any stage fails, retain all of
+`install_root` for inspection; do not repair or reuse it, and start with another new absolute path.
+If the failure reports a path-binding change, the original path may no longer name the retained
+reservation. Do not repair, delete, or reuse either the original path or any moved reservation.
+
+Important: the immutable `v0.1.2` Release body and the README stored in that tag still point to the
+`v0.1.0` onboarding path. The current `main` documentation and guide are a post-release bridge for
+consuming `v0.1.2` assets; they do not make `v0.1.2` a self-contained immutable onboarding Release.
+Each helper and verifier added after the tag is pinned to its own exact bridge-commit permalink for
+that implementation and the SHA-256 recorded in the guide.
+
+Do not read the long guide linearly. Choose one shortest supported path:
+
+- **Maven 3.9.14:** use the [review-only starter bundle](../examples/maven-pilot/README.md#review-only-starter-bundle),
+  have an authorized maintainer review and apply its inactive patch, replace the fail-closed marker
+  statement with one existing operation and business assertion, then run the generated `review`
+  command.
+- **Gradle Groovy or Kotlin DSL:** [install the pinned Release assets](../docs/first-integration.md#2-install-the-exact-v012-release-assets),
+  then choose [Gradle Groovy](../docs/first-integration.md#gradle-groovy-dsl-opt-in-lane) or
+  [Gradle Kotlin DSL](../docs/first-integration.md#gradle-kotlin-dsl-opt-in-lane).
+- Continue through the shared [representative operation](../docs/first-integration.md#3-add-one-representative-operation)
+   → [human baseline review](../docs/first-integration.md#4-review-and-approve-the-first-baseline)
+   → [CI candidate check](../docs/first-integration.md#5-run-the-candidate-check-in-ci).
+
+Maven users can still run the checked-in [two-module reference fixture](../examples/maven-pilot/README.md)
+and inspect the [manual Maven 3.9.14 opt-in profile lane](../docs/first-integration.md#maven-3914-opt-in-profile-lane)
+as an audit reference. If none of the lanes matches exactly, stop there instead of forcing a generic
+fragment into the build.
+If an authorized maintainer intentionally adapts that manual profile and its two tests instead of
+using the preferred starter, the [six-field example JSON](../examples/maven-pilot/assisted-pilot.example.json)
+and [one-command runner](../examples/maven-pilot/README.md#one-command-runner-for-an-adapted-external-maven-pilot)
+remain the manual `review` and `matched` reference path.
+
+After a first run—or after deciding that the current scope is not a fit—use the
+[short feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)
+to share a success, blocker, unsupported setup, or not-a-fit result. Do not put raw SQL, bind values,
+JDBC URLs, real topology, full logs, or other sensitive information in the public Issue.
+
+</details>
+
+</details>
+
+## Smallest usage example
+
+```java
+RouteSnapshot snapshot = RouteContract.capture("orders.find-by-user-id", () -> {
+    Order actual = orderRepository.findByUserId(3L);
+    assertEquals(201L, actual.id()); // Keep the existing functional assertion.
+});
+
+RouteAssertions.assertThat(snapshot)
+        .hasCompleteCapture()
+        .hasNoReportedExecutionFailures()
+        .hasExactlyObservedPhysicalAttempts(1)
+        .observesExactlyDataSourceNames("ds_1");
+```
+
+## Approved manifests and structural manifest diffs
+
+During one application operation, RouteContract turns the **physical JDBC execution attempts reported through `SQLExecutionHook`** into a deterministic manifest and checks per-operation budgets and structural fields. A **structural manifest diff** compares attempt counts, aliases, callback outcomes, exact rewritten-SQL fingerprints, and parameter shape; it does not decide SQL semantic equivalence or reconstruct the complete route plan.
+
+```java
+DataSourceAliases aliases = DataSourceAliases.of(Map.of(
+        "ds_0", "orders-a",
+        "ds_1", "orders-b"));
+ManifestPolicy policy = ManifestPolicy.strict(1, 1);
+
+ObservedExecutionManifest candidate = ObservedExecutionManifest.from(
+        snapshot, aliases, policy);
+
+Path approvedPath = Path.of("route-contracts/orders.find-by-user-id.json");
+Path candidatePath = Path.of("build/routecontract/orders.find-by-user-id.candidate.json");
+new ManifestStore().writeCandidate(approvedPath, candidatePath, candidate);
+
+ObservedExecutionManifest approved = new ManifestStore().read(approvedPath);
+ManifestVerificationResult result = new ManifestVerifier().verify(approved, candidate);
+ManifestAssertions.assertMatched(result); // A mismatch fails CI with stable RCM codes.
+```
+
+Writing a candidate never overwrites the approved file automatically. When a change is intentional, a person must review the diff and explicitly replace the approved baseline.
+
+[examples/manifests](../examples/manifests/README.md) contains canonical JSON from the real MySQL equality baseline and the same-result `BETWEEN` candidate, together with verifier output. The integration test regenerates these files on every run and checks byte-for-byte equality and deterministic structural manifest diffs with stable RCM codes.
+
+<details>
+<summary>Alias trust boundary and strict/budgetOnly policy details</summary>
+
+The data-source alias mapping is trusted configuration and part of the approval contract. The manifest stores caller-provided aliases, so aliases must be stable and non-sensitive. Reusing a real data-source name as its alias exposes that name. Quietly mapping a different real data source to an existing alias can hide drift. Review the mapping in version control alongside the manifest.
+
+- `ManifestPolicy.strict(...)` blocks structural signature changes, including fingerprint changes.
+- `ManifestPolicy.budgetOnly(...)` blocks changes in attempt count, data-source set, and callback outcomes, while returning signature-only changes as `REVIEW_REQUIRED`.
+- Canonical JSON excludes timestamps, UUIDs, thread assignment, raw SQL, parameter values, and exception messages. It stores data sources only as caller-provided aliases, and callers remain responsible for keeping those aliases non-sensitive.
+
+In a MySQL fixture that preserves the returned rows, one observed attempt, and
+the same data source while changing an additional filter and predicate order,
+only the fingerprint and parameter-type order drift. This is an observation
+about that fixture, not a claim that the two SQL forms are generally
+semantically equivalent.
+
+| Policy | Result for this signature-only change | Tradeoff |
+|---|---|---|
+| `strict` | `DRIFT`; blocking `RCM301`/`RCM302`; assertion fails | Forces review and approval of small rewritten-SQL structural changes, but also blocks intentional changes until the baseline is updated |
+| `budgetOnly` | `REVIEW_REQUIRED`; non-blocking `RCM301`/`RCM302`; `passesBlockingChecks=true` | Still blocks budget, data-source-set, and callback-outcome changes, but a missed manual review can allow a signature-only structural regression through CI |
+
+The `ManifestAssertions.assertMatched(result)` call above also rejects `REVIEW_REQUIRED`. A
+`budgetOnly` policy that intentionally lets signature-only review items pass CI must make that
+choice explicit with `ManifestAssertions.assertPassesBlockingChecks(result)`.
+
+</details>
+
+## Verified core scenarios
+
+| Scenario | Verified result |
+|---|---|
+| Same value, `=` → `BETWEEN` | Business row unchanged; observed attempts `1 → 2`; data sources `[ds_1] → [ds_0, ds_1]` |
+| Reduced and modified fixture inspired by public issue #38456 | JOIN and subquery both return `COUNT=1`; observed attempts are `1` and `8`, respectively; this is not claimed as a faithful reproduction of the original issue |
+| Configuration regression | Removing the table strategy keeps the attempt count and data sources unchanged but produces SQL-fingerprint drift |
+| Determinism | Across 160 captures—8 corpus cases repeated 20 times—each case produced exactly one structural signature |
+| Concurrently open caller-operation scopes | Across 20 single-attempt/multi-attempt scope pairs, no events were attributed across operations; temporal overlap of physical callbacks was neither forced nor measured |
+| Generic JDBC-tool comparison | With datasource-proxy outside ShardingSphere, callbacks stay `1 → 1`; with wrappers around physical data sources, they become `1 → 2`; RouteContract also observes `1 → 2` |
+| Isolated consumer build | In the same checkout, a standalone consumer using only the generated JAR and POM in a temporary Maven repository passed SPI auto-discovery and a MySQL execution test; this is not evidence of external adoption |
+| Isolated Maven 3.9.14 pilot | In the same checkout, a Java 17 default cell and an explicit Java 21 compatibility cell verify an inactive profile, fresh caches, a SHA-256 negative check, an exact ShardingSphere-JDBC 5.5.3/MySQL 8.4.11 candidate, and a mechanical match; this is not human approval, an external user, or adoption evidence |
+
+Run the full verification for the current checkout:
+
+```bash
+./gradlew --no-daemon --no-build-cache clean check assemble validateOfficialCycloneDxSbom
+./scripts/verify-standalone-consumer.sh
+./scripts/verify-maven-pilot.sh
+./scripts/verify-maven-pilot.sh --java 21
+```
+
+The first command runs the core and MySQL-corpus tests on Java 17, ShardingSphere-JDBC 5.5.3, and a digest-pinned MySQL 8.4.11 Testcontainers image, then generates the JAR, Javadoc, and SBOM. The second command runs one separate consumer test. The third and fourth require exact Apache Maven 3.9.14 and verify the same isolated profile-off, checksum, and candidate paths with the Java 17 default and an explicit Java 21 runtime/classfile-major-65 mode, respectively. The Java 21 cell is same-checkout compatibility evidence for immutable v0.1.2 with exact ShardingSphere-JDBC 5.5.3/MySQL 8.4.11; it does not broaden the Java 17 boundary of the external assisted runner or starter. All require Docker.
+
+## Precise comparison with existing tools
+
+RouteContract's contribution is packaging ShardingSphere-JDBC 5.5.3 observations into one repeatable workflow: caller-defined application-operation boundary → worker correlation → value-minimized manifest → human approval → deterministic structural diff → stable RCM codes → CI assertion.
+
+- ShardingSphere-Proxy `PREVIEW SQL`, together with ShardingSphere `sql-show` and Agent, provides planning, logging, and operational telemetry.
+- ShardingSphere Audit checks whether built-in algorithms recognize a sharding condition.
+- Sniffy and datasource-proxy support SQL-count assertions or custom JDBC collection.
+- RouteContract does not replace these tools. Its structural manifest diff compares manifest fields, not SQL semantics.
+
+datasource-proxy is a credible do-it-yourself alternative, not a strawman. By wrapping every physical data source and adding application-owned correlation, minimization, canonicalization, diff, and assertion code, it can implement a comparable narrow check. RouteContract's scoped contribution is packaging the approval workflow for 5.5.3 without requiring every physical data source to be wrapped.
+
+See [competitive-analysis.md](../docs/competitive-analysis.md) for the sourced comparison and limitations, and [empirical-comparison.md](../docs/empirical-comparison.md) for the measured datasource-proxy fixture.
+
+## Code and public-evidence boundaries
+
+Code map (representative boundaries; a directory is not assumed to have only one role):
+
+| Boundary | Representative paths | Role |
+|---|---|---|
+| Shipped library | `routecontract-shardingsphere-5.5/src/main` | Consumer API and 5.5.3 SPI provider included in the Release JAR. |
+| Public verification and examples | `routecontract-shardingsphere-5.5/src/test`, `examples/` | Unit, real-MySQL, and standalone-consumer fixtures; not included in the library JAR. |
+| Mixed automation | `scripts/`, `.github/workflows/`, `security/`, `gradle/` | `scripts/` contains user-facing Quick Start and Release-asset installation tools plus maintainer release, supply-chain, and demonstration-verification tools. None is a consumer runtime API. |
+| Verification/submission support | `submission/`, `scripts/video-demo-session.sh`, `docs/evidence-matrix.md` | Evidence tracking, result-report, and reproducible packaging material; not part of the shipped product. |
+
+This source declares release-target project version `0.1.3`, with corresponding tag name `v0.1.3`.
+A version string or checkout does not prove that an annotated tag, public immutable
+non-prerelease Release, same-revision release-evidence run, or external-user result exists.
+Use public assets only after verifying tag/Release/evidence-run revision identity and every
+postpublication check in the [release procedure](../RELEASING.md).
+
+<details>
+<summary>Exact evidence boundary for historical RC and public-CI records</summary>
+
+`v0.1.0-rc1` is retained as the historical annotated tag for the first release-evidence attempt.
+That run failed while resolving a digest-pulled MySQL image through a mutable local tag and created
+no Release. Do not use RC1 as an activated installation candidate or move its tag.
+`v0.1.0-rc2` corrected that failure and is retained as the historical prerelease activated through
+the [fixed activation record](../docs/evidence/independent-rc-activation-v0.1.0-rc2.json). Its assets
+and RC-scoped results are not promoted to stable `v0.1.0` validation or adoption.
+
+The earlier public CI snapshot's 50 normal tests and one same-checkout isolated consumer test
+passed with zero failures, errors, or skips for [public-main revision
+`54f1c92`](https://github.com/ym0506/routecontract/actions/runs/31501026857). That historical run
+does not verify the `v0.1.0-rc2` revision, the stable `v0.1.0` revision, or either Release's assets,
+and the isolated consumer is not external adoption evidence. See the
+[public CI evidence record](../docs/public-ci-evidence.md) for its environment, raw artifacts, and
+limitations. None of these results implies production support or general performance.
+
+</details>
+
+<details>
+<summary>Detailed v0.1.2 GitHub Release-asset installation</summary>
+
+## Consume public Release assets without a registry
+
+This path becomes usable only after an annotated `v0.1.2` tag, a public immutable non-prerelease
+Release, a successful same-revision release-evidence run, and the exact asset set all exist.
+The default path uses a public wrapper pinned by its post-tag bridge commit, SHA-256, and exact size
+to download and verify the Release assets, then install the exact coordinate into an empty absolute
+repository outside `~/.m2`. [Step 2 of the first real integration
+guide](../docs/first-integration.md#2-install-the-exact-v012-release-assets) provides both this short
+path and an asset-by-asset manual audit fallback, without a GitHub login, token, or API call.
+
+Do not add the resulting local Maven repository or RouteContract dependency directly to the
+default build. The [Gradle Groovy DSL](../docs/first-integration.md#gradle-groovy-dsl-opt-in-lane) and
+[Gradle Kotlin DSL](../docs/first-integration.md#gradle-kotlin-dsl-opt-in-lane) lanes activate a
+separate source set, task, and repository only when the pilot property is present; the same guide
+also provides a Maven 3.9.14 lane with an inactive-by-default profile, a fresh consumer cache, and
+repository-scoped SHA-256 validation. All three reuse a representative fixture's existing
+ShardingSphere-JDBC 5.5.3 dependency, and the normal build and IDE sync must succeed without the
+pilot or local Release repository. Build layouts, toolchains, repositories, graphs, or
+classloaders outside the verified boundary of the selected lane remain fit blockers.
+
+The embedded MySQL OCI package-level manual review in the immutable `v0.1.2` installer is valid
+through UTC `2026-12-05`. Beginning `2026-12-06` UTC, the installer fails closed; use a newer
+immutable Release with renewed evidence and do not bypass the expiry.
+
+<details>
+<summary>Exact supply-chain boundary enforced by the tag-pinned delegated installer</summary>
+
+The commit-pinned public wrapper downloads assets over HTTPS. The tag-pinned installer it delegates
+to then performs no network access. Before writing, the delegated installer validates the
+exact public-asset set, `SHA256SUMS`, the sanitized supply-chain summary's
+hash binding to the public SBOM/POM assets, non-SNAPSHOT POM coordinate, JAR
+structure and namespace-path rules, sources-JAR Java-package rules, a parent- and
+relocation-free POM, the
+source ZIP's single versioned root, required `LICENSE` and `NOTICE`, conventional
+source-root/first-party-package/path-to-declaration agreement for every Java file,
+compiled-`.class` and JTS/Mahout name/package boundaries, and the canonical
+`ym0506` provider namespace.
+It copies only the main, sources, and Javadoc JARs plus the POM into the
+explicit Maven layout, refuses to overwrite an existing coordinate, and rejects
+the conventional `~/.m2/repository` and every path below it as its target. The wrapper's fixed-hash
+post-tag helper then creates exactly eight SHA-1/SHA-256 sidecars without changing any payload
+bytes. Checksums verify download integrity, not publisher identity, so obtain the assets from the public Release
+for that exact tag. These are name, path, declared-package, and dependency
+checks; they do not determine the semantic provenance of renamed or copied code.
+The final submission packaging
+gate separately proves that the release archive has the same tracked-file
+content, paths, and executable permissions as the final tagged Git tree.
+
+</details>
+
+To exercise a real MySQL consumer from the same source checkout with that file
+repository as the exclusive RouteContract source, use a separate empty target:
+
+```bash
+./scripts/verify-release-assets-consumer.sh \
+  /absolute/path/to/downloaded-release-assets \
+  /absolute/path/to/empty-verification-maven
+```
+
+This is release-packaging evidence from the same checkout, not evidence of
+external adoption.
+
+For the shortest business-green/contract-red demonstration, run:
+
+```bash
+./scripts/run-demo.sh
+```
+
+This runs a real MySQL scenario in which changing equality to a same-value range preserves the business result but expands observed attempts from `1 → 2` and data sources from `1 → 2`. The strict manifest reports `RCM201` and `RCM202` as CI failures. The command succeeds because the test verifies that the expected violation occurs.
+
+To reproduce an actual non-zero CI-gate exit using only two verified manifest files, run:
+
+```bash
+./scripts/demo-manifest-ci-failure.sh
+```
+
+This command does not require Docker. It prints `RCM201` and `RCM202`, then intentionally exits with code `1`. It is a dedicated fixture excluded from the regular `test` and `check` tasks.
+
+To regenerate and compare the canonical files against real MySQL, then fail the build against the same approved baseline, run:
+
+```bash
+./scripts/demo-end-to-end-ci-failure.sh
+```
+
+Even when the preceding stages succeed, this command intentionally exits with code `1` at the final contract assertion.
+
+</details>
+
+## Exact evidence boundary
+
+RouteContract observes:
+
+- the data-source name reported to the hook;
+- the SHA-256 fingerprint of the exact rewritten SQL string reported to the hook;
+- parameter count and Java type names;
+- the trunk/worker flag;
+- start, callback return, callback failure, and missing-terminal-callback states.
+
+RouteContract does not observe or prove:
+
+- the complete route plan or `RouteContext`;
+- every planned execution unit or every target shard;
+- the exact number of physical tables;
+- automatic `FULL_ROUTE` or `BROADCAST` classification;
+- transaction commit or business success.
+
+The ShardingSphere SPI method name `finishSuccess()` does not mean that a transaction committed or that a business operation succeeded. RouteContract uses `CALLBACK_RETURNED` only to mean that ShardingSphere 5.5.3 reported `finishSuccess` to this hook provider after the physical `executeSQL` call returned. It does not prove completion of the surrounding JDBC operation, transaction, or application action.
+
+## v0.1 support boundary
+
+This section describes public **0.1.3**. See the [Java 17/21 runtime evidence](java21-runtime-acceptance.md);
+the historical 0.1.2 installer and assisted runner keep their own documented limits.
+
+This problem is not limited to one ORM or repository API. Apache ShardingSphere-JDBC can be used with direct JDBC and integration surfaces such as MyBatis, JPA, and Hibernate; RouteContract's capture API is not ORM-specific. That describes the problem and API surface, not verified end-to-end compatibility with each of MyBatis, JPA, and Hibernate.
+
+- Java 17 or 21
+- Apache ShardingSphere-JDBC **exactly 5.5.3**
+- Synchronous `PreparedStatement` operations that return normally and whose caller is not interrupted when capture closes
+- Integration verification against MySQL 8.4.11
+- Concurrent operations on different caller threads and multi-attempt worker callbacks in the test fixture
+
+Out of scope:
+
+- ShardingSphere-Proxy
+- JDBC batch and reactive execution
+- Application-owned `@Async` boundaries
+- Every SQL Federation execution path
+- Other ShardingSphere versions
+- Legitimate zero-SQL operation verification
+- Contract approval for operations with a callback failure or caller interruption
+
+The preflight only checks that the classpath's `shardingsphere-infra-executor` and `shardingsphere-infra-spi` report implementation version `5.5.3`, and that the service loader finds exactly one RouteContract provider. It does not prove version consistency across the complete ShardingSphere runtime artifact set. A capture cannot pass when those checks fail or no start callback is observed inside the capture. RouteContract does not claim to identify or explicitly reject every out-of-scope execution path, including Proxy, batch, and reactive paths.
+
+After a parallel execution failure, ShardingSphere 5.5.3 may not wait for every worker it already submitted. A `REPORTED_EXECUTION_FAILURE` snapshot is therefore diagnostic-only and cannot pass route budgets or manifest matching.
+
+One capture retains at most 10,000 physical execution attempts. At the next attempt, it stops growing the retained set and becomes `INCOMPLETE` with the `RC_ATTEMPT_LIMIT_EXCEEDED` diagnostic.
+
+## Dependency and Release compatibility details
+
+For public **0.1.3**, use the [Central coordinate above](#install-013) and inspect your existing
+ShardingSphere runtime graph for exact 5.5.3. RouteContract does not embed ShardingSphere or
+align all of its modules for the consumer. The [public release evidence](evidence/release-0.1.3-central.md)
+and [Java 17/21 consumer checks](java21-runtime-acceptance.md) describe the tested lanes.
+
+<details>
+<summary>Historical 0.1.2 dependency graph, local installation and Javadoc evidence</summary>
+
+The following versions and constraints describe the recorded release/fixture build, not a list
+of new dependencies to add to a current application.
+
+The exact coordinate in the postpublication-verified stable `v0.1.2` Release is
+`io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.2`; it is not claimed to exist
+on Maven Central. Do not add it directly to the default dependency graph. Use it only in the
+isolated pilot from the [first real integration guide](../docs/first-integration.md), which reuses the
+existing ShardingSphere-JDBC 5.5.3 fixture and requires inspection of its complete runtime
+classpath.
+
+The RouteContract build does not configure dependency embedding. Its
+module-level `compileOnly` ShardingSphere/BOM declarations are not published as
+consumer version constraints. In the verified
+Gradle test/runtime graph, the Jackson 2 core, databind, datatype-jdk8, and
+datatype-jsr310 modules in ShardingSphere 5.5.3's compatibility graph resolve to
+2.18.9, while Calcite Core and linq4j resolve to 1.42.0. JTS Core 1.19.0 remains,
+but JTS I/O Common must be absent from the graph. In the runtime that also contains Jackson 3.1.5, the shared
+`jackson-annotations` artifact resolves to 2.21 through the Jackson 3 BOM. This
+does not replace or downgrade RouteContract's separate product runtime,
+`tools.jackson.core:jackson-core:3.1.5`.
+
+The stable-Release Javadoc classifier produced by the exact release-evidence
+workflow uses pinned Temurin 17.0.20.1+1 and contains OpenJDK standard-doclet
+static assets and `legal/` notices. A general local build requires Java 17 but
+does not guarantee the same classifier-asset version. These assets are not
+main-JAR/runtime dependencies; see [THIRD_PARTY.md](../THIRD_PARTY.md) for the
+shipped-file inventory.
+
+</details>
+
+## Data minimization and security
+
+Snapshots and manifests do not store raw SQL, parameter values, connection properties, or exception messages. However, data-source names, operation IDs, Java type names, and unsalted SQL fingerprints can still be sensitive engineering metadata. A SHA-256 fingerprint is not anonymization. v0.1 therefore assumes deterministic `PreparedStatement` tests that do not inline confidential literals. See [SECURITY.md](../SECURITY.md) for details.
+
+## Contributing and extension gates
+
+If you are trying public `0.1.3`, adapting one existing test, or asking about fit, use the [short feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)
+for a successful, blocked, unsupported, or not-a-fit outcome. Private-project experiences are welcome;
+you can describe your current verification method or a missing capability without installing anything.
+[Record the use stage separately from its evidence](../docs/user-feedback.md#recording-use-and-evidence).
+Feedback alone does not justify production-use, security, performance, or endorsement claims.
+
+Report a bug or feature proposal through the
+[Issue forms](https://github.com/ym0506/routecontract/issues/new/choose) with the exact
+ShardingSphere version, a user-visible regression or missing capability, and a minimized synthetic
+fixture. An implementation change should include a failing test, real-MySQL verification, and an
+explicit support boundary.
+
+A new adapter or reporter is considered only after a documented user need, a version-specific fixture, and real-MySQL CI exist. The current v0.1 boundary remains exactly 5.5.3. See the [contribution guide](../CONTRIBUTING.md) for the full workflow.
+
+## Documentation and reproduction paths
+
+- [Technical specification](../docs/specification.md)
+- [Architecture and trust boundaries](../docs/architecture.md)
+- [Competitive analysis](../docs/competitive-analysis.md)
+- [Empirical datasource-proxy comparison](../docs/empirical-comparison.md)
+- [Verification evidence matrix](../docs/evidence-matrix.md)
+- [Isolated same-checkout Maven-publication consumer](../examples/standalone-consumer/README.md)
+- [Isolated Maven 3.9.14 onboarding pilot](../examples/maven-pilot/README.md)
+- [SBOM generation and review](../docs/sbom.md)
+- [Provenance and prior-work boundary disclosure](../ORIGIN_AND_PRIOR_WORK.md)
+- [AI-assistance disclosure](../AI_ASSISTANCE.md)
+- [Contribution guide](../CONTRIBUTING.md)
+
+## Trademark and license
+
+RouteContract is an independent project and is not affiliated with or endorsed by the Apache Software Foundation. Apache ShardingSphere and Apache are trademarks of the Apache Software Foundation.
+
+RouteContract is distributed under the [Apache License 2.0](../LICENSE). See [THIRD_PARTY.md](../THIRD_PARTY.md) for direct and test dependencies and whether they are included in distributed artifacts.

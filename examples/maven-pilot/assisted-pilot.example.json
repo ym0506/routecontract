@@ -1,0 +1,8 @@
+{
+  "projectRoot": "/absolute/path/to/your-repository",
+  "owningModule": "integration-tests",
+  "reactorSelector": "integration-tests/pom.xml",
+  "profileOffTest": "com.example.orders.OrderQueryIntegrationTest#existingBusinessAssertionPasses",
+  "pilotTest": "com.example.orders.OrderQueryRouteContractTest#capturesCandidate",
+  "operationId": "orders.find-by-user-id"
+}

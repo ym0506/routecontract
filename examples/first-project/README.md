@@ -1,0 +1,77 @@
+# RouteContract in one test
+
+A standalone example using **RouteContract 0.1.3 from Maven Central**, **Java 17 or 21**, exact
+**ShardingSphere-JDBC 5.5.3**, and two disposable **MySQL 8.4.11** containers.
+
+[Walkthrough: direct assertions, optional JSON comparison and CI](../../docs/first-project.md) ·
+[한국어](../../docs/first-project.ko.md) · [Synthetic baseline review](baselines/README.md)
+
+**Try without local setup:** [fork and run First project in your browser](../../docs/first-project.md#try-in-your-browser).
+The hosted workflow shows normal check → expected rejection → recovery and retains all three reports.
+
+To run locally, start Docker, then run one build tool from this directory:
+
+```bash
+mvn -B test
+# or, using the repository's Gradle wrapper:
+../../gradlew -p . test --rerun-tasks
+```
+
+Maven uses the Java 17 or 21 JDK selected by `JAVA_HOME`. When switching JDKs, preserve any
+reports you need and run `mvn -B clean` first to remove classes compiled by the previous JDK.
+Gradle defaults to Java 17;
+add `-ProutecontractJavaVersion=21` to each command for an installed Java 21 toolchain,
+or set `ROUTECONTRACT_EXAMPLE_JAVA_VERSION=21` for the session. The test verifies the
+actual runtime and unchanged public JAR; see [runtime evidence](../../docs/java21-runtime-acceptance.md).
+
+The example has its own build settings. Neither command builds RouteContract from the repository
+sources. If you copy this directory to another repository, use that repository's Gradle wrapper
+or an installed Gradle 8.14.4; Maven needs no parent project.
+
+The test preserves the exact expected business row and checks against a reviewed synthetic
+baseline. Expect **MATCH** in `build/routecontract/review.md` and `review.json`.
+
+| Action | Maven option | Gradle option |
+| --- | --- | --- |
+| Check explicit Java limits without JSON files | `-Droutecontract.mode=assert` | `-ProutecontractMode=assert` |
+| Capture an unapproved candidate | `-Droutecontract.mode=capture` | `-ProutecontractMode=capture` |
+| Use another reviewed baseline | `-Droutecontract.baseline=baselines/first-review.approved.json` | `-ProutecontractBaseline=baselines/first-review.approved.json` |
+| Demonstrate the intentional failing query | `-Droutecontract.query=range` | `-ProutecontractQuery=range` |
+
+Check mode and the equality query are the defaults. **Assert mode** keeps the business assertion
+and checks at most one observed attempt and one data source directly. It does not read, write or
+remove baseline/candidate/report files; read its console or JUnit result, not an older JSON report.
+The `range` query still fails, with `expected at most 1 observed physical attempts, but observed 2`.
+[Use these assertions in your own test](../../docs/first-project.md#adapt-one-existing-test).
+
+Capture writes only
+`build/routecontract/candidate.json`; it never approves or updates a baseline. Follow the
+[review step](../../docs/first-project.md#capture-and-review-your-first-baseline) before creating one.
+Check mode writes the candidate and both reports, then fails the ordinary test if it does not match.
+Every invocation observes a fresh database operation; consecutive Gradle runs do not reuse cached
+or up-to-date test results. In capture/check modes, known prior candidate/report files are removed when JUnit starts, before database setup.
+A dependency or compiler failure happens earlier; do not read an old report as that run's result.
+
+The `range` variant uses `BETWEEN 3 AND 3` instead of `= 3`. The exact business row still matches,
+but the configured inline sharding algorithm allows range queries across both data sources:
+**1 → 2 hook-reported physical JDBC execution attempts**. Check mode reports **POLICY_VIOLATION**, **RCM201/RCM202**.
+That build is supposed to fail. A dependency, Docker or compilation error is not this demonstration.
+
+## Adapt the test
+
+- [OrderContractTest.java](src/test/java/io/github/ym0506/routecontract/examples/firstproject/OrderContractTest.java) shows the integration:
+  capture the return value, keep the business assertion, then check Java limits directly or compare a reviewed JSON baseline.
+- [OrderRepository.java](src/test/java/io/github/ym0506/routecontract/examples/firstproject/OrderRepository.java) contains the equality/range query.
+- [OrderFixture.java](src/test/java/io/github/ym0506/routecontract/examples/firstproject/OrderFixture.java) and
+  [sharding.yaml](src/test/resources/sharding.yaml) provision this demonstration's disposable databases.
+  Keep your own application's existing setup when adapting the test.
+
+The build files include the MySQL fixture's full runtime dependencies. An existing supported
+ShardingSphere application adds the RouteContract test dependency to its own build. Both runtime
+graphs must use ShardingSphere 5.5.3 throughout; this example is not a version-selection framework.
+The support boundary is synchronous, non-batch `PreparedStatement`. Observed attempts are not
+physical-table counts, a complete route plan, transaction-commit proof or performance measurements.
+
+The reports omit SQL text, bind values and connection properties; keep your own manifests and
+full test logs within your project's normal access controls. This maintainer-owned example is a
+reproducible demonstration, not evidence of an external user's adoption.

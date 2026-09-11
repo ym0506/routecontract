@@ -2,7 +2,7 @@
 
 ## Development prerequisites
 
-- JDK 17
+- JDK 17 to compile the library; JDK 21 as well for the additional runtime check
 - Docker for MySQL integration tests
 - Git, Python 3, Bash or equivalent POSIX tooling, and network access for public release checks
 
@@ -26,6 +26,17 @@ Run the complete unit, real-MySQL integration and SBOM checks with:
 ./gradlew --no-daemon --no-build-cache clean check validateOfficialCycloneDxSbom
 ```
 
+To keep Java 17 library bytecode and run the existing core/MySQL tests on Java 21:
+
+```bash
+./gradlew --no-daemon --no-build-cache --no-configuration-cache --rerun-tasks \
+  -ProutecontractTestJavaVersion=21 \
+  :routecontract-shardingsphere-5.5:test :mysql-example:test
+```
+
+Both JDKs must be available to Gradle. The [runtime acceptance record](docs/java21-runtime-acceptance.md)
+explains actual-JVM verification and the public Central Maven/Gradle matrix.
+
 Verify that a standalone consumer can resolve and run this checkout's generated Maven publication
 from an isolated temporary repository rather than use an in-repository Gradle project dependency with:
 
@@ -37,14 +48,64 @@ This is same-checkout packaging evidence, not proof of a public Release, registr
 external installation, or adoption. After a Release exists, use
 `scripts/verify-release-assets-consumer.sh` for its downloaded assets.
 
+The checked-in Maven compatibility fixture keeps Java 17 as its default and has one explicit Java
+21/full-MySQL cell:
+
+```bash
+./scripts/verify-maven-pilot.sh
+./scripts/verify-maven-pilot.sh --java 21
+```
+
+Both commands require exact Apache Maven 3.9.14 and Docker. The Java 21 cell is same-checkout
+compatibility evidence only; it does not broaden the Java 17 external assisted-runner/starter
+contract or prove adoption.
+
 A change is not complete until it passes the appropriate real-MySQL test, not only an in-memory
 substitute.
 
+## Future Maven Central changes
+
+The immutable `v0.1.2` GitHub Release is not a Maven Central publication.
+Changes intended for a separately approved later stable version must follow the
+approval, signing, `USER_MANAGED` upload, human validation, explicit Publish
+and public-readback checklist in [RELEASING.md](RELEASING.md). Never put the
+protected release private key, its passphrase or a Central credential in the
+repository or CI. An ephemeral throwaway CI key may test signing configuration
+only; never upload or artifact it or treat it as release evidence.
+
+For a local publication-wiring check only, stage an unsigned candidate in a
+new private directory:
+
+```bash
+(
+set -e
+staging_parent=/absolute/path/to/new-private-central-smoke
+test ! -e "${staging_parent}"
+mkdir -m 700 "${staging_parent}"
+./gradlew --no-daemon --no-build-cache --no-configuration-cache \
+  :routecontract-shardingsphere-5.5:publishMavenJavaPublicationToCentralStagingRepository \
+  -ProutecontractCentralStagingDirectory="${staging_parent}/repository" \
+  -ProutecontractCentralSigning=false
+)
+```
+
+This smoke test uses no release key or Portal credential, performs no network
+publication and is not evidence of a signed candidate or public availability.
+
 ## Release feedback
 
-For a current or stable release, use the Route regression, Product bug, or Feature proposal Issue
-Form and include the exact version, environment, minimized reproduction, and documented claim
-boundary. First failures and later assistance must remain visible.
+For a question before installation or feedback on current stable **0.1.3**, use the
+[question or user feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml).
+You can report a test using reviewed Java execution assertions or the optional JSON-baseline
+comparison. Neither installation nor a public application repository is required to ask a question.
+The [first-project guide](docs/first-project.md#adapt-one-existing-test) covers both paths.
+Successful, blocked, unsupported, and not-a-fit outcomes are equally useful. This short form records
+self-reported usability and fit feedback; it does not by itself prove an independent run, production
+use, adoption, security, performance, or endorsement.
+
+For a reproducible regression, product bug, or feature proposal, use the corresponding Issue Form
+and include the exact version, environment, minimized reproduction, and documented claim boundary.
+First failures and later assistance must remain visible.
 
 The [independent installation study](docs/independent-install-study.md) and its RC1/RC2 forms are
 retained as version-bound evidence contracts. Use a dedicated RC form only while that candidate's

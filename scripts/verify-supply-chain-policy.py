@@ -53,6 +53,17 @@ CYCLONEDX_XML_NAMESPACE = "http://cyclonedx.org/schema/bom/1.6"
 FIRST_PARTY_GROUP = "io.github.ym0506.routecontract"
 AGGREGATE_ROOT_NAME = "routecontract"
 PUBLISHED_ROOT_NAME = "routecontract-shardingsphere-5.5"
+PUBLISHED_PROJECT_NAME = "RouteContract for Apache ShardingSphere-JDBC 5.5.3"
+PUBLISHED_PROJECT_DESCRIPTION = (
+    "Operation-scoped contracts over physical JDBC execution attempts reported "
+    "by Apache ShardingSphere-JDBC 5.5.3 SQLExecutionHook"
+)
+PUBLISHED_PROJECT_URL = "https://github.com/ym0506/routecontract"
+PUBLISHED_SCM_VALUES = (
+    "scm:git:https://github.com/ym0506/routecontract.git",
+    "scm:git:ssh://git@github.com/ym0506/routecontract.git",
+    PUBLISHED_PROJECT_URL,
+)
 EXAMPLE_ROOT_NAME = "mysql-example"
 MYSQL_CONTAINER_NAME = "mysql"
 MYSQL_CONTAINER_VERSION = "8.4.11"
@@ -2181,6 +2192,7 @@ def _published_pom_inventory(
             "description",
             "url",
             "licenses",
+            "developers",
             "scm",
             "dependencies",
         )
@@ -2205,33 +2217,43 @@ def _published_pom_inventory(
             raise PolicyError(f"generated published POM {label} must be a scalar leaf")
         return element.text
 
-    for optional_leaf_name in ("name", "description", "url"):
-        optional_leaves = root.findall(f"m:{optional_leaf_name}", namespace)
-        if len(optional_leaves) > 1:
+    expected_project_metadata = {
+        "name": PUBLISHED_PROJECT_NAME,
+        "description": PUBLISHED_PROJECT_DESCRIPTION,
+        "url": PUBLISHED_PROJECT_URL,
+    }
+    for leaf_name, expected_value in expected_project_metadata.items():
+        leaves = root.findall(f"m:{leaf_name}", namespace)
+        if len(leaves) != 1:
             raise PolicyError(
-                f"generated published POM repeats project {optional_leaf_name}"
+                f"generated published POM must contain one project {leaf_name}"
             )
-        if optional_leaves:
-            exact_leaf(optional_leaves[0], f"project {optional_leaf_name}")
+        if exact_leaf(leaves[0], f"project {leaf_name}") != expected_value:
+            raise PolicyError(
+                f"generated published POM must declare the exact RouteContract "
+                f"project {leaf_name}"
+            )
     scm_parents = root.findall("m:scm", namespace)
-    if len(scm_parents) > 1:
-        raise PolicyError("generated published POM repeats scm")
-    if scm_parents:
-        scm = scm_parents[0]
-        expected_scm_fields = [
-            f"{{{MAVEN_NAMESPACE}}}connection",
-            f"{{{MAVEN_NAMESPACE}}}developerConnection",
-            f"{{{MAVEN_NAMESPACE}}}url",
-        ]
-        if (
-            scm.attrib
-            or (scm.text or "").strip()
-            or (scm.tail or "").strip()
-            or [child.tag for child in scm] != expected_scm_fields
-        ):
-            raise PolicyError("generated published POM scm is ambiguous")
-        for child in scm:
-            exact_leaf(child, "scm field")
+    if len(scm_parents) != 1:
+        raise PolicyError("generated published POM must contain one scm element")
+    scm = scm_parents[0]
+    expected_scm_fields = [
+        f"{{{MAVEN_NAMESPACE}}}connection",
+        f"{{{MAVEN_NAMESPACE}}}developerConnection",
+        f"{{{MAVEN_NAMESPACE}}}url",
+    ]
+    if (
+        scm.attrib
+        or (scm.text or "").strip()
+        or (scm.tail or "").strip()
+        or [child.tag for child in scm] != expected_scm_fields
+    ):
+        raise PolicyError("generated published POM scm is ambiguous")
+    scm_values = [exact_leaf(child, "scm field") for child in scm]
+    if scm_values != list(PUBLISHED_SCM_VALUES):
+        raise PolicyError(
+            "generated published POM must declare the exact RouteContract scm"
+        )
 
     def required_text(parent: ET.Element, name: str, label: str) -> str:
         values = parent.findall(f"m:{name}", namespace)
@@ -2294,6 +2316,42 @@ def _published_pom_inventory(
     ]:
         raise PolicyError(
             "generated published POM must declare the exact Apache-2.0 license"
+        )
+    developer_parents = root.findall("m:developers", namespace)
+    if len(developer_parents) != 1:
+        raise PolicyError("generated published POM must contain one developers element")
+    developer_parent = developer_parents[0]
+    developers = list(developer_parent)
+    expected_developer_children = [
+        f"{{{MAVEN_NAMESPACE}}}id",
+        f"{{{MAVEN_NAMESPACE}}}name",
+        f"{{{MAVEN_NAMESPACE}}}email",
+        f"{{{MAVEN_NAMESPACE}}}url",
+    ]
+    if (
+        developer_parent.attrib
+        or (developer_parent.text or "").strip()
+        or (developer_parent.tail or "").strip()
+        or len(developers) != 1
+        or developers[0].tag != f"{{{MAVEN_NAMESPACE}}}developer"
+        or developers[0].attrib
+        or (developers[0].text or "").strip()
+        or (developers[0].tail or "").strip()
+        or [child.tag for child in developers[0]] != expected_developer_children
+    ):
+        raise PolicyError("generated published POM developer declaration is ambiguous")
+    developer_values = list(developers[0])
+    if any(
+        child.attrib or len(child) or (child.tail or "").strip()
+        for child in developer_values
+    ) or [child.text for child in developer_values] != [
+        "ym0506",
+        "ym0506",
+        "atat9828@naver.com",
+        "https://github.com/ym0506",
+    ]:
+        raise PolicyError(
+            "generated published POM must declare the exact RouteContract developer"
         )
     pom_project, _, _, _ = _canonical_maven_purl(
         f"pkg:maven/{pom_group}/{pom_name}@{pom_version}"

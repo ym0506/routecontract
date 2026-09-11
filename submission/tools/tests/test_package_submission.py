@@ -354,9 +354,9 @@ class SubmissionClaimTextTest(unittest.TestCase):
             with self.subTest(workflow=name):
                 self.assertIn("java-version: '17.0.20+101'", workflow)
                 self.assertNotRegex(workflow, r"java-version: [\"']17[\"']")
-                self.assertIn(
-                    "actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961",
+                self.assertRegex(
                     workflow,
+                    r"uses: actions/setup-java@[0-9a-f]{40}(?:\s|$)",
                 )
                 self.assertIn(
                     "grep -Fxq 'IMPLEMENTOR_VERSION=\"Temurin-17.0.20.1+1\"' "
@@ -371,12 +371,33 @@ class SubmissionClaimTextTest(unittest.TestCase):
         self.assertIn("java -fullversion", workflows["ci.yml"])
         self.assertIn("java -fullversion", workflows["release-evidence.yml"])
 
+        # Updates must retain immutable pins and cover every active workflow.
+        # The action version may change without changing the release JDK contract.
+        setup_java_refs = {
+            path.name: re.findall(
+                r"^\s*(?:-\s*)?uses:\s*['\"]?(actions/setup-java@[^'\"\s#]+)",
+                path.read_text(encoding="utf-8"),
+                re.MULTILINE,
+            )
+            for path in (REPOSITORY_ROOT / ".github" / "workflows").iterdir()
+            if path.suffix in {".yml", ".yaml"}
+        }
+        for name, refs in setup_java_refs.items():
+            for ref in refs:
+                with self.subTest(workflow=name, action=ref):
+                    self.assertRegex(ref, r"^actions/setup-java@[0-9a-f]{40}$")
+        self.assertEqual(
+            len({ref for refs in setup_java_refs.values() for ref in refs}),
+            1,
+            "Update setup-java consistently across all active workflows",
+        )
+
         third_party = (REPOSITORY_ROOT / "THIRD_PARTY.md").read_text(
             encoding="utf-8"
         )
         sbom = (REPOSITORY_ROOT / "docs" / "sbom.md").read_text(encoding="utf-8")
         notice = (REPOSITORY_ROOT / "NOTICE").read_text(encoding="utf-8")
-        readme = (REPOSITORY_ROOT / "README.md").read_text(encoding="utf-8")
+        readme = (REPOSITORY_ROOT / "docs" / "reference-guide.ko.md").read_text(encoding="utf-8")
         normalized_third_party = " ".join(third_party.split())
         normalized_sbom = " ".join(sbom.split())
         for required in (
@@ -820,8 +841,8 @@ class SubmissionClaimTextTest(unittest.TestCase):
     def test_public_docs_keep_build_consumer_and_contest_boundaries_explicit(self) -> None:
         contributing = (REPOSITORY_ROOT / "CONTRIBUTING.md").read_text(encoding="utf-8")
         releasing = (REPOSITORY_ROOT / "RELEASING.md").read_text(encoding="utf-8")
-        readme_ko = (REPOSITORY_ROOT / "README.md").read_text(encoding="utf-8")
-        readme_en = (REPOSITORY_ROOT / "README.en.md").read_text(encoding="utf-8")
+        readme_ko = (REPOSITORY_ROOT / "docs" / "reference-guide.ko.md").read_text(encoding="utf-8")
+        readme_en = (REPOSITORY_ROOT / "docs" / "reference-guide.md").read_text(encoding="utf-8")
         competitive = (
             REPOSITORY_ROOT / "docs" / "competitive-analysis.md"
         ).read_text(encoding="utf-8")
@@ -857,9 +878,7 @@ class SubmissionClaimTextTest(unittest.TestCase):
         )
         self.assertIn("intentional contract-gate\n  child exit `1`", releasing)
         self.assertIn("혼합 자동화", readme_ko)
-        self.assertTrue(readme_ko.startswith("# RouteContract for ShardingSphere-JDBC\n"))
-        self.assertIn("사용하거나 도입을 평가하는 Java 개발자·팀", readme_ko)
-        self.assertIn("`1 → 2` 자체를 성능 결함으로 단정", readme_ko)
+        self.assertTrue(readme_ko.startswith("# RouteContract 상세 가이드\n"))
         self.assertIn(
             "MyBatis·JPA·Hibernate별 end-to-end 호환성을 검증했다는 뜻은 아닙니다",
             readme_ko,
@@ -871,7 +890,7 @@ class SubmissionClaimTextTest(unittest.TestCase):
         self.assertLess(readme_ko.index("## 기존 도구와의 정확한 차이"), readme_ko.index("## 코드·공개 증거 경계"))
         self.assertLess(readme_ko.index("## v0.1 지원 범위"), readme_ko.index("## 의존성·Release 호환성 상세"))
         self.assertIn(
-            "[검증 증거 매트릭스](docs/evidence-matrix.md)", readme_ko
+            "[검증 증거 매트릭스](../docs/evidence-matrix.md)", readme_ko
         )
         self.assertIn(
             "datasource-proxy도 충분히 신뢰할 수 있는 직접 구현 대안", readme_ko
@@ -879,9 +898,7 @@ class SubmissionClaimTextTest(unittest.TestCase):
         self.assertIn("모든 물리 data source wrapper 없이", readme_ko)
         self.assertIn("docs/empirical-comparison.md", readme_ko)
         self.assertIn("Mixed automation", readme_en)
-        self.assertTrue(readme_en.startswith("# RouteContract for ShardingSphere-JDBC\n"))
-        self.assertIn("developers and teams using or evaluating", readme_en)
-        self.assertIn("does not label `1 → 2` itself as a performance defect", readme_en)
+        self.assertTrue(readme_en.startswith("# RouteContract detailed guide\n"))
         self.assertIn(
             "not verified end-to-end compatibility with each of MyBatis, JPA, and Hibernate",
             readme_en,
@@ -892,35 +909,22 @@ class SubmissionClaimTextTest(unittest.TestCase):
         self.assertLess(readme_en.index("## Verified core scenarios"), readme_en.index("## Precise comparison with existing tools"))
         self.assertLess(readme_en.index("## Precise comparison with existing tools"), readme_en.index("## Code and public-evidence boundaries"))
         self.assertLess(readme_en.index("## v0.1 support boundary"), readme_en.index("## Dependency and Release compatibility details"))
-        driver_coordinate = (
-            'testImplementation("org.apache.shardingsphere:'
-            'shardingsphere-jdbc:5.5.3")'
-        )
         for readme in (readme_ko, readme_en):
-            self.assertEqual(2, readme.count(driver_coordinate))
+            self.assertNotIn(
+                'testImplementation("org.apache.shardingsphere:'
+                'shardingsphere-jdbc:5.5.3")',
+                readme,
+            )
+            self.assertIn(
+                "io.github.ym0506.routecontract:"
+                "routecontract-shardingsphere-5.5:0.1.2",
+                readme,
+            )
+            self.assertIn("(../docs/first-integration.md)", readme)
             for block in re.findall(r"```groovy\n(.*?)```", readme, re.DOTALL):
-                if "routecontract-shardingsphere-5.5:0.1.0" not in block:
-                    continue
-                self.assertIn(
-                    'exclude group: "org.locationtech.jts.io", module: "jts-io-common"',
-                    block,
-                )
-                self.assertEqual(2, block.count('version { strictly "1.42.0" }'))
-                self.assertIn(
-                    'testImplementation("org.apache.calcite:calcite-core:1.42.0")',
-                    block,
-                )
-                self.assertIn(
-                    'testImplementation("org.apache.calcite:calcite-linq4j:1.42.0")',
-                    block,
-                )
-                self.assertLess(block.index("jackson-bom:2.18.9"), block.index(driver_coordinate))
-                self.assertLess(
-                    block.index(driver_coordinate),
-                    block.index("routecontract-shardingsphere-5.5:0.1.0"),
-                )
+                self.assertNotIn("routecontract-shardingsphere-5.5:0.1.2", block)
         self.assertIn(
-            "[Verification evidence matrix](docs/evidence-matrix.md)",
+            "[Verification evidence matrix](../docs/evidence-matrix.md)",
             readme_en,
         )
         self.assertIn("RouteContract v0.1 implemented surface", competitive)
@@ -937,19 +941,18 @@ class SubmissionClaimTextTest(unittest.TestCase):
         ):
             release_section = readme.split(heading, 1)[1].split("\n## ", 1)[0]
             ordered = (
-                "gh release download v0.1.0",
-                "python3 scripts/install-release-assets.py",
-                "exclusiveContent",
-                'maven { url = uri("/absolute/path/to/routecontract-maven") }',
-                'testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))',
-                'testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:5.5.3")',
-                'testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.0")',
+                "docs/first-integration.md#2-install-the-exact-v012-release-assets",
+                "docs/first-integration.md#gradle-groovy-dsl-opt-in-lane",
+                "2026-12-05",
+                "2026-12-06",
             )
             self.assertTrue(all(value in release_section for value in ordered))
             self.assertEqual(
                 sorted(release_section.index(value) for value in ordered),
                 [release_section.index(value) for value in ordered],
             )
+            self.assertNotIn("gh release download", release_section)
+            self.assertNotIn("testImplementation(", release_section)
         release_quick_start = "      - name: Verify public Quick Start"
         ci_quick_start = "      - name: Verify the documented real-MySQL Quick Start"
         ci_package_job = (
@@ -969,9 +972,9 @@ class SubmissionClaimTextTest(unittest.TestCase):
             "      - name: Install checksum-locked report-package test dependencies"
         )
         package_tests = "      - name: Test fail-closed contest packaging rules"
-        for workflow, quick_start, package_job in (
-            (ci_workflow, ci_quick_start, ci_package_job),
-            (release_evidence, release_quick_start, release_package_job),
+        for workflow, quick_start, package_job, python_setup_count, architecture_count in (
+            (ci_workflow, ci_quick_start, ci_package_job, 4, 9),
+            (release_evidence, release_quick_start, release_package_job, 1, 2),
         ):
             self.assertIn(package_job, workflow)
             self.assertEqual(
@@ -984,15 +987,19 @@ class SubmissionClaimTextTest(unittest.TestCase):
                 "--requirement submission/report-builder-requirements.txt", workflow
             )
             self.assertEqual(
-                1,
+                python_setup_count,
                 workflow.count(
                     "uses: actions/setup-python@"
                     "5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0"
                 ),
             )
-            self.assertEqual(1, workflow.count("python-version: '3.12.14'"))
-            self.assertEqual(2, workflow.count("architecture: x64"))
-            self.assertEqual(1, workflow.count("check-latest: false"))
+            self.assertEqual(
+                python_setup_count, workflow.count("python-version: '3.12.14'")
+            )
+            self.assertEqual(architecture_count, workflow.count("architecture: x64"))
+            self.assertEqual(
+                python_setup_count, workflow.count("check-latest: false")
+            )
             self.assertIn("${RUNNER_TEMP}/routecontract-report-test-venv", workflow)
             self.assertEqual(1, workflow.count('test ! -e "${report_venv}"'))
             self.assertEqual(1, workflow.count('python -m venv "${report_venv}"'))
@@ -1362,6 +1369,820 @@ class TaggedIssueFormAllowlistTest(unittest.TestCase):
                 rc2.replace(b"0.1.0-rc2", b"0.1.0-rc3"),
                 "independent-rc3-install.yml",
             )
+
+
+class FirstIntegrationDocumentationContractTest(unittest.TestCase):
+    def test_reference_guides_link_next_step_immediately_after_quick_start(self) -> None:
+        readme_ko = (REPOSITORY_ROOT / "docs" / "reference-guide.ko.md").read_text(encoding="utf-8")
+        readme_en = (REPOSITORY_ROOT / "docs" / "reference-guide.md").read_text(encoding="utf-8")
+
+        self.assertEqual(1, readme_ko.count("## 다음 단계: 첫 통합 가능성 검토하기"))
+        self.assertEqual(1, readme_en.count("## Next step: assess a first integration"))
+        for readme, next_heading, usage_heading in (
+            (
+                readme_ko,
+                "## 다음 단계: 첫 통합 가능성 검토하기",
+                "## 가장 작은 사용 예",
+            ),
+            (
+                readme_en,
+                "## Next step: assess a first integration",
+                "## Smallest usage example",
+            ),
+        ):
+            self.assertLess(readme.index("## Quick Start"), readme.index(next_heading))
+            self.assertLess(readme.index(next_heading), readme.index(usage_heading))
+            section = readme[readme.index(next_heading):readme.index(usage_heading)]
+            self.assertIn("(../docs/first-integration.md)", section)
+            self.assertIn("5.5.3", section)
+            self.assertIn("Maven Central", section)
+            self.assertTrue(
+                "완결된 불변 온보딩 Release" in section
+                or "self-contained immutable onboarding Release" in section
+            )
+            self.assertTrue(
+                "완료 시간을 약속하지" in section
+                or "no completion time is\npromised" in section
+            )
+            self.assertLess(
+                section.index("(../docs/first-integration.md)"),
+                section.index("issues/new?template=stable-feedback.yml"),
+            )
+            for anchor in (
+                "#2-install-the-exact-v012-release-assets",
+                "#gradle-groovy-dsl-opt-in-lane",
+                "#maven-3914-opt-in-profile-lane",
+                "#3-add-one-representative-operation",
+                "#4-review-and-approve-the-first-baseline",
+                "#5-run-the-candidate-check-in-ci",
+            ):
+                self.assertIn(anchor, section)
+            self.assertIn("examples/maven-pilot/README.md", section)
+
+    def test_first_integration_uses_candidate_then_human_approval(self) -> None:
+        guide = (REPOSITORY_ROOT / "docs" / "first-integration.md").read_text(
+            encoding="utf-8"
+        )
+
+        for required in (
+            "Java\n17 with exactly Apache ShardingSphere-JDBC 5.5.3",
+            "synchronous non-batch `PreparedStatement`",
+            "Published end-to-end database verification uses MySQL 8.4.11",
+            "behavior with other databases is\nunverified",
+            "Step 2 additionally requires `curl` and Python 3.10 or newer",
+            "Neither\nstep requires a GitHub login, token, API call, or GitHub CLI",
+            "runner needs Git, `curl`, Python\n3.10 or newer",
+            "RouteContract `0.1.2` is **not published to Maven Central**",
+            "not evidence that `v0.1.2` is a self-contained immutable onboarding Release",
+            "exact bridge-commit permalink",
+            'providers.gradleProperty("routecontractRepository")',
+            'providers.environmentVariable("ROUTECONTRACT_REPOSITORY")',
+            'sourceSets.create("routeContractPilot")',
+            'tasks.register("routeContractPilotGraph")',
+            'tasks.register("routeContractPilotPrepare")',
+            'tasks.register("routeContractPilot", Test)',
+            "src/routeContractPilot/java",
+            "src/routeContractPilot/resources",
+            'systemProperty "routecontract.projectDir", projectDir.absolutePath',
+            'systemProperty "routecontract.candidateRoot", "build/routecontract"',
+            'systemProperty "routecontract.artifactJarName", "routecontract-shardingsphere-5.5-0.1.2.jar"',
+            'systemProperty "routecontract.artifactJarPath", artifactPath.toRealPath().toString()',
+            ".resolvedConfiguration.resolvedArtifacts.toList()",
+            "def routeContractCoordinates = artifacts.findAll",
+            'artifact.moduleVersion.id.group == "io.github.ym0506.routecontract"',
+            "routeContractCoordinates.size() != 1 || routeContractCoordinates.any",
+            "RouteContract runtime coordinate must resolve to exactly one",
+            "def artifactPath = verifyRouteContractPilotGraph()",
+            'expectedRouteContractJarSha256 =',
+            'java.security.MessageDigest.getInstance("SHA-256")',
+            "RouteContract runtime JAR SHA-256 mismatch",
+            'artifact.moduleVersion.id.group == "org.apache.shardingsphere"',
+            'artifact.moduleVersion.id.version != "5.5.3"',
+            'artifact.name == "shardingsphere-jdbc"',
+            "def shardingSphereJdbcCoordinates = artifacts.findAll",
+            "shardingSphereJdbcCoordinates.size() != 1 ||",
+            "ShardingSphere-JDBC runtime coordinate must resolve to exactly one",
+            '["org.apache.calcite", "calcite-core", "1.42.0"]',
+            '["org.apache.calcite", "calcite-linq4j", "1.42.0"]',
+            '["net.minidev", "json-smart", "2.4.10"]',
+            '["net.minidev", "accessors-smart", "2.4.9"]',
+            'version { strictly("1.42.0") }',
+            'version { strictly("2.4.10") }',
+            'version { strictly("2.4.9") }',
+            'enforcedPlatform("com.fasterxml.jackson:jackson-bom:2.18.9")',
+            'artifactGroup == "com.fasterxml.jackson" ||',
+            'artifactGroup.startsWith("com.fasterxml.jackson.")',
+            'artifact.extension != "jar" || artifact.classifier != null',
+            "Required ${expected[0]}:${expected[1]} runtime artifact must be",
+            "Optional ${expected[0]}:${expected[1]} runtime artifact must be",
+            "Every resolved FasterXML Jackson artifact must be an unclassified",
+            'exclude group: "org.locationtech.jts.io", module: "jts-io-common"',
+            'exclude group: "com.google.protobuf", module: "protobuf-java"',
+            '["org.locationtech.jts.io", "jts-io-common"]',
+            '["com.google.protobuf", "protobuf-java"]',
+            "ROUTECONTRACT_GRADLE_GRAPH VERIFIED",
+            "def routeContractBuildRoot = layout.buildDirectory.get().asFile.toPath()",
+            'def expectedRouteContractBuildRoot = projectDir.toPath().resolve("build")',
+            "This verified pilot lane requires the owning module's default build directory",
+            "Pilot evidence path must stay below the build directory",
+            "ancestor.startsWith(routeContractBuildRoot)",
+            "Refusing to traverse a non-directory or symlink",
+            'java.nio.file.Files.deleteIfExists(path)',
+            "Refusing to replace a non-regular pilot evidence path",
+            "dependsOn(routeContractPilotPrepare)",
+            "routecontract-0.1.2-source.zip",
+            "/scripts/install-release-assets.py",
+            "RepositoriesMode.FAIL_ON_PROJECT_REPOS",
+            "normal build and IDE sync must still succeed",
+            "### Gradle Kotlin DSL opt-in lane",
+            "ROUTECONTRACT_KOTLIN_DSL_START",
+            "ROUTECONTRACT_KOTLIN_DSL_END",
+            "H2 `MODE=MySQL`",
+            "does not satisfy the published MySQL 8.4.11 boundary",
+            "never disable them",
+            "dependency-report task can still exit `0` while printing",
+            "do not treat `BUILD SUCCESSFUL`\nalone as a usable graph",
+            "### Maven 3.9.14 opt-in profile lane",
+            "two-module Maven pilot",
+            "same-checkout fixture and its synthetic match are CI scaffolding, not human approval or\nexternal adoption",
+            "scripts/prepare_maven_v0_1_2_checksums.py",
+            "https://raw.githubusercontent.com/ym0506/routecontract/2264b6e6292ee80f131148f2acef601cbaede096/scripts/prepare_maven_v0_1_2_checksums.py",
+            "https://raw.githubusercontent.com/ym0506/routecontract/2264b6e6292ee80f131148f2acef601cbaede096/scripts/verify-external-maven-integration.sh",
+            "transport URL is pinned to the exact bridge implementation commit",
+            "exact\ntwelve-file coordinate inventory",
+            "private, single-writer directory",
+            "<profile>",
+            "<name>routecontractPilot</name>",
+            "<id>routecontract-verified-file-repository</id>",
+            "<checksumPolicy>fail</checksumPolicy>",
+            "<scope>test</scope>",
+            "<source>src/routeContractPilot/java</source>",
+            "<routecontract.candidateRoot>target/routecontract</routecontract.candidateRoot>",
+            "<routecontract.artifactJarName>routecontract-shardingsphere-5.5-0.1.2.jar</routecontract.artifactJarName>",
+            "<routecontract.artifactJarPath>${routecontract.artifactJarPath}</routecontract.artifactJarPath>",
+            "-Daether.checksums.algorithms.routecontract-verified-file-repository=SHA-256",
+            "Maven has no Gradle `exclusiveContent` equivalent",
+            "Passing `-Dtest`\ntogether with `-am`",
+            'consumer_cache="/absolute/path/to/new-routecontract-maven-consumer-cache"',
+            "-Dtest=com.example.orders.OrderQueryIntegrationTest#keepsTheApprovedExecutionStructure",
+            "approved_identity()",
+            'approved_before="$(approved_identity "${approved_path}")"',
+            'test "$(approved_identity "${approved_path}")" = "${approved_before}"',
+            'test ! -e "${approved_path}"',
+            'test ! -L "${approved_path}"',
+            "Failsafe, a different test\nrunner, Surefire `additionalClasspath*` injection, or a custom runtime classloader remains a fit",
+            "Apache Maven 3.9.14 (996c630dbc656c76214ce58821dcc58be960875b)",
+            'test ! -e "${routecontract_cache_root}"',
+            'test ! -L "${routecontract_cache_root}"',
+            'expected_jar_sha256="d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc"',
+            'expected_pom_sha256="70b5d4161d1532e9f9cb699071790a7806d87658511d931477544fa06037b85d"',
+            '"routecontract-shardingsphere-5.5-0.1.2.pom>${repository_id}="',
+            '"routecontract-shardingsphere-5.5-0.1.2.jar>${repository_id}="',
+            "expected_index_sha256=\"7849adf4",
+            "expected_installer_sha256=\"134b2657",
+            "2026-12-06",
+            "assertEquals(201L, actualId); // Keep the existing business assertion.",
+            "ManifestPolicy policy = ManifestPolicy.strict(",
+            '"ds_0", "orders-shard-a"',
+            '"ds_1", "orders-shard-b"',
+            "RouteContract does not discover the complete target universe",
+            "Never silently\nrebind a different observed name to an existing alias",
+            "use non-sensitive test-fixture\nnames in a public repository",
+            "store.writeCandidate(approvedPath, candidatePath, candidate);",
+            ".hasAtMostObservedPhysicalAttempts(reviewedMaxAttempts)",
+            ".hasAtMostDistinctObservedDataSourceNames(reviewedMaxDataSources)",
+            "if (Files.notExists(approvedPath))",
+            "new ManifestVerifier().verify(store.read(approvedPath), candidate)",
+            "type.getProtectionDomain().getCodeSource()",
+            "RouteContract must be loaded from the exact cached Release JAR",
+            "the SPI provider class must be loaded from the exact cached Release JAR",
+            "matchingServiceDescriptorJars()",
+            "JarURLConnection jarConnection = (JarURLConnection) connection;",
+            "Path.of(jarConnection.getJarFileURL().toURI()).toRealPath()",
+            "Stale candidate exists before capture",
+            "RouteContract provides no approval API",
+            "The authorized external-repository maintainer\nmust explicitly approve the baseline",
+            "Record that\napproval; a RouteContract maintainer, an assistant, a tool, or CI cannot substitute",
+            "every fresh CI job must repeat the exact Release download",
+            'printf \'ROUTECONTRACT_REPOSITORY=%s\\n\'',
+            "candidate file is an undeclared test side effect",
+            "Do not accept an arbitrary nonzero build result",
+            'test "${first_run_status}" -ne 0',
+            'test -s "${candidate_path}"',
+            'root.attrib.get("tests") == "1"',
+            'root.attrib.get("skipped") == "0"',
+            "never update the approved file\nautomatically in CI",
+            'current = {"roots": [], "coordinates": [], "root_seen": False}',
+            'raise SystemExit("dependency coordinate appeared before the project root")',
+            "def is_fasterxml_jackson(group):",
+            'group == "com.fasterxml.jackson" or group.startswith("com.fasterxml.jackson.")',
+        ):
+            self.assertIn(required, guide)
+        self.assertEqual(
+            1,
+            guide.count('providers.gradleProperty("routecontractRepository")'),
+        )
+        self.assertEqual(
+            1,
+            guide.count('providers.environmentVariable("ROUTECONTRACT_REPOSITORY")'),
+        )
+        self.assertLess(guide.index("assertEquals(201L, actualId)"), guide.index("writeCandidate"))
+        self.assertLess(guide.index("writeCandidate"), guide.index("Files.notExists"))
+        first_run_guard = guide[
+            guide.index("if (Files.notExists(approvedPath))"):
+            guide.index("ManifestAssertions.assertMatched(")
+        ]
+        self.assertIn(".hasAtMostObservedPhysicalAttempts", first_run_guard)
+        self.assertIn(".hasAtMostDistinctObservedDataSourceNames", first_run_guard)
+        self.assertNotIn("Maven Central coordinate", guide)
+        self.assertGreaterEqual(guide.count("--no-build-cache --rerun-tasks"), 2)
+        self.assertLess(
+            guide.index('ROUTECONTRACT_REPOSITORY="/absolute/path/to/routecontract-maven"'),
+            guide.index("## 4. Review and approve the first baseline"),
+        )
+        for unquoted_shell_path in (
+            "  /absolute/path/to/routecontract-v0.1.2",
+            "cd /absolute/path/to/routecontract-v0.1.2",
+            "mkdir /absolute/path/to/routecontract-release-assets",
+            "--dir /absolute/path/to/routecontract-release-assets",
+            "python3 /absolute/path/to/routecontract-v0.1.2",
+            "--release-assets-dir /absolute/path/to/routecontract-release-assets",
+            "--repository /absolute/path/to/routecontract-maven",
+            "cd /absolute/path/to/your-repository",
+            "ROUTECONTRACT_REPOSITORY=/absolute/path/to/routecontract-maven",
+        ):
+            self.assertNotIn(unquoted_shell_path, guide)
+        self.assertNotIn("run: ./gradlew test", guide)
+        self.assertNotIn("store.read(approvedPath).policy()", guide)
+        self.assertNotIn('url = uri("/absolute/path/to/routecontract-maven")', guide)
+        self.assertEqual(1, guide.count("<profile>"))
+        self.assertGreaterEqual(guide.count("mvn -B -ntp"), 3)
+        self.assertLess(
+            guide.index("scripts/prepare_maven_v0_1_2_checksums.py"),
+            guide.index("<profile>"),
+        )
+        graph_goal = guide.index(
+            "  org.apache.maven.plugins:maven-dependency-plugin:3.11.0:tree"
+        )
+        graph_selector = guide.rindex(
+            "-Dtest=com.example.orders.OrderQueryIntegrationTest", 0, graph_goal
+        )
+        graph_log_redirect = guide.index('>"${graph_log}" 2>&1', graph_goal)
+        graph_parser = guide.index(
+            "pattern = re.compile(",
+            graph_log_redirect,
+        )
+        cached_pom = guide.index('test -f "${cached_pom}"', graph_parser)
+        candidate_selector = guide.index(
+            "-Dtest=com.example.orders.OrderQueryIntegrationTest", cached_pom
+        )
+        self.assertLess(graph_selector, graph_goal)
+        self.assertLess(graph_goal, graph_log_redirect)
+        self.assertLess(graph_log_redirect, graph_parser)
+        self.assertLess(graph_parser, cached_pom)
+        self.assertLess(cached_pom, candidate_selector)
+        for graph_guard in (
+            "Could not validate integrity|Checksum validation failed|no checksums available",
+            'versions != {"5.5.3"}',
+            'section_pattern = re.compile(',
+            'root_pattern = re.compile(',
+            '"depth": depth',
+            '"prefix": prefix',
+            "expected exactly one dependency-tree plugin section and one project root",
+            'coordinate["type"] != "jar"',
+            'coordinate["classifier"] is not None',
+            'coordinate["scope"] not in allowed_scopes',
+            'expected_depth is not None and coordinate["depth"] != expected_depth',
+            'allowed_scopes={"test"}',
+            'allowed_scopes={"compile", "runtime", "test"}',
+            '"routecontract-shardingsphere-5.5"',
+            '("org.apache.shardingsphere", "shardingsphere-jdbc", "5.5.3")',
+            "expected exactly one {relationship}unclassified JAR",
+            '("org.apache.calcite", "calcite-core", "1.42.0")',
+            '("org.apache.calcite", "calcite-linq4j", "1.42.0")',
+            '("net.minidev", "json-smart", "2.4.10")',
+            '("net.minidev", "accessors-smart", "2.4.9")',
+            "required=False",
+            'jackson_versions != {"2.18.9"}',
+            "FasterXML Jackson dependencies must be unclassified JARs in an allowed scope",
+            '("org.locationtech.jts.io", "jts-io-common")',
+            '("com.google.protobuf", "protobuf-java")',
+            'if (coordinate["group"], coordinate["artifact"]) in forbidden',
+        ):
+            self.assertIn(graph_guard, guide[graph_goal:cached_pom])
+        self.assertEqual(
+            3,
+            guide.count('"-Droutecontract.artifactJarPath=${cached_jar}"'),
+        )
+        self.assertNotIn("-DskipTests dependency:tree", guide)
+        self.assertGreaterEqual(guide.count("-DskipTests=false"), 3)
+        self.assertGreaterEqual(guide.count("-Dmaven.test.skip=false"), 3)
+        self.assertEqual(4, guide.count("-Dmaven.test.failure.ignore=false"))
+        self.assertIn('root.attrib.get("failures") == "0"', guide)
+        self.assertIn('root.attrib.get("errors") == "0"', guide)
+        self.assertIn('test "${first_run_status}" -eq 1', guide)
+        self.assertIn('root.attrib.get("tests") == "1"', guide)
+        self.assertIn('root.attrib.get("failures") == "1"', guide)
+        self.assertIn('root.attrib.get("failures") == "0"', guide)
+
+    def test_maven_profile_is_complete_and_pilot_scoped(self) -> None:
+        guide = (REPOSITORY_ROOT / "docs" / "first-integration.md").read_text(
+            encoding="utf-8"
+        )
+        profile_match = re.search(
+            r"```xml\n(<profile>.*?</profile>)\n```",
+            guide,
+            flags=re.DOTALL,
+        )
+        self.assertIsNotNone(profile_match)
+        profile = ET.fromstring(profile_match.group(1))
+
+        expected_managed = {
+            ("com.fasterxml.jackson", "jackson-bom"): (
+                "2.18.9",
+                "pom",
+                "import",
+            ),
+            ("org.apache.calcite", "calcite-core"): ("1.42.0", None, None),
+            ("org.apache.calcite", "calcite-linq4j"): ("1.42.0", None, None),
+            ("net.minidev", "json-smart"): ("2.4.10", None, None),
+            ("net.minidev", "accessors-smart"): ("2.4.9", None, None),
+        }
+        expected_dependencies = {
+            (
+                "io.github.ym0506.routecontract",
+                "routecontract-shardingsphere-5.5",
+            ): ("0.1.2", "test"),
+            ("org.junit.jupiter", "junit-jupiter"): ("5.14.3", "test"),
+            ("org.apache.shardingsphere", "shardingsphere-jdbc"): (
+                "5.5.3",
+                "compile",
+            ),
+            ("org.apache.calcite", "calcite-core"): ("1.42.0", "compile"),
+        }
+        expected_exclusions = {
+            ("org.apache.shardingsphere", "shardingsphere-jdbc"): {
+                ("org.locationtech.jts.io", "jts-io-common"),
+                ("com.google.protobuf", "protobuf-java"),
+            },
+            ("org.apache.calcite", "calcite-core"): {
+                ("org.locationtech.jts.io", "jts-io-common"),
+                ("com.google.protobuf", "protobuf-java"),
+            },
+        }
+
+        def assert_complete(candidate: ET.Element) -> None:
+            self.assertEqual(
+                "routecontractPilot",
+                candidate.findtext("activation/property/name"),
+            )
+            self.assertEqual("true", candidate.findtext("activation/property/value"))
+            managed = {
+                (dependency.findtext("groupId"), dependency.findtext("artifactId")):
+                    dependency
+                for dependency in candidate.findall(
+                    "dependencyManagement/dependencies/dependency"
+                )
+            }
+            self.assertEqual(set(expected_managed), set(managed))
+            for coordinate, (version, dependency_type, scope) in expected_managed.items():
+                dependency = managed[coordinate]
+                self.assertEqual(version, dependency.findtext("version"))
+                self.assertEqual(dependency_type, dependency.findtext("type"))
+                self.assertEqual(scope, dependency.findtext("scope"))
+
+            dependencies = {
+                (dependency.findtext("groupId"), dependency.findtext("artifactId")):
+                    dependency
+                for dependency in candidate.findall("dependencies/dependency")
+            }
+            self.assertEqual(set(expected_dependencies), set(dependencies))
+            for coordinate, (version, scope) in expected_dependencies.items():
+                dependency = dependencies[coordinate]
+                self.assertEqual(version, dependency.findtext("version"))
+                self.assertEqual(scope, dependency.findtext("scope"))
+                self.assertIsNone(dependency.find("type"))
+                self.assertIsNone(dependency.find("classifier"))
+                exclusions = {
+                    (exclusion.findtext("groupId"), exclusion.findtext("artifactId"))
+                    for exclusion in dependency.findall("exclusions/exclusion")
+                }
+                self.assertEqual(expected_exclusions.get(coordinate, set()), exclusions)
+
+        assert_complete(profile)
+        self.assertNotIn("minimum profile boundary", guide)
+        normalized_guide = " ".join(guide.split())
+        self.assertIn(
+            "leave that base declaration unchanged",
+            normalized_guide,
+        )
+        self.assertIn(
+            "Do not edit the base dependency merely to make the pilot pass",
+            normalized_guide,
+        )
+
+        incomplete = deepcopy(profile)
+        dependency_management = incomplete.find("dependencyManagement")
+        self.assertIsNotNone(dependency_management)
+        incomplete.remove(dependency_management)
+        with self.assertRaises(AssertionError):
+            assert_complete(incomplete)
+
+        for coordinate in expected_managed:
+            incomplete = deepcopy(profile)
+            dependencies = incomplete.find("dependencyManagement/dependencies")
+            self.assertIsNotNone(dependencies)
+            dependency = next(
+                item
+                for item in dependencies.findall("dependency")
+                if (item.findtext("groupId"), item.findtext("artifactId")) == coordinate
+            )
+            dependencies.remove(dependency)
+            with self.subTest(missing_managed_dependency=coordinate), self.assertRaises(
+                AssertionError
+            ):
+                assert_complete(incomplete)
+
+        for coordinate in expected_dependencies:
+            incomplete = deepcopy(profile)
+            dependencies = incomplete.find("dependencies")
+            self.assertIsNotNone(dependencies)
+            dependency = next(
+                item
+                for item in dependencies.findall("dependency")
+                if (item.findtext("groupId"), item.findtext("artifactId")) == coordinate
+            )
+            dependencies.remove(dependency)
+            with self.subTest(missing_dependency=coordinate), self.assertRaises(
+                AssertionError
+            ):
+                assert_complete(incomplete)
+
+        for coordinate, exclusions in expected_exclusions.items():
+            for excluded_coordinate in exclusions:
+                incomplete = deepcopy(profile)
+                dependency = next(
+                    item
+                    for item in incomplete.findall("dependencies/dependency")
+                    if (item.findtext("groupId"), item.findtext("artifactId"))
+                    == coordinate
+                )
+                exclusion_parent = dependency.find("exclusions")
+                self.assertIsNotNone(exclusion_parent)
+                exclusion = next(
+                    item
+                    for item in exclusion_parent.findall("exclusion")
+                    if (item.findtext("groupId"), item.findtext("artifactId"))
+                    == excluded_coordinate
+                )
+                exclusion_parent.remove(exclusion)
+                with self.subTest(
+                    dependency=coordinate,
+                    missing_exclusion=excluded_coordinate,
+                ), self.assertRaises(AssertionError):
+                    assert_complete(incomplete)
+
+    def test_maven_graph_parser_preserves_dependency_structure_and_exact_artifact_ids(
+        self,
+    ) -> None:
+        guide = (REPOSITORY_ROOT / "docs" / "first-integration.md").read_text(
+            encoding="utf-8"
+        )
+        marker = 'python3 -I - "${graph_log}" <<\'PY\'\n'
+        parser_start = guide.index(marker) + len(marker)
+        parser_end = guide.index("\nPY\n", parser_start)
+        parser = guide[parser_start:parser_end]
+        valid_graph = "\n".join(
+            (
+                "[INFO] --- dependency:3.11.0:tree (default-cli) @ orders ---",
+                "[INFO] com.example:orders:jar:1.0.0",
+                "[INFO] +- io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:jar:0.1.2:test",
+                "[INFO] +- org.apache.shardingsphere:shardingsphere-jdbc:jar:5.5.3:compile",
+                "[INFO] |  +- org.apache.shardingsphere:shardingsphere-infra-executor:jar:5.5.3:compile",
+                "[INFO] |  +- org.apache.calcite:calcite-core:jar:1.42.0:compile",
+                "[INFO] |  \\- org.apache.calcite:calcite-linq4j:jar:1.42.0:compile",
+                "[INFO] +- com.fasterxml.jackson.core:jackson-databind:jar:2.18.9:runtime",
+                "[INFO] \\- com.google.protobuf:protobuf-java-util:jar:4.33.5:test",
+                "",
+            )
+        )
+        valid_graph_with_minidev = valid_graph.replace(
+            "[INFO] +- com.fasterxml.jackson.core:jackson-databind",
+            "[INFO] +- net.minidev:json-smart:jar:2.4.10:runtime\n"
+            "[INFO] +- net.minidev:accessors-smart:jar:2.4.9:runtime\n"
+            "[INFO] +- com.fasterxml.jackson.core:jackson-databind",
+        )
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            temporary = Path(temporary_directory)
+            parser_path = temporary / "parse_graph.py"
+            graph_path = temporary / "graph.log"
+            parser_path.write_text(parser, encoding="utf-8")
+            graph_path.write_text(valid_graph, encoding="utf-8")
+            valid = subprocess.run(
+                [sys.executable, "-I", parser_path, graph_path],
+                capture_output=True,
+                check=False,
+                text=True,
+            )
+            self.assertEqual(0, valid.returncode, valid.stderr)
+            graph_path.write_text(valid_graph_with_minidev, encoding="utf-8")
+            valid_optional = subprocess.run(
+                [sys.executable, "-I", parser_path, graph_path],
+                capture_output=True,
+                check=False,
+                text=True,
+            )
+            self.assertEqual(0, valid_optional.returncode, valid_optional.stderr)
+
+            negative_graphs = {
+                "pom type": valid_graph_with_minidev.replace(
+                    "routecontract-shardingsphere-5.5:jar:0.1.2:test",
+                    "routecontract-shardingsphere-5.5:pom:0.1.2:test",
+                ),
+                "classifier": valid_graph_with_minidev.replace(
+                    "routecontract-shardingsphere-5.5:jar:0.1.2:test",
+                    "routecontract-shardingsphere-5.5:jar:tests:0.1.2:test",
+                ),
+                "wrong scope": valid_graph_with_minidev.replace(
+                    "routecontract-shardingsphere-5.5:jar:0.1.2:test",
+                    "routecontract-shardingsphere-5.5:jar:0.1.2:compile",
+                ),
+                "transitive depth": valid_graph_with_minidev.replace(
+                    "[INFO] +- io.github.ym0506.routecontract:",
+                    "[INFO] |  +- io.github.ym0506.routecontract:",
+                ),
+                "missing shardingsphere-jdbc": valid_graph_with_minidev.replace(
+                    "[INFO] +- org.apache.shardingsphere:shardingsphere-jdbc:jar:5.5.3:compile\n",
+                    "",
+                ),
+                "shardingsphere-jdbc wrong scope": valid_graph_with_minidev.replace(
+                    "shardingsphere-jdbc:jar:5.5.3:compile",
+                    "shardingsphere-jdbc:jar:5.5.3:provided",
+                ),
+                "shardingsphere-jdbc transitive depth": valid_graph_with_minidev.replace(
+                    "[INFO] +- org.apache.shardingsphere:shardingsphere-jdbc:",
+                    "[INFO] |  +- org.apache.shardingsphere:shardingsphere-jdbc:",
+                ),
+                "calcite classifier": valid_graph_with_minidev.replace(
+                    "calcite-core:jar:1.42.0:compile",
+                    "calcite-core:jar:tests:1.42.0:compile",
+                ),
+                "calcite wrong scope": valid_graph_with_minidev.replace(
+                    "calcite-linq4j:jar:1.42.0:compile",
+                    "calcite-linq4j:jar:1.42.0:provided",
+                ),
+                "minidev wrong version": valid_graph_with_minidev.replace(
+                    "json-smart:jar:2.4.10:runtime",
+                    "json-smart:jar:2.5.0:runtime",
+                ),
+                "minidev pom type": valid_graph_with_minidev.replace(
+                    "json-smart:jar:2.4.10:runtime",
+                    "json-smart:pom:2.4.10:runtime",
+                ),
+                "minidev classifier": valid_graph_with_minidev.replace(
+                    "json-smart:jar:2.4.10:runtime",
+                    "json-smart:jar:tests:2.4.10:runtime",
+                ),
+                "minidev wrong scope": valid_graph_with_minidev.replace(
+                    "accessors-smart:jar:2.4.9:runtime",
+                    "accessors-smart:jar:2.4.9:system",
+                ),
+                "minidev duplicate": valid_graph_with_minidev.replace(
+                    "[INFO] +- net.minidev:json-smart:jar:2.4.10:runtime",
+                    "[INFO] +- net.minidev:json-smart:jar:2.4.10:runtime\n"
+                    "[INFO] +- net.minidev:json-smart:jar:2.4.10:runtime",
+                ),
+                "jackson pom type": valid_graph_with_minidev.replace(
+                    "jackson-databind:jar:2.18.9:runtime",
+                    "jackson-databind:pom:2.18.9:runtime",
+                ),
+                "jackson classifier": valid_graph_with_minidev.replace(
+                    "jackson-databind:jar:2.18.9:runtime",
+                    "jackson-databind:jar:tests:2.18.9:runtime",
+                ),
+                "jackson provided scope": valid_graph_with_minidev.replace(
+                    "jackson-databind:jar:2.18.9:runtime",
+                    "jackson-databind:jar:2.18.9:provided",
+                ),
+                "Jackson group prefix collision": valid_graph_with_minidev.replace(
+                    "com.fasterxml.jackson.core:jackson-databind",
+                    "com.fasterxml.jacksonevil:fake",
+                ),
+                "dependency before project root": valid_graph_with_minidev.replace(
+                    "[INFO] com.example:orders:jar:1.0.0\n",
+                    "[INFO] +- com.example:early:jar:1.0.0:test\n"
+                    "[INFO] com.example:orders:jar:1.0.0\n",
+                ),
+                "second root": valid_graph_with_minidev.replace(
+                    "[INFO] com.example:orders:jar:1.0.0\n",
+                    "[INFO] com.example:orders:jar:1.0.0\n"
+                    "[INFO] com.example:second:jar:1.0.0\n",
+                ),
+                "second dependency-tree section": (
+                    valid_graph_with_minidev + valid_graph_with_minidev
+                ),
+                "forbidden exact artifact": valid_graph_with_minidev.replace(
+                    "protobuf-java-util:jar:4.33.5",
+                    "protobuf-java:jar:4.33.5",
+                ),
+            }
+            for name, negative_graph in negative_graphs.items():
+                with self.subTest(name=name):
+                    graph_path.write_text(negative_graph, encoding="utf-8")
+                    rejected = subprocess.run(
+                        [sys.executable, "-I", parser_path, graph_path],
+                        capture_output=True,
+                        check=False,
+                        text=True,
+                    )
+                    self.assertNotEqual(0, rejected.returncode)
+
+        yaml_blocks = re.findall(r"```yaml\n(.*?)```", guide, flags=re.DOTALL)
+        ci_block = next(
+            block
+            for block in yaml_blocks
+            if "- name: Install exact RouteContract v0.1.2 Release assets" in block
+        )
+        maven_ci_block = next(
+            block
+            for block in yaml_blocks
+            if "- name: Verify approved RouteContract Maven integration" in block
+        )
+        for required in (
+            "ROUTECONTRACT_EXPECTED_OUTCOME: matched",
+            "ROUTECONTRACT_PROFILE_OFF_REPORT:",
+            "ROUTECONTRACT_APPROVED_PATH:",
+            "134b265709ac071dedd395da269426d83f1972f602c3b3f7d2201eecc525e204",
+            "https://raw.githubusercontent.com/ym0506/routecontract/v0.1.2/scripts/install-release-assets.py",
+            "https://raw.githubusercontent.com/ym0506/routecontract/2264b6e6292ee80f131148f2acef601cbaede096/scripts/prepare_maven_v0_1_2_checksums.py",
+            "https://raw.githubusercontent.com/ym0506/routecontract/2264b6e6292ee80f131148f2acef601cbaede096/scripts/verify-external-maven-integration.sh",
+            "verify-external-maven-integration.sh",
+            "69f233a5935f36a2e9068c25517fc3f15df4ef7da119e7a02feb9184df49e472",
+            'bash "${tool_dir}/verify-external-maven-integration.sh"',
+        ):
+            self.assertIn(required, maven_ci_block)
+        for required in (
+            'release_base="https://github.com/ym0506/routecontract/releases/download/v0.1.2"',
+            'expected_index_sha256="7849adf417f0170b08d01902b023e8b328d8796f7c2aeacc471eb7acf8e2b217"',
+            'expected_installer_sha256="134b265709ac071dedd395da269426d83f1972f602c3b3f7d2201eecc525e204"',
+            'expected_tag_object="6adacbe04d60b3af83d9067a14a878d26a6c90f5"',
+            'expected_commit="fc4fdd16c21574afa1150654ce354cf8004b138b"',
+            "cat-file -t refs/tags/v0.1.2",
+            "rev-parse 'refs/tags/v0.1.2^{}'",
+            "symbolic-ref -q HEAD",
+            "status --short",
+            "curl --disable --proto '=https' --tlsv1.2 --fail --location",
+            'actual_index_sha256="$(python3 -I -c',
+            'actual_installer_sha256="$(python3 -I -c',
+            'python3 -I "${installer}"',
+        ):
+            self.assertIn(required, ci_block)
+        expected_assets = (
+            "SHA256SUMS",
+            "routecontract-0.1.2-source.zip",
+            "routecontract-shardingsphere-5.5-0.1.2.jar",
+            "routecontract-shardingsphere-5.5-0.1.2-sources.jar",
+            "routecontract-shardingsphere-5.5-0.1.2-javadoc.jar",
+            "routecontract-shardingsphere-5.5.pom",
+            "routecontract-shardingsphere-5.5-cyclonedx.json",
+            "routecontract-shardingsphere-5.5-cyclonedx.xml",
+            "routecontract-aggregate-cyclonedx.json",
+            "routecontract-aggregate-cyclonedx.xml",
+            "supply-chain-evidence.json",
+            "test-summary.txt",
+        )
+        assets_block = re.search(
+            r"^    assets=\(\n(.*?)^    \)$",
+            ci_block,
+            flags=re.DOTALL | re.MULTILINE,
+        ).group(1)
+        self.assertEqual(
+            expected_assets,
+            tuple(line.strip() for line in assets_block.splitlines()),
+        )
+        self.assertNotIn("gh release download", ci_block)
+        self.assertNotIn("GH_TOKEN", ci_block)
+        self.assertLess(
+            ci_block.index("actual_index_sha256="),
+            ci_block.index('python3 -I "${installer}"'),
+        )
+        self.assertLess(
+            ci_block.index("actual_installer_sha256="),
+            ci_block.index('python3 -I "${installer}"'),
+        )
+        run_blocks = re.findall(
+            r"^  run: \|\n(.*?)(?=^\S|\Z)",
+            ci_block,
+            flags=re.DOTALL | re.MULTILINE,
+        )
+        self.assertEqual(2, len(run_blocks))
+        for run_block in run_blocks:
+            shell = "".join(
+                line[4:] if line.startswith("    ") else line
+                for line in run_block.splitlines(keepends=True)
+            )
+            result = subprocess.run(
+                ["bash", "-n"],
+                input=shell,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(0, result.returncode, result.stderr)
+
+    def test_activation_shell_examples_parse_and_reference_guides_compare_candidate(self) -> None:
+        paths = (
+            REPOSITORY_ROOT / "docs" / "reference-guide.ko.md",
+            REPOSITORY_ROOT / "docs" / "reference-guide.md",
+            REPOSITORY_ROOT / "docs" / "first-integration.md",
+        )
+        for path in paths:
+            text = path.read_text(encoding="utf-8")
+            blocks = re.findall(r"```bash\n(.*?)```", text, flags=re.DOTALL)
+            self.assertGreater(len(blocks), 0, path)
+            for index, block in enumerate(blocks):
+                with self.subTest(path=path.name, block=index):
+                    result = subprocess.run(
+                        ["bash", "-n"],
+                        input=block,
+                        text=True,
+                        capture_output=True,
+                        check=False,
+                    )
+                    self.assertEqual(0, result.returncode, result.stderr)
+
+        for readme_name in ("docs/reference-guide.ko.md", "docs/reference-guide.md"):
+            readme = (REPOSITORY_ROOT / readme_name).read_text(encoding="utf-8")
+            self.assertIn(
+                "new ManifestVerifier().verify(approved, candidate)",
+                readme,
+            )
+            self.assertNotIn(
+                "new ManifestVerifier().verify(approved, snapshot, aliases)",
+                readme,
+            )
+            self.assertIn("6adacbe04d60b3af83d9067a14a878d26a6c90f5", readme)
+            self.assertIn("fc4fdd16c21574afa1150654ce354cf8004b138b", readme)
+
+    def test_reference_quick_start_stops_before_project_code_on_revision_mismatch(self) -> None:
+        for readme_name in ("docs/reference-guide.ko.md", "docs/reference-guide.md"):
+            readme = (REPOSITORY_ROOT / readme_name).read_text(encoding="utf-8")
+            quick_start = readme[readme.index("## Quick Start") :]
+            block = re.search(r"```bash\n(.*?)```", quick_start, flags=re.DOTALL).group(1)
+
+            self.assertTrue(block.startswith("(\nset -euo pipefail\n"))
+            self.assertLess(block.index('test ! -e "${source_dir}"'), block.index("git clone"))
+            self.assertLess(block.index('test ! -L "${source_dir}"'), block.index("git clone"))
+            for verification in (
+                "cat-file -t refs/tags/v0.1.2",
+                "rev-parse refs/tags/v0.1.2",
+                "rev-parse 'refs/tags/v0.1.2^{}'",
+                "rev-parse HEAD",
+                "status --short",
+            ):
+                self.assertLess(block.index(verification), block.index("./scripts/quickstart-demo.sh"))
+
+            with self.subTest(readme=readme_name), tempfile.TemporaryDirectory() as raw:
+                root = Path(raw)
+                fake_bin = root / "bin"
+                fake_bin.mkdir()
+                fake_git = fake_bin / "git"
+                fake_git.write_text(
+                    """#!/usr/bin/env bash
+set -eu
+if [ "$1" = clone ]; then
+  destination="${@: -1}"
+  mkdir -p "${destination}/scripts"
+  printf '%s\n' '#!/usr/bin/env bash' 'touch ../quickstart-ran' > "${destination}/scripts/quickstart-demo.sh"
+  chmod +x "${destination}/scripts/quickstart-demo.sh"
+  exit 0
+fi
+if [ "$1" = -C ] && [ "$3" = cat-file ]; then
+  printf 'tag\n'
+  exit 0
+fi
+if [ "$1" = -C ] && [ "$3" = rev-parse ]; then
+  printf '0000000000000000000000000000000000000000\n'
+  exit 0
+fi
+exit 64
+""",
+                    encoding="utf-8",
+                )
+                fake_git.chmod(0o755)
+                environment = os.environ.copy()
+                environment["PATH"] = f"{fake_bin}{os.pathsep}{environment.get('PATH', '')}"
+                result = subprocess.run(
+                    ["bash"],
+                    input=block,
+                    cwd=root,
+                    env=environment,
+                    text=True,
+                    capture_output=True,
+                    check=False,
+                )
+                self.assertNotEqual(0, result.returncode)
+                self.assertFalse((root / "quickstart-ran").exists())
 
 
 class ReportExternalEvidenceContractTest(unittest.TestCase):
@@ -2781,9 +3602,22 @@ module._decode_activation_record(payload, url, 'record.json')
             dummy.write_bytes(b"x")
             evidence = root / "evidence"
             evidence.mkdir()
+            frozen_package_entrypoint = (
+                "from datetime import datetime as RealDateTime, timezone\n"
+                "from unittest.mock import patch\n"
+                "import runpy\n"
+                "class FrozenDateTime(RealDateTime):\n"
+                "    @classmethod\n"
+                "    def now(cls, tz=None):\n"
+                "        value = RealDateTime(2026, 8, 26, tzinfo=timezone.utc)\n"
+                "        return value if tz is None else value.astimezone(tz)\n"
+                "with patch('datetime.datetime', FrozenDateTime):\n"
+                f"    runpy.run_path({str(SCRIPT)!r}, run_name='__main__')\n"
+            )
             package_arguments = [
                 sys.executable,
-                str(SCRIPT),
+                "-c",
+                frozen_package_entrypoint,
                 "--manifest",
                 str(manifest_path),
                 "--template",
@@ -2898,6 +3732,14 @@ module._decode_activation_record(payload, url, 'record.json')
 class PublicExternalEvidenceTest(unittest.TestCase):
     RECORD_COMMIT = "b" * 40
     TAG_COMMIT = "c" * 40
+    # The mocked RC tag has its own README, independent of the current landing page.
+    # Both git-show and public-contents fixtures consume these same synthetic bytes;
+    # production still checks their equality and the required immutable-tag anchors.
+    TAGGED_README_BYTES = (
+        b"# Synthetic RouteContract RC fixture\n\n"
+        b"ShardingSphere-JDBC 5.5.3\n\n"
+        b"```bash\n./scripts/quickstart-demo.sh\n```\n"
+    )
     RECORD_BLOB = "d" * 40
     RECORD_TREE = "e" * 40
     FORM_BLOB = "f" * 40
@@ -2956,8 +3798,10 @@ class PublicExternalEvidenceTest(unittest.TestCase):
         self.artifact_download = self.artifact_download_patcher.start()
         self.addCleanup(self.artifact_download_patcher.stop)
 
-    @staticmethod
-    def tagged_bytes(_commit: str, path: str) -> bytes:
+    @classmethod
+    def tagged_bytes(cls, _commit: str, path: str) -> bytes:
+        if path == "README.md":
+            return cls.TAGGED_README_BYTES
         return (REPOSITORY_ROOT / path).read_bytes()
 
     def fake_graphql_issue(self, _owner: str, _repository: str, number: int) -> dict:
