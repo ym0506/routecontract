@@ -48,7 +48,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Java ${{ matrix.java }}
-        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
         with:
           distribution: temurin
           java-version: ${{ matrix.java == '21' && '21.0.12+8.0.LTS' || '17.0.20+101' }}
@@ -228,7 +228,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up the Java 17 library compiler
-        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
         with:
           distribution: temurin
           java-version: '17.0.20+101'
@@ -238,7 +238,7 @@ jobs:
         run: printf 'ROUTECONTRACT_COMPILER_HOME=%s\n' "$JAVA_HOME" >> "$GITHUB_ENV"
 
       - name: Set up the Java 21 test runtime
-        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
         with:
           distribution: temurin
           java-version: '21.0.12+8.0.LTS'

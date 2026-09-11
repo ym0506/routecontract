@@ -354,9 +354,9 @@ class SubmissionClaimTextTest(unittest.TestCase):
             with self.subTest(workflow=name):
                 self.assertIn("java-version: '17.0.20+101'", workflow)
                 self.assertNotRegex(workflow, r"java-version: [\"']17[\"']")
-                self.assertIn(
-                    "actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961",
+                self.assertRegex(
                     workflow,
+                    r"uses: actions/setup-java@[0-9a-f]{40}(?:\s|$)",
                 )
                 self.assertIn(
                     "grep -Fxq 'IMPLEMENTOR_VERSION=\"Temurin-17.0.20.1+1\"' "
@@ -370,6 +370,27 @@ class SubmissionClaimTextTest(unittest.TestCase):
                 )
         self.assertIn("java -fullversion", workflows["ci.yml"])
         self.assertIn("java -fullversion", workflows["release-evidence.yml"])
+
+        # Updates must retain immutable pins and cover every active workflow.
+        # The action version may change without changing the release JDK contract.
+        setup_java_refs = {
+            path.name: re.findall(
+                r"^\s*(?:-\s*)?uses:\s*['\"]?(actions/setup-java@[^'\"\s#]+)",
+                path.read_text(encoding="utf-8"),
+                re.MULTILINE,
+            )
+            for path in (REPOSITORY_ROOT / ".github" / "workflows").iterdir()
+            if path.suffix in {".yml", ".yaml"}
+        }
+        for name, refs in setup_java_refs.items():
+            for ref in refs:
+                with self.subTest(workflow=name, action=ref):
+                    self.assertRegex(ref, r"^actions/setup-java@[0-9a-f]{40}$")
+        self.assertEqual(
+            len({ref for refs in setup_java_refs.values() for ref in refs}),
+            1,
+            "Update setup-java consistently across all active workflows",
+        )
 
         third_party = (REPOSITORY_ROOT / "THIRD_PARTY.md").read_text(
             encoding="utf-8"
