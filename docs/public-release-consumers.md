@@ -52,7 +52,8 @@ python3 -I scripts/verify-public-maven-release-consumer.py \
   --evidence-directory /absolute/path/to/new-public-maven-evidence
 ```
 
-Gradle uses the existing checksum-pinned 8.14.4 wrapper distribution. Its dependency repository
+Gradle uses the repository's [checksum-pinned wrapper](../gradle/wrapper/gradle-wrapper.properties).
+The dated evidence below records the Gradle version used for each earlier run. Its dependency repository
 is fixed to Maven Central; no custom repository option exists. The new Gradle fixture reuses the
 standalone consumer's dependency declarations, third-party lock lines and verification hashes.
 Preparation removes the installer's broad first-party trust exemption and adds exactly the
