@@ -1,7 +1,8 @@
 # Jackson streaming-core patch qualification
 
-Status: locally qualified; CI review is pending. This document does not announce
-a release or establish external adoption.
+This page records local qualification. See the [pull request's CI results](https://github.com/ym0506/routecontract/pull/92/checks)
+for remote validation. This document does not announce a release or establish
+external adoption.
 
 ## Reason for the change
 
