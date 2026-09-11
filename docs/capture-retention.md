@@ -70,7 +70,10 @@ python3 examples/observer-cost/retention/run.py --output /absolute/new/retention
 
 The public JSON is an explicitly minimized projection. All 39 full histograms were
 reparsed locally and checked against their receipt hashes before extracting it.
-Raw process logs and full histograms remain in the maintainer's local run directory,
+The Java probe was subsequently moved, without changing its bytes, into the conventional
+`src/main/java` tree for source-archive validation. The recorded measurement revision
+and its original source paths remain explicit. Raw process logs and full histograms
+remain in the maintainer's local run directory,
 outside the checkout; their hashes do not imply public availability or independent
 verification. Rerunning the harness creates a new set of raw files for inspection.
 

@@ -178,7 +178,7 @@ def main():
     fixture = ROOT / 'examples/first-project/src/test/java' / PACKAGE
     sources = output / 'sources' / PACKAGE
     sources.mkdir(parents=True)
-    inputs = [HERE / 'CaptureRetentionProbe.java', fixture / 'OrderFixture.java', fixture / 'OrderRepository.java']
+    inputs = [HERE / 'src/main/java' / PACKAGE / 'CaptureRetentionProbe.java', fixture / 'OrderFixture.java', fixture / 'OrderRepository.java']
     for source in inputs:
         shutil.copyfile(source, sources / source.name)
     inputs += [HERE / 'run.py', HERE / 'README.md', HERE.parent / 'pom.xml', settings,
