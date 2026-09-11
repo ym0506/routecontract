@@ -1882,14 +1882,14 @@ and exact JDK 17 setup; replace every repository-specific path and identity:
       https://raw.githubusercontent.com/ym0506/routecontract/2264b6e6292ee80f131148f2acef601cbaede096/scripts/prepare_maven_v0_1_2_checksums.py
     download_tool \
       verify-external-maven-integration.sh \
-      69f233a5935f36a2e9068c25517fc3f15df4ef7da119e7a02feb9184df49e472 \
-      https://raw.githubusercontent.com/ym0506/routecontract/2264b6e6292ee80f131148f2acef601cbaede096/scripts/verify-external-maven-integration.sh
+      8c53eaac7677ed2274e4bab5e5d553e6d4445988df946a66464df0f75f7b2686 \
+      https://raw.githubusercontent.com/ym0506/routecontract/917fadf86f3d47b8c5177bbdd372070e985d57d6/scripts/verify-external-maven-integration.sh
     bash "${tool_dir}/verify-external-maven-integration.sh"
 ```
 
-The installer URL above is pinned to immutable `v0.1.2`; the helper and verifier URLs are pinned to
-bridge implementation commit `2264b6e6292ee80f131148f2acef601cbaede096`, and every download
-retains its exact content-hash gate. This Maven workflow becomes usable only after this documentation
+The installer URL above is pinned to immutable `v0.1.2`. The checksum helper remains pinned to
+`2264b6e6292ee80f131148f2acef601cbaede096`. The verifier uses the Jackson 2.18.10 implementation at
+`917fadf86f3d47b8c5177bbdd372070e985d57d6`. Every download retains its exact content-hash gate. This Maven workflow becomes usable only after this documentation
 commit is published. Until then, do not count this lane as available onboarding.
 
 For either supported build tool, every fresh CI job must repeat the exact Release download and use
