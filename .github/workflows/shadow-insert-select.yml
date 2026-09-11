@@ -1,29 +1,29 @@
-name: Agent comparison (opt-in research)
+name: Shadow INSERT SELECT reproduction
 
 on:
-  workflow_dispatch:
   pull_request:
-    types: [labeled]
+    paths:
+      - 'experiments/shadow-insert-select/**'
+      - '.github/workflows/shadow-insert-select.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'experiments/shadow-insert-select/**'
+      - '.github/workflows/shadow-insert-select.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: agent-comparison-${{ github.ref }}
-  cancel-in-progress: false
+  group: shadow-reproduction-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  compare:
-    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'run-agent-comparison'
-    name: Agent 5.5.3 / Java 17 / MySQL
+  reproduce:
+    name: Released 5.5.3 / MySQL / wrong destination
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
-    env:
-      EXPERIMENT_PR_HEAD: ${{ github.event.pull_request.head.sha }}
-    defaults:
-      run:
-        working-directory: experiments/agent-comparison
-        shell: bash
+    timeout-minutes: 15
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -37,12 +37,8 @@ jobs:
           java-version: '17.0.20+101'
           verify-signature: true
 
-      - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: '3.12.14'
-
       - name: Install Maven 3.9.14
+        shell: bash
         run: |
           set -euo pipefail
           archive="${RUNNER_TEMP}/apache-maven-3.9.14-bin.tar.gz"
@@ -55,18 +51,19 @@ jobs:
           tar -xzf "$archive" -C "$RUNNER_TEMP"
           printf '%s\n' "${RUNNER_TEMP}/apache-maven-3.9.14/bin" >> "$GITHUB_PATH"
 
-      - name: Verify synthetic classifier and receiver controls
-        run: python3 -m unittest -v
+      - name: Verify controls and the exact contract failure
+        run: python3 experiments/shadow-insert-select/verify.py
 
-      - name: Measure the same physical executions
-        run: python3 run.py
+      - name: Show selected evidence
+        shell: bash
+        run: |
+          printf '### Released-version JDBC reproduction\n\n' >> "$GITHUB_STEP_SUMMARY"
+          printf 'Three MySQL controls passed. The primary-only contract failed for the expected shadow destination.\n\n' >> "$GITHUB_STEP_SUMMARY"
+          printf 'Original report: apache/shardingsphere#39750. This does not validate its proposed patch or establish external adoption.\n' >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Retain only minimized results
+      - name: Keep selected results without connection details
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: agent-comparison-${{ github.sha }}
-          path: |
-            experiments/agent-comparison/target/comparison/summary.json
-            experiments/agent-comparison/target/comparison/junit-sanitized.xml
+          name: shadow-insert-select-evidence
+          path: experiments/shadow-insert-select/build/verification/evidence.json
           if-no-files-found: error
-          retention-days: 90

@@ -107,3 +107,7 @@ long-running stability or other JDK/ShardingSphere versions. The fixed warmup is
 JIT convergence. Capture checks and JMH GC profiling both contribute to the measured setup.
 No baseline was approved, no production database was contacted, and no claim of an external
 user or operational performance improvement follows from this result.
+
+A later [capture-lifecycle diagnostic](capture-retention.md) inspects live per-capture
+objects after repeated operations and deliberate exceptions. It is separate from this
+allocation/timing experiment and does not establish long-duration or native-memory stability.

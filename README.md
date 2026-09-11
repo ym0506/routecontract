@@ -52,6 +52,12 @@ or a complete routing plan.
 [Run this example](#quick-start) · [Read the report without installing anything](docs/evidence/ci-review-report-example.md) ·
 [Inspect the query](examples/first-project/src/test/java/io/github/ym0506/routecontract/examples/firstproject/OrderRepository.java)
 
+**A reported upstream defect:** [INSERT SELECT can return “1 row affected” while
+writing to the shadow database](experiments/shadow-insert-select/README.md).
+The released-5.5.3 MySQL reproduction shows why checking the expected data-source
+name matters even when the result and execution count stay equal. It credits the
+original reporter and includes both control cases and the failing contract command.
+
 ## Install 0.1.3
 
 For an existing **Java 17 or 21 · ShardingSphere-JDBC 5.5.3** test project.
@@ -199,6 +205,7 @@ Independent integration and repeat use have not yet been verified.
 | Review failures in CI | [Report guide and CLI](docs/ci-review-report.md) · [Example report](docs/evidence/ci-review-report-example.md) |
 | Understand what is observed | [Architecture](docs/architecture.md) · [Specification](docs/specification.md) |
 | Compare with existing tools | [Tool comparison](docs/competitive-analysis.md) · [Measured datasource-proxy fixture](docs/empirical-comparison.md) |
+| Inspect capture cleanup | [Repeated operations, retained-object controls and limitations](docs/capture-retention.md) |
 | Inspect observer cost | [Public 0.1.3: three conditions, raw measurements and limitations](docs/observer-cost.md) |
 | Examine application code | [Three evaluations: destination changes, query budgets and existing tests](docs/application-evaluations.md) · [한국어](docs/application-evaluations.ko.md) · Author-run experiments |
 | Inspect release evidence | [v0.1.3 Central verification](docs/evidence/release-0.1.3-central.md) · [Evidence matrix](docs/evidence-matrix.md) |

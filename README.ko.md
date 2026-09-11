@@ -51,6 +51,11 @@ JUnit·Maven·Gradle 테스트가 실패하므로 CI에서도 변경을 확인�
 [예제 실행](#quick-start) · [설치 없이 리포트 보기](docs/evidence/ci-review-report-example.md) ·
 [예제 쿼리 소스](examples/first-project/src/test/java/io/github/ym0506/routecontract/examples/firstproject/OrderRepository.java)
 
+**공개된 실제 버그의 재현:** [INSERT SELECT가 “1행 처리 성공”을 반환하면서 shadow DB에
+쓰는 사례](experiments/shadow-insert-select/README.md)를 실제 MySQL·공개 5.5.3에서 확인했습니다.
+결과와 실행 횟수가 같아도 대상 DB 이름 검사가 필요한 이유를 보여 줍니다. 원래 보고자의
+기여를 명시했으며 정상 대조군과 계약 검사가 실패하는 명령을 함께 제공합니다.
+
 ## Install 0.1.3
 
 기존 **Java 17 또는 21 · ShardingSphere-JDBC 5.5.3** 테스트 프로젝트에 추가하세요.
@@ -193,6 +198,7 @@ Proxy, batch, reactive 실행, 애플리케이션이 만든 async 경계와 SQL 
 | CI 실패 검토 | [리포트·CLI](docs/ci-review-report.md) · [리포트 예제](docs/evidence/ci-review-report-example.md) |
 | 관측 내용 이해 | [아키텍처](docs/architecture.md) · [명세](docs/specification.md) |
 | 기존 도구와 비교 | [도구 비교](docs/competitive-analysis.md) · [datasource-proxy 실험](docs/empirical-comparison.md) |
+| 캡처 상태 정리 검증 | [반복 실행·객체 잔류 대조군·검증 한계](docs/capture-retention.md) |
 | 관측 비용 확인 | [공개 0.1.3의 세 조건 비교·원시 측정·한계](docs/observer-cost.md) |
 | 애플리케이션 코드 실험 | [세 가지 실험: 실행 대상·조회 예산·기존 테스트](docs/application-evaluations.ko.md) · [English](docs/application-evaluations.md) · 자체 실행 실험 |
 | 릴리스 검증 | [v0.1.3 Central 검증](docs/evidence/release-0.1.3-central.md) · [증거 목록](docs/evidence-matrix.md) |
