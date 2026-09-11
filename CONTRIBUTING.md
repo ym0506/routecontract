@@ -6,6 +6,16 @@
 - Docker for MySQL integration tests
 - Git, Python 3, Bash or equivalent POSIX tooling, and network access for public release checks
 
+Use the checked-in wrapper: the root build and Kotlin pilot use Gradle 9.7.1. The separately
+pinned `gradle95-build-shape` and `gradle-direct-release` fixtures retain Gradle 9.5.1 to test
+their stated compatibility boundary. Earlier evidence records retain the version actually run.
+
+When regenerating the root wrapper, review its JAR and distribution checksum against the
+[official Gradle checksums](https://gradle.org/release-checksums/) and run
+`git add --renormalize -- gradlew.bat` before reviewing the staged diff. The existing attributes
+keep Windows working files in CRLF while storing normalized text in Git. Verify a fresh checkout
+is clean so wrapper changes do not fail CI's source-state checks before any build starts.
+
 ## Change workflow
 
 1. Open an issue that states the user-visible route regression or missing capability.

@@ -30,6 +30,17 @@ WRAPPER_DISTRIBUTION_SHA256 = (
 WRAPPER_JAR_SHA256 = (
     "7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172"
 )
+# Keep the previous receipt identity valid without mixing pins across versions.
+REVIEWED_WRAPPERS = {
+    "8.14.4": (
+        WRAPPER_DISTRIBUTION_URL, WRAPPER_DISTRIBUTION_SHA256, WRAPPER_JAR_SHA256
+    ),
+    "9.7.1": (
+        "https://services.gradle.org/distributions/gradle-9.7.1-bin.zip",
+        "acd53f1edaf02f1a8ff99879f8a34b302661a057d9b063ae9e35b552f804d20a",
+        "7a9ce74cff467ca1bf60a4fcd9f05185acceda4d0f382434d393e17864262c5d",
+    ),
+}
 
 
 class ProvenanceError(RuntimeError):
@@ -152,13 +163,16 @@ def validate_receipt(document: object) -> dict[str, object]:
         "toolchain",
     )
     exact_int(toolchain["javaMajor"], "toolchain.javaMajor")
+    version = toolchain["gradleVersion"]
+    expected_wrapper = REVIEWED_WRAPPERS.get(version) if isinstance(version, str) else None
     if (
-        toolchain["gradleVersion"] != "8.14.4"
+        expected_wrapper is None
         or toolchain["javaMajor"] != 17
-        or toolchain["wrapperDistributionUrl"] != WRAPPER_DISTRIBUTION_URL
-        or toolchain["wrapperDistributionSha256"]
-        != WRAPPER_DISTRIBUTION_SHA256
-        or toolchain["wrapperJarSha256"] != WRAPPER_JAR_SHA256
+        or (
+            toolchain["wrapperDistributionUrl"],
+            toolchain["wrapperDistributionSha256"],
+            toolchain["wrapperJarSha256"],
+        ) != expected_wrapper
     ):
         raise ProvenanceError("toolchain version and wrapper identities must be exact")
     exact_digest(toolchain["wrapperJarSha256"], "toolchain.wrapperJarSha256")

@@ -9,7 +9,7 @@ installer="$script_directory/install-release-assets.py"
 provenance_validator="$script_directory/validate-gradle-kotlin-pilot-provenance.py"
 expected_jar_sha256="d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc"
 expected_pom_sha256="70b5d4161d1532e9f9cb699071790a7806d87658511d931477544fa06037b85d"
-expected_wrapper_jar_sha256="7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172"
+expected_wrapper_jar_sha256="7a9ce74cff467ca1bf60a4fcd9f05185acceda4d0f382434d393e17864262c5d"
 
 usage() {
     cat <<'EOF'
@@ -260,8 +260,8 @@ path = pathlib.Path(sys.argv[1])
 expected = (
     "distributionBase=GRADLE_USER_HOME\n"
     "distributionPath=wrapper/dists\n"
-    "distributionUrl=https\\://services.gradle.org/distributions/gradle-8.14.4-bin.zip\n"
-    "distributionSha256Sum=f1771298a70f6db5a29daf62378c4e18a17fc33c9ba6b14362e0cdf40610380d\n"
+    "distributionUrl=https\\://services.gradle.org/distributions/gradle-9.7.1-bin.zip\n"
+    "distributionSha256Sum=acd53f1edaf02f1a8ff99879f8a34b302661a057d9b063ae9e35b552f804d20a\n"
     "networkTimeout=10000\n"
     "validateDistributionUrl=true\n"
     "zipStoreBase=GRADLE_USER_HOME\n"
@@ -347,17 +347,17 @@ import sys
 root = pathlib.Path(sys.argv[1])
 matches = sorted(
     path for path in root.glob(
-        "wrapper/dists/gradle-8.14.4-bin/*/gradle-8.14.4/bin/gradle"
+        "wrapper/dists/gradle-9.7.1-bin/*/gradle-9.7.1/bin/gradle"
     )
     if path.is_file() and not path.is_symlink()
 )
 if len(matches) != 1:
-    raise SystemExit(f"expected one bootstrapped Gradle 8.14.4 executable, got {matches}")
+    raise SystemExit(f"expected one bootstrapped Gradle 9.7.1 executable, got {matches}")
 print(matches[0].resolve(strict=True))
 PY
 )"
 test -x "$gradle_command" && test ! -L "$gradle_command" \
-    || die "bootstrapped Gradle 8.14.4 executable is not a real executable file"
+    || die "bootstrapped Gradle 9.7.1 executable is not a real executable file"
 
 fixture="$temporary_root/fixture"
 repository="$temporary_root/maven-repository"
@@ -873,13 +873,13 @@ document = {
         "binding": source_binding,
     },
     "toolchain": {
-        "gradleVersion": "8.14.4",
+        "gradleVersion": "9.7.1",
         "javaMajor": 17,
         "wrapperDistributionUrl": (
-            "https://services.gradle.org/distributions/gradle-8.14.4-bin.zip"
+            "https://services.gradle.org/distributions/gradle-9.7.1-bin.zip"
         ),
         "wrapperDistributionSha256": (
-            "f1771298a70f6db5a29daf62378c4e18a17fc33c9ba6b14362e0cdf40610380d"
+            "acd53f1edaf02f1a8ff99879f8a34b302661a057d9b063ae9e35b552f804d20a"
         ),
         "wrapperJarSha256": wrapper_jar_sha256,
     },
@@ -965,6 +965,6 @@ if [[ -n "$provenance_output" ]]; then
 fi
 printf 'ROUTECONTRACT_GRADLE_KOTLIN_VERIFY markerCopy=PASS repositoryBoundary=PASS profileOff=PASS graph=VERIFIED '\
 'gavResolution=PASS gavNoRemoteFallback=DECOY_REJECTED_OFFLINE_FRESH_CACHE gavNegativeCases=PASS environmentIsolation=ALLOWLISTED cacheIsolation=PASS artifactOrigin=EXACT_COORDINATE_JAR '\
-'runtimePreflight=BEFORE_OPERATION provenance=VALIDATED pathsEphemeral=true missingBaseline=EXPECTED matched=PASS mysql=8.4.11 shardingsphere=5.5.3 gradle=8.14.4 java=17 wrapperDistributionSha256=f1771298a70f6db5a29daf62378c4e18a17fc33c9ba6b14362e0cdf40610380d wrapperJarSha256=7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172 jarSha256=%s pomSha256=%s candidateSha256=%s missingReportSha256=%s matchedReportSha256=%s provenanceSha256=%s\n' \
+'runtimePreflight=BEFORE_OPERATION provenance=VALIDATED pathsEphemeral=true missingBaseline=EXPECTED matched=PASS mysql=8.4.11 shardingsphere=5.5.3 gradle=9.7.1 java=17 wrapperDistributionSha256=acd53f1edaf02f1a8ff99879f8a34b302661a057d9b063ae9e35b552f804d20a wrapperJarSha256=7a9ce74cff467ca1bf60a4fcd9f05185acceda4d0f382434d393e17864262c5d jarSha256=%s pomSha256=%s candidateSha256=%s missingReportSha256=%s matchedReportSha256=%s provenanceSha256=%s\n' \
     "$expected_jar_sha256" "$expected_pom_sha256" "$candidate_sha256" \
     "$missing_report_sha256" "$matched_report_sha256" "$provenance_sha256"

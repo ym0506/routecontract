@@ -621,8 +621,10 @@ prevents the RouteContract module from falling back to Maven Central. Unlike a t
 test configuration, the pilot configuration declares its own exact
 ShardingSphere-JDBC 5.5.3, MySQL Connector/J 26.7.0, Testcontainers 1.21.4, JUnit 5.14.3, and JUnit
 Platform 1.14.3 dependencies. The complete fixture has been exercised with the repository's
-SHA-256-pinned Gradle 8.14.4 wrapper, Java 17, and the digest-pinned MySQL 8.4.11 image. This does
-not claim compatibility with another Gradle release.
+SHA-256-pinned Gradle 8.14.4 wrapper, Java 17, and the digest-pinned MySQL 8.4.11 image.
+The current verifier targets the exact Gradle 9.7.1 wrapper. Its receipt records that version
+and its own wrapper hashes; the receipt validator retains the exact 8.14.4 identity for earlier
+records and rejects mixed or unrecognized identities. Neither record proves arbitrary Gradle 9.x compatibility.
 
 Run the internal verifier against an already downloaded exact `v0.1.2` Release-asset directory:
 
@@ -660,7 +662,7 @@ ROUTECONTRACT_REPOSITORY=/absolute/real/path/to/routecontract-maven \
   :owning-module:routeContractPilot
 ```
 
-The checked-in fixture bootstraps one immutable wrapper-pinned Gradle 8.14.4 distribution, then
+The checked-in fixture bootstraps one immutable wrapper-pinned Gradle 9.7.1 distribution, then
 gives the marker, repository-path, GAV-negative, profile-off, GAV-origin, graph, missing-baseline,
 and matched cases separate HOME, temporary, Gradle-user-home, and project-cache directories under
 an `env -i` allowlist. An origin-only, non-transitive fresh-cache configuration proves exact

@@ -298,8 +298,8 @@ class GradleKotlinPilotContractTest(unittest.TestCase):
             "jarSha256=%s pomSha256=%s candidateSha256=%s",
             "provenanceSha256=%s",
             "candidateSha256=%s",
-            "wrapperDistributionSha256=f1771298a70f6db5a29daf62378c4e18a17fc33c9ba6b14362e0cdf40610380d",
-            "wrapperJarSha256=7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172",
+            "wrapperDistributionSha256=acd53f1edaf02f1a8ff99879f8a34b302661a057d9b063ae9e35b552f804d20a",
+            "wrapperJarSha256=7a9ce74cff467ca1bf60a4fcd9f05185acceda4d0f382434d393e17864262c5d",
             "runtimeOriginEvidence=HASHED_EPHEMERAL_OBSERVATIONS",
             "rev-parse --show-toplevel",
             '[[ "$git_toplevel" == "$repository_root" ]]',
@@ -518,6 +518,37 @@ class GradleKotlinPilotContractTest(unittest.TestCase):
             )
             validated_receipt = module.validate(provenance)
             self.assertEqual(2, validated_receipt["schemaVersion"])
+            current_receipt = copy.deepcopy(receipt)
+            current_receipt["toolchain"] = {
+                "gradleVersion": "9.7.1",
+                "javaMajor": 17,
+                "wrapperDistributionUrl": (
+                    "https://services.gradle.org/distributions/gradle-9.7.1-bin.zip"
+                ),
+                "wrapperDistributionSha256": (
+                    "acd53f1edaf02f1a8ff99879f8a34b302661a057d9b063ae9e35b552f804d20a"
+                ),
+                "wrapperJarSha256": (
+                    "7a9ce74cff467ca1bf60a4fcd9f05185acceda4d0f382434d393e17864262c5d"
+                ),
+            }
+            module.validate_receipt(current_receipt)
+            # Each accepted version must retain its own exact wrapper identities.
+            for target, other in ((current_receipt, receipt), (receipt, current_receipt)):
+                for field in (
+                    "wrapperDistributionUrl", "wrapperDistributionSha256", "wrapperJarSha256"
+                ):
+                    mixed = copy.deepcopy(target)
+                    mixed["toolchain"][field] = other["toolchain"][field]
+                    with self.subTest(version=target["toolchain"]["gradleVersion"], field=field):
+                        with self.assertRaises(module.ProvenanceError):
+                            module.validate_receipt(mixed)
+            for wrong_version in ("9.7", "9.8.0", ["9.7.1"], None):
+                unknown = copy.deepcopy(current_receipt)
+                unknown["toolchain"]["gradleVersion"] = wrong_version
+                with self.subTest(wrong_version=wrong_version):
+                    with self.assertRaises(module.ProvenanceError):
+                        module.validate_receipt(unknown)
             clean_receipt = copy.deepcopy(receipt)
             clean_receipt["source"] = {
                 "revision": "1" * 40,
