@@ -77,7 +77,7 @@ VALID_GRAPH = """\
 [INFO] |  +- net.minidev:json-smart:jar:2.4.10:test
 [INFO] |     \\- net.minidev:accessors-smart:jar:2.4.9:test
 [INFO] +- org.apache.calcite:calcite-linq4j:jar:1.42.0:test
-[INFO] +- com.fasterxml.jackson.core:jackson-databind:jar:2.18.9:test
+[INFO] +- com.fasterxml.jackson.core:jackson-databind:jar:2.18.10:test
 [INFO] \\- io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:jar:0.1.2:test
 """
 
@@ -428,7 +428,7 @@ class MavenPilotContractTest(unittest.TestCase):
             '("org.apache.calcite", "calcite-linq4j", "1.42.0")',
             '("net.minidev", "json-smart", "2.4.10")',
             '("net.minidev", "accessors-smart", "2.4.9")',
-            'jackson_versions != {"2.18.9"}',
+            'jackson_versions != {"2.18.10"}',
             '("org.locationtech.jts.io", "jts-io-common")',
             '("com.google.protobuf", "protobuf-java")',
         ):
@@ -554,16 +554,16 @@ class MavenPilotContractTest(unittest.TestCase):
                 "[INFO] |  \\- io.github.ym0506.routecontract",
             ),
             "Jackson provided scope": VALID_GRAPH.replace(
-                "jackson-databind:jar:2.18.9:test",
-                "jackson-databind:jar:2.18.9:provided",
+                "jackson-databind:jar:2.18.10:test",
+                "jackson-databind:jar:2.18.10:provided",
             ),
             "Jackson classifier": VALID_GRAPH.replace(
-                "jackson-databind:jar:2.18.9:test",
-                "jackson-databind:jar:tests:2.18.9:test",
+                "jackson-databind:jar:2.18.10:test",
+                "jackson-databind:jar:tests:2.18.10:test",
             ),
             "Jackson pom type": VALID_GRAPH.replace(
-                "jackson-databind:jar:2.18.9:test",
-                "jackson-databind:pom:2.18.9:test",
+                "jackson-databind:jar:2.18.10:test",
+                "jackson-databind:pom:2.18.10:test",
             ),
             "Jackson namespace prefix collision": VALID_GRAPH.replace(
                 "com.fasterxml.jackson.core:jackson-databind",

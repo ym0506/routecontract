@@ -19,7 +19,7 @@ Core/linq4j 1.42.0 constraints.
 
 ```groovy
 dependencies {
-    testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))
+    testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.10"))
     testImplementation("${routeContractGroup}:routecontract-shardingsphere-5.5:${routeContractVersion}")
     testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:5.5.3") {
         exclude group: "org.locationtech.jts.io", module: "jts-io-common"
@@ -40,7 +40,7 @@ The published RouteContract artifact is a thin JAR. Its module-level
 `compileOnly` ShardingSphere/BOM declarations are not published as consumer
 version constraints, so the standalone consumer owns the alignment. The BOM
 resolves ShardingSphere's Jackson 2 core, databind, datatype-jdk8, and
-datatype-jsr310 compatibility modules to 2.18.9 in this verified Gradle test
+datatype-jsr310 compatibility modules to 2.18.10 in this verified Gradle test
 graph. The strict constraints resolve Calcite Core and linq4j to 1.42.0; JTS
 Core 1.19.0 remains, while JTS I/O Common must be absent. In this verified
 runtime, the annotations artifact shared with Jackson 3

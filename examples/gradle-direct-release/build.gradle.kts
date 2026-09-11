@@ -321,7 +321,7 @@ val verifiedRouteContractFiles = files(verifiedRouteContractJar)
 
 dependencies {
     implementation(verifiedRouteContractFiles)
-    implementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))
+    implementation(platform("com.fasterxml.jackson:jackson-bom:2.18.10"))
     implementation("com.alibaba:transmittable-thread-local") {
         version { strictly(ttlVersion) }
     }
@@ -363,8 +363,8 @@ val verifyRuntimeClasspath = tasks.register("verifyRuntimeClasspath") {
         requireOne("com.alibaba", "transmittable-thread-local", ttlVersion)
         requireOne("tools.jackson.core", "jackson-core", jacksonVersion)
         requireOne("com.fasterxml.jackson.core", "jackson-annotations", "2.21")
-        requireOne("com.fasterxml.jackson.core", "jackson-core", "2.18.9")
-        requireOne("com.fasterxml.jackson.core", "jackson-databind", "2.18.9")
+        requireOne("com.fasterxml.jackson.core", "jackson-core", "2.18.10")
+        requireOne("com.fasterxml.jackson.core", "jackson-databind", "2.18.10")
         requireOne(
             "org.apache.shardingsphere",
             "shardingsphere-infra-executor",
@@ -395,14 +395,14 @@ val verifyRuntimeClasspath = tasks.register("verifyRuntimeClasspath") {
             ) {
                 "2.21"
             } else {
-                "2.18.9"
+                "2.18.10"
             }
             it.version != expected
         }
         if (wrongFasterXmlJackson.isNotEmpty()) {
             throw GradleException(
                 "Resolved FasterXML Jackson modules left the reviewed " +
-                    "2.18.9 / annotations 2.21 split: " +
+                    "2.18.10 / annotations 2.21 split: " +
                     wrongFasterXmlJackson
             )
         }

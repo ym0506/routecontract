@@ -113,7 +113,7 @@ class GradleDirectReleaseContractTest(unittest.TestCase):
         )
         self.assertTrue(
             all(
-                ":2.18.9=" in line
+                ":2.18.10=" in line
                 for line in jackson_lines
                 if not line.startswith(
                     "com.fasterxml.jackson.core:jackson-annotations:"
@@ -121,7 +121,7 @@ class GradleDirectReleaseContractTest(unittest.TestCase):
             )
         )
         self.assertIn(
-            'implementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))',
+            'implementation(platform("com.fasterxml.jackson:jackson-bom:2.18.10"))',
             self.build,
         )
         self.assertNotIn("enforcedPlatform", self.build)

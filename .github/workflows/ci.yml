@@ -598,7 +598,7 @@ jobs:
           mv "${partial}" "${summary}"
           cat "${summary}"
           grep -Fxq \
-            'ROUTECONTRACT_MAVEN_FIXTURE graph=PASS shardingsphere=5.5.3 jackson=2.18.9 calcite=1.42.0 minidev=2.4.x forbiddenDependencies=ABSENT' \
+            'ROUTECONTRACT_MAVEN_FIXTURE graph=PASS shardingsphere=5.5.3 jackson=2.18.10 calcite=1.42.0 minidev=2.4.x forbiddenDependencies=ABSENT' \
             "${summary}"
           grep -Fxq \
             'ROUTECONTRACT_MAVEN_FIXTURE assetSource=anonymous-github-release maven=3.9.14 java=21 compiledClassMajor=65 mysql=8.4.11' \
