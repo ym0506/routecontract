@@ -5,6 +5,9 @@ RouteContract follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) a
 
 ## [Unreleased]
 
+The source candidate is [0.1.4](docs/release-0.1.4-candidate.md). It is not yet published;
+current public installation instructions continue to use 0.1.3.
+
 ### Fixed
 
 - Preserve a valid diagnostic snapshot when a failure callback overlaps capture closure.
@@ -12,6 +15,13 @@ RouteContract follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) a
   states and throw an internal validation exception. Failure captures remain ineligible for
   passing contracts. See the [reproduction and verification](docs/atomic-attempt-snapshot.md).
   This correction is not included in the immutable published `0.1.3` artifact.
+
+### Changed
+
+- Update the published Jackson core dependency from 3.1.5 to 3.1.6 and align the
+  ShardingSphere compatibility/test graph's Jackson 2.x family to BOM 2.18.10.
+- Verify the existing core and MySQL suites with explicit Java 17 and Java 21 test launchers
+  while retaining Java 17 library bytecode and exact ShardingSphere-JDBC 5.5.3 support.
 
 ## [0.1.3] - 2026-09-07
 
