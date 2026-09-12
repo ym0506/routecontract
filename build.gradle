@@ -7,7 +7,7 @@ plugins {
 }
 
 group = 'io.github.ym0506.routecontract'
-version = '0.1.3'
+version = '0.1.4'
 
 def testJavaVersion = providers.gradleProperty('routecontractTestJavaVersion').getOrElse('17')
 if (!(testJavaVersion in ['17', '21'])) {
