@@ -19,9 +19,9 @@ classifier checksum. Because they are generated classifier content rather than
 Gradle runtime/direct dependencies, do not add them as runtime or direct
 dependency components to these machine SBOMs.
 
-The generated published POM has two direct runtime dependencies: Alibaba
-TransmittableThreadLocal 2.14.2 and `tools.jackson.core:jackson-core` 3.1.5.
-Its locked runtime closure also contains the Jackson 3.1.5 BOM; all three are
+The POM generated from the current source has two direct runtime dependencies:
+Alibaba TransmittableThreadLocal 2.14.2 and `tools.jackson.core:jackson-core` 3.1.6.
+Its locked runtime closure also contains the Jackson 3.1.6 BOM; all three are
 Apache-2.0. ShardingSphere, Connector/J, Jakarta Transaction API, JNA, JTS Core
 and the MySQL image belong to compile compatibility, test/example or container
 profiles rather than the POM's declared runtime dependencies. JTS I/O Common is
@@ -29,6 +29,10 @@ excluded from the ShardingSphere-JDBC fixture graph and forbidden by the
 supply-chain gate. The Release gate rejects the original dependency paths for
 these test/example components; this profile/path statement is not a semantic
 provenance proof for renamed or transformed bytes.
+
+The immutable public RouteContract 0.1.3 POM declares streaming core 3.1.5.
+Current-source SBOMs describe the local candidate, not a replacement for that
+release's published POM or SBOM. See [Jackson 3 patch qualification](jackson3-patch-compatibility.md).
 
 ## Generate
 

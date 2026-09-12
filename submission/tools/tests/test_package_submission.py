@@ -9202,9 +9202,9 @@ class ReportContentSbomTest(unittest.TestCase):
             },
             {
                 "name": "Jackson Core",
-                "version": "3.1.5",
+                "version": "3.1.6",
                 "license": "Apache-2.0",
-                "url": "https://github.com/FasterXML/jackson-core/tree/jackson-core-3.1.5",
+                "url": "https://github.com/FasterXML/jackson-core/tree/jackson-core-3.1.6",
                 "purpose": "canonical JSON 생성·읽기용 runtime 의존성",
             },
             {
