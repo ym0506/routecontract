@@ -4,7 +4,8 @@
 
 - JDK 17 to compile the library; JDK 21 as well for the additional runtime check
 - Docker for MySQL integration tests
-- Git, Python 3, Bash or equivalent POSIX tooling, and network access for public release checks
+- Git, Python 3.10+ available as `python3`, Bash, and POSIX tools including `tar`
+- `curl` and network access for public release checks and uncached dependencies
 
 Use the checked-in wrapper: the root build and Kotlin pilot use Gradle 9.7.1. The separately
 pinned `gradle95-build-shape` and `gradle-direct-release` fixtures retain Gradle 9.5.1 to test
@@ -30,7 +31,9 @@ Use the terminology in [docs/specification.md](docs/specification.md). Never inc
 
 ## Verification
 
-Run the complete unit, real-MySQL integration and SBOM checks with:
+Run the complete unit, real-MySQL integration and SBOM checks on macOS arm64/x86_64 or
+Linux x86_64. These are the hosts supported by the checksum-pinned
+[official CycloneDX validator](scripts/validate-official-cyclonedx.py):
 
 ```bash
 ./gradlew --no-daemon --no-build-cache clean check validateOfficialCycloneDxSbom
