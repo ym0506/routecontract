@@ -29,6 +29,7 @@ CURRENT_RELEASE_SUITES = {
     "io.github.ym0506.routecontract.example.FailureBoundaryMySqlTest": 1,
     "io.github.ym0506.routecontract.example.ObservedExecutionRegressionCorpusMySqlTest": 7,
     "io.github.ym0506.routecontract.example.OperationCorrelationMySqlTest": 5,
+    "io.github.ym0506.routecontract.internal.MutableAttemptTest": 2,
     "io.github.ym0506.routecontract.internal.ShardingSphere553PreflightTest": 3,
     "io.github.ym0506.routecontract.manifest.ManifestReviewReportTest": 10,
     "io.github.ym0506.routecontract.manifest.ObservedExecutionManifestTest": 17,
@@ -108,8 +109,8 @@ class SummarizeTestResultsTest(unittest.TestCase):
             self.assertTrue(first.endswith("\n"))
             self.assertIn("format=routecontract-test-summary-v1\n", first)
             self.assertIn(f"revision={self.revision}\n", first)
-            self.assertIn("suite_count=8\n", first)
-            self.assertIn("test_count=62\n", first)
+            self.assertIn("suite_count=9\n", first)
+            self.assertIn("test_count=64\n", first)
             self.assertIn(
                 "suite=io.github.ym0506.routecontract.manifest.ManifestReviewReportTest"
                 "|tests=10|failures=0|errors=0|skipped=0\n",
