@@ -3,6 +3,16 @@
 RouteContract follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html) for public version identifiers.
 
+## [Unreleased]
+
+### Fixed
+
+- Preserve a valid diagnostic snapshot when a failure callback overlaps capture closure.
+  Store the attempt outcome and failure class together so closure cannot combine different
+  states and throw an internal validation exception. Failure captures remain ineligible for
+  passing contracts. See the [reproduction and verification](docs/atomic-attempt-snapshot.md).
+  This correction is not included in the immutable published `0.1.3` artifact.
+
 ## [0.1.3] - 2026-09-07
 
 Published as an immutable [GitHub Release](https://github.com/ym0506/routecontract/releases/tag/v0.1.3)

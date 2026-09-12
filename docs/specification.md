@@ -93,6 +93,14 @@ An incomplete capture must never be treated as a passing contract.
 A reported-execution-failure capture must also never be treated as a passing contract or approved
 manifest.
 
+When a failure callback overlaps capture closure, the developer must still receive a valid
+diagnostic snapshot. Each retained attempt freezes its outcome and failure class from one
+consistent state: either `START_REPORTED` with no failure class, or `CALLBACK_FAILURE` with the
+reported exception class (absent only for a null cause). Closure must not combine fields from
+different states and throw an internal validation exception. The first terminal callback wins;
+later callbacks cannot rewrite an already frozen attempt. This does not join outstanding workers
+or make failure/interruption paths contract-eligible.
+
 ## 7. Invariants
 
 - RC-01: an event is attributed only to the capture ID active when ShardingSphere submitted or ran that execution.
