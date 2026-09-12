@@ -80,8 +80,9 @@ workflow. The workflow:
   child exit `1`;
 - runs unit and real MySQL integration tests without reusing cached task results;
 - generates `test-summary.txt` from the resulting JUnit XML and fails unless
-  the exact eight expected library and MySQL suites contain 62 passing, non-skipped tests;
-  the standalone consumer runs separately and is not included in this count. The
+  the suite set and passing, non-skipped test counts match the
+  [current summary allowlist](scripts/summarize-test-results.py);
+  the standalone consumer runs separately and is not included in those counts. The
   fixed summary records the Git revision and per-suite counts but deliberately
   omits test names, timings, hostnames, paths, ports, SQL and captured output;
 - builds reproducible-order JARs and the generated Maven POM;
