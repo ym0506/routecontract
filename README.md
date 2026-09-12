@@ -12,15 +12,17 @@
   <a href="#see-it-work">How it works</a> · <a href="#install-013">Install</a> · <a href="#usage">Usage</a> · <a href="#documentation">Documentation</a> · <a href="README.ko.md">한국어</a>
 </p>
 
-**Add checks for database execution to your ShardingSphere-JDBC tests.**
+**Your test can return the right order while querying an extra database.**
 
-RouteContract is a Java library for integration tests that use [Apache ShardingSphere-JDBC](https://github.com/apache/shardingsphere). Wrap one repository or service
-call, keep the assertion on its returned value, and also assert how many JDBC execution attempts
-it should make and which configured data sources it should use.
+After you change a query or sharding rule, an order lookup can still return the expected order
+while querying two databases instead of one. A test that only checks the returned order will
+pass, leaving that change unchecked.
 
-For example, a query can still return the right order after a SQL change starts querying a second
-data source. The result assertion passes; the added execution assertion fails. Your normal
-JUnit/Maven/Gradle test run then fails in CI as well.
+RouteContract adds an execution check to your existing
+[Apache ShardingSphere-JDBC](https://github.com/apache/shardingsphere) integration test.
+Keep the returned-value assertion, then check how many JDBC execution attempts the operation
+makes and which configured data sources it uses. If those assertions fail, your normal
+JUnit/Maven/Gradle test run fails in CI as well.
 
 ## See it work
 
