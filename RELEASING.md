@@ -258,15 +258,19 @@ implemented and verified.
 ## Future Maven Central publication (a separately approved later release)
 
 The immutable GitHub Releases `v0.1.0` and `v0.1.2` remain unchanged and are
-not published to Maven Central. This section applies only to a later stable
-version selected through a separate release approval. It does not authorize
-overwriting, retagging, or describing `0.1.0` or `0.1.2` as a Central artifact,
-and it does not plan or authorize another release by itself.
+not published to Maven Central.
 
-The current selected candidate is [0.1.3](docs/release-0.1.3-candidate.md),
-using the existing single artifact and exact ShardingSphere-JDBC 5.5.3 support.
-The separate 0.2 core/adapter split is not part of this release. Selection is
-not publication or approval of bytes that have not yet been produced.
+[0.1.3 is already published](docs/release-0.1.3-candidate.md) on GitHub and Maven Central,
+using the existing single artifact and exact ShardingSphere-JDBC 5.5.3 support. Its
+[Central evidence record](docs/evidence/release-0.1.3-central.md) retains the completed
+verification and the prepublication exception. The separate 0.2 core/adapter split and
+5.5.2 adapter remain unreleased.
+
+For a future publication, select a new, unpublished stable version strictly greater than
+`0.1.3` through a separate release approval. Preserve all existing tags and published
+coordinates; `0.1.3` is available for historical verification, not a new upload candidate.
+This checklist does not select or authorize another release by itself. Selection does
+not approve bytes that have not yet been produced.
 
 Use the current official [Central publishing guide](https://central.sonatype.org/publish/publish-portal-guide/),
 [Portal API documentation](https://central.sonatype.org/publish/publish-portal-api/)
@@ -278,7 +282,7 @@ records required invariants rather than copying an unstable JSON schema.
 
 Before any upload, record and independently compare:
 
-- a stable project version strictly greater than `0.1.2`; its annotated `vVERSION` tag
+- a new, unpublished stable project version strictly greater than `0.1.3`; its annotated `vVERSION` tag
   object OID, raw-object size and SHA-256; its peeled commit and tree; and the
   public `main` commit from which that tag was created;
 - the successful release-evidence workflow identity and file SHA-256, run ID,
@@ -461,8 +465,10 @@ check, so signature verification does not reopen the caller's keyring.
 The reviewed payload manifest is a strict canonical JSON document with schema
 version `1`, the exact `io.github.ym0506.routecontract` group,
 `routecontract-shardingsphere-5.5` artifact, one stable SemVer strictly greater
-than `0.1.2`, and exactly five lexicographically ordered payload records. Each
-record has only `name`, `size` and `sha256`. The five records are the POM,
+than `0.1.2`, and exactly five lexicographically ordered payload records. This parser
+threshold also permits verification of the historical `0.1.3` bundle; a new publication
+must use the unpublished version selected under the approval requirements above.
+Each record has only `name`, `size` and `sha256`. The five records are the POM,
 Gradle Module Metadata, main JAR, sources JAR and Javadoc JAR. The manifest must
 be produced and approved as part of the approval-bound candidate; the bundle
 tool never creates or edits it and does not turn computed staging hashes into
