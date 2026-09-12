@@ -201,7 +201,7 @@ results and must pass the gate without an unreviewed finding.
 
 | Component | Version | Purpose | License |
 |---|---:|---|---|
-| Gradle Wrapper | 8.14.4 | Reproducible build entry point | Apache-2.0 |
+| Gradle Wrapper | 9.7.1 | Reproducible build entry point | Apache-2.0 |
 | CycloneDX Gradle plugin | 3.4.0 | CycloneDX 1.6 JSON/XML SBOM generation | Apache-2.0 |
 | CycloneDX CLI | 0.33.1 (`b3cfa4b0edc356dad07e0b6e7ab6da0a94af0246`) | Checksum-pinned official JSON/XML structure validation after finalization | Apache-2.0 |
 | OSV-Scanner | 2.5.0 | Pinned offline vulnerability scan of the verified aggregate SBOM | Apache-2.0 |
