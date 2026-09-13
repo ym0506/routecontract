@@ -590,6 +590,82 @@ class CentralUploadBundleTest(unittest.TestCase):
         self.assertNotIn(str(self.root), receipt_text)
         self.assertNotIn(str(self.public_home), receipt_text)
 
+    def remove_signature_checksums(self) -> None:
+        for artifact_id in ARTIFACT_IDS:
+            version_path = self.repository / GROUP_PATH / artifact_id / VERSION
+            for name in self.payloads_by_artifact[artifact_id]:
+                for algorithm in CHECKSUMS:
+                    (version_path / f"{name}.asc.{algorithm}").unlink()
+
+    def test_signature_checksum_omission_preserves_verified_bundle_bytes(self) -> None:
+        historical = self.build()
+        self.remove_signature_checksums()
+        current = self.build(self.root / "without-signature-checksums")
+        self.verify(current.bundle_path, current.receipt_path)
+        self.assertEqual(historical.bundle_path.read_bytes(), current.bundle_path.read_bytes())
+        receipt = json.loads(current.receipt_path.read_text())
+        self.assertEqual(90, receipt["bundle"]["entryCount"])
+        self.assertEqual(15, len(receipt["excludedStagingEntries"]))
+        self.assertEqual(
+            {str(GROUP_PATH / artifact_id / name)
+             for artifact_id in ARTIFACT_IDS
+             for name in ["maven-metadata.xml", *[f"maven-metadata.xml.{a}" for a in CHECKSUMS]]},
+            {entry["path"] for entry in receipt["excludedStagingEntries"]},
+        )
+
+    def test_partial_signature_checksums_are_verified_and_recorded(self) -> None:
+        self.remove_signature_checksums()
+        version_path = self.repository / GROUP_PATH / ARTIFACT_ID / VERSION
+        signature = version_path / f"{next(iter(self.payloads))}.asc"
+        sidecar = signature.with_name(f"{signature.name}.sha256")
+        sidecar.write_text(digest(signature.read_bytes(), "sha256"), encoding="ascii")
+        result = self.build()
+        self.verify(result.bundle_path, result.receipt_path)
+        receipt = json.loads(result.receipt_path.read_text())
+        excluded = {entry["path"] for entry in receipt["excludedStagingEntries"]}
+        self.assertEqual(16, len(excluded))
+        self.assertIn(str(sidecar.relative_to(self.repository)), excluded)
+
+        sidecar.write_text("0" * 64, encoding="ascii")
+        with self.assertRaisesRegex(RuntimeError, "checksum mismatch"):
+            self.build(self.root / "corrupt-sidecar-output")
+        self.assertFalse((self.root / "corrupt-sidecar-output").exists())
+
+    def test_omitted_signature_checksums_do_not_make_other_files_optional(self) -> None:
+        required = []
+        for artifact_id in ARTIFACT_IDS:
+            version_path = GROUP_PATH / artifact_id / VERSION
+            payload_name = next(iter(self.payloads_by_artifact[artifact_id]))
+            required.extend([
+                version_path / payload_name,
+                version_path / f"{payload_name}.asc",
+                version_path / f"{payload_name}.sha256",
+                GROUP_PATH / artifact_id / "maven-metadata.xml",
+                GROUP_PATH / artifact_id / "maven-metadata.xml.sha256",
+            ])
+        self.remove_signature_checksums()
+        for path in required:
+            with self.subTest(missing=path):
+                file = self.repository / path
+                original = file.read_bytes()
+                file.unlink()
+                try:
+                    with self.assertRaisesRegex(RuntimeError, "staging inventory mismatch"):
+                        self.build()
+                    self.assertFalse(self.output.exists())
+                finally:
+                    file.write_bytes(original)
+
+    def test_signature_verification_remains_required_without_signature_checksums(self) -> None:
+        self.remove_signature_checksums()
+        signature = self.repository / GROUP_PATH / ARTIFACT_ID / VERSION / (
+            f"{next(iter(self.payloads))}.asc"
+        )
+        signature.write_bytes(b"invalid signature\n")
+        with self.assertRaisesRegex(RuntimeError, "signature"):
+            self.build()
+        self.assertFalse(self.output.exists())
+
     def test_rejects_versions_outside_stable_v02_line(self) -> None:
         value = json.loads(json.dumps(self.manifest_value))
         for invalid in ("0.1.3", "0.3.0", "0.2.1-rc1"):

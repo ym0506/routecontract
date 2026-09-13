@@ -28,10 +28,10 @@ file requested from Maven Central. Every command below explicitly uses strict de
 verification.
 
 The locked graph preserves the published libraries' reviewed Jackson split: ShardingSphere's
-FasterXML Jackson 2 modules resolve to `2.18.9`, while the shared
+FasterXML Jackson 2 modules resolve to `2.18.10`, while the shared
 `com.fasterxml.jackson.core:jackson-annotations` artifact resolves to `2.21` as selected by the
 Jackson 3.1.5 BOM used by `tools.jackson.core:jackson-core`. This example does not force that shared
-annotations artifact down to 2.18.9.
+annotations artifact down to 2.18.10.
 
 ## Run the self-contained compatibility probe
 

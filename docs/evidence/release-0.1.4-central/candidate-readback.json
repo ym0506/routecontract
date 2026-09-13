@@ -1,0 +1,223 @@
+{
+  "verifiedAt": "2026-09-13T19:53:12.067682+00:00",
+  "deploymentId": "63eaece1-4adf-48a5-a3a6-a15e35f6bad9",
+  "stateAtDownload": "VALIDATED",
+  "transport": "Authenticated Central Download File buttons via native Chrome; locally compared complete downloaded bytes",
+  "bundleSha256": "15204d31f4accb01d3483ba2d97740f728267e851d0b874a431c06cd31a78a78",
+  "files": [
+    {
+      "kind": "payload",
+      "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4-javadoc.jar",
+      "sha256": "8f751abc29c92e9523029c55ee6585176038b3c5a119f89fe7ab917b28a6373f",
+      "size": 215433,
+      "comparison": "BYTE_FOR_BYTE_PASS"
+    },
+    {
+      "kind": "signature",
+      "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4-javadoc.jar.asc",
+      "sha256": "e390b78827fd27f5bd749b0f71b6fd32f820d126fc52e909975de9dd8785b96a",
+      "size": 699,
+      "comparison": "BYTE_FOR_BYTE_PASS"
+    },
+    {
+      "kind": "payloadChecksum",
+      "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4-javadoc.jar.md5",
+      "sha256": "9cad275604146290cdf373180c769faa18fd5eb53a71bc0a70b7f19c0d6b6534",
+      "size": 32,
+      "comparison": "BYTE_FOR_BYTE_PASS"
+    },
+    {
+      "kind": "payloadChecksum",
+      "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4-javadoc.jar.sha1",
+      "sha256": "8bb848c74b05a6f3c34b40d7cadc6e0fcb52b62a3e33c8ec203dee756b40f95e",
+      "size": 40,
+      "comparison": "BYTE_FOR_BYTE_PASS"
+    },
+    {
+      "kind": "payloadChecksum",
+      "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4-javadoc.jar.sha256",
+      "sha256": "c11b5fc8b85ece9c4803f234138614f993e007db4e985968fe0e8d1145244e6b",
+      "size": 64,
+      "comparison": "BYTE_FOR_BYTE_PASS"
+    },
+    {
+      "kind": "payloadChecksum",
+      "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4-javadoc.jar.sha512",
+      "sha256": "e3d65ce67532f986503cea21d7d4d94e1a82524cf3f27f40253ab968b024af77",
+      "size": 128,
+      "comparison": "BYTE_FOR_BYTE_PASS"
+    },
+    {
+      "kind": "payload",
+      "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4-sources.jar",
+      "sha256": "690070aa3dcc7f4e3c7da54967b458358a567b961228191d4a75811bab343b7c",
+      "size": 51316,
+      "comparison": "BYTE_FOR_BYTE_PASS"
+    },
+    {
+      "kind": "signature",
+      "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4-sources.jar.asc",
+      "sha256": "69a8c7601572ddabfe3c85ed9ca17e2f11f5bdd79c6ff59d8c08916bcfa0cafd",
+      "size": 699,
+      "comparison": "BYTE_FOR_BYTE_PASS"
+    },
+    {
+      "kind": "payloadChecksum",
+      "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4-sources.jar.md5",
+      "sha256": "f7c83c62602cebddf3cc282d50f2441bc1ec36287c3bd1377dd21489ed1443f9",
+      "size": 32,
+      "comparison": "BYTE_FOR_BYTE_PASS"
+    },
+    {
+      "kind": "payloadChecksum",
+      "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4-sources.jar.sha1",
+      "sha256": "e67975a1ea282816d6e83a56c0961ab19336cc11de70178465aafb43d0a52d4d",
+      "size": 40,
+      "comparison": "BYTE_FOR_BYTE_PASS"
+    },
+    {
+      "kind": "payloadChecksum",
+      "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4-sources.jar.sha256",
+      "sha256": "874d0e9f239aa34861150453193207dec5f92bf9c7d9a053eefb1dd60400d592",
+      "size": 64,
+      "comparison": "BYTE_FOR_BYTE_PASS"
+    },
+    {
+      "kind": "payloadChecksum",
+      "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4-sources.jar.sha512",
+      "sha256": "83e696dacc0a0b5ca21accde4efb2b29faed82b720c9de58b9c502afaaf4cfbd",
+      "size": 128,
+      "comparison": "BYTE_FOR_BYTE_PASS"
+    },
+    {
+      "kind": "payload",
+      "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4.jar",
+      "sha256": "b912725183a982ccddbfd4fa73ebe6a274590a674c0d72d94b0e1883d22b2816",
+      "size": 86106,
+      "comparison": "BYTE_FOR_BYTE_PASS"
+    },
+    {
+      "kind": "signature",
+      "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4.jar.asc",
+      "sha256": "a49b69fecf507aa870a35fe08c2a9f41599ccac4555a53e3d1aa694727b28dd0",
+      "size": 699,
+      "comparison": "BYTE_FOR_BYTE_PASS"
+    },
+    {
+      "kind": "payloadChecksum",
+      "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4.jar.md5",
+      "sha256": "ee793bfed4d875dd8248f2a19320a08d0990c2624e710f90dc996aa1cc443910",
+      "size": 32,
+      "comparison": "BYTE_FOR_BYTE_PASS"
+    },
+    {
+      "kind": "payloadChecksum",
+      "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4.jar.sha1",
+      "sha256": "2409cb75a5fc8a3a379a238a1540f861b9e73ee6cde461d2773966151d6af77e",
+      "size": 40,
+      "comparison": "BYTE_FOR_BYTE_PASS"
+    },
+    {
+      "kind": "payloadChecksum",
+      "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4.jar.sha256",
+      "sha256": "9578c0b50c4327e0897c68f0c836ddbb85e079ee9a4f2470e05368893743a5b5",
+      "size": 64,
+      "comparison": "BYTE_FOR_BYTE_PASS"
+    },
+    {
+      "kind": "payloadChecksum",
+      "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4.jar.sha512",
+      "sha256": "81fbc289773ca2b70b6a2309e1fd623d6ebb10aa7a46c8cef8def9dd5094f584",
+      "size": 128,
+      "comparison": "BYTE_FOR_BYTE_PASS"
+    },
+    {
+      "kind": "payload",
+      "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4.module",
+      "sha256": "2f2f925ba66da46ed9732917e04428d4be959a92ba4f5854d4f808a67c20a3b5",
+      "size": 4049,
+      "comparison": "BYTE_FOR_BYTE_PASS"
+    },
+    {
+      "kind": "signature",
+      "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4.module.asc",
+      "sha256": "b9217bc5f1ea7cddcf8b0b0bb74ccdab978e38c4f468fd72c0a5d85c0f76fb9a",
+      "size": 699,
+      "comparison": "BYTE_FOR_BYTE_PASS"
+    },
+    {
+      "kind": "payloadChecksum",
+      "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4.module.md5",
+      "sha256": "c2b8bff11bf399c43dea4a08c6cbeafa337108752c159b645e69b41d6751c77f",
+      "size": 32,
+      "comparison": "BYTE_FOR_BYTE_PASS"
+    },
+    {
+      "kind": "payloadChecksum",
+      "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4.module.sha1",
+      "sha256": "85be6a08ce4cda87ea1d7bcc4831c7d74841e414a54efd6b6f26fe7a475896ab",
+      "size": 40,
+      "comparison": "BYTE_FOR_BYTE_PASS"
+    },
+    {
+      "kind": "payloadChecksum",
+      "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4.module.sha256",
+      "sha256": "79e8106a419d787412d0a6b3e4be4595f6a0cb1228adb4e15f22f0ab72b6fc27",
+      "size": 64,
+      "comparison": "BYTE_FOR_BYTE_PASS"
+    },
+    {
+      "kind": "payloadChecksum",
+      "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4.module.sha512",
+      "sha256": "ac05b6a6021031283278dc39ccaa9cf12827d6331d9dc0d3a192ed08a06e08ec",
+      "size": 128,
+      "comparison": "BYTE_FOR_BYTE_PASS"
+    },
+    {
+      "kind": "payload",
+      "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4.pom",
+      "sha256": "8403ce5c48a378e4b3de99b44ab5421a86f22ec7146382872a791dca52d489bd",
+      "size": 2138,
+      "comparison": "BYTE_FOR_BYTE_PASS"
+    },
+    {
+      "kind": "signature",
+      "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4.pom.asc",
+      "sha256": "d9520d85e820899827938198b01fcd285864edf120e5ebb2a861ac7207c1ddaf",
+      "size": 699,
+      "comparison": "BYTE_FOR_BYTE_PASS"
+    },
+    {
+      "kind": "payloadChecksum",
+      "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4.pom.md5",
+      "sha256": "e759feb9026fcd83171360c7f874f25d7057d05747f771073993a7062728c716",
+      "size": 32,
+      "comparison": "BYTE_FOR_BYTE_PASS"
+    },
+    {
+      "kind": "payloadChecksum",
+      "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4.pom.sha1",
+      "sha256": "ef4931ac7f537e49632aac2b600db4d1d54f0493230fd6771611a8b8c669b3ec",
+      "size": 40,
+      "comparison": "BYTE_FOR_BYTE_PASS"
+    },
+    {
+      "kind": "payloadChecksum",
+      "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4.pom.sha256",
+      "sha256": "d267aef7a78f020693d4c5c48e656967da8d735c9089a990f724dde9146e7cdb",
+      "size": 64,
+      "comparison": "BYTE_FOR_BYTE_PASS"
+    },
+    {
+      "kind": "payloadChecksum",
+      "path": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4.pom.sha512",
+      "sha256": "9a9b7a65f4d00d9fb085c808f6f3b8a9e29a90d53d09d4c536ea9fb5195a0366",
+      "size": 128,
+      "comparison": "BYTE_FOR_BYTE_PASS"
+    }
+  ],
+  "fileCount": 30,
+  "prepublicationCandidateByteComparison": true,
+  "publicReadback": false,
+  "publishActions": 0
+}

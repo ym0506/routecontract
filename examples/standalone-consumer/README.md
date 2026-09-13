@@ -26,7 +26,7 @@ Core/linq4j 1.42.0 constraints.
 
 ```groovy
 dependencies {
-    testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))
+    testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.10"))
     testImplementation("${routeContractGroup}:routecontract-shardingsphere-5.5:${routeContractVersion}")
     testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:5.5.3") {
         exclude group: "org.locationtech.jts.io", module: "jts-io-common"
@@ -47,12 +47,19 @@ The published RouteContract artifact is a thin JAR. Its module-level
 `compileOnly` ShardingSphere/BOM declarations are not published as consumer
 version constraints, so the standalone consumer owns the alignment. The BOM
 resolves ShardingSphere's Jackson 2 core, databind, datatype-jdk8, and
-datatype-jsr310 compatibility modules to 2.18.9 in this verified Gradle test
+datatype-jsr310 compatibility modules to 2.18.10 in this verified Gradle test
 graph. The strict constraints resolve Calcite Core and linq4j to 1.42.0; JTS
 Core 1.19.0 remains, while JTS I/O Common must be absent. In this verified
 runtime, the annotations artifact shared with Jackson 3
 resolves to 2.21. The BOM does not replace or downgrade RouteContract's separate
-`tools.jackson.core:jackson-core:3.1.5` product runtime.
+`tools.jackson.core:jackson-core:3.1.6` runtime in the current-source publication.
+
+This fixture follows the current source's locked third-party graph. The
+immutable public RouteContract 0.1.3 POM still declares streaming core 3.1.5;
+running that JAR with this fixture selects the patched 3.1.6 runtime through
+the fixture's lockfile. That is a separate compatibility check. The
+[first-project example](../first-project/README.md) exercises the public
+installation path without this candidate lockfile.
 
 The verification metadata trusts only the exact RouteContract first-party core and 5.5.3 adapter
 names at a non-SNAPSHOT stable or strict `-rcN` version. In the same-checkout lane, the verifier

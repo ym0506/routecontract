@@ -126,10 +126,8 @@ def _read_suite(path: Path) -> tuple[str, dict[str, int]]:
     return suite, counts
 
 
-def build_summary(revision: str, results_dirs: list[Path]) -> str:
-    if REVISION_RE.fullmatch(revision) is None:
-        raise SummaryError("revision must be a lowercase 40-character Git commit SHA")
-
+def read_verified_results(results_dirs: list[Path]) -> dict[str, dict[str, int]]:
+    """Validate the exact release corpus without inventing revision provenance."""
     observed: dict[str, dict[str, int]] = {}
     for directory in results_dirs:
         if directory.is_symlink() or not directory.is_dir():
@@ -156,6 +154,14 @@ def build_summary(revision: str, results_dirs: list[Path]) -> str:
             )
         if any(counts[key] != 0 for key in ("failures", "errors", "skipped")):
             raise SummaryError(f"suite {suite} is not an all-passing, non-skipped result")
+
+    return observed
+
+
+def build_summary(revision: str, results_dirs: list[Path]) -> str:
+    if REVISION_RE.fullmatch(revision) is None:
+        raise SummaryError("revision must be a lowercase 40-character Git commit SHA")
+    observed = read_verified_results(results_dirs)
 
     lines = [
         f"format={SUMMARY_FORMAT}",

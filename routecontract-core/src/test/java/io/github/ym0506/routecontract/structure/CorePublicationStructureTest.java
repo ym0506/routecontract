@@ -33,7 +33,7 @@ class CorePublicationStructureTest {
     private static final String MODULE_NAME = "io.github.ym0506.routecontract.core";
     private static final String CORE_OWNER_CAPABILITY = "routecontract-core-owner";
     private static final String TTL_VERSION = "2.14.2";
-    private static final String JACKSON_VERSION = "3.1.5";
+    private static final String JACKSON_VERSION = "3.1.6";
     private static final String SHARDINGSPHERE_BINARY_PREFIX = "org/apache/shardingsphere/";
     private static final Pattern MODULE_DEPENDENCY = Pattern.compile(
             "\\\"group\\\":\\\"([^\\\"]+)\\\",\\\"module\\\":\\\"([^\\\"]+)\\\"");

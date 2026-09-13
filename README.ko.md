@@ -4,27 +4,65 @@
 
 <p align="center">
   <a href="https://github.com/ym0506/routecontract/actions/workflows/ci.yml?query=branch%3Amain"><img src="https://github.com/ym0506/routecontract/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
-  <a href="https://central.sonatype.com/artifact/io.github.ym0506.routecontract/routecontract-shardingsphere-5.5/0.1.3"><img src="https://img.shields.io/badge/Maven_Central-0.1.3-277DA1" alt="Maven Central 0.1.3"></a>
+  <a href="https://central.sonatype.com/artifact/io.github.ym0506.routecontract/routecontract-shardingsphere-5.5/0.1.4"><img src="https://img.shields.io/badge/Maven_Central-0.1.4-277DA1" alt="Maven Central 0.1.4"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache_2.0-182C38" alt="Apache License 2.0"></a>
 </p>
 
 <p align="center">
-  <a href="#install-013">설치</a> · <a href="#사용-예">사용 예</a> · <a href="#동작-확인">시연</a> · <a href="#문서">문서</a> · <a href="README.md">English</a>
+  <a href="#동작-확인">동작 확인</a> · <a href="#install-014">설치</a> · <a href="#사용-예">사용 예</a> · <a href="#문서">문서</a> · <a href="README.md">English</a>
 </p>
 
-**조회 결과는 같은데, DB 실행은 달라질 수 있습니다.**
+**같은 주문이 조회돼도, 조회하는 데이터베이스는 늘어날 수 있습니다.**
 
-RouteContract는 [Apache ShardingSphere-JDBC](https://github.com/apache/shardingsphere)의
-`SQLExecutionHook`이 보고한 물리 JDBC 실행 시도를 기록하고, 명시한 예산과 사람이 검토한
-기준에 맞는지 확인하는 Java 테스트 라이브러리입니다. 기존 업무 결과 assertion에 실행 시도 수,
-관측 데이터 소스, 재작성된 SQL 구조의 변화 검사도 더할 수 있습니다.
+쿼리나 샤딩 설정을 바꾼 뒤에도 주문 조회 테스트는 통과할 수 있습니다. 하지만 그 사이
+조회하는 DB가 한 곳에서 두 곳으로 늘어났다면, 반환된 주문만 확인하는 테스트로는
+그 변화를 알 수 없습니다.
 
-포함된 MySQL 예제는 **같은 행을 반환하면서 관측된 실행 시도가 1회에서 2회로 증가**합니다.
-RouteContract는 이 변화를 CI에서 잡아냅니다.
+RouteContract는 기존 ShardingSphere-JDBC 통합 테스트에 DB 실행 검사를 추가합니다.
+반환값 검사를 유지하면서 작업의 **JDBC 실행 시도 횟수와 사용한 데이터 소스**를 함께
+검사합니다. 정해 둔 횟수나 대상에서 벗어나 검사가 실패하면, 일반 JUnit·Maven·Gradle
+테스트와 CI 빌드도 실패해 변경을 확인할 수 있습니다.
 
-## Install 0.1.3
+## 동작 확인
 
-기존 **Java 17 · ShardingSphere-JDBC 5.5.3** 테스트 프로젝트에 추가하세요.
+예제는 사용자 `3`의 결제 완료 주문을 조회합니다. 두 쿼리 모두 **주문 201, 사용자 3,
+상태 PAID**를 반환합니다. 이 예제의 샤딩 규칙에서는 동등 조건이 한 데이터 소스로 향하고,
+범위 조건은 설정된 두 데이터 소스를 모두 조회합니다.
+
+| 쿼리 조건과 바인딩 값 | 반환된 주문 | JDBC 실행 시도 | 사용한 데이터 소스 |
+| --- | --- | --- | --- |
+| `user_id = ?`, 값 `3` | `201 / 3 / PAID` | 1회 | 1개 |
+| `user_id BETWEEN ? AND ?`, 값 `3, 3` | `201 / 3 / PAID` | 2회 | 2개 |
+
+이 테스트는 **실행 시도 최대 1회, 데이터 소스 최대 1개**를 허용합니다. 문서의 예산(budget)은
+이 허용 상한을 뜻합니다. 범위 조회가 두 상한을 넘으면 리포트에 다음 결과가 나옵니다.
+
+| 리포트 표시 | 이 예제에서의 뜻 |
+| --- | --- |
+| `POLICY_VIOLATION` | 허용 상한을 넘었으므로 계약 assertion이 실패했습니다. |
+| `RCM201` | **JDBC 실행 시도 초과:** 허용 1회, 관측 2회. |
+| `RCM202` | **데이터 소스 수 초과:** 허용 1개, 관측 2개. 리포트에서는 민감하지 않은 별칭으로 구분합니다. |
+
+변경한 쿼리와 샤딩 규칙을 보고 추가 실행이 의도한 것인지 판단합니다. 의도한 변경이면
+기준도 검토해서 바꾸고, 아니라면 쿼리나 설정을 수정합니다. 횟수 증가만으로 성능 저하를
+단정하지는 않습니다. 수치는 `SQLExecutionHook`이 보고한 실행 시도이며, 물리 테이블 수나
+전체 라우팅 계획을 뜻하지 않습니다.
+
+![같은 주문이 반환되지만 실행 시도와 데이터 소스가 각각 하나에서 둘로 늘어 테스트의 허용 상한을 넘는 예제.](docs/assets/execution-comparison.svg)
+
+[예제 실행](#quick-start) · [설치 없이 리포트 보기](docs/evidence/ci-review-report-example.md) ·
+[예제 쿼리 소스](examples/first-project/src/test/java/io/github/ym0506/routecontract/examples/firstproject/OrderRepository.java)
+
+**공개된 실제 버그의 재현:** [INSERT SELECT가 “1행 처리 성공”을 반환하면서 shadow DB에
+쓰는 사례](experiments/shadow-insert-select/README.md)를 실제 MySQL·공개 5.5.3에서 확인했습니다.
+결과와 실행 횟수가 같아도 대상 DB 이름 검사가 필요한 이유를 보여 줍니다. 원래 보고자의
+기여를 명시했으며 정상 대조군과 계약 검사가 실패하는 명령을 함께 제공합니다.
+
+<a id="install-013"></a>
+
+## Install 0.1.4
+
+기존 **Java 17 또는 21 · ShardingSphere-JDBC 5.5.3** 테스트 프로젝트에 추가하세요.
 지원하는 작업은 **동기식·비배치 `PreparedStatement` 호출**입니다.
 
 **Gradle** — Groovy / Kotlin DSL 공통:
@@ -33,7 +71,7 @@ RouteContract는 이 변화를 CI에서 잡아냅니다.
 repositories { mavenCentral() }
 
 dependencies {
-    testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.3")
+    testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.4")
 }
 ```
 
@@ -44,7 +82,7 @@ dependencies {
 <dependency>
   <groupId>io.github.ym0506.routecontract</groupId>
   <artifactId>routecontract-shardingsphere-5.5</artifactId>
-  <version>0.1.3</version>
+  <version>0.1.4</version>
   <scope>test</scope>
 </dependency>
 ```
@@ -84,7 +122,13 @@ RouteAssertions.assertThat(snapshot)
 작동하는 작업을 선택하고, 예상 결과·데이터 소스 이름·실행 예산을 자신의 fixture에 맞게
 정하세요. hook callback의 반환은 트랜잭션 커밋을 증명하지 않습니다.
 
+이 Java assertion은 관측한 값을 직접 검사합니다. 실행 가능한 예제에서는 리포트를 쓰고,
+이번 실행을 검토된 JSON 기준 파일과 비교하는 과정도 포함합니다.
+
 ### 기준을 검토한 뒤 CI에서 비교하기
+
+**manifest**는 관측한 실행·데이터 소스 별칭·허용 상한을 담은 JSON 파일입니다.
+**candidate**는 이번 실행 결과이고, **baseline**은 비교 기준으로 검토한 파일입니다.
 
 1. 대표 작업을 capture하고 **candidate manifest**를 생성합니다.
 2. 관측 내용, 민감하지 않은 데이터 소스 별칭, 실행 예산을 버전 관리에서 검토합니다.
@@ -97,35 +141,45 @@ candidate 생성만으로 baseline이 승인되지는 않습니다. 의도한 �
 [CI 리포트 가이드](docs/ci-review-report.md)에서 Java API, Markdown·JSON 출력,
 진단 코드와 조사 방법을 확인할 수 있습니다.
 
-## 동작 확인
-
-[2분 54초 시연 영상 보기](https://www.youtube.com/watch?v=pcgvNNxd1mM) ·
-[실제 CI 리포트 보기](docs/evidence/ci-review-report-example.md)
-
-![검증된 MySQL 예제 요약: 같은 업무 행을 반환하지만 물리 JDBC 실행 시도와 관측 데이터 소스 별칭이 각각 1에서 2로 증가합니다. Strict 계약은 RCM201·RCM202로 candidate를 거부합니다.](docs/assets/execution-comparison.svg)
-
-그림은 [체크인된 MySQL manifest](examples/manifests/README.md)를 요약한 것입니다.
-수치는 **hook이 보고한 물리 JDBC 실행 시도와 관측 별칭**입니다.
-물리 테이블 수, 전체 라우팅 계획이나 성능을 측정한 값은 아닙니다.
-
 <a id="quick-start"></a>
 
-### 예제 실행
+## 예제 실행
 
-| 해볼 일 | 필요한 환경 | 예상 결과 |
-| --- | --- | --- |
-| [v0.1.3 CI 리포트 생성](docs/ci-review-report.md#try-the-released-report-without-docker) | Git, Java 17, 최초 의존성 다운로드 | 저장된 manifest를 비교해 `POLICY_VIOLATION`, `RCM201`·`RCM202`를 출력합니다. 의도적으로 검사가 실패하는 예제이며 Docker는 필요 없습니다. |
-| [MySQL 실행 변화 재현](docs/reference-guide.ko.md#quick-start) | Git, Java 17, Docker, 최초 다운로드 | 불변 tag에 고정한 과거 **v0.1.2** 시연입니다. wrapper는 예상한 계약 거부까지 확인하면 성공합니다. |
-| [v0.1.3 첫 프로젝트 예제](docs/first-project.ko.md) | Git, Java 17, Docker; Maven 또는 Gradle wrapper | candidate 생성·기준 검토·`MATCH`를 확인하고, 같은 결과에서 실행 시도 `1 → 2` 변화로 실패하는 과정을 실행합니다. |
+**Java 17 또는 21, Maven 3.9.x, 실행 중인 Docker**가 필요합니다. 처음에는 의존성과 MySQL 이미지를
+내려받습니다. 예제는 **Maven Central의 0.1.4**을 사용하며, 합성 데이터에 맞게 검토한 기준 파일이
+이미 들어 있습니다.
+
+```bash
+git clone https://github.com/ym0506/routecontract.git
+cd routecontract/examples/first-project
+mvn -B test
+```
+
+테스트가 통과하고 `build/routecontract/review.md`에 `MATCH`가 나와야 합니다.
+반환된 주문과 DB 실행이 예제의 기준에 맞는다는 뜻입니다. 이제 쿼리를 바꿔 실행합니다.
+
+```bash
+mvn -B test -Droutecontract.query=range
+```
+
+**이 테스트는 실패해야 합니다.** 주문 반환값은 같지만 실행 시도와 데이터 소스가 각각
+1에서 2로 늘어납니다. `build/routecontract/review.md`를 열어 위에서 설명한 두 상한 초과
+(`RCM201`, `RCM202`)를 확인하세요. 다운로드·컴파일·Docker 오류는 이 예제의 예상 실패가 아닙니다.
+
+`mvn -B test`를 다시 실행하면 원래 쿼리로 돌아가 `MATCH`가 나옵니다. 예제는 실행할 때마다
+리포트를 새로 쓰므로, 원복하기 전에 실패 리포트를 읽으세요.
+
+[Gradle 명령과 자기 테스트에 적용하는 방법](docs/first-project.ko.md) ·
+[GitHub Actions에서 같은 MySQL 예제 실행](docs/first-project.ko.md#try-in-your-browser)
 
 ## 지원 범위
 
-| 구분 | 공개 v0.1.3 |
+| 구분 | 공개 v0.1.4 |
 | --- | --- |
-| Java | 17 |
+| Java | 17과 21; [런타임 검증](docs/evidence/release-0.1.4-central.md#public-consumer-verification) |
 | ShardingSphere | JDBC, **정확히 5.5.3** |
 | 실행 | 정상 반환하며 caller interruption이 없는 동기식·비배치 `PreparedStatement` 작업 |
-| DB 검증 환경 | MySQL 8.4.11 · [공개 Gradle·Maven 소비자 검증](docs/evidence/release-0.1.3-central.md) |
+| DB 검증 환경 | MySQL 8.4.11 · [공개 Gradle·Maven 소비자 검증](docs/evidence/release-0.1.4-central.md) |
 | 검사 | capture 완전성, callback 결과, 실행 시도·데이터 소스 예산, manifest 구조 차이 |
 | CI 출력 | Java assertion, 결정적인 Markdown·JSON 리포트, `ManifestReviewCli` |
 
@@ -133,7 +187,7 @@ Proxy, batch, reactive 실행, 애플리케이션이 만든 async 경계와 SQL 
 지원 범위 밖입니다. 관측 SQL이 없는 작업, callback 실패나 caller interruption이 있는 작업은
 통과한 계약을 만들 수 없습니다. [전체 capture 경계](docs/reference-guide.md#v01-support-boundary)를 확인하세요.
 
-**프로젝트 상태:** v0.1.3은 Maven Central에 공개되어 있습니다.
+**프로젝트 상태:** v0.1.4은 Maven Central에 공개되어 있습니다.
 [0.2 core·adapter 분리](https://github.com/ym0506/routecontract/pull/62)는 개발 중이며 5.5.2 지원은
 미출시입니다. 공개 소비자 검증은 유지관리자가 실행한 결과이고, 독립적인 외부 통합·반복 사용은
 아직 확인되지 않았습니다.
@@ -148,8 +202,10 @@ Proxy, batch, reactive 실행, 애플리케이션이 만든 async 경계와 SQL 
 | CI 실패 검토 | [리포트·CLI](docs/ci-review-report.md) · [리포트 예제](docs/evidence/ci-review-report-example.md) |
 | 관측 내용 이해 | [아키텍처](docs/architecture.md) · [명세](docs/specification.md) |
 | 기존 도구와 비교 | [도구 비교](docs/competitive-analysis.md) · [datasource-proxy 실험](docs/empirical-comparison.md) |
-| 애플리케이션 적용 실험 | [CityPulse: 공개 0.1.3으로 테스트 한 개 실행](docs/evidence/citypulse-isolated-pilot-2026-09-08.md) · 자체 실험이며 유지보수자 채택 사례는 아닙니다 |
-| 릴리스 검증 | [v0.1.3 Central 검증](docs/evidence/release-0.1.3-central.md) · [증거 목록](docs/evidence-matrix.md) |
+| 캡처 상태 정리 검증 | [반복 실행·객체 잔류 대조군·검증 한계](docs/capture-retention.md) |
+| 관측 비용 확인 | [공개 0.1.3의 세 조건 비교·원시 측정·한계](docs/observer-cost.md) |
+| 애플리케이션 코드 실험 | [세 가지 실험: 실행 대상·조회 예산·기존 테스트](docs/application-evaluations.ko.md) · [English](docs/application-evaluations.md) · 자체 실행 실험 |
+| 릴리스 검증 | [v0.1.4 Central 검증](docs/evidence/release-0.1.4-central.md) · [증거 목록](docs/evidence-matrix.md) |
 | 이전 통합 도구 | [v0.1.2 통합 가이드](docs/first-integration.md) — 과거 버전에 고정한 절차 |
 | 기여 | [기여 가이드](CONTRIBUTING.md) · [로드맵](docs/product-roadmap.md) |
 

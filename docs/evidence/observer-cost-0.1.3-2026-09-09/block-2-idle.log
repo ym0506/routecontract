@@ -1,0 +1,185 @@
+# JMH version: 1.37
+# VM version: JDK 17.0.15, OpenJDK 64-Bit Server VM, 17.0.15+0
+# VM invoker: /opt/homebrew/Cellar/openjdk@17/17.0.15/libexec/openjdk.jdk/Contents/Home/bin/java
+# VM options: -Xms512m -Xmx512m -Dapi.version=1.44 -Dorg.slf4j.simpleLogger.defaultLogLevel=warn
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 5 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: io.github.ym0506.routecontract.examples.firstproject.ObserverCostBenchmark.queryAndAssert
+# Parameters: (condition = idle, query = equality)
+
+# Run progress: 0.00% complete, ETA 00:00:20
+# Fork: 1 of 1
+# Warmup Iteration   1: [INFO] MultiKeyMap stripe configuration: 32 locks for 12 cores
+OBSERVER_COST_PREFLIGHT condition=idle query=equality classPresent=true providerCount=1 business=PASS
+845.438 us/op
+# Warmup Iteration   2: 367.739 us/op
+# Warmup Iteration   3: 375.943 us/op
+# Warmup Iteration   4: 230.873 us/op
+# Warmup Iteration   5: 208.030 us/op
+Iteration   1: 201.202 us/op
+                 gc.alloc.rate:      287.173 MB/sec
+                 gc.alloc.rate.norm: 60592.029 B/op
+                 gc.count:           1.000 counts
+                 gc.time:            4.000 ms
+
+Iteration   2: 204.373 us/op
+                 gc.alloc.rate:      279.852 MB/sec
+                 gc.alloc.rate.norm: 59978.778 B/op
+                 gc.count:           1.000 counts
+                 gc.time:            5.000 ms
+
+Iteration   3: 188.541 us/op
+                 gc.alloc.rate:      299.826 MB/sec
+                 gc.alloc.rate.norm: 59281.005 B/op
+                 gc.count:           2.000 counts
+                 gc.time:            9.000 ms
+
+Iteration   4: 183.740 us/op
+                 gc.alloc.rate:      305.027 MB/sec
+                 gc.alloc.rate.norm: 58773.792 B/op
+                 gc.count:           1.000 counts
+                 gc.time:            5.000 ms
+
+Iteration   5: 237.393 us/op
+                 gc.alloc.rate:      154.223 MB/sec
+                 gc.alloc.rate.norm: 58850.937 B/op
+                 gc.count:           ≈ 0 counts
+
+
+
+Result "io.github.ym0506.routecontract.examples.firstproject.ObserverCostBenchmark.queryAndAssert":
+  203.050 ±(99.9%) 80.955 us/op [Average]
+  (min, avg, max) = (183.740, 203.050, 237.393), stdev = 21.024
+  CI (99.9%): [122.095, 284.005] (assumes normal distribution)
+
+Secondary result "io.github.ym0506.routecontract.examples.firstproject.ObserverCostBenchmark.queryAndAssert:gc.alloc.rate":
+  265.220 ±(99.9%) 241.998 MB/sec [Average]
+  (min, avg, max) = (154.223, 265.220, 305.027), stdev = 62.846
+  CI (99.9%): [23.222, 507.218] (assumes normal distribution)
+
+Secondary result "io.github.ym0506.routecontract.examples.firstproject.ObserverCostBenchmark.queryAndAssert:gc.alloc.rate.norm":
+  59495.308 ±(99.9%) 2994.024 B/op [Average]
+  (min, avg, max) = (58773.792, 59495.308, 60592.029), stdev = 777.538
+  CI (99.9%): [56501.285, 62489.332] (assumes normal distribution)
+
+Secondary result "io.github.ym0506.routecontract.examples.firstproject.ObserverCostBenchmark.queryAndAssert:gc.count":
+  5.000 ±(99.9%) 0.001 counts [Sum]
+  (min, avg, max) = (≈ 0, 1.000, 2.000), stdev = 0.707
+  CI (99.9%): [5.000, 5.000] (assumes normal distribution)
+
+Secondary result "io.github.ym0506.routecontract.examples.firstproject.ObserverCostBenchmark.queryAndAssert:gc.time":
+  23.000 ±(99.9%) 0.001 ms [Sum]
+  (min, avg, max) = (≈ 0, 4.600, 9.000), stdev = 3.209
+  CI (99.9%): [23.000, 23.000] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 17.0.15, OpenJDK 64-Bit Server VM, 17.0.15+0
+# VM invoker: /opt/homebrew/Cellar/openjdk@17/17.0.15/libexec/openjdk.jdk/Contents/Home/bin/java
+# VM options: -Xms512m -Xmx512m -Dapi.version=1.44 -Dorg.slf4j.simpleLogger.defaultLogLevel=warn
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 5 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: io.github.ym0506.routecontract.examples.firstproject.ObserverCostBenchmark.queryAndAssert
+# Parameters: (condition = idle, query = range)
+
+# Run progress: 50.00% complete, ETA 00:00:21
+# Fork: 1 of 1
+# Warmup Iteration   1: [INFO] MultiKeyMap stripe configuration: 32 locks for 12 cores
+OBSERVER_COST_PREFLIGHT condition=idle query=range classPresent=true providerCount=1 business=PASS
+687.922 us/op
+# Warmup Iteration   2: 392.824 us/op
+# Warmup Iteration   3: 328.036 us/op
+# Warmup Iteration   4: 298.144 us/op
+# Warmup Iteration   5: 289.235 us/op
+Iteration   1: 275.981 us/op
+                 gc.alloc.rate:      243.127 MB/sec
+                 gc.alloc.rate.norm: 70367.098 B/op
+                 gc.count:           1.000 counts
+                 gc.time:            4.000 ms
+
+Iteration   2: 260.186 us/op
+                 gc.alloc.rate:      255.457 MB/sec
+                 gc.alloc.rate.norm: 69700.860 B/op
+                 gc.count:           ≈ 0 counts
+
+Iteration   3: 261.591 us/op
+                 gc.alloc.rate:      251.818 MB/sec
+                 gc.alloc.rate.norm: 69078.093 B/op
+                 gc.count:           1.000 counts
+                 gc.time:            4.000 ms
+
+Iteration   4: 248.457 us/op
+                 gc.alloc.rate:      264.705 MB/sec
+                 gc.alloc.rate.norm: 68967.169 B/op
+                 gc.count:           1.000 counts
+                 gc.time:            4.000 ms
+
+Iteration   5: 258.891 us/op
+                 gc.alloc.rate:      175.317 MB/sec
+                 gc.alloc.rate.norm: 69092.324 B/op
+                 gc.count:           1.000 counts
+                 gc.time:            3.000 ms
+
+
+
+Result "io.github.ym0506.routecontract.examples.firstproject.ObserverCostBenchmark.queryAndAssert":
+  261.021 ±(99.9%) 37.886 us/op [Average]
+  (min, avg, max) = (248.457, 261.021, 275.981), stdev = 9.839
+  CI (99.9%): [223.135, 298.907] (assumes normal distribution)
+
+Secondary result "io.github.ym0506.routecontract.examples.firstproject.ObserverCostBenchmark.queryAndAssert:gc.alloc.rate":
+  238.085 ±(99.9%) 138.359 MB/sec [Average]
+  (min, avg, max) = (175.317, 238.085, 264.705), stdev = 35.931
+  CI (99.9%): [99.726, 376.443] (assumes normal distribution)
+
+Secondary result "io.github.ym0506.routecontract.examples.firstproject.ObserverCostBenchmark.queryAndAssert:gc.alloc.rate.norm":
+  69441.109 ±(99.9%) 2280.491 B/op [Average]
+  (min, avg, max) = (68967.169, 69441.109, 70367.098), stdev = 592.236
+  CI (99.9%): [67160.618, 71721.600] (assumes normal distribution)
+
+Secondary result "io.github.ym0506.routecontract.examples.firstproject.ObserverCostBenchmark.queryAndAssert:gc.count":
+  4.000 ±(99.9%) 0.001 counts [Sum]
+  (min, avg, max) = (≈ 0, 0.800, 1.000), stdev = 0.447
+  CI (99.9%): [4.000, 4.000] (assumes normal distribution)
+
+Secondary result "io.github.ym0506.routecontract.examples.firstproject.ObserverCostBenchmark.queryAndAssert:gc.time":
+  15.000 ±(99.9%) 0.001 ms [Sum]
+  (min, avg, max) = (≈ 0, 3.000, 4.000), stdev = 1.732
+  CI (99.9%): [15.000, 15.000] (assumes normal distribution)
+
+
+# Run complete. Total time: 00:00:41
+
+REMEMBER: The numbers below are just data. To gain reusable insights, you need to follow up on
+why the numbers are the way they are. Use profilers (see -prof, -lprof), design factorial
+experiments, perform baseline and negative tests that provide experimental control, make sure
+the benchmarking environment is safe on JVM/OS/HW level, ask for reviews from the domain experts.
+Do not assume the numbers tell you what you want them to tell.
+
+NOTE: Current JVM experimentally supports Compiler Blackholes, and they are in use. Please exercise
+extra caution when trusting the results, look into the generated code to check the benchmark still
+works, and factor in a small probability of new VM bugs. Additionally, while comparisons between
+different JVMs are already problematic, the performance difference caused by different Blackhole
+modes can be very significant. Please make sure you use the consistent Blackhole mode for comparisons.
+
+Benchmark                                                (condition)   (query)  Mode  Cnt      Score      Error   Units
+ObserverCostBenchmark.queryAndAssert                            idle  equality  avgt    5    203.050 ±   80.955   us/op
+ObserverCostBenchmark.queryAndAssert:gc.alloc.rate              idle  equality  avgt    5    265.220 ±  241.998  MB/sec
+ObserverCostBenchmark.queryAndAssert:gc.alloc.rate.norm         idle  equality  avgt    5  59495.308 ± 2994.024    B/op
+ObserverCostBenchmark.queryAndAssert:gc.count                   idle  equality  avgt    5      5.000             counts
+ObserverCostBenchmark.queryAndAssert:gc.time                    idle  equality  avgt    5     23.000                 ms
+ObserverCostBenchmark.queryAndAssert                            idle     range  avgt    5    261.021 ±   37.886   us/op
+ObserverCostBenchmark.queryAndAssert:gc.alloc.rate              idle     range  avgt    5    238.085 ±  138.359  MB/sec
+ObserverCostBenchmark.queryAndAssert:gc.alloc.rate.norm         idle     range  avgt    5  69441.109 ± 2280.491    B/op
+ObserverCostBenchmark.queryAndAssert:gc.count                   idle     range  avgt    5      4.000             counts
+ObserverCostBenchmark.queryAndAssert:gc.time                    idle     range  avgt    5     15.000                 ms
+
+Benchmark result is saved to /private/tmp/routecontract-observer-cost-full-20260909/block-2-idle.json

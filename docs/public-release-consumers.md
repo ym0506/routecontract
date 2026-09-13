@@ -1,5 +1,9 @@
 # Public 0.1 release consumers
 
+Current stable distribution: [0.1.4 public readback and fresh-cache consumers](evidence/release-0.1.4-central.md).
+The dated 0.1.3 records below remain historical results.
+
+
 Status: post-publication verification commands for the single-module, exact ShardingSphere-JDBC 5.5.3 release.
 See the [0.1.3 Central record](evidence/release-0.1.3-central.md) for current public availability
 and consumer evidence. The preparation, local-control and missing-version sections below retain
@@ -52,7 +56,8 @@ python3 -I scripts/verify-public-maven-release-consumer.py \
   --evidence-directory /absolute/path/to/new-public-maven-evidence
 ```
 
-Gradle uses the existing checksum-pinned 8.14.4 wrapper distribution. Its dependency repository
+Gradle uses the repository's [checksum-pinned wrapper](../gradle/wrapper/gradle-wrapper.properties).
+The dated evidence below records the Gradle version used for each earlier run. Its dependency repository
 is fixed to Maven Central; no custom repository option exists. The new Gradle fixture reuses the
 standalone consumer's dependency declarations, third-party lock lines and verification hashes.
 Preparation removes the installer's broad first-party trust exemption and adds exactly the

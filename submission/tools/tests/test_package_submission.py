@@ -354,9 +354,9 @@ class SubmissionClaimTextTest(unittest.TestCase):
             with self.subTest(workflow=name):
                 self.assertIn("java-version: '17.0.20+101'", workflow)
                 self.assertNotRegex(workflow, r"java-version: [\"']17[\"']")
-                self.assertIn(
-                    "actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961",
+                self.assertRegex(
                     workflow,
+                    r"uses: actions/setup-java@[0-9a-f]{40}(?:\s|$)",
                 )
                 self.assertIn(
                     "grep -Fxq 'IMPLEMENTOR_VERSION=\"Temurin-17.0.20.1+1\"' "
@@ -370,6 +370,27 @@ class SubmissionClaimTextTest(unittest.TestCase):
                 )
         self.assertIn("java -fullversion", workflows["ci.yml"])
         self.assertIn("java -fullversion", workflows["release-evidence.yml"])
+
+        # Updates must retain immutable pins and cover every active workflow.
+        # The action version may change without changing the release JDK contract.
+        setup_java_refs = {
+            path.name: re.findall(
+                r"^\s*(?:-\s*)?uses:\s*['\"]?(actions/setup-java@[^'\"\s#]+)",
+                path.read_text(encoding="utf-8"),
+                re.MULTILINE,
+            )
+            for path in (REPOSITORY_ROOT / ".github" / "workflows").iterdir()
+            if path.suffix in {".yml", ".yaml"}
+        }
+        for name, refs in setup_java_refs.items():
+            for ref in refs:
+                with self.subTest(workflow=name, action=ref):
+                    self.assertRegex(ref, r"^actions/setup-java@[0-9a-f]{40}$")
+        self.assertEqual(
+            len({ref for refs in setup_java_refs.values() for ref in refs}),
+            1,
+            "Update setup-java consistently across all active workflows",
+        )
 
         third_party = (REPOSITORY_ROOT / "THIRD_PARTY.md").read_text(
             encoding="utf-8"
@@ -1448,7 +1469,7 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             'version { strictly("1.42.0") }',
             'version { strictly("2.4.10") }',
             'version { strictly("2.4.9") }',
-            'enforcedPlatform("com.fasterxml.jackson:jackson-bom:2.18.9")',
+            'enforcedPlatform("com.fasterxml.jackson:jackson-bom:2.18.10")',
             'artifactGroup == "com.fasterxml.jackson" ||',
             'artifactGroup.startsWith("com.fasterxml.jackson.")',
             'artifact.extension != "jar" || artifact.classifier != null',
@@ -1486,7 +1507,7 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             "same-checkout fixture and its synthetic match are CI scaffolding, not human approval or\nexternal adoption",
             "scripts/prepare_maven_v0_1_2_checksums.py",
             "https://raw.githubusercontent.com/ym0506/routecontract/2264b6e6292ee80f131148f2acef601cbaede096/scripts/prepare_maven_v0_1_2_checksums.py",
-            "https://raw.githubusercontent.com/ym0506/routecontract/2264b6e6292ee80f131148f2acef601cbaede096/scripts/verify-external-maven-integration.sh",
+            "https://raw.githubusercontent.com/ym0506/routecontract/917fadf86f3d47b8c5177bbdd372070e985d57d6/scripts/verify-external-maven-integration.sh",
             "transport URL is pinned to the exact bridge implementation commit",
             "exact\ntwelve-file coordinate inventory",
             "private, single-writer directory",
@@ -1642,7 +1663,7 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             '("net.minidev", "json-smart", "2.4.10")',
             '("net.minidev", "accessors-smart", "2.4.9")',
             "required=False",
-            'jackson_versions != {"2.18.9"}',
+            'jackson_versions != {"2.18.10"}',
             "FasterXML Jackson dependencies must be unclassified JARs in an allowed scope",
             '("org.locationtech.jts.io", "jts-io-common")',
             '("com.google.protobuf", "protobuf-java")',
@@ -1678,7 +1699,7 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
 
         expected_managed = {
             ("com.fasterxml.jackson", "jackson-bom"): (
-                "2.18.9",
+                "2.18.10",
                 "pom",
                 "import",
             ),
@@ -1840,7 +1861,7 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
                 "[INFO] |  +- org.apache.shardingsphere:shardingsphere-infra-executor:jar:5.5.3:compile",
                 "[INFO] |  +- org.apache.calcite:calcite-core:jar:1.42.0:compile",
                 "[INFO] |  \\- org.apache.calcite:calcite-linq4j:jar:1.42.0:compile",
-                "[INFO] +- com.fasterxml.jackson.core:jackson-databind:jar:2.18.9:runtime",
+                "[INFO] +- com.fasterxml.jackson.core:jackson-databind:jar:2.18.10:runtime",
                 "[INFO] \\- com.google.protobuf:protobuf-java-util:jar:4.33.5:test",
                 "",
             )
@@ -1932,16 +1953,16 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
                     "[INFO] +- net.minidev:json-smart:jar:2.4.10:runtime",
                 ),
                 "jackson pom type": valid_graph_with_minidev.replace(
-                    "jackson-databind:jar:2.18.9:runtime",
-                    "jackson-databind:pom:2.18.9:runtime",
+                    "jackson-databind:jar:2.18.10:runtime",
+                    "jackson-databind:pom:2.18.10:runtime",
                 ),
                 "jackson classifier": valid_graph_with_minidev.replace(
-                    "jackson-databind:jar:2.18.9:runtime",
-                    "jackson-databind:jar:tests:2.18.9:runtime",
+                    "jackson-databind:jar:2.18.10:runtime",
+                    "jackson-databind:jar:tests:2.18.10:runtime",
                 ),
                 "jackson provided scope": valid_graph_with_minidev.replace(
-                    "jackson-databind:jar:2.18.9:runtime",
-                    "jackson-databind:jar:2.18.9:provided",
+                    "jackson-databind:jar:2.18.10:runtime",
+                    "jackson-databind:jar:2.18.10:provided",
                 ),
                 "Jackson group prefix collision": valid_graph_with_minidev.replace(
                     "com.fasterxml.jackson.core:jackson-databind",
@@ -1994,9 +2015,11 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             "134b265709ac071dedd395da269426d83f1972f602c3b3f7d2201eecc525e204",
             "https://raw.githubusercontent.com/ym0506/routecontract/v0.1.2/scripts/install-release-assets.py",
             "https://raw.githubusercontent.com/ym0506/routecontract/2264b6e6292ee80f131148f2acef601cbaede096/scripts/prepare_maven_v0_1_2_checksums.py",
-            "https://raw.githubusercontent.com/ym0506/routecontract/2264b6e6292ee80f131148f2acef601cbaede096/scripts/verify-external-maven-integration.sh",
+            "https://raw.githubusercontent.com/ym0506/routecontract/917fadf86f3d47b8c5177bbdd372070e985d57d6/scripts/verify-external-maven-integration.sh",
             "verify-external-maven-integration.sh",
-            "69f233a5935f36a2e9068c25517fc3f15df4ef7da119e7a02feb9184df49e472",
+            # This public guide downloads an immutable stable-line revision.
+            # The local 0.2 verifier uses the extended three-artifact installer.
+            "8c53eaac7677ed2274e4bab5e5d553e6d4445988df946a66464df0f75f7b2686",
             'bash "${tool_dir}/verify-external-maven-integration.sh"',
         ):
             self.assertIn(required, maven_ci_block)
@@ -9179,9 +9202,9 @@ class ReportContentSbomTest(unittest.TestCase):
             },
             {
                 "name": "Jackson Core",
-                "version": "3.1.5",
+                "version": "3.1.6",
                 "license": "Apache-2.0",
-                "url": "https://github.com/FasterXML/jackson-core/tree/jackson-core-3.1.5",
+                "url": "https://github.com/FasterXML/jackson-core/tree/jackson-core-3.1.6",
                 "purpose": "canonical JSON 생성·읽기용 runtime 의존성",
             },
             {

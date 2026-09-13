@@ -22,7 +22,7 @@ VALID_GRAPH = """\
 [INFO] |  +- net.minidev:json-smart:jar:2.4.10:runtime
 [INFO] |     \\- net.minidev:accessors-smart:jar:2.4.9:compile
 [INFO] +- org.apache.calcite:calcite-linq4j:jar:1.42.0:test
-[INFO] +- com.fasterxml.jackson.core:jackson-databind:jar:2.18.9:compile
+[INFO] +- com.fasterxml.jackson.core:jackson-databind:jar:2.18.10:compile
 [INFO] \\- io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:jar:0.1.2:test
 """
 VALID_PROFILE_OFF_EFFECTIVE_POM = """\
@@ -473,7 +473,7 @@ class ExternalMavenIntegrationVerifierTest(unittest.TestCase):
             "FasterXML Jackson dependencies must be unclassified JARs in an allowed scope",
             '("net.minidev", "json-smart", "2.4.10")',
             '("net.minidev", "accessors-smart", "2.4.9")',
-            'jackson_versions != {"2.18.9"}',
+            'jackson_versions != {"2.18.10"}',
             '("org.locationtech.jts.io", "jts-io-common")',
             '("com.google.protobuf", "protobuf-java")',
             "cached RouteContract JAR hash mismatch",
@@ -585,7 +585,7 @@ class ExternalMavenIntegrationVerifierTest(unittest.TestCase):
       <dependency>
         <groupId>com.fasterxml.jackson</groupId>
         <artifactId>jackson-bom</artifactId>
-        <version>2.18.9</version>
+        <version>2.18.10</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -781,7 +781,7 @@ class ExternalMavenIntegrationVerifierTest(unittest.TestCase):
       <dependency>
         <groupId>com.fasterxml.jackson</groupId>
         <artifactId>jackson-bom</artifactId>
-        <version>2.18.9</version>
+        <version>2.18.10</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>""",
@@ -965,16 +965,16 @@ class ExternalMavenIntegrationVerifierTest(unittest.TestCase):
                 "[INFO] |  +- net.minidev:json-smart:jar:2.4.10:runtime",
             ),
             "Jackson provided scope": VALID_GRAPH.replace(
-                "jackson-databind:jar:2.18.9:compile",
-                "jackson-databind:jar:2.18.9:provided",
+                "jackson-databind:jar:2.18.10:compile",
+                "jackson-databind:jar:2.18.10:provided",
             ),
             "Jackson classifier": VALID_GRAPH.replace(
-                "jackson-databind:jar:2.18.9:compile",
-                "jackson-databind:jar:tests:2.18.9:compile",
+                "jackson-databind:jar:2.18.10:compile",
+                "jackson-databind:jar:tests:2.18.10:compile",
             ),
             "Jackson pom type": VALID_GRAPH.replace(
-                "jackson-databind:jar:2.18.9:compile",
-                "jackson-databind:pom:2.18.9:compile",
+                "jackson-databind:jar:2.18.10:compile",
+                "jackson-databind:pom:2.18.10:compile",
             ),
             "Jackson namespace prefix collision": VALID_GRAPH.replace(
                 "com.fasterxml.jackson.core:jackson-databind",
