@@ -40,13 +40,25 @@ Local source verification on 2026-09-14:
 | Production bytecode after Java 21 testing | All 62 classes across the three libraries retain major version 61 (Java 17) |
 | Official CycloneDX CLI 0.33.1 | Six JSON/XML pairs, 12 documents validated |
 | SBOM/POM/lock inventory consistency | All six roles passed the supply-chain inventory gate; this alone is not an OSV scan |
+| Final OSV-Scanner 2.5.0 policy run | 306 Maven packages, zero findings at source `565e6f3489cd0bae5d45380e3efdb6015b4422aa` |
+| Python verification | 346 submission tests passed; 1,071 script tests completed with three existing opt-in skips and no failures/errors |
+| Fresh staged Gradle consumers | Both adapters, six real MySQL tests and ten negative dependency-graph cases passed |
+| Fresh staged Maven consumers | Both adapters, six real MySQL tests and eight ordinary negative dependency-graph cases passed |
+
+Both consumer families matched the same nine JAR/POM/module receipt entries and
+selected streaming Jackson 3.1.6 and the intended Jackson 2.18.10 graph. Gradle's
+runtime annotation artifact remains 2.21 according to the selected BOM graph;
+Maven selects annotations 2.18.10. These are separate tested resolutions, not a
+claim that the two build tools produce identical transitive graphs.
 
 These are **verified - unit**, **verified - MySQL** and exact-version
 **verified - ShardingSphere-JDBC 5.5.2 / 5.5.3** observations. The native logs,
 JUnit files and `java21-runtime-summary.json` are retained in the maintainer's
-`02-main-integration-20260914` evidence directory. Packaged reruns, the final
-security scan and CI qualification remain pending; earlier candidate evidence
-does not qualify these new artifact bytes.
+`02-main-integration-20260914` evidence directory. The complete historical
+28-test packaged corpus rerun and CI qualification remain pending; the smaller
+fresh consumer suites do not replace that corpus, and earlier candidate evidence
+does not qualify these new artifact bytes. Maven evidence retains its verifier
+summary and resolved graph; the Gradle consumer evidence also retains raw JUnit.
 
 Reproduce the Java 17 run with a selected Java 17 `JAVA_HOME`:
 
