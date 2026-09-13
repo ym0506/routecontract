@@ -1,5 +1,13 @@
 # Final packaged runtime binding for the existing MySQL corpus
 
+Current input status (2026-09-14): the source at
+`fc80d17d0c7b888f7c6db024200870d29f21d7d9` integrates stable-line maintenance.
+The input contract updates only the two MySQL dependency-lock fingerprints and
+`gradle.properties`; the other 36 files, suite/method allowlists and approved
+observations are byte-identical. The current runner uses Gradle 9.7.1. A new
+packaged run on these inputs remains **unverified**. The retained result below
+used Gradle 8.14.4 and its original dependency graph.
+
 Retained result: packaged runtime binding for producer `86a0be5` was verified on
 2026-09-08. All 28 existing MySQL tests in six suites passed against its reviewed
 local 0.2.0 JARs. The separate
@@ -7,7 +15,7 @@ authentic human review remains pending: `humanReview: null`, `fullA23Complete:
 false`, and `publicConsumption: false`. See the [execution evidence](evidence/packaged-corpus-final-86a0be5-2026-09-08.md).
 No workloads or goldens were added or regenerated.
 
-The dependency correction changes the 5.5.2 source build and lock inputs at
+The earlier dependency correction changed the 5.5.2 source build and lock inputs at
 `5fdfc3dcd3f4190e4c2b9e381b0b096169b387bb`. The corresponding input fingerprints
 were independently reviewed; all test methods, resources and expected values remain unchanged.
 Its passing source-project tests do not replace a new packaged execution on the
@@ -16,7 +24,7 @@ its original producer, receipt and dependency graph.
 
 ## Fixed scope
 
-Use Java 17 and the checksum-pinned Gradle 8.14.4 distribution. Run two standalone
+Use Java 17 and the checksum-pinned Gradle 9.7.1 distribution. Run two standalone
 consumers sequentially: exact ShardingSphere 5.5.3 with the four existing suites
 under `examples/mysql` (14 tests), and exact 5.5.2 with the two suites under
 `examples/mysql-5.5.2` (14 tests). The exact class/method allowlist and original
