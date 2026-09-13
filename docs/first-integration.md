@@ -329,7 +329,7 @@ if (routeContractPilotEnabled.get()) {
     dependencies {
         add(
                 pilot.implementationConfigurationName,
-                enforcedPlatform("com.fasterxml.jackson:jackson-bom:2.18.9"))
+                enforcedPlatform("com.fasterxml.jackson:jackson-bom:2.18.10"))
         constraints {
             add(
                     pilot.implementationConfigurationName,
@@ -435,12 +435,12 @@ if (routeContractPilotEnabled.get()) {
                     artifactGroup.startsWith("com.fasterxml.jackson.")
         }
         if (jackson2.isEmpty() || jackson2.any { artifact ->
-            artifact.moduleVersion.id.version != "2.18.9" ||
+            artifact.moduleVersion.id.version != "2.18.10" ||
                     artifact.extension != "jar" || artifact.classifier != null
         }) {
             throw new GradleException(
                     "Every resolved FasterXML Jackson artifact must be an unclassified " +
-                            "JAR exactly at 2.18.9")
+                            "JAR exactly at 2.18.10")
         }
         [
                 ["org.locationtech.jts.io", "jts-io-common"],
@@ -621,8 +621,10 @@ prevents the RouteContract module from falling back to Maven Central. Unlike a t
 test configuration, the pilot configuration declares its own exact
 ShardingSphere-JDBC 5.5.3, MySQL Connector/J 26.7.0, Testcontainers 1.21.4, JUnit 5.14.3, and JUnit
 Platform 1.14.3 dependencies. The complete fixture has been exercised with the repository's
-SHA-256-pinned Gradle 8.14.4 wrapper, Java 17, and the digest-pinned MySQL 8.4.11 image. This does
-not claim compatibility with another Gradle release.
+SHA-256-pinned Gradle 8.14.4 wrapper, Java 17, and the digest-pinned MySQL 8.4.11 image.
+The current verifier targets the exact Gradle 9.7.1 wrapper. Its receipt records that version
+and its own wrapper hashes; the receipt validator retains the exact 8.14.4 identity for earlier
+records and rejects mixed or unrecognized identities. Neither record proves arbitrary Gradle 9.x compatibility.
 
 Run the internal verifier against an already downloaded exact `v0.1.2` Release-asset directory:
 
@@ -660,7 +662,7 @@ ROUTECONTRACT_REPOSITORY=/absolute/real/path/to/routecontract-maven \
   :owning-module:routeContractPilot
 ```
 
-The checked-in fixture bootstraps one immutable wrapper-pinned Gradle 8.14.4 distribution, then
+The checked-in fixture bootstraps one immutable wrapper-pinned Gradle 9.7.1 distribution, then
 gives the marker, repository-path, GAV-negative, profile-off, GAV-origin, graph, missing-baseline,
 and matched cases separate HOME, temporary, Gradle-user-home, and project-cache directories under
 an `env -i` allowlist. An origin-only, non-transitive fresh-cache configuration proves exact
@@ -722,7 +724,7 @@ runner and starter described above remain Java 17 only.
 
 Use this lane only when the representative operation is already a synchronous Surefire integration
 test in one owning module and its resolved graph can preserve the tested
-boundary. The checked-in fixture pins Jackson 2.18.9 and Calcite Core/linq4j 1.42.0,
+boundary. The checked-in fixture pins Jackson 2.18.10 and Calcite Core/linq4j 1.42.0,
 pins `json-smart` 2.4.10 and `accessors-smart` 2.4.9 when either artifact is present,
 and excludes `jts-io-common` and `protobuf-java`. A different ShardingSphere version, an unresolved node, an incompatible graph,
 or a framework that needs RouteContract in a production runtime classloader is a fit blocker for
@@ -795,7 +797,7 @@ dependency graph.
       <dependency>
         <groupId>com.fasterxml.jackson</groupId>
         <artifactId>jackson-bom</artifactId>
-        <version>2.18.9</version>
+        <version>2.18.10</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -1209,7 +1211,7 @@ jackson_versions = {
     coordinate["version"] for coordinate in coordinates
     if is_fasterxml_jackson(coordinate["group"])
 }
-if jackson_versions != {"2.18.9"}:
+if jackson_versions != {"2.18.10"}:
     raise SystemExit(f"unexpected FasterXML Jackson versions: {sorted(jackson_versions)}")
 jackson = [
     coordinate for coordinate in coordinates
@@ -1880,14 +1882,14 @@ and exact JDK 17 setup; replace every repository-specific path and identity:
       https://raw.githubusercontent.com/ym0506/routecontract/2264b6e6292ee80f131148f2acef601cbaede096/scripts/prepare_maven_v0_1_2_checksums.py
     download_tool \
       verify-external-maven-integration.sh \
-      69f233a5935f36a2e9068c25517fc3f15df4ef7da119e7a02feb9184df49e472 \
-      https://raw.githubusercontent.com/ym0506/routecontract/2264b6e6292ee80f131148f2acef601cbaede096/scripts/verify-external-maven-integration.sh
+      8c53eaac7677ed2274e4bab5e5d553e6d4445988df946a66464df0f75f7b2686 \
+      https://raw.githubusercontent.com/ym0506/routecontract/917fadf86f3d47b8c5177bbdd372070e985d57d6/scripts/verify-external-maven-integration.sh
     bash "${tool_dir}/verify-external-maven-integration.sh"
 ```
 
-The installer URL above is pinned to immutable `v0.1.2`; the helper and verifier URLs are pinned to
-bridge implementation commit `2264b6e6292ee80f131148f2acef601cbaede096`, and every download
-retains its exact content-hash gate. This Maven workflow becomes usable only after this documentation
+The installer URL above is pinned to immutable `v0.1.2`. The checksum helper remains pinned to
+`2264b6e6292ee80f131148f2acef601cbaede096`. The verifier uses the Jackson 2.18.10 implementation at
+`917fadf86f3d47b8c5177bbdd372070e985d57d6`. Every download retains its exact content-hash gate. This Maven workflow becomes usable only after this documentation
 commit is published. Until then, do not count this lane as available onboarding.
 
 For either supported build tool, every fresh CI job must repeat the exact Release download and use

@@ -1,0 +1,193 @@
+{
+  "status": "EXPLORATORY_RUN_COMPLETE",
+  "cells": [
+    {
+      "block": 1,
+      "condition": "absent",
+      "query": "equality",
+      "microsecondsPerOp": 189.17663794490232,
+      "allocatedBytesPerOp": 59045.517587452094
+    },
+    {
+      "block": 1,
+      "condition": "absent",
+      "query": "range",
+      "microsecondsPerOp": 256.92845226048564,
+      "allocatedBytesPerOp": 68788.60174436259
+    },
+    {
+      "block": 1,
+      "condition": "idle",
+      "query": "equality",
+      "microsecondsPerOp": 182.79734042480453,
+      "allocatedBytesPerOp": 58842.26995775645
+    },
+    {
+      "block": 1,
+      "condition": "idle",
+      "query": "range",
+      "microsecondsPerOp": 252.52304017840274,
+      "allocatedBytesPerOp": 69160.2227798696
+    },
+    {
+      "block": 1,
+      "condition": "checked",
+      "query": "equality",
+      "microsecondsPerOp": 193.00248573423448,
+      "allocatedBytesPerOp": 64846.8197203706
+    },
+    {
+      "block": 1,
+      "condition": "checked",
+      "query": "range",
+      "microsecondsPerOp": 291.1720079284074,
+      "allocatedBytesPerOp": 78478.9787720941
+    },
+    {
+      "block": 2,
+      "condition": "idle",
+      "query": "equality",
+      "microsecondsPerOp": 203.0498135482399,
+      "allocatedBytesPerOp": 59495.30820901896
+    },
+    {
+      "block": 2,
+      "condition": "idle",
+      "query": "range",
+      "microsecondsPerOp": 261.0211963652809,
+      "allocatedBytesPerOp": 69441.10882099175
+    },
+    {
+      "block": 2,
+      "condition": "checked",
+      "query": "equality",
+      "microsecondsPerOp": 193.39479031027994,
+      "allocatedBytesPerOp": 65040.912694561106
+    },
+    {
+      "block": 2,
+      "condition": "checked",
+      "query": "range",
+      "microsecondsPerOp": 287.11028077331815,
+      "allocatedBytesPerOp": 78372.73006852178
+    },
+    {
+      "block": 2,
+      "condition": "absent",
+      "query": "equality",
+      "microsecondsPerOp": 194.12907310008654,
+      "allocatedBytesPerOp": 60528.20967493871
+    },
+    {
+      "block": 2,
+      "condition": "absent",
+      "query": "range",
+      "microsecondsPerOp": 256.2746683200902,
+      "allocatedBytesPerOp": 68993.69163282149
+    },
+    {
+      "block": 3,
+      "condition": "checked",
+      "query": "equality",
+      "microsecondsPerOp": 197.60687426519792,
+      "allocatedBytesPerOp": 64887.376575477494
+    },
+    {
+      "block": 3,
+      "condition": "checked",
+      "query": "range",
+      "microsecondsPerOp": 264.24885177935954,
+      "allocatedBytesPerOp": 78080.8038653825
+    },
+    {
+      "block": 3,
+      "condition": "absent",
+      "query": "equality",
+      "microsecondsPerOp": 198.43252878336244,
+      "allocatedBytesPerOp": 60684.941469633464
+    },
+    {
+      "block": 3,
+      "condition": "absent",
+      "query": "range",
+      "microsecondsPerOp": 276.549497201969,
+      "allocatedBytesPerOp": 68913.67378571941
+    },
+    {
+      "block": 3,
+      "condition": "idle",
+      "query": "equality",
+      "microsecondsPerOp": 185.26582582209855,
+      "allocatedBytesPerOp": 60601.214170052786
+    },
+    {
+      "block": 3,
+      "condition": "idle",
+      "query": "range",
+      "microsecondsPerOp": 276.43865174329505,
+      "allocatedBytesPerOp": 69021.55811181705
+    }
+  ],
+  "comparisons": [
+    {
+      "query": "equality",
+      "comparison": "idle/absent",
+      "blockTimeRatios": [
+        0.9662786188115059,
+        1.0459526247444355,
+        0.9336464487854279
+      ],
+      "medianTimeRatio": 0.9662786188115059,
+      "blockAllocatedByteDeltas": [
+        -203.24762969564472,
+        -1032.9014659197564,
+        -83.72729958067794
+      ]
+    },
+    {
+      "query": "equality",
+      "comparison": "checked/idle",
+      "blockTimeRatios": [
+        1.055827646538588,
+        0.9524499773270357,
+        1.0666126544835628
+      ],
+      "medianTimeRatio": 1.055827646538588,
+      "blockAllocatedByteDeltas": [
+        6004.549762614151,
+        5545.60448554215,
+        4286.162405424708
+      ]
+    },
+    {
+      "query": "range",
+      "comparison": "idle/absent",
+      "blockTimeRatios": [
+        0.9828535452445084,
+        1.0185212532955548,
+        0.9995991840166211
+      ],
+      "medianTimeRatio": 0.9995991840166211,
+      "blockAllocatedByteDeltas": [
+        371.62103550700704,
+        447.4171881702641,
+        107.88432609764277
+      ]
+    },
+    {
+      "query": "range",
+      "comparison": "checked/idle",
+      "blockTimeRatios": [
+        1.1530512531557513,
+        1.0999500606515014,
+        0.9559041404410584
+      ],
+      "medianTimeRatio": 1.0999500606515014,
+      "blockAllocatedByteDeltas": [
+        9318.755992224498,
+        8931.621247530027,
+        9059.245753565454
+      ]
+    }
+  ]
+}

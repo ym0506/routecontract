@@ -48,7 +48,8 @@ The acceptance behavior specified before implementation is:
   rejection. Both ordinary adapter orders and the historical legacy request remain separate
   graph controls; they do not prove manual-classpath legacy handling.
 
-The assembled consumer uses Java 17 and Gradle 8.14.4:
+The current assembled consumer uses Java 17 and Gradle 9.7.1. The retained runs
+below used their recorded Gradle 8.14.4 toolchain:
 
 ```sh
 ./gradlew --no-daemon --no-build-cache --no-configuration-cache \

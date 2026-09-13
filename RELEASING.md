@@ -80,8 +80,9 @@ workflow. The workflow:
   child exit `1`;
 - runs unit and real MySQL integration tests without reusing cached task results;
 - generates `test-summary.txt` from the resulting JUnit XML and fails unless
-  the exact twenty expected core, adapter and MySQL suites contain 135 passing, non-skipped tests;
-  the standalone consumer runs separately and is not included in this count. The
+  the suite set and passing, non-skipped test counts match the
+  [current summary allowlist](scripts/summarize-test-results.py);
+  the standalone consumer runs separately and is not included in those counts. The
   fixed summary records the Git revision and per-suite counts but deliberately
   omits test names, timings, hostnames, paths, ports, SQL and captured output;
 - builds reproducible-order JARs and the generated Maven POM;
@@ -258,16 +259,24 @@ implemented and verified.
 ## Future Maven Central publication (a separately approved later release)
 
 The immutable GitHub Releases `v0.1.0` and `v0.1.2` remain unchanged and are
-not published to Maven Central. This section applies only to a later stable
-version selected through a separate release approval. It does not authorize
-overwriting, retagging, or describing `0.1.0` or `0.1.2` as a Central artifact,
-and it does not plan or authorize another release by itself.
+not published to Maven Central.
 
-[0.1.3](docs/release-0.1.3-candidate.md) is a completed single-artifact release for
-exact ShardingSphere-JDBC 5.5.3. The current source procedure below prepares the
-unreleased three-artifact 0.2 core/adapter split, whose release gates remain in force.
-Historical single-artifact instructions are identified separately. Selecting a new
-candidate is not publication or approval of bytes that have not yet been produced.
+[0.1.4 is published](docs/release-0.1.4-candidate.md) on GitHub and Maven Central,
+using the existing single artifact and exact ShardingSphere-JDBC 5.5.3 support.
+Its [Central evidence](docs/evidence/release-0.1.4-central.md) includes the completed
+prepublication candidate comparison and anonymous public consumer checks. Historical
+[0.1.3 evidence](docs/evidence/release-0.1.3-central.md), including its recorded exception,
+remains unchanged. The separate 0.2 core/adapter split and 5.5.2 adapter remain unreleased.
+
+For a future publication, select a new, unpublished stable version strictly greater than
+`0.1.4` through a separate release approval. Preserve all existing tags and published
+coordinates; `0.1.3` and `0.1.4` are historical verification inputs, not new upload candidates.
+This checklist does not select or authorize another release by itself. Selection does
+not approve bytes that have not yet been produced.
+
+The source procedure below prepares the unreleased three-artifact 0.2 core/adapter
+split. Its separate release gates remain in force; historical single-artifact
+instructions are identified separately.
 
 Use the current official [Central publishing guide](https://central.sonatype.org/publish/publish-portal-guide/),
 [Portal API documentation](https://central.sonatype.org/publish/publish-portal-api/)
@@ -279,7 +288,7 @@ records required invariants rather than copying an unstable JSON schema.
 
 Before any upload, record and independently compare:
 
-- a stable project version strictly greater than `0.1.2`; its annotated `vVERSION` tag
+- a new, unpublished stable project version strictly greater than `0.1.4`; its annotated `vVERSION` tag
   object OID, raw-object size and SHA-256; its peeled commit and tree; and the
   public `main` commit from which that tag was created;
 - the successful release-evidence workflow identity and file SHA-256, run ID,
@@ -427,8 +436,9 @@ setting a generator's `enabled` flag to false can omit its publication artifact.
 
 After staging, compare each seeded and staged payload's size and SHA-256 with
 the reviewed CI bytes. A successful Gradle exit alone is insufficient: require
-the existing schema-1 bundle builder and verifier to validate the exact 55-file
-staging inventory, all checksums, five SHA-384 primary-key signatures and the
+the schema-1 bundle builder and verifier to validate the 35 required staging
+files and any allowed signature-checksum sidecars, every present checksum,
+five SHA-384 primary-key signatures and the
 30-entry upload bundle. These checks also reject missing stronger checksum
 sidecars if Gradle's `org.gradle.internal.publish.checksums.insecure` property is
 enabled or a checksum write fails. No payload hash mismatch may be repaired by
@@ -529,13 +539,17 @@ paths:
 - one detached ASCII-armored primary-key signature for each payload; and
 - `.md5`, `.sha1`, `.sha256` and `.sha512` sidecars for each payload.
 
-The local Gradle staging tree also contains four checksum sidecars for each
-`.asc` file and one artifact-level `maven-metadata.xml` plus four checksums for
-each coordinate. The tool requires that exact local-only inventory, verifies
-every checksum and detached signature, and excludes those 75 files from the
-upload ZIP. Signature sidecars do not need checksums, and artifact-level
-metadata is local publication bookkeeping rather than version payload. Any
-other file, directory, symlink or special file fails closed.
+The local Gradle staging tree requires one artifact-level `maven-metadata.xml`
+plus four checksums for each of the three coordinates. Gradle 9.7.1 omits
+checksums for `.asc` files; the tool also accepts the older output's four
+checksum sidecars per signature. Only those exact paths are optional, and
+all present sidecars must verify. All fifteen payloads, their four checksums,
+all fifteen detached signatures and the fifteen metadata files remain mandatory.
+The receipt records the files actually excluded: fifteen metadata files plus
+any signature-checksum sidecars (75 excluded files for the complete older
+inventory). The upload ZIP always contains exactly 90 entries. Signature
+sidecars do not need checksums, and artifact-level metadata is local publication
+bookkeeping. Other files, directories, symlinks and special files are rejected.
 
 The ZIP uses lexicographic entry order, stored entries, the fixed ZIP epoch,
 regular mode `0644`, no directory entries, no archive comment and no extra

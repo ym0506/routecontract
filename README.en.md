@@ -5,15 +5,18 @@ English is now the default: **[read the main README](README.md)**.
 
 This page keeps links from earlier versions working.
 
-## Install 0.1.3
+<a id="install-013"></a>
 
-[Install the published v0.1.3 test dependency from Maven Central](README.md#install-013).
-Java 17, exact ShardingSphere-JDBC 5.5.3, synchronous non-batch `PreparedStatement`.
+## Install 0.1.4
+
+[Install the published v0.1.4 test dependency from Maven Central](README.md#install-014).
+Java 17 or 21, exact ShardingSphere-JDBC 5.5.3, synchronous non-batch `PreparedStatement`.
 
 ## Quick Start
 
-[Choose an example in the main README](README.md#quick-start): the v0.1.3 report example
-needs no Docker; the [historical MySQL demo](docs/reference-guide.md#quick-start) is pinned to v0.1.2.
+[Run the current v0.1.4 MySQL example](README.md#quick-start): see a passing query, an expected
+execution-check failure, and a passing restored query. Use Java 17 or 21, Maven and Docker locally,
+or [run it in GitHub Actions](docs/first-project.md#try-in-your-browser).
 
 ## Smallest usage example
 

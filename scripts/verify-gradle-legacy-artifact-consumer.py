@@ -115,11 +115,11 @@ def prepare_metadata(destination: Path, inventory: list[dict]) -> None:
 
 def seed_distribution_zip(source: Path, seed: Path) -> None:
     """Reuse a reviewed distribution archive, never a dependency cache or .ok marker."""
-    expected = 'f1771298a70f6db5a29daf62378c4e18a17fc33c9ba6b14362e0cdf40610380d'
+    expected = 'acd53f1edaf02f1a8ff99879f8a34b302661a057d9b063ae9e35b552f804d20a'
     if source.is_symlink() or not source.is_file() or digest(source.read_bytes()) != expected:
         raise ResolverError('Gradle distribution ZIP does not match the wrapper checksum')
     # Gradle Wrapper's cache key for the checked-in services.gradle.org URL.
-    target = seed / 'wrapper/dists/gradle-8.14.4-bin/92wwslzcyst3phie3o264zltu/gradle-8.14.4-bin.zip'
+    target = seed / 'wrapper/dists/gradle-9.7.1-bin/1w1c7tv4s851m17nbqdsro2tv/gradle-9.7.1-bin.zip'
     target.parent.mkdir(parents=True)
     shutil.copyfile(source, target)
     if digest(target.read_bytes()) != expected:
@@ -204,7 +204,7 @@ def main() -> None:
     parser.add_argument('--java-home', required=True, type=Path)
     parser.add_argument('--legacy-payload-directory', type=Path)
     parser.add_argument('--gradle-distribution-zip', type=Path,
-                        help='Optional exact checksum-pinned Gradle 8.14.4 archive; no dependency cache reuse')
+                        help='Optional exact checksum-pinned Gradle 9.7.1 archive; no dependency cache reuse')
     parser.add_argument('--case', action='append', dest='case_ids', help='Partial diagnostic run; never marks full coverage')
     parser.add_argument('--workers', type=int, default=2, choices=range(1, 5))
     args = parser.parse_args()
@@ -273,7 +273,7 @@ def main() -> None:
                    'registrySha256': initial_snapshot['scripts/legacy-artifact-inputs.json'],
                    'stagedReceiptSha256': digest(receipt_bytes), 'verificationMetadataSha256': digest(metadata.read_bytes()),
                    'sourceBinding': binding, 'results': sorted(results, key=lambda case: case['caseId']),
-                   'boundary': 'Real Gradle 8.14.4 / Java 17 resolution and pinned first-party JAR materialization. '
+                   'boundary': 'Real Gradle 9.7.1 / Java 17 resolution and pinned first-party JAR materialization. '
                                'No Maven, third-party runtime JAR execution, SQL, A-28, or public 0.2 publication claim.'}
         write_json(evidence / 'summary.json', summary)
         print(f'ROUTECONTRACT_GRADLE_LEGACY_MATRIX_{summary["status"]} cases={len(results)} evidence={evidence}', flush=True)

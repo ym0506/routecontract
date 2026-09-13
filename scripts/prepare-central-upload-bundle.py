@@ -407,8 +407,9 @@ def _manifest(
 
 def _expected_inventory(
     version: str, payload_names_by_artifact: dict[str, list[str]]
-) -> tuple[set[str], set[str]]:
+) -> tuple[set[str], set[str], set[str]]:
     files: set[str] = set()
+    optional_files: set[str] = set()
     directories: set[str] = set()
     for artifact_id in ARTIFACT_IDS:
         coordinate_path = GROUP_PATH / artifact_id / version
@@ -418,7 +419,9 @@ def _expected_inventory(
             files.add(str(coordinate_path / f"{name}.asc"))
             for algorithm in CHECKSUMS:
                 files.add(str(coordinate_path / f"{name}.{algorithm}"))
-                files.add(str(coordinate_path / f"{name}.asc.{algorithm}"))
+                # Gradle 9.7.1 omits signature checksums. Only these exact
+                # paths are optional; every present sidecar is still verified.
+                optional_files.add(str(coordinate_path / f"{name}.asc.{algorithm}"))
         files.add(str(artifact_path / "maven-metadata.xml"))
         for algorithm in CHECKSUMS:
             files.add(str(artifact_path / f"maven-metadata.xml.{algorithm}"))
@@ -426,7 +429,7 @@ def _expected_inventory(
         parts = [*GROUP_PATH.parts, artifact_id, version]
         for length in range(1, len(parts) + 1):
             directories.add(str(PurePosixPath(*parts[:length])))
-    return files, directories
+    return files, optional_files, directories
 
 
 def _read_regular_at(
@@ -576,7 +579,10 @@ def _walk_repository(
 
 
 def _read_repository(
-    repository: Path, expected_files: set[str], expected_directories: set[str]
+    repository: Path,
+    expected_files: set[str],
+    optional_files: set[str],
+    expected_directories: set[str],
 ) -> dict[str, bytes]:
     root_descriptor, opened_root = _open_absolute_directory(
         repository, "staging repository"
@@ -587,7 +593,12 @@ def _read_repository(
         first_root, first_files, first_directories, _ = _walk_repository(
             root_descriptor, read_files=False
         )
-        if set(first_files) != expected_files or set(first_directories) != expected_directories:
+        actual_files = set(first_files)
+        if (
+            not expected_files.issubset(actual_files)
+            or not actual_files.issubset(expected_files | optional_files)
+            or set(first_directories) != expected_directories
+        ):
             raise BundleError(
                 "staging inventory mismatch: expected the exact coordinated Maven artifact set"
             )
@@ -1254,10 +1265,12 @@ def _prepare_staging(
     manifest_value, manifest_bytes, version, payload_names_by_artifact = _manifest(
         reviewed_manifest_path
     )
-    expected_files, expected_directories = _expected_inventory(
+    expected_files, optional_files, expected_directories = _expected_inventory(
         version, payload_names_by_artifact
     )
-    contents = _read_repository(repository, expected_files, expected_directories)
+    contents = _read_repository(
+        repository, expected_files, optional_files, expected_directories
+    )
     verified_public_key = _verify_public_gpg_home(
         public_gpg_home, expected_primary_fingerprint
     )
@@ -1279,9 +1292,11 @@ def _prepare_staging(
         for name in payload_names_by_artifact[artifact_id]:
             payload_path = str(coordinate_path / name)
             signature_path = f"{payload_path}.asc"
-            for source in (payload_path, signature_path):
-                for algorithm in CHECKSUMS:
-                    _verify_checksum(contents, source, f"{source}.{algorithm}", algorithm)
+            for algorithm in CHECKSUMS:
+                _verify_checksum(contents, payload_path, f"{payload_path}.{algorithm}", algorithm)
+                signature_checksum = f"{signature_path}.{algorithm}"
+                if signature_checksum in contents:
+                    _verify_checksum(contents, signature_path, signature_checksum, algorithm)
         metadata_path = str(GROUP_PATH / artifact_id / "maven-metadata.xml")
         for algorithm in CHECKSUMS:
             _verify_checksum(contents, metadata_path, f"{metadata_path}.{algorithm}", algorithm)
@@ -1333,7 +1348,9 @@ def _prepare_staging(
                 checksum_path = f"{payload_path}.{algorithm}"
                 upload_entries[checksum_path] = contents[checksum_path]
                 entry_kinds[checksum_path] = "payloadChecksum"
-                excluded_paths.add(f"{signature_path}.{algorithm}")
+                signature_checksum = f"{signature_path}.{algorithm}"
+                if signature_checksum in contents:
+                    excluded_paths.add(signature_checksum)
         metadata_path = str(GROUP_PATH / artifact_id / "maven-metadata.xml")
         excluded_paths.add(metadata_path)
         for algorithm in CHECKSUMS:
@@ -1348,10 +1365,11 @@ def _prepare_staging(
     ]
     if (
         len(upload_entries) != UPLOAD_ENTRY_COUNT
-        or len(excluded_entries) != EXCLUDED_ENTRY_COUNT
+        or set(upload_entries) & excluded_paths
+        or (set(upload_entries) | excluded_paths) != set(contents)
     ):
         raise BundleError(
-            "internal staging partition did not produce the exact coordinated upload/exclusion inventory"
+            "internal staging partition must account for every file and 90 upload entries"
         )
     return PreparedStaging(
         version=version,

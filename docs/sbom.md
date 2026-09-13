@@ -62,6 +62,12 @@ check. These profiles do not determine the semantic origin of renamed or copied
 source/class bytes. The related provenance review reopens if those payload
 invariants change or a JTS/Mahout published dependency enters the release.
 
+The version-neutral core now declares TransmittableThreadLocal 2.14.2 and
+`tools.jackson.core:jackson-core` 3.1.6, with the corresponding Jackson BOM in
+its locked runtime closure. The split adapter and example profiles remain
+separate. These source profiles do not replace any immutable 0.1.x release's
+published POM or SBOM; see [Jackson patch qualification](jackson3-patch-compatibility.md).
+
 ## Generate and locate the SBOMs
 
 Use the checked-in, checksum-pinned Gradle Wrapper:

@@ -603,7 +603,7 @@ def main():
         (evidence / 'toolchain.txt').write_text(output)
         if (f'Gradle {wrapper.EXPECTED_GRADLE_VERSION}' not in output
                 or re.search(r'Launcher JVM:\s+17(?:[.]|\s)', output) is None):
-            raise AcceptanceError('The verified wrapper seed must actually launch Gradle 8.14.4 on Java 17')
+            raise AcceptanceError(f'The verified wrapper seed must actually launch Gradle {wrapper.EXPECTED_GRADLE_VERSION} on Java 17')
         results = []
         barrier = network.prepare_barrier(evidence/'network-proof', {17: java_home}) if 'offline' in cases else None
         for dsl in dsls:

@@ -1,5 +1,5 @@
 {
-  "corpusSourceRevision": "5fdfc3dcd3f4190e4c2b9e381b0b096169b387bb",
+  "corpusSourceRevision": "fc80d17d0c7b888f7c6db024200870d29f21d7d9",
   "formatVersion": 1,
   "goldenGenerationEnabled": false,
   "humanReview": null,
@@ -81,7 +81,7 @@
     "examples/manifests/find-paid-orders-by-user.shardingsphere-5.5.3.schema2.approved.json": "9145302eaef634225c9253f8355c564612c06e3bf660e150f464f7beccfd944e",
     "examples/manifests/find-paid-orders-by-user.shardingsphere-5.5.3.schema2.candidate.json": "5ab31f011765dfee7546aa5e96be31302f8d38905d4641f2d69b8c8aee3287b1",
     "examples/mysql-5.5.2/build.gradle": "e2c8a1783868c734f47986d98604b113daee4445b0039946a401826e159b7613",
-    "examples/mysql-5.5.2/gradle.lockfile": "27308bbee1baf6f434a68839662f7f29ad70340cb7dfce8bed5b441c3c57b6fc",
+    "examples/mysql-5.5.2/gradle.lockfile": "3e3f972df5eded381af6493bb90e7b2f10a808ff9ba155f3fbfa55fcb13dfc77",
     "examples/mysql-5.5.2/src/test/java/io/github/ym0506/routecontract/example552/Exact552ObservedExecutionRegressionCorpusMySqlTest.java": "b1dbaa924438f250e29b06b19685b284360b80790677566f7c5e8ef5712d925c",
     "examples/mysql-5.5.2/src/test/java/io/github/ym0506/routecontract/example552/Exact552OperationContractMySqlTest.java": "b08d680f4a585191e7552d6b8f6fd3bf19286bbfc41ee02c7a4d9a538af2ba4e",
     "examples/mysql-5.5.2/src/test/resources/corpus/shardingsphere-5.5.2/control-additional-filter.json": "24f0500a48de8608d4a69cf2a396a2c51272270cc1d08f244afcf165e661c058",
@@ -99,11 +99,11 @@
     "examples/mysql-5.5.2/src/test/resources/corpus/shardingsphere-5.5.2/same-value-range.json": "e1c5f56e3861e0774b203a2afd1abefeff68873cac9803215cad2e5e0a9865f9",
     "examples/mysql-5.5.2/src/test/resources/corpus/shardingsphere-5.5.2/table-strategy-removed.json": "8f5eb8ef60f02757ad79086a1a3a5e81376e06bbaf946295baf3ca1f31a4c75e",
     "examples/mysql/build.gradle": "faeb52dcbc39debd9043d993bb6d26fd8bb0a93b4c59ed51d9477b221dca83cc",
-    "examples/mysql/gradle.lockfile": "f8e5da44bff441aeb21b6a2b87559529d47bb47f618b0a0ded8e0fbed440db4c",
+    "examples/mysql/gradle.lockfile": "8017ce7ca824196970023fac2af551eabb34de416107369418453c92ae6cc3ed",
     "examples/mysql/src/test/java/io/github/ym0506/routecontract/example/DataSourceProxyComparisonMySqlTest.java": "cc43f36c0f47fe54f58b6c117e23be6beccebbbccb3ab4a25b34a8fd5a1aa1ee",
     "examples/mysql/src/test/java/io/github/ym0506/routecontract/example/FailureBoundaryMySqlTest.java": "f8cf16ade099bcc01f2b8bf0316735513adda7005f00529e760f2581b63f7e49",
     "examples/mysql/src/test/java/io/github/ym0506/routecontract/example/ObservedExecutionRegressionCorpusMySqlTest.java": "d736a9d8f89347a67bcbf3247f73ac6aa3d50a6d793f347f64d37488821db03c",
     "examples/mysql/src/test/java/io/github/ym0506/routecontract/example/OperationCorrelationMySqlTest.java": "1bf785e9cf27a7774d54ea567cb2ca9937298a2f88b16c085684715cf1ada504",
-    "gradle.properties": "d47a1f61424e8ae1960602a774fc0a6547843d276a5fabdbfc1c0aacd82a6894"
+    "gradle.properties": "8e25d231649e0134c02099472f48370c44544b636c31fe8226002ea1e307712e"
   }
 }

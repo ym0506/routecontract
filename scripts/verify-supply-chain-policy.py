@@ -138,7 +138,7 @@ EXPECTED_PUBLISHED_DEPENDENCY_MANAGEMENT = (
         None,
         None,
     ),
-    ("com.fasterxml.jackson", "jackson-bom", "2.18.9", "pom", "import"),
+    ("com.fasterxml.jackson", "jackson-bom", "2.18.10", "pom", "import"),
 )
 EXPECTED_ADAPTER_552_DEPENDENCY_MANAGEMENT = (
     (
@@ -155,7 +155,7 @@ EXPECTED_ADAPTER_552_DEPENDENCY_MANAGEMENT = (
         None,
         None,
     ),
-    ("com.fasterxml.jackson", "jackson-bom", "2.18.9", "pom", "import"),
+    ("com.fasterxml.jackson", "jackson-bom", "2.18.10", "pom", "import"),
 )
 MYSQL_LICENSE_REVIEW_EXCEPTION = {
     "action": (

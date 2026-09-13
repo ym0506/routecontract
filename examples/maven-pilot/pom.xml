@@ -31,7 +31,7 @@
     <junit.version>5.14.3</junit.version>
     <testcontainers.version>1.21.4</testcontainers.version>
     <shardingsphere.version>5.5.3</shardingsphere.version>
-    <jackson2.version>2.18.9</jackson2.version>
+    <jackson2.version>2.18.10</jackson2.version>
     <calcite.version>1.42.0</calcite.version>
     <hikari.version>6.2.1</hikari.version>
     <mysql.connector.version>26.7.0</mysql.connector.version>

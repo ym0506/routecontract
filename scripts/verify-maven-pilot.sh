@@ -709,7 +709,7 @@ jackson_versions = {
     if coordinate["group"] == "com.fasterxml.jackson"
     or coordinate["group"].startswith("com.fasterxml.jackson.")
 }
-if jackson_versions != {"2.18.9"}:
+if jackson_versions != {"2.18.10"}:
     raise SystemExit(f"unexpected FasterXML Jackson versions: {sorted(jackson_versions)}")
 jackson = [
     coordinate for coordinate in coordinates
@@ -866,7 +866,7 @@ test ! -e "$fixture_source/integration-tests/src/routeContractPilot/resources/ro
 printf '%s\n' \
     'ROUTECONTRACT_MAVEN_FIXTURE profileOff=PASS routecontractDependency=ABSENT businessResult=PASS' \
     "ROUTECONTRACT_MAVEN_FIXTURE badChecksum=REJECTED algorithm=SHA-256 expectedJarSha256=$expected_jar_sha256" \
-    'ROUTECONTRACT_MAVEN_FIXTURE graph=PASS shardingsphere=5.5.3 jackson=2.18.9 calcite=1.42.0 minidev=2.4.x forbiddenDependencies=ABSENT' \
+    'ROUTECONTRACT_MAVEN_FIXTURE graph=PASS shardingsphere=5.5.3 jackson=2.18.10 calcite=1.42.0 minidev=2.4.x forbiddenDependencies=ABSENT' \
     "ROUTECONTRACT_MAVEN_FIXTURE missingBaseline=EXPECTED_FAILURE candidateSha256=$expected_candidate_sha256 candidateBytes=$expected_candidate_bytes" \
     "ROUTECONTRACT_MAVEN_FIXTURE mechanicalMatch=PASS candidateSha256=$expected_candidate_sha256" \
     "ROUTECONTRACT_MAVEN_FIXTURE assetSource=$asset_source maven=3.9.14 java=$java_major compiledClassMajor=$expected_classfile_major mysql=8.4.11" \

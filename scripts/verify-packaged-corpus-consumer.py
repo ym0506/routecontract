@@ -22,7 +22,8 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 from public_split_artifacts import load_consumer_receipt
 
 GROUP = 'io.github.ym0506.routecontract'
-GRADLE_SHA256 = 'f1771298a70f6db5a29daf62378c4e18a17fc33c9ba6b14362e0cdf40610380d'
+GRADLE_VERSION = '9.7.1'
+GRADLE_SHA256 = 'acd53f1edaf02f1a8ff99879f8a34b302661a057d9b063ae9e35b552f804d20a'
 TIMEOUT_SECONDS = 2400
 HELPERS = ['public_split_artifacts.py', 'legacy_artifact_inputs.py',
            'verify-staged-split-artifact-consumer.py', 'verify-gradle-legacy-artifact-consumer.py',
@@ -423,7 +424,7 @@ def main(argv: list[str] | None = None) -> int:
     if digest(archive) != GRADLE_SHA256:
         raise CorpusError('Gradle distribution differs from the checked-in wrapper pin')
     wrapper = (ROOT / 'gradle/wrapper/gradle-wrapper.properties').read_text()
-    if f'distributionSha256Sum={GRADLE_SHA256}' not in wrapper or 'gradle-8.14.4-bin.zip' not in wrapper:
+    if f'distributionSha256Sum={GRADLE_SHA256}' not in wrapper or f'gradle-{GRADLE_VERSION}-bin.zip' not in wrapper:
         raise CorpusError('Checked-in wrapper no longer matches the reviewed distribution pin')
     receipt, binding = reviewed_inputs(repository, receipt_path, args.reviewed_receipt_sha256, args.staged_source_revision)
     contract = read_json(FIXTURE / 'expected-corpus.json')
@@ -485,7 +486,7 @@ def main(argv: list[str] | None = None) -> int:
                 summary['lanes'].append({'runtime': runtime, 'prepared': True, 'complete': False})
                 continue
             code, toolchain = run([str(consumer / 'gradlew'), '--no-daemon', '--version'], consumer, environment, lane_root / 'toolchain.log')
-            if code or 'Gradle 8.14.4' not in toolchain or re.search(r'Launcher JVM:\s+17(?:[.]|\s)', toolchain) is None:
+            if code or f'Gradle {GRADLE_VERSION}' not in toolchain or re.search(r'Launcher JVM:\s+17(?:[.]|\s)', toolchain) is None:
                 raise CorpusError('The pinned Gradle distribution must actually run on Java 17')
             code, output = run([*arguments, 'clean', 'test'], consumer, environment, lane_root / 'gradle.log')
             if code:

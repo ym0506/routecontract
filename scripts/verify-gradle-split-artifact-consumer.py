@@ -15,7 +15,7 @@ import tempfile
 import xml.etree.ElementTree as ET
 
 
-EXPECTED_GRADLE_VERSION = "8.14.4"
+EXPECTED_GRADLE_VERSION = "9.7.1"
 EXPECTED_ROUTE_CONTRACT_VERSION = "0.2.0"
 COMMAND_TIMEOUT_SECONDS = 1200
 VERIFICATION_NAMESPACE = "https://schema.gradle.org/dependency-verification"

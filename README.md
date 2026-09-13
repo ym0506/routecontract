@@ -4,27 +4,67 @@
 
 <p align="center">
   <a href="https://github.com/ym0506/routecontract/actions/workflows/ci.yml?query=branch%3Amain"><img src="https://github.com/ym0506/routecontract/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
-  <a href="https://central.sonatype.com/artifact/io.github.ym0506.routecontract/routecontract-shardingsphere-5.5/0.1.3"><img src="https://img.shields.io/badge/Maven_Central-0.1.3-277DA1" alt="Maven Central 0.1.3"></a>
+  <a href="https://central.sonatype.com/artifact/io.github.ym0506.routecontract/routecontract-shardingsphere-5.5/0.1.4"><img src="https://img.shields.io/badge/Maven_Central-0.1.4-277DA1" alt="Maven Central 0.1.4"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache_2.0-182C38" alt="Apache License 2.0"></a>
 </p>
 
 <p align="center">
-  <a href="#install-013">Install</a> · <a href="#usage">Usage</a> · <a href="#see-it-work">Demo</a> · <a href="#documentation">Documentation</a> · <a href="README.ko.md">한국어</a>
+  <a href="#see-it-work">How it works</a> · <a href="#install-014">Install</a> · <a href="#usage">Usage</a> · <a href="#documentation">Documentation</a> · <a href="README.ko.md">한국어</a>
 </p>
 
-**The query result can stay the same while database execution changes.**
+**Your test can return the right order while querying an extra database.**
 
-RouteContract is a Java test library for [Apache ShardingSphere-JDBC](https://github.com/apache/shardingsphere).
-It records physical JDBC execution attempts reported by `SQLExecutionHook` and compares them
-with explicit budgets and a human-reviewed baseline. Keep your existing result assertions;
-add a check for changes in observed execution counts, data sources and rewritten-SQL structure.
+After you change a query or sharding rule, an order lookup can still return the expected order
+while querying two databases instead of one. A test that only checks the returned order will
+pass, leaving that change unchecked.
 
-In the included MySQL example, the same row is returned while observed attempts increase
-from **1 to 2**. RouteContract catches the change in CI.
+RouteContract adds an execution check to your existing
+[Apache ShardingSphere-JDBC](https://github.com/apache/shardingsphere) integration test.
+Keep the returned-value assertion, then check how many JDBC execution attempts the operation
+makes and which configured data sources it uses. If those assertions fail, your normal
+JUnit/Maven/Gradle test run fails in CI as well.
 
-## Install 0.1.3
+## See it work
 
-For an existing **Java 17 · ShardingSphere-JDBC 5.5.3** test project.
+The included test asks for the paid orders of user `3`. Both query forms return the same
+complete order: **order 201, user 3, status PAID**. The example's sharding rules send equality
+to one data source, while a range visits both configured data sources.
+
+| Query predicate and bound values | Returned order | JDBC execution attempts | Data sources observed |
+| --- | --- | --- | --- |
+| `user_id = ?` with `3` | `201 / 3 / PAID` | 1 | 1 |
+| `user_id BETWEEN ? AND ?` with `3, 3` | `201 / 3 / PAID` | 2 | 2 |
+
+The test allows **at most one execution attempt and one data source**. A *budget* is this
+allowed maximum. The range query exceeds both limits, so its report says:
+
+| Report entry | Meaning in this example |
+| --- | --- |
+| `POLICY_VIOLATION` | At least one allowed limit was exceeded; the contract assertion fails. |
+| `RCM201` | **Too many JDBC execution attempts:** observed 2, allowed 1. |
+| `RCM202` | **Too many distinct data sources:** observed 2, allowed 1. The report counts their non-sensitive aliases. |
+
+Check the changed query and sharding rules before deciding whether the extra work is intended.
+An intentional change needs a reviewed expectation; a larger count alone does not prove a
+performance problem. These are `SQLExecutionHook`-reported attempts, not physical-table counts
+or a complete routing plan.
+
+![Same order returned; execution attempts and observed data sources rise from one to two, exceeding the test's limits.](docs/assets/execution-comparison.svg)
+
+[Run this example](#quick-start) · [Read the report without installing anything](docs/evidence/ci-review-report-example.md) ·
+[Inspect the query](examples/first-project/src/test/java/io/github/ym0506/routecontract/examples/firstproject/OrderRepository.java)
+
+**A reported upstream defect:** [INSERT SELECT can return “1 row affected” while
+writing to the shadow database](experiments/shadow-insert-select/README.md).
+The released-5.5.3 MySQL reproduction shows why checking the expected data-source
+name matters even when the result and execution count stay equal. It credits the
+original reporter and includes both control cases and the failing contract command.
+
+<a id="install-013"></a>
+
+## Install 0.1.4
+
+For an existing **Java 17 or 21 · ShardingSphere-JDBC 5.5.3** test project.
 Supported operations are **synchronous, non-batch `PreparedStatement`** calls.
 
 **Gradle** — Groovy or Kotlin DSL:
@@ -33,7 +73,7 @@ Supported operations are **synchronous, non-batch `PreparedStatement`** calls.
 repositories { mavenCentral() }
 
 dependencies {
-    testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.3")
+    testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.4")
 }
 ```
 
@@ -44,7 +84,7 @@ dependencies {
 <dependency>
   <groupId>io.github.ym0506.routecontract</groupId>
   <artifactId>routecontract-shardingsphere-5.5</artifactId>
-  <version>0.1.3</version>
+  <version>0.1.4</version>
   <scope>test</scope>
 </dependency>
 ```
@@ -85,9 +125,15 @@ RouteAssertions.assertThat(snapshot)
 supported JDBC execution scope; adapt the operation, expected result, data-source name and
 budget to your fixture. A hook callback returning does not prove a transaction committed.
 
+These Java assertions check the observation directly. The runnable example also writes a report
+and compares the current execution with a reviewed JSON file, as described next.
+
 <a id="approved-manifests-and-structural-manifest-diffs"></a>
 
 ### Review a baseline, then check it in CI
+
+A **manifest** is a JSON file containing the observed execution, data-source aliases and limits.
+The **candidate** describes this run; the **baseline** is the reviewed file used as the expectation.
 
 1. Capture a representative operation and write a **candidate manifest**.
 2. Review its observations, non-sensitive data-source aliases and budgets in version control.
@@ -100,35 +146,46 @@ The [manifest example](docs/reference-guide.md#approved-manifests-and-structural
 shows the Java API; [CI review reports](docs/ci-review-report.md) add Markdown or JSON output
 with stable diagnostic codes and investigation steps.
 
-## See it work
-
-[Watch the 2:54 demo](https://www.youtube.com/watch?v=pcgvNNxd1mM) ·
-[Open the actual CI report](docs/evidence/ci-review-report-example.md)
-
-![Illustration of the verified MySQL fixture: the same business row, physical JDBC execution attempts 1 to 2 and observed data-source aliases 1 to 2; the strict contract rejects the candidate with RCM201 and RCM202.](docs/assets/execution-comparison.svg)
-
-This illustration summarizes the [checked-in MySQL manifests](examples/manifests/README.md).
-The counts describe **hook-reported physical JDBC execution attempts and observed aliases**.
-They do not measure physical tables, a complete route plan or performance.
-
 <a id="quick-start"></a>
 
-### Try an example
+## Try an example
 
-| Try it | Requirements | What to expect |
-| --- | --- | --- |
-| [Generate the v0.1.3 CI report](docs/ci-review-report.md#try-the-released-report-without-docker) | Git, Java 17; initial dependency downloads | Compares committed manifests; writes `POLICY_VIOLATION` with `RCM201` / `RCM202`. The example deliberately fails the check. No Docker. |
-| [Reproduce the MySQL change](docs/reference-guide.md#quick-start) | Git, Java 17, Docker; initial downloads | Historical **v0.1.2** demo, pinned to its immutable tag. The wrapper succeeds after verifying the expected contract rejection. |
-| [Run the v0.1.3 first-project example](docs/first-project.md) | Git, Java 17, Docker; Maven or the Gradle wrapper | Capture a candidate, review a baseline, see `MATCH`, then reproduce the same-result `1 → 2` failure. Adapt one existing test. |
+Use **Java 17 or 21, Maven 3.9.x and a running Docker engine**. The first run downloads dependencies
+and the MySQL image. The example uses **released 0.1.4 from Maven Central** and already includes
+a reviewed expectation file for its synthetic data.
+
+```bash
+git clone https://github.com/ym0506/routecontract.git
+cd routecontract/examples/first-project
+mvn -B test
+```
+
+Expect a passing test and `MATCH` in `build/routecontract/review.md`: the returned order and
+observed execution agree with the example's expectation. Now change the query:
+
+```bash
+mvn -B test -Droutecontract.query=range
+```
+
+**This test should fail.** The order assertion still passes, but execution attempts and data
+sources both increase from 1 to 2. Open `build/routecontract/review.md` to see the two exceeded
+limits (`RCM201` and `RCM202`, explained above). A download, compiler or Docker error is a setup
+failure, not this expected rejection.
+
+Run `mvn -B test` again to restore the original query and get `MATCH`. Each run replaces the
+example's generated report, so read the failing report before restoring the query.
+
+[Gradle commands and applying it to your own test](docs/first-project.md) ·
+[Run the same MySQL demo in GitHub Actions](docs/first-project.md#try-in-your-browser)
 
 ## Supported scope
 
-| Area | Published v0.1.3 |
+| Area | Published v0.1.4 |
 | --- | --- |
-| Java | 17 |
+| Java | 17 and 21; [public runtime verification](docs/evidence/release-0.1.4-central.md#public-consumer-verification) |
 | ShardingSphere | JDBC, **exactly 5.5.3** |
 | Execution | Synchronous, non-batch `PreparedStatement` operations that return normally, without caller interruption |
-| Database verification | MySQL 8.4.11; [published Gradle and Maven consumer evidence](docs/evidence/release-0.1.3-central.md) |
+| Database verification | MySQL 8.4.11; [published Gradle and Maven consumer evidence](docs/evidence/release-0.1.4-central.md) |
 | Checks | Capture completeness, callback outcomes, attempt/data-source budgets, structural manifest differences |
 | CI output | Java assertions, deterministic Markdown/JSON reports, `ManifestReviewCli` |
 
@@ -137,7 +194,7 @@ coverage are outside this release's scope. Operations with no observed SQL, call
 or caller interruption cannot establish a passing contract. See the
 [full capture boundary](docs/reference-guide.md#v01-support-boundary).
 
-**Project status:** v0.1.3 is published on Maven Central. The
+**Project status:** v0.1.4 is published on Maven Central. The
 [0.2 core/adapter split](https://github.com/ym0506/routecontract/pull/62) is in development;
 5.5.2 support is unreleased. Published consumer checks are maintainer-run evidence.
 Independent integration and repeat use have not yet been verified.
@@ -152,8 +209,10 @@ Independent integration and repeat use have not yet been verified.
 | Review failures in CI | [Report guide and CLI](docs/ci-review-report.md) · [Example report](docs/evidence/ci-review-report-example.md) |
 | Understand what is observed | [Architecture](docs/architecture.md) · [Specification](docs/specification.md) |
 | Compare with existing tools | [Tool comparison](docs/competitive-analysis.md) · [Measured datasource-proxy fixture](docs/empirical-comparison.md) |
-| See an application experiment | [CityPulse: one isolated test with public 0.1.3](docs/evidence/citypulse-isolated-pilot-2026-09-08.md) · Self-prepared; no maintainer adoption |
-| Inspect release evidence | [v0.1.3 Central verification](docs/evidence/release-0.1.3-central.md) · [Evidence matrix](docs/evidence-matrix.md) |
+| Inspect capture cleanup | [Repeated operations, retained-object controls and limitations](docs/capture-retention.md) |
+| Inspect observer cost | [Public 0.1.3: three conditions, raw measurements and limitations](docs/observer-cost.md) |
+| Examine application code | [Three evaluations: destination changes, query budgets and existing tests](docs/application-evaluations.md) · [한국어](docs/application-evaluations.ko.md) · Author-run experiments |
+| Inspect release evidence | [v0.1.4 Central verification](docs/evidence/release-0.1.4-central.md) · [Evidence matrix](docs/evidence-matrix.md) |
 | Explore earlier integration tooling | [v0.1.2 integration guide](docs/first-integration.md) — pinned historical workflow |
 | Contribute | [Contributing](CONTRIBUTING.md) · [Roadmap](docs/product-roadmap.md) |
 

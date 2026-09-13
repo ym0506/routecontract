@@ -1,0 +1,52 @@
+{
+  "sourceIssue": "https://github.com/apache/shardingsphere/issues/39750",
+  "upstreamFix": "https://github.com/apache/shardingsphere/pull/39751",
+  "upstreamFixTested": false,
+  "testedVersion": "ShardingSphere-JDBC 5.5.3",
+  "routecontractVersion": "0.1.3",
+  "routecontractJarSha256": "9e883e618eb09d9ecf30814151bb4b0a43eba02c78d288cc582fa7e57e6edba2",
+  "mysqlImage": "mysql:8.4.11@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb",
+  "mavenVersion": "3.9.14",
+  "characterization": {
+    "recordedAt": "2026-09-10T07:11:48.392089+00:00",
+    "mavenExitCode": 0,
+    "suite": {
+      "name": "io.github.ym0506.routecontract.experiments.shadow.ShadowInsertSelectTest",
+      "tests": "3",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "11.124"
+    },
+    "runtime": {
+      "os.name": "Mac OS X",
+      "java.version": "17.0.15",
+      "os.arch": "aarch64",
+      "java.vendor": "Homebrew"
+    },
+    "results": [
+      "RESULT case=insert-select-nonmatching affected=1 attempts=1 dataSources=[shadow] primaryRows=0 shadowRows=1",
+      "EXPECTED_CONTRACT_FAILURE Route contract violation for operation 'insert-select-nonmatching': expected observed data-source names [primary], but observed [shadow]",
+      "RESULT case=values-matching affected=1 attempts=1 dataSources=[shadow] primaryRows=0 shadowRows=1",
+      "RESULT case=values-nonmatching affected=1 attempts=1 dataSources=[primary] primaryRows=1 shadowRows=0"
+    ],
+    "sourceIssue": "https://github.com/apache/shardingsphere/issues/39750",
+    "testedUpstreamVersion": "5.5.3",
+    "upstreamFixTested": false
+  },
+  "enforcedContract": {
+    "recordedAt": "2026-09-10T07:13:21.569851+00:00",
+    "mavenExitCode": 1,
+    "suite": {
+      "tests": "1",
+      "errors": "0",
+      "failures": "1",
+      "skipped": "0"
+    },
+    "expectedFailure": {
+      "test": "insertSelectReturnsOneButWritesToShadow",
+      "type": "io.github.ym0506.routecontract.RouteContractViolationException",
+      "message": "Route contract violation for operation 'insert-select-nonmatching': expected observed data-source names [primary], but observed [shadow]"
+    }
+  }
+}

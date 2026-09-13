@@ -28,7 +28,7 @@ a JDK and therefore is not proof that a different Java-21-only target is ready. 
 property must be an absolute, real local directory with no symlink path
 components; a `file:` URI is not accepted.
 
-The verifier bootstraps one immutable, wrapper-pinned Gradle 8.14.4 tool distribution, then gives
+The verifier bootstraps one immutable, wrapper-pinned Gradle 9.7.1 tool distribution, then gives
 every independent semantic case a distinct HOME, temporary directory, Gradle user home, and
 project cache under an `env -i` allowlist. An origin-only, non-transitive configuration resolves
 the exact RouteContract GAV offline from a fresh cache. A valid ordinary decoy cannot rescue an

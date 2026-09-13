@@ -31,6 +31,18 @@ baseline, and understand a failing CI check when a query change increases observ
 8. Example Java classes use the repository's `io.github.ym0506.routecontract.*` namespace so the
    existing source-archive installer contract accepts a normal archive of the repository. Package
    alignment must preserve operation IDs, SQL, baseline bytes and native Maven/Gradle results.
+9. A visitor can fork the repository and manually run **First project** with a browser and a
+   GitHub account that can run Actions. Hosted execution needs no locally installed Java, Docker
+   or build tool. Manual runs default to Maven and allow Gradle or Both; push and pull-request
+   runs retain both build tools. A manual run must not cancel automatic CI on the same ref.
+10. The run summary distinguishes normal MATCH, the expected same-result POLICY_VIOLATION,
+    and restored MATCH. It uses reports retained only after each step's assertions succeed,
+    together with the actual step outcomes. Missing, malformed or unverified reports cannot
+    produce a completed demonstration. Infrastructure/compiler failures remain failures.
+    All three stage reports are retained as artifacts; baseline bytes remain unchanged.
+11. English and Korean entry points explain how to run in the visitor's own fork, interpret
+    the green demonstration, retrieve reports and then adapt one real test. This synthetic
+    rehearsal does not approve a user's baseline or establish independent adoption.
 
 ## Verification record
 

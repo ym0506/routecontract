@@ -3,7 +3,8 @@
 RouteContract is licensed under Apache-2.0. The dependencies below keep their
 own licenses. This file is a human-readable inventory of the dependencies
 declared directly by this repository, selected reviewed transitive metadata,
-and the pinned report-builder runtime closure, as of 2026-08-24; it is not a
+and the pinned report-builder runtime closure, as of 2026-08-24, with the
+Jackson 2 compatibility alignment requalified at 2.18.10 on 2026-09-12. It is not a
 substitute for the machine-readable SBOM or the license text shipped by each
 dependency.
 
@@ -14,23 +15,28 @@ renamed, relocated, transformed, or copied bytes. The MySQL example's declared
 dependencies and container image are test-only and are not part of the
 published library's declared runtime profile.
 
-## Published library
+## Library built from this source
+
+The table describes the current source's generated publication. The immutable
+public RouteContract 0.1.3 POM still declares Jackson streaming core 3.1.5.
+See [Jackson 3 patch qualification](docs/jackson3-patch-compatibility.md) for
+the candidate's verification status and publication boundary.
 
 | Component | Version | Gradle scope | License |
 |---|---:|---|---|
-| Jackson 2 compatibility BOM (`com.fasterxml.jackson`) | 2.18.9 | `compileOnly` (also `testImplementation`) | Apache-2.0 |
+| Jackson 2 compatibility BOM (`com.fasterxml.jackson`) | 2.18.10 | `compileOnly` (also `testImplementation`) | Apache-2.0 |
 | Apache ShardingSphere `shardingsphere-infra-executor` | 5.5.3 | `compileOnly` (also `testImplementation`) | Apache-2.0 |
 | Alibaba TransmittableThreadLocal | 2.14.2 | `implementation` | Apache-2.0 |
-| Jackson Core (`tools.jackson.core`) | 3.1.5 | `implementation` | Apache-2.0 |
+| Jackson Core (`tools.jackson.core`) | 3.1.6 | `implementation` | Apache-2.0 |
 
 In the verified Gradle compatibility/test graph, the `compileOnly` Jackson 2 BOM
-resolves core, databind, datatype-jdk8, and datatype-jsr310 to 2.18.9; it is not
+resolves core, databind, datatype-jdk8, and datatype-jsr310 to 2.18.10; it is not
 published as a consumer version constraint. In the verified combined test
 runtime, the annotations artifact shared with Jackson 3 resolves to 2.21.
 Consumers using ShardingSphere 5.5.3
 must supply, or already have, an equivalent Jackson 2 alignment to reproduce
-the verified 2.18.9 graph; RouteContract's POM does not provide it. It does not
-replace the separate `tools.jackson` 3.1.5 runtime dependency.
+the verified 2.18.10 graph; RouteContract's POM does not provide it. It does not
+replace the separate `tools.jackson` 3.1.6 dependency in the current source.
 
 ## Javadoc classifier shipped assets
 
@@ -122,6 +128,15 @@ specific build:
 ./gradlew --no-daemon --no-build-cache validateOfficialCycloneDxSbom
 ```
 
+## Standalone observer-cost experiment
+
+`examples/observer-cost` uses OpenJDK JMH 1.37 (`jmh-core` and the
+`jmh-generator-annprocess` compiler processor). The [upstream POM](https://github.com/openjdk/jmh/blob/1.37/pom.xml)
+declares GPL version 2 with the Classpath exception; the [upstream license](https://github.com/openjdk/jmh/blob/1.37/LICENSE)
+contains the terms. JMH is an experiment dependency and is not added to the published library
+POM, shaded into a RouteContract JAR or included in the root Gradle dependency profile.
+The standalone runner records its resolved dependency file hashes separately from that profile.
+
 ## Reviewed test-only transitive metadata
 
 These components are reached only through the MySQL example/test graph in the
@@ -186,7 +201,7 @@ results and must pass the gate without an unreviewed finding.
 
 | Component | Version | Purpose | License |
 |---|---:|---|---|
-| Gradle Wrapper | 8.14.4 | Reproducible build entry point | Apache-2.0 |
+| Gradle Wrapper | 9.7.1 | Reproducible build entry point | Apache-2.0 |
 | CycloneDX Gradle plugin | 3.4.0 | CycloneDX 1.6 JSON/XML SBOM generation | Apache-2.0 |
 | CycloneDX CLI | 0.33.1 (`b3cfa4b0edc356dad07e0b6e7ab6da0a94af0246`) | Checksum-pinned official JSON/XML structure validation after finalization | Apache-2.0 |
 | OSV-Scanner | 2.5.0 | Pinned offline vulnerability scan of the verified aggregate SBOM | Apache-2.0 |
