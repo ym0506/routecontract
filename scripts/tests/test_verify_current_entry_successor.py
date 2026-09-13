@@ -19,7 +19,7 @@ sys.modules[spec.name] = helper
 spec.loader.exec_module(helper)
 
 RUNTIMES = ('5.5.2', '5.5.3')
-LEGACIES = ('0.1.0', '0.1.0-rc2', '0.1.2', '0.1.3')
+LEGACIES = ('0.1.0', '0.1.0-rc2', '0.1.2', '0.1.3', '0.1.4')
 ORDERS = ('legacy-first', 'legacy-last')
 CURRENT_METHODS = ('current-capture', 'current-capture-result')
 COMPATIBILITY_METHODS = ('compatibility-capture', 'compatibility-capture-result')
@@ -27,14 +27,14 @@ COMPATIBILITY_METHODS = ('compatibility-capture', 'compatibility-capture-result'
 
 class CurrentEntrySuccessorPlanTest(unittest.TestCase):
     def setUp(self):
-        registry = json.loads((ROOT / 'scripts/legacy-artifact-inputs.json').read_text())
+        registry = json.loads((ROOT / 'scripts/legacy-artifact-inputs-current.json').read_text())
         self.plan = helper.cases(registry)
 
-    def test_plan_has_64_distinct_cells_and_all_required_categories(self):
-        self.assertEqual(64, len(self.plan))
-        self.assertEqual(64, len({case['id'] for case in self.plan}))
+    def test_plan_has_76_distinct_cells_and_all_required_categories(self):
+        self.assertEqual(76, len(self.plan))
+        self.assertEqual(76, len({case['id'] for case in self.plan}))
         self.assertEqual(Counter({
-            'COLLISION': 48,
+            'COLLISION': 60,
             'CLEAN_NO_SQL': 8,
             'CLEAN_SQL': 2,
             'CLEAN_CAPTURED_SQL': 2,
@@ -51,14 +51,14 @@ class CurrentEntrySuccessorPlanTest(unittest.TestCase):
         expected = {(legacy, runtime, order, mode)
                     for legacy in LEGACIES for runtime in RUNTIMES
                     for order in ORDERS for mode in CURRENT_METHODS}
-        self.assertEqual(32, len(cells))
+        self.assertEqual(40, len(cells))
         self.assertEqual(expected, {(case['legacy'], case['runtime'], case['order'], case['mode'])
                                     for case in cells})
 
     def test_ordinary_sql_collisions_are_independent_of_any_capture_entry(self):
         cells = [case for case in self.plan
                  if case['expected'] == 'COLLISION' and case['mode'] == 'sql']
-        self.assertEqual(16, len(cells))
+        self.assertEqual(20, len(cells))
         self.assertEqual({(legacy, runtime, order)
                           for legacy in LEGACIES for runtime in RUNTIMES for order in ORDERS},
                          {(case['legacy'], case['runtime'], case['order']) for case in cells})
@@ -82,7 +82,7 @@ class CurrentEntrySuccessorPlanTest(unittest.TestCase):
 
 class CurrentEntrySuccessorClassificationTest(unittest.TestCase):
     def setUp(self):
-        registry = json.loads((ROOT / 'scripts/legacy-artifact-inputs.json').read_text())
+        registry = json.loads((ROOT / 'scripts/legacy-artifact-inputs-current.json').read_text())
         self.plan = helper.cases(registry)
 
     def case(self, expected, mode=None, runtime='5.5.2'):
@@ -301,7 +301,7 @@ class CurrentEntrySuccessorClassificationTest(unittest.TestCase):
 
 class CurrentEntrySuccessorCompletionTest(unittest.TestCase):
     def setUp(self):
-        registry = json.loads((ROOT / 'scripts/legacy-artifact-inputs.json').read_text())
+        registry = json.loads((ROOT / 'scripts/legacy-artifact-inputs-current.json').read_text())
         self.plan = helper.cases(registry)
         self.results = [{'case': copy.deepcopy(case), 'outcome': 'PASS', 'observed': {'pid': 1000 + index}}
                         for index, case in enumerate(self.plan)]
@@ -310,8 +310,8 @@ class CurrentEntrySuccessorCompletionTest(unittest.TestCase):
         status = helper.completion_status(self.plan, self.results)
         self.assertEqual('VERIFIED', status['status'])
         self.assertTrue(status['fullA29Matrix'])
-        self.assertEqual(64, status['executedCount'])
-        self.assertEqual(64, status['passedCount'])
+        self.assertEqual(76, status['executedCount'])
+        self.assertEqual(76, status['passedCount'])
 
     def test_successful_partial_selection_never_becomes_full_matrix(self):
         for required, results, partial in ((self.plan, self.results[:8], False),
@@ -328,7 +328,7 @@ class CurrentEntrySuccessorCompletionTest(unittest.TestCase):
         for partial in (False, True):
             status = helper.completion_status(self.plan, self.results, partial=partial)
             self.assertEqual('FAILED', status['status'])
-            self.assertEqual(63, status['passedCount'])
+            self.assertEqual(75, status['passedCount'])
 
     def test_duplicate_missing_or_rewritten_case_cannot_supply_canonical_coverage(self):
         mutated_case = copy.deepcopy(self.results)

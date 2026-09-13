@@ -1,6 +1,10 @@
 # Real Maven legacy resolver acceptance for A-27
 
-Status: [45/45 actual Maven cases verified against reviewed source `86a0be5`](evidence/legacy-resolver-86a0be5-2026-09-08.md).
+Current status: the five-version plan includes public 0.1.4 and requires 56
+Maven cases. Its execution remains unverified; see the
+[upgrade acceptance](legacy-014-coverage-acceptance.md).
+
+Historical result: [45/45 actual Maven cases verified against reviewed source `86a0be5`](evidence/legacy-resolver-86a0be5-2026-09-08.md).
 The [earlier 4e06694 execution](evidence/legacy-resolver-4e06694-2026-09-08.md) and
 [initial staging evidence](evidence/maven-legacy-resolver-2026-09-08.md) are preserved separately.
 This work implements the Maven
@@ -30,7 +34,7 @@ generated fixture POMs carry distinct legacy/current requests to the same depth;
 their bytes, request versions, and order are retained as fixture inputs. These
 carrier POMs contain no substitute RouteContract classes or implementation.
 
-For each genuinely distributed legacy version (`0.1.0`, `0.1.2`, `0.1.3`, and
+For each distributed legacy version (`0.1.0`, `0.1.2`, `0.1.3`, `0.1.4`, and
 `0.1.0-rc2`), the required real Maven 3.9.14 / Java 17 cases are:
 
 1. Legacy alone resolves its exact published JAR (legacy-lane control).
@@ -54,7 +58,7 @@ For each genuinely distributed legacy version (`0.1.0`, `0.1.2`, `0.1.3`, and
 
 A latest-legacy + core control omits the ownership policy and must actually
 resolve both JARs. Its matching enabled cases must fail through Enforcer.
-The complete matrix therefore contains 45 cases. No-Enforcer controls are
+The complete current matrix therefore contains 56 cases. No-Enforcer controls are
 explicit separate consumers; no `enforcer.skip` escape is used.
 
 Every case starts with an absent Maven dependency cache outside the checkout,

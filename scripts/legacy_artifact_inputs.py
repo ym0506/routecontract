@@ -18,6 +18,8 @@ import zipfile
 GROUP = 'io.github.ym0506.routecontract'
 ARTIFACT = 'routecontract-shardingsphere-5.5'
 DISTRIBUTED = ('0.1.0', '0.1.2', '0.1.3', '0.1.0-rc2')
+CURRENT_DISTRIBUTED = (*DISTRIBUTED, '0.1.4')
+CENTRAL_VERSIONS = {'0.1.3', '0.1.4'}
 SERVICE = 'META-INF/services/org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook'
 PROVIDER = 'io.github.ym0506.routecontract.internal.RouteContractSqlExecutionHook'
 ENTRIES = ('io/github/ym0506/routecontract/RouteContract.class',
@@ -55,15 +57,17 @@ def load_registry(path: Path) -> dict:
     if path.is_symlink() or not path.is_file() or not 0 < path.stat().st_size < 128 * 1024:
         raise LegacyInputError('Registry must be a bounded regular file')
     registry = parse_json(path.read_bytes())
-    if (type(registry.get('formatVersion')) is not int or registry['formatVersion'] != 1 or registry.get('groupId') != GROUP
+    version = registry.get('formatVersion')
+    expected_versions = {1: DISTRIBUTED, 2: CURRENT_DISTRIBUTED}.get(version) if type(version) is int else None
+    if (expected_versions is None or registry.get('groupId') != GROUP
             or registry.get('artifactId') != ARTIFACT
-            or [item.get('version') for item in registry.get('distributed', [])] != list(DISTRIBUTED)):
+            or [item.get('version') for item in registry.get('distributed', [])] != list(expected_versions)):
         raise LegacyInputError('Registry does not contain the reviewed distributed coordinate set')
     if {item.get('version') for item in registry.get('tagOnly', [])} != {'0.1.0-rc1', '0.1.1'}:
         raise LegacyInputError('Tag-only evidence must stay separate from distributed inputs')
     for item in registry['distributed']:
         version = item['version']
-        expected_extensions = ['jar', 'pom', 'module'] if version == '0.1.3' else ['jar', 'pom']
+        expected_extensions = ['jar', 'pom', 'module'] if version in CENTRAL_VERSIONS else ['jar', 'pom']
         if ([p.get('extension') for p in item.get('payloads', [])] != expected_extensions
                 or item.get('tag') != f'v{version}'
                 or re.fullmatch('[0-9a-f]{40}', item.get('sourceRevision', '')) is None):
@@ -76,7 +80,7 @@ def load_registry(path: Path) -> dict:
                 raise LegacyInputError('Invalid registered payload pin')
             parsed = urlparse(payload.get('url', ''))
             expected_prefix = (f'https://repo.maven.apache.org/maven2/{GROUP.replace(".", "/")}/{ARTIFACT}/{version}/'
-                               if version == '0.1.3' else f'https://github.com/ym0506/routecontract/releases/download/v{version}/')
+                               if version in CENTRAL_VERSIONS else f'https://github.com/ym0506/routecontract/releases/download/v{version}/')
             if (not payload['url'].startswith(expected_prefix) or parsed.query or parsed.fragment
                     or parsed.username or parsed.password):
                 raise LegacyInputError('Payload URL is outside the reviewed public release')
@@ -84,6 +88,13 @@ def load_registry(path: Path) -> dict:
         if (set(layout.get('entries', {})) != set(ENTRIES) or layout.get('hookProvider') != PROVIDER
                 or any(re.fullmatch('[0-9a-f]{64}', value) is None for value in layout['entries'].values())):
             raise LegacyInputError('Missing audited all-in-one class/service layout')
+    return registry
+
+
+def load_current_registry(path: Path) -> dict:
+    registry = load_registry(path)
+    if registry['formatVersion'] != 2:
+        raise LegacyInputError('Current upgrade qualification requires the five-version format-2 registry')
     return registry
 
 
