@@ -13,7 +13,7 @@ Release, [specification](specification.md), or [first-integration guide](first-i
 
 | RouteContract line | ShardingSphere-JDBC runtime | Status | Operational decision |
 | --- | --- | --- | --- |
-| immutable `v0.1.3` | exactly `5.5.3` | Released; verified with Java 17 and MySQL 8.4.11 in the documented synchronous boundary | Recommended released line for an isolated pilot. Use the [Maven Central test dependency](../README.en.md#install-013) and [public consumer evidence](evidence/release-0.1.3-central.md). The v0.1.2 local installer remains a historical path. |
+| immutable `v0.1.4` | exactly `5.5.3` | Released; verified with Java 17/21 and MySQL 8.4.11 in the documented synchronous boundary | Recommended released line for an isolated pilot. Use the [Maven Central test dependency](../README.md#install-014) and [public consumer evidence](evidence/release-0.1.4-central.md). Earlier release evidence remains historical. |
 | local `0.2.0` work | exactly `5.5.3` | Core/thin-adapter split, real-MySQL tests, split-consumer fixtures, and three-coordinate Central staging have passed local verification; unreleased | Do not treat local verification, a staged repository, or a signed test bundle as a supported Release. Public CI, immutable publication, and anonymous post-publication readback are still required. |
 | local `0.2.0` work | exactly `5.5.2` | Exact-version adapter, real-MySQL tests, wrong-runtime and dual-adapter rejection, split-consumer fixtures, and three-coordinate Central staging have passed local verification; unreleased | Unsupported until the same revision passes public CI, is published immutably, and passes anonymous post-publication verification. |
 | any other version or mixed graph | any | Unsupported | Stop; do not infer patch-line compatibility or suppress preflight failures. |
@@ -47,7 +47,7 @@ make that topology supported.
 
 1. **Pin and isolate.** Pin one immutable RouteContract Release and one exact ShardingSphere
    runtime. Use the installation and build lane in the
-   [current installation guide](../README.en.md#install-013); do not add the adapter to the production runtime
+   [current installation guide](../README.md#install-014); do not add the adapter to the production runtime
    or every test suite initially.
 2. **Select one representative operation.** Prefer a high-value operation with deterministic
    routing, a stable synthetic fixture, and an existing business assertion. Give it a static,
