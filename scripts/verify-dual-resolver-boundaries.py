@@ -959,12 +959,12 @@ def verify_toolchain(directory, java_home, mvn, gradle_zip):
     output, _ = native([str(consumer / 'gradlew'), '--no-daemon', '--offline', '--version',
                         f'-Dorg.gradle.java.home={java_home}', f'-Duser.home={home}'],
                        consumer, environment, directory, 'gradle-identity')
-    if ('Gradle 8.14.4' not in output or not re.search(r'Launcher JVM:\s+17[.\s]', output)
+    if ('Gradle 9.7.1' not in output or not re.search(r'Launcher JVM:\s+17[.\s]', output)
             or not re.search(r'Daemon JVM:\s+' + re.escape(str(java_home)) + r'(?:\s|$)', output)):
         raise BoundaryError('Pinned Gradle must identify the exact selected Java17 home')
     result = {'javaFeature': 17, 'javaHome': str(java_home), 'javaExecutableSha256': sha(java),
               'mavenVersion': '3.9.14', 'mavenExecutable': str(mvn), 'mavenExecutableSha256': sha(mvn),
-              'gradleVersion': '8.14.4', 'gradleDistributionSha256': sha(gradle_zip)}
+              'gradleVersion': '9.7.1', 'gradleDistributionSha256': sha(gradle_zip)}
     write_json(directory / 'toolchain.json', result)
     return result
 
@@ -1004,7 +1004,7 @@ def main(argv=None):
         receipt, binding = a24.reviewed_inputs(repository, regular(args.reviewed_receipt),
                                                args.reviewed_receipt_sha256, args.staged_source_revision)
     gradle_zip = regular(args.gradle_distribution_zip) if args.gradle_distribution_zip else None
-    distribution_hash = 'f1771298a70f6db5a29daf62378c4e18a17fc33c9ba6b14362e0cdf40610380d'
+    distribution_hash = 'acd53f1edaf02f1a8ff99879f8a34b302661a057d9b063ae9e35b552f804d20a'
     if gradle_zip and sha(gradle_zip) != distribution_hash:
         raise BoundaryError('Gradle ZIP differs from the independently supplied distribution SHA-256')
     evidence.mkdir(parents=True, mode=0o700)

@@ -500,7 +500,7 @@ class A24GradleConsumerPreparationTest(unittest.TestCase):
                 (MODULE, 'load_consumer_receipt', self.receipt), (MODULE, 'copy_repository', None),
                 (MODULE.wrapper, 'verify_toolchain', None), (MODULE.legacy, 'seed_distribution_zip', None),
                 (MODULE.wrapper, 'prepare_wrapper_seed', None),
-                (MODULE.subprocess, 'check_output', 'Synthetic test fixture\nGradle 8.14.4\nLauncher JVM: 17.0.0 (synthetic)\n'),
+                (MODULE.subprocess, 'check_output', 'Synthetic test fixture\nGradle 9.7.1\nLauncher JVM: 17.0.0 (synthetic)\n'),
                 (MODULE.network, 'prepare_barrier', {}), (MODULE.staged, 'verify_receipt', None),
             ):
                 stack.enter_context(mock.patch.object(target, name, return_value=value))

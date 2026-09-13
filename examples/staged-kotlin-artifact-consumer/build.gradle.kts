@@ -77,7 +77,7 @@ dependencyLocking {
 dependencies {
     testImplementation("$routeGroup:routecontract-core:$routeVersion")
     testImplementation("$routeGroup:$adapter:$routeVersion")
-    testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.9"))
+    testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.18.10"))
     testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:$exactRuntime") {
         exclude(group = "org.locationtech.jts.io", module = "jts-io-common")
     }

@@ -22,6 +22,11 @@ that silently omits a module is insufficient evidence of Java 21 compatibility.
   Central upload remains exactly 90 entries.
 - Validate both Python test roots, official SBOM schemas and staged consumers
   against the new integration inputs before making release-readiness claims.
+- Require the current staged-consumer dependency graphs to select streaming
+  Jackson 3.1.6 and Jackson BOM 2.18.10. An unchanged consumer smoke test can pass
+  while an old strict lock still selects 3.1.5 / 2.18.9; that passing result does
+  not qualify the updated combination. Keep historical experiment results tied
+  to their original toolchains and input fingerprints.
 
 ## Evidence boundary
 
