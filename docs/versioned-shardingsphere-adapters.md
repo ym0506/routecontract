@@ -41,13 +41,22 @@ versions are explicitly outside the v0.1 scope. Nothing in this ADR changes the 
 tag, Release, assets, or the meaning of
 `io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.2`.
 
+## Current packaged corpus — 2026-09-14
+
+The integrated CI producer `5800ed2960aefbf63c01d2ebaf2265278d662494` passed the
+[existing 28-test packaged MySQL corpus](evidence/packaged-corpus-5800ed2-2026-09-14.md)
+on Gradle 9.7.1 and Java 17.0.20.1+1. The original tests and expected observations
+were preserved. This result qualifies that candidate's packaged runtime binding;
+it does not transfer the older matrices below to new bytes, approve a human
+baseline or establish public 0.2 availability.
+
 ## Retained staging evidence — 2026-09-08
 
-The latest reviewed staged producer is `86a0be5d2e444f3b73925122fa448d9d1a324edd`. The following
+The producer for this historical matrix is `86a0be5d2e444f3b73925122fa448d9d1a324edd`. The following
 separate executions use its reviewed unsigned payloads; the older `4e06694` records
 elsewhere in this ADR remain historical and do not contribute to these totals.
 
-| Existing scope | Current candidate evidence |
+| Existing scope | Retained candidate evidence |
 | --- | --- |
 | Mixed runtime | [14 manual cases](evidence/mixed-anchor-final-candidate-2026-09-08.md) |
 | Runtime boundaries | [28 cases](evidence/runtime-boundary-86a0be5-2026-09-08.md) |

@@ -1,12 +1,18 @@
 # Final packaged runtime binding for the existing MySQL corpus
 
-Current input status (2026-09-14): the source at
+Current result (2026-09-14): all 28 existing MySQL tests passed against the
+unsigned CI candidate from `5800ed2960aefbf63c01d2ebaf2265278d662494` using
+Gradle 9.7.1 and Java 17.0.20.1+1. See the
+[execution evidence](evidence/packaged-corpus-5800ed2-2026-09-14.md).
+This completes its packaged runtime binding; human baseline review remains
+pending and 0.2 remains unreleased.
+
+The corpus input source at
 `fc80d17d0c7b888f7c6db024200870d29f21d7d9` integrates stable-line maintenance.
 The input contract updates only the two MySQL dependency-lock fingerprints and
 `gradle.properties`; the other 36 files, suite/method allowlists and approved
-observations are byte-identical. The current runner uses Gradle 9.7.1. A new
-packaged run on these inputs remains **unverified**. The retained result below
-used Gradle 8.14.4 and its original dependency graph.
+observations are byte-identical. The retained historical result below used
+Gradle 8.14.4 and its original dependency graph.
 
 Retained result: packaged runtime binding for producer `86a0be5` was verified on
 2026-09-08. All 28 existing MySQL tests in six suites passed against its reviewed
@@ -18,9 +24,9 @@ No workloads or goldens were added or regenerated.
 The earlier dependency correction changed the 5.5.2 source build and lock inputs at
 `5fdfc3dcd3f4190e4c2b9e381b0b096169b387bb`. The corresponding input fingerprints
 were independently reviewed; all test methods, resources and expected values remain unchanged.
-Its passing source-project tests do not replace a new packaged execution on the
-corrected inputs. That execution is pending, and the recorded result below keeps
-its original producer, receipt and dependency graph.
+Its source-project results did not qualify the packaged runtime. The current
+execution above uses the later integrated inputs; the historical result below
+keeps its original producer, receipt and dependency graph.
 
 ## Fixed scope
 
@@ -43,9 +49,13 @@ Before execution, require an independently supplied receipt path, expected
 SHA-256, and full staged source revision. Validate all nine unique coordinate-bound
 JAR/POM/module payloads, their actual repository bytes, and the unchanged
 production/publication source binding. Do not derive approval from a freshly
-computed receipt hash. The executed reviewed source is `86a0be5d2e444f3b73925122fa448d9d1a324edd`;
-the independently supplied receipt digest is
-`1f4bb21b430a03a44d89e6daddc1fbdede1886250637ef83cecedfd71e350c7e`.
+computed receipt hash. The current executed producer is
+`5800ed2960aefbf63c01d2ebaf2265278d662494`; its receipt digest is
+`9a4d745ff11508a8ab08dd8bced6a7893d8f6e6ff5baab34b3445aea652ba49c`.
+Its nine payload entries matched separately produced staging and local/CI
+Gradle and Maven consumer receipts before execution. That automated byte review
+does not supply authentic human baseline approval. The historical `86a0be5`
+record retains its original receipt digest in the linked evidence.
 The earlier `4e06694` candidate was used for preparation only; no full corpus
 execution occurred on that candidate.
 
