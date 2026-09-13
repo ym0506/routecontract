@@ -4,8 +4,8 @@ Status: **published on GitHub and Maven Central** on 2026-09-13 UTC.
 The [GitHub evidence](evidence/release-0.1.4-github.md) records twelve verified public assets.
 The [Central evidence](evidence/release-0.1.4-central.md) records thirty matching candidate
 files before publication, thirty matching anonymous public downloads, and fresh Maven/Gradle
-Java 17 MySQL consumers. The current first-project Java 17/21 matrix is the installation-update
-merge gate. These are maintainer-run checks; independent adoption remains unverified.
+Java 17 MySQL consumers. The public first-project Maven/Gradle matrix also passed on Java
+17 and 21; its exact workflow revision and retained results are linked from the Central record. These are maintainer-run checks; independent adoption remains unverified.
 This patch uses the existing single artifact
 `io.github.ym0506.routecontract:routecontract-shardingsphere-5.5`; it is independent of the
 unreleased 0.2 core/adapter split.

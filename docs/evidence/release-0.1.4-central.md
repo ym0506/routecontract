@@ -66,13 +66,16 @@ per consumer covered Markdown/JSON match exit 0 and regression exit 1.
 The normalized reviewed-receipt SHA-256 is
 `4491b796a0b52263e34a071d699c5afd5ec06daec9bf4e94c58f1e2d937b7278`.
 
-The Java 17 publication wrappers above are not Java 21 runs. The maintained
-[First project workflow](../../.github/workflows/first-project.yml) separately checks
-Maven and Gradle on Java 17 and 21 against the pinned public 0.1.4 JAR. Its matrix
-covers missing-baseline rejection, capture without approval, match/fail/restore
-and direct assertions. The installation-update PR must pass all four cells before
-merging; use the [workflow run history](https://github.com/ym0506/routecontract/actions/workflows/first-project.yml)
-and each run's source revision and retained artifacts to identify those results.
+The Java 17 publication wrappers above are not Java 21 runs. Separately,
+[First project run 34779973994](https://github.com/ym0506/routecontract/actions/runs/34779973994)
+passed Maven and Gradle on both Java 17 and Java 21 against the pinned public 0.1.4 JAR.
+Its example source was `4dc50fa73734314be381bd65ab6faafac2212585`, distinct from the released
+library's tagged source. All four downloaded artifacts were inspected for the actual test
+JVM, consumer/library class versions, public JAR hash, three JSON comparison stages and
+three direct-assertion stages. See the [retained four-cell record](release-0.1.4-central/first-project-java17-java21.json).
+Missing-baseline rejection and capture without approval also passed in each workflow cell.
+The [maintained workflow](../../.github/workflows/first-project.yml) keeps this matrix as a
+merge gate for the current example.
 The earlier [Java 21 qualification](../java21-runtime-acceptance.md) remains a dated
 0.1.3 record and is not relabeled as a 0.1.4 consumer run.
 

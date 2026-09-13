@@ -37,6 +37,8 @@ See [how to get help and record use](user-feedback.md).
 
 ![The same order is returned while observed execution attempts and data sources rise from one to two.](assets/execution-comparison.svg)
 
+<a id="install-013"></a>
+
 ## Install 0.1.4
 
 See the [public file verification and Gradle/Maven installation results](../docs/evidence/release-0.1.4-central.md)
@@ -72,6 +74,8 @@ forces its whole dependency graph; every ShardingSphere module in the test runti
 
 Installing 0.1.4 does not require the historical local installer or a repository clone.
 Use the [first-project guide](first-project.md) for the current Maven and Gradle examples.
+
+<a id="run-013"></a>
 
 ## Run 0.1.4
 

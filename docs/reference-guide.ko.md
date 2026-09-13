@@ -37,6 +37,8 @@ Java assertion과 선택적인 Markdown·JSON 비교 리포트를 안내합니�
 
 ![같은 주문을 반환하지만 관측된 실행 시도와 데이터 소스가 하나에서 둘로 늘어난 사례.](assets/execution-comparison.svg)
 
+<a id="install-013"></a>
+
 ## Install 0.1.4
 
 [공개 파일 검증과 Gradle·Maven 설치 결과](../docs/evidence/release-0.1.4-central.md)와
@@ -72,6 +74,8 @@ RouteContract가 ShardingSphere를 설치하거나 전체 모듈의 버전을 �
 
 0.1.4 의존성 설치에 예전 로컬 설치기를 실행하거나 저장소를 clone할 필요는 없습니다.
 현재 Maven·Gradle 예제는 [첫 프로젝트 가이드](first-project.ko.md)를 사용하세요.
+
+<a id="013-실행하기"></a>
 
 ## 0.1.4 실행하기
 
