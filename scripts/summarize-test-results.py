@@ -27,6 +27,7 @@ MAX_XML_BYTES = 4 * 1024 * 1024
 EXPECTED_SUITES = {
     "io.github.ym0506.routecontract.api.CurrentRouteContractTest": 15,
     "io.github.ym0506.routecontract.internal.CurrentRuntimeGuardTest": 9,
+    "io.github.ym0506.routecontract.internal.MutableAttemptTest": 2,
     "io.github.ym0506.routecontract.internal.RuntimeAdapterRegistryTest": 9,
     "io.github.ym0506.routecontract.manifest.ManifestReviewReportTest": 13,
     "io.github.ym0506.routecontract.manifest.ManifestRuntimeCompatibilityMatrixTest": 606,

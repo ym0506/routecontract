@@ -9,12 +9,14 @@ import java.util.concurrent.atomic.AtomicReference;
 
 final class MutableAttempt {
 
+    private static final Completion STARTED = new Completion(AttemptOutcome.START_REPORTED, null);
+    private static final Completion RETURNED = new Completion(AttemptOutcome.CALLBACK_RETURNED, null);
+
     private final String observedDataSourceName;
     private final String sqlFingerprint;
     private final List<String> parameterTypes;
     private final ThreadRole threadRole;
-    private final AtomicReference<AttemptOutcome> outcome = new AtomicReference<>(AttemptOutcome.START_REPORTED);
-    private volatile String reportedFailureType;
+    private final AtomicReference<Completion> completion = new AtomicReference<>(STARTED);
 
     MutableAttempt(
             final String observedDataSourceName,
@@ -28,25 +30,26 @@ final class MutableAttempt {
     }
 
     boolean finishCallbackReturned() {
-        return outcome.compareAndSet(AttemptOutcome.START_REPORTED, AttemptOutcome.CALLBACK_RETURNED);
+        return completion.compareAndSet(STARTED, RETURNED);
     }
 
     boolean finishFailure(final Exception cause) {
-        if (!outcome.compareAndSet(AttemptOutcome.START_REPORTED, AttemptOutcome.CALLBACK_FAILURE)) {
-            return false;
-        }
-        reportedFailureType = cause == null ? null : cause.getClass().getName();
-        return true;
+        return completion.compareAndSet(STARTED, new Completion(
+                AttemptOutcome.CALLBACK_FAILURE,
+                cause == null ? null : cause.getClass().getName()));
     }
 
     PhysicalExecutionAttempt freeze() {
+        Completion frozen = completion.get();
         return new PhysicalExecutionAttempt(
                 observedDataSourceName,
                 sqlFingerprint,
                 parameterTypes.size(),
                 parameterTypes,
                 threadRole,
-                outcome.get(),
-                reportedFailureType);
+                frozen.outcome(),
+                frozen.reportedFailureType());
     }
+
+    private record Completion(AttemptOutcome outcome, String reportedFailureType) { }
 }
