@@ -3,6 +3,16 @@
 RouteContract follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html) for public version identifiers.
 
+## [Unreleased 0.2]
+
+### Fixed
+
+- Port the released 0.1.4 failure-snapshot correction to the version-neutral core.
+  A worker failure overlapping capture closure can no longer combine an earlier outcome
+  with a later failure class and discard the diagnostic snapshot. Both exact-version adapters
+  share this core. Failure captures remain ineligible for passing contracts.
+  See the [regression and verification scope](docs/atomic-attempt-forward-port.md).
+
 ## [0.1.3] - 2026-09-07
 
 Published as an immutable [GitHub Release](https://github.com/ym0506/routecontract/releases/tag/v0.1.3)
