@@ -2,7 +2,8 @@
 
 Current upgrade coverage now includes the public 0.1.4 artifact. The
 [five-version acceptance](legacy-014-coverage-acceptance.md) requires 76 fresh
-JVM cases; execution against the integrated candidate remains unverified.
+JVM cases. All 76 passed against the integrated `5800ed2` candidate on
+2026-09-14; see the [current result](evidence/legacy-014-upgrade-2026-09-14.md).
 
 Historical status: the original A-29 plan passed all 64 checks once on independently
 reviewed local 0.2.0 staging from final producer

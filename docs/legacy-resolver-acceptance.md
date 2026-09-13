@@ -1,8 +1,10 @@
 # Real legacy resolver acceptance for the 0.2 candidate
 
 Current coverage uses the separate format-2 five-version registry, including
-public 0.1.4. Its Gradle 46-case and Maven 56-case executions remain unverified;
-see the [upgrade acceptance](legacy-014-coverage-acceptance.md).
+public 0.1.4. Its Gradle 46-case and Maven 56-case executions passed on
+2026-09-14 against `5800ed2`; see the
+[current result](evidence/legacy-014-upgrade-2026-09-14.md) and
+[upgrade acceptance](legacy-014-coverage-acceptance.md).
 
 Historical status: the local Gradle 37-case and Maven 45-case runs passed on 2026-09-08
 against reviewed source `86a0be5`; see the [execution evidence](evidence/legacy-resolver-86a0be5-2026-09-08.md).

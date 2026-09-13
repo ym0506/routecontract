@@ -5,7 +5,10 @@ JAR. The current migration fixtures still enumerate four older artifacts and
 omit that newest public release. A passing old matrix cannot establish what
 happens for this user's installed version.
 
-Status: acceptance before implementation; current 0.1.4 coverage is unverified.
+Status: the acceptance preceded implementation. The
+[2026-09-14 execution](evidence/legacy-014-upgrade-2026-09-14.md) passed the full
+76-case A-29, 46-case Gradle A-27 and 56-case Maven A-27 matrices against producer
+`5800ed2`. Human baseline review and public 0.2 availability remain separate.
 
 ## Required change
 

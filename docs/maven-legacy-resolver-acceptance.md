@@ -1,7 +1,8 @@
 # Real Maven legacy resolver acceptance for A-27
 
 Current status: the five-version plan includes public 0.1.4 and requires 56
-Maven cases. Its execution remains unverified; see the
+Maven cases. All 56 passed on 2026-09-14 against `5800ed2`; see the
+[current result](evidence/legacy-014-upgrade-2026-09-14.md) and
 [upgrade acceptance](legacy-014-coverage-acceptance.md).
 
 Historical result: [45/45 actual Maven cases verified against reviewed source `86a0be5`](evidence/legacy-resolver-86a0be5-2026-09-08.md).
