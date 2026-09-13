@@ -7,7 +7,7 @@ its predicate makes it query an extra configured data source. RouteContract make
 execution assertion fail while keeping the order assertion. The example below has the database
 setup and reviewed expectation file ready to use.
 
-This guide uses **RouteContract 0.1.3 from Maven Central**, **Java 17 or 21** and exact
+This guide uses **RouteContract 0.1.4 from Maven Central**, **Java 17 or 21** and exact
 **ShardingSphere-JDBC 5.5.3**. It covers synchronous, non-batch `PreparedStatement` calls.
 [Run locally](#run-the-published-dependency) to see pass → fail → pass, or use the browser steps below.
 For a preview without running anything, [read the report](evidence/ci-review-report-example.md).
@@ -125,7 +125,7 @@ or review an updated expectation when the change is intentional.
 ## Adapt one existing test
 
 For execution-count checks, keep the expectations in your Java test. **A JSON baseline is optional.**
-Add the [Central test dependency](../README.md#install-013), retain your existing ShardingSphere
+Add the [Central test dependency](../README.md#install-014), retain your existing ShardingSphere
 setup and wrap one synchronous repository/service call. For example:
 
 ```java

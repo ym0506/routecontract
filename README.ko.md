@@ -4,12 +4,12 @@
 
 <p align="center">
   <a href="https://github.com/ym0506/routecontract/actions/workflows/ci.yml?query=branch%3Amain"><img src="https://github.com/ym0506/routecontract/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
-  <a href="https://central.sonatype.com/artifact/io.github.ym0506.routecontract/routecontract-shardingsphere-5.5/0.1.3"><img src="https://img.shields.io/badge/Maven_Central-0.1.3-277DA1" alt="Maven Central 0.1.3"></a>
+  <a href="https://central.sonatype.com/artifact/io.github.ym0506.routecontract/routecontract-shardingsphere-5.5/0.1.4"><img src="https://img.shields.io/badge/Maven_Central-0.1.4-277DA1" alt="Maven Central 0.1.4"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache_2.0-182C38" alt="Apache License 2.0"></a>
 </p>
 
 <p align="center">
-  <a href="#동작-확인">동작 확인</a> · <a href="#install-013">설치</a> · <a href="#사용-예">사용 예</a> · <a href="#문서">문서</a> · <a href="README.md">English</a>
+  <a href="#동작-확인">동작 확인</a> · <a href="#install-014">설치</a> · <a href="#사용-예">사용 예</a> · <a href="#문서">문서</a> · <a href="README.md">English</a>
 </p>
 
 **같은 주문이 조회돼도, 조회하는 데이터베이스는 늘어날 수 있습니다.**
@@ -58,7 +58,9 @@ RouteContract는 기존 ShardingSphere-JDBC 통합 테스트에 DB 실행 검사
 결과와 실행 횟수가 같아도 대상 DB 이름 검사가 필요한 이유를 보여 줍니다. 원래 보고자의
 기여를 명시했으며 정상 대조군과 계약 검사가 실패하는 명령을 함께 제공합니다.
 
-## Install 0.1.3
+<a id="install-013"></a>
+
+## Install 0.1.4
 
 기존 **Java 17 또는 21 · ShardingSphere-JDBC 5.5.3** 테스트 프로젝트에 추가하세요.
 지원하는 작업은 **동기식·비배치 `PreparedStatement` 호출**입니다.
@@ -69,7 +71,7 @@ RouteContract는 기존 ShardingSphere-JDBC 통합 테스트에 DB 실행 검사
 repositories { mavenCentral() }
 
 dependencies {
-    testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.3")
+    testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.4")
 }
 ```
 
@@ -80,7 +82,7 @@ dependencies {
 <dependency>
   <groupId>io.github.ym0506.routecontract</groupId>
   <artifactId>routecontract-shardingsphere-5.5</artifactId>
-  <version>0.1.3</version>
+  <version>0.1.4</version>
   <scope>test</scope>
 </dependency>
 ```
@@ -144,7 +146,7 @@ candidate 생성만으로 baseline이 승인되지는 않습니다. 의도한 �
 ## 예제 실행
 
 **Java 17 또는 21, Maven 3.9.x, 실행 중인 Docker**가 필요합니다. 처음에는 의존성과 MySQL 이미지를
-내려받습니다. 예제는 **Maven Central의 0.1.3**을 사용하며, 합성 데이터에 맞게 검토한 기준 파일이
+내려받습니다. 예제는 **Maven Central의 0.1.4**을 사용하며, 합성 데이터에 맞게 검토한 기준 파일이
 이미 들어 있습니다.
 
 ```bash
@@ -172,12 +174,12 @@ mvn -B test -Droutecontract.query=range
 
 ## 지원 범위
 
-| 구분 | 공개 v0.1.3 |
+| 구분 | 공개 v0.1.4 |
 | --- | --- |
-| Java | 17과 21; [런타임 검증](docs/java21-runtime-acceptance.md) |
+| Java | 17과 21; [런타임 검증](docs/evidence/release-0.1.4-central.md#public-consumer-verification) |
 | ShardingSphere | JDBC, **정확히 5.5.3** |
 | 실행 | 정상 반환하며 caller interruption이 없는 동기식·비배치 `PreparedStatement` 작업 |
-| DB 검증 환경 | MySQL 8.4.11 · [공개 Gradle·Maven 소비자 검증](docs/evidence/release-0.1.3-central.md) |
+| DB 검증 환경 | MySQL 8.4.11 · [공개 Gradle·Maven 소비자 검증](docs/evidence/release-0.1.4-central.md) |
 | 검사 | capture 완전성, callback 결과, 실행 시도·데이터 소스 예산, manifest 구조 차이 |
 | CI 출력 | Java assertion, 결정적인 Markdown·JSON 리포트, `ManifestReviewCli` |
 
@@ -185,7 +187,7 @@ Proxy, batch, reactive 실행, 애플리케이션이 만든 async 경계와 SQL 
 지원 범위 밖입니다. 관측 SQL이 없는 작업, callback 실패나 caller interruption이 있는 작업은
 통과한 계약을 만들 수 없습니다. [전체 capture 경계](docs/reference-guide.md#v01-support-boundary)를 확인하세요.
 
-**프로젝트 상태:** v0.1.3은 Maven Central에 공개되어 있습니다.
+**프로젝트 상태:** v0.1.4은 Maven Central에 공개되어 있습니다.
 [0.2 core·adapter 분리](https://github.com/ym0506/routecontract/pull/62)는 개발 중이며 5.5.2 지원은
 미출시입니다. 공개 소비자 검증은 유지관리자가 실행한 결과이고, 독립적인 외부 통합·반복 사용은
 아직 확인되지 않았습니다.
@@ -203,7 +205,7 @@ Proxy, batch, reactive 실행, 애플리케이션이 만든 async 경계와 SQL 
 | 캡처 상태 정리 검증 | [반복 실행·객체 잔류 대조군·검증 한계](docs/capture-retention.md) |
 | 관측 비용 확인 | [공개 0.1.3의 세 조건 비교·원시 측정·한계](docs/observer-cost.md) |
 | 애플리케이션 코드 실험 | [세 가지 실험: 실행 대상·조회 예산·기존 테스트](docs/application-evaluations.ko.md) · [English](docs/application-evaluations.md) · 자체 실행 실험 |
-| 릴리스 검증 | [v0.1.3 Central 검증](docs/evidence/release-0.1.3-central.md) · [증거 목록](docs/evidence-matrix.md) |
+| 릴리스 검증 | [v0.1.4 Central 검증](docs/evidence/release-0.1.4-central.md) · [증거 목록](docs/evidence-matrix.md) |
 | 이전 통합 도구 | [v0.1.2 통합 가이드](docs/first-integration.md) — 과거 버전에 고정한 절차 |
 | 기여 | [기여 가이드](CONTRIBUTING.md) · [로드맵](docs/product-roadmap.md) |
 

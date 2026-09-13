@@ -1,0 +1,122 @@
+{
+  "checkedAt": "2026-09-13T19:39:03.360536+00:00",
+  "releaseId": 388009384,
+  "tag": "v0.1.4",
+  "publishedAt": "2026-09-13T19:37:21Z",
+  "draft": false,
+  "immutable": true,
+  "prerelease": false,
+  "sourceRevision": "a1eb22087eaf3a49e894d12ba56516efac99343f",
+  "runId": 34681713954,
+  "assets": [
+    {
+      "id": 561793130,
+      "name": "SHA256SUMS",
+      "size": 1155,
+      "sha256": "cfea303135b91a9007356d39ea80c3a91c93de7489095599e18345ad77c5c7f4",
+      "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.4/SHA256SUMS",
+      "anonymousDownload": "PASS",
+      "releaseAssetAttestation": "PASS"
+    },
+    {
+      "id": 561793050,
+      "name": "routecontract-0.1.4-source.zip",
+      "size": 2843151,
+      "sha256": "848e9e6b85ad8a53ec3742823b12818147c8411ee5ece6077b66970a9e45d4be",
+      "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.4/routecontract-0.1.4-source.zip",
+      "anonymousDownload": "PASS",
+      "releaseAssetAttestation": "PASS"
+    },
+    {
+      "id": 561793107,
+      "name": "routecontract-aggregate-cyclonedx.json",
+      "size": 373977,
+      "sha256": "a506f923f14d26cb82cab79d3e9264f0953b1b6b2e5dd320afe2b5de174282a6",
+      "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.4/routecontract-aggregate-cyclonedx.json",
+      "anonymousDownload": "PASS",
+      "releaseAssetAttestation": "PASS"
+    },
+    {
+      "id": 561793120,
+      "name": "routecontract-aggregate-cyclonedx.xml",
+      "size": 338800,
+      "sha256": "cd7f4f7c3afa97d2ca00b7ec4de6775baea8c7195291ab6e478a68ade727909c",
+      "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.4/routecontract-aggregate-cyclonedx.xml",
+      "anonymousDownload": "PASS",
+      "releaseAssetAttestation": "PASS"
+    },
+    {
+      "id": 561793067,
+      "name": "routecontract-shardingsphere-5.5-0.1.4-javadoc.jar",
+      "size": 215433,
+      "sha256": "8f751abc29c92e9523029c55ee6585176038b3c5a119f89fe7ab917b28a6373f",
+      "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.4/routecontract-shardingsphere-5.5-0.1.4-javadoc.jar",
+      "anonymousDownload": "PASS",
+      "releaseAssetAttestation": "PASS"
+    },
+    {
+      "id": 561793049,
+      "name": "routecontract-shardingsphere-5.5-0.1.4-sources.jar",
+      "size": 51316,
+      "sha256": "690070aa3dcc7f4e3c7da54967b458358a567b961228191d4a75811bab343b7c",
+      "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.4/routecontract-shardingsphere-5.5-0.1.4-sources.jar",
+      "anonymousDownload": "PASS",
+      "releaseAssetAttestation": "PASS"
+    },
+    {
+      "id": 561793048,
+      "name": "routecontract-shardingsphere-5.5-0.1.4.jar",
+      "size": 86106,
+      "sha256": "b912725183a982ccddbfd4fa73ebe6a274590a674c0d72d94b0e1883d22b2816",
+      "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.4/routecontract-shardingsphere-5.5-0.1.4.jar",
+      "anonymousDownload": "PASS",
+      "releaseAssetAttestation": "PASS"
+    },
+    {
+      "id": 561793104,
+      "name": "routecontract-shardingsphere-5.5-cyclonedx.json",
+      "size": 114493,
+      "sha256": "1b94784c749b3caf720d58f0acca6ce7a39071a20b6d6f709f74ae9f045b8920",
+      "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.4/routecontract-shardingsphere-5.5-cyclonedx.json",
+      "anonymousDownload": "PASS",
+      "releaseAssetAttestation": "PASS"
+    },
+    {
+      "id": 561793105,
+      "name": "routecontract-shardingsphere-5.5-cyclonedx.xml",
+      "size": 103686,
+      "sha256": "ed5c6dea49452c4b4110bc669bc650b58c833c37da237ce93a6288dbde4dd845",
+      "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.4/routecontract-shardingsphere-5.5-cyclonedx.xml",
+      "anonymousDownload": "PASS",
+      "releaseAssetAttestation": "PASS"
+    },
+    {
+      "id": 561793054,
+      "name": "routecontract-shardingsphere-5.5.pom",
+      "size": 2138,
+      "sha256": "8403ce5c48a378e4b3de99b44ab5421a86f22ec7146382872a791dca52d489bd",
+      "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.4/routecontract-shardingsphere-5.5.pom",
+      "anonymousDownload": "PASS",
+      "releaseAssetAttestation": "PASS"
+    },
+    {
+      "id": 561793127,
+      "name": "supply-chain-evidence.json",
+      "size": 3700,
+      "sha256": "dc189016d71f7837cac38bd29b8b6e91c830c0fd3a4a9530ee04ec90284d6d8a",
+      "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.4/supply-chain-evidence.json",
+      "anonymousDownload": "PASS",
+      "releaseAssetAttestation": "PASS"
+    },
+    {
+      "id": 561793128,
+      "name": "test-summary.txt",
+      "size": 1163,
+      "sha256": "6fbdc226e8296f40e0b2a53983ea72897a99358fd37f2c89a3f1a79c2e55c7a3",
+      "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.4/test-summary.txt",
+      "anonymousDownload": "PASS",
+      "releaseAssetAttestation": "PASS"
+    }
+  ],
+  "centralPublished": false
+}

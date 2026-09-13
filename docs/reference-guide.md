@@ -24,12 +24,12 @@ Read the [execution boundary and limitations](../docs/start-here.md#도입-전�
 | Your goal | Start here |
 | --- | --- |
 | Understand the result without installing anything | [Read the CI report](evidence/ci-review-report-example.md) |
-| Run pass → fail → pass with the public library | [First project with 0.1.3](first-project.md) — Java 17 or 21, Maven/Gradle and Docker |
+| Run pass → fail → pass with the public library | [First project with 0.1.4](first-project.md) — Java 17 or 21, Maven/Gradle and Docker |
 | Try it without local Java or Docker | [Run in your own GitHub fork](first-project.md#try-in-your-browser) |
-| Apply it to an existing test | [Central dependency](#install-013), then [adapt one operation](first-project.md#adapt-one-existing-test); a JSON baseline is optional |
+| Apply it to an existing test | [Central dependency](#install-014), then [adapt one operation](first-project.md#adapt-one-existing-test); a JSON baseline is optional |
 | Ask about fit or share an experience | [Short feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml) — no installation or public repository required |
 
-The current public release is **0.1.3**. The first-project guide uses that release from Maven
+The current public release is **0.1.4**. The first-project guide uses that release from Maven
 Central and covers direct Java assertions and optional Markdown/JSON comparison reports.
 The old 0.1.2 commands remain below in closed historical sections for reproducibility.
 Keep SQL, bind values, connection details and full logs out of public feedback.
@@ -37,9 +37,11 @@ See [how to get help and record use](user-feedback.md).
 
 ![The same order is returned while observed execution attempts and data sources rise from one to two.](assets/execution-comparison.svg)
 
-## Install 0.1.3
+<a id="install-013"></a>
 
-See the [public file verification and Gradle/Maven installation results](../docs/evidence/release-0.1.3-central.md)
+## Install 0.1.4
+
+See the [public file verification and Gradle/Maven installation results](../docs/evidence/release-0.1.4-central.md)
 and the current [Java 17/21 runtime checks](java21-runtime-acceptance.md).
 
 Add the test dependency to an existing **Java 17 or 21 / ShardingSphere-JDBC 5.5.3** project.
@@ -51,7 +53,7 @@ Gradle Groovy / Kotlin DSL:
 repositories { mavenCentral() }
 
 dependencies {
-    testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.3")
+    testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.4")
 }
 ```
 
@@ -61,7 +63,7 @@ Maven (add inside `<dependencies>` in `pom.xml`):
 <dependency>
   <groupId>io.github.ym0506.routecontract</groupId>
   <artifactId>routecontract-shardingsphere-5.5</artifactId>
-  <version>0.1.3</version>
+  <version>0.1.4</version>
   <scope>test</scope>
 </dependency>
 ```
@@ -70,10 +72,12 @@ Wrap one synchronous non-batch `PreparedStatement` operation as in the
 [usage example below](#smallest-usage-example). RouteContract neither supplies ShardingSphere nor
 forces its whole dependency graph; every ShardingSphere module in the test runtime must be exactly 5.5.3.
 
-Installing 0.1.3 does not require the historical local installer or a repository clone.
+Installing 0.1.4 does not require the historical local installer or a repository clone.
 Use the [first-project guide](first-project.md) for the current Maven and Gradle examples.
 
-## Run 0.1.3
+<a id="run-013"></a>
+
+## Run 0.1.4
 
 Use Java 17 or 21, Maven 3.9.x and a running Docker engine. The first run downloads dependencies
 and the MySQL image. From a new checkout:
@@ -422,7 +426,7 @@ Code map (representative boundaries; a directory is not assumed to have only one
 | Mixed automation | `scripts/`, `.github/workflows/`, `security/`, `gradle/` | `scripts/` contains user-facing Quick Start and Release-asset installation tools plus maintainer release, supply-chain, and demonstration-verification tools. None is a consumer runtime API. |
 | Verification/submission support | `submission/`, `scripts/video-demo-session.sh`, `docs/evidence-matrix.md` | Evidence tracking, result-report, and reproducible packaging material; not part of the shipped product. |
 
-This source declares release-target project version `0.1.3`, with corresponding tag name `v0.1.3`.
+This source declares release-target project version `0.1.4`, with corresponding tag name `v0.1.4`.
 A version string or checkout does not prove that an annotated tag, public immutable
 non-prerelease Release, same-revision release-evidence run, or external-user result exists.
 Use public assets only after verifying tag/Release/evidence-run revision identity and every
@@ -561,7 +565,8 @@ The ShardingSphere SPI method name `finishSuccess()` does not mean that a transa
 
 ## v0.1 support boundary
 
-This section describes public **0.1.3**. See the [Java 17/21 runtime evidence](java21-runtime-acceptance.md);
+This section describes public **0.1.4**. See the [current public consumer evidence](evidence/release-0.1.4-central.md#public-consumer-verification)
+and the [initial Java 17/21 support qualification](java21-runtime-acceptance.md);
 the historical 0.1.2 installer and assisted runner keep their own documented limits.
 
 This problem is not limited to one ORM or repository API. Apache ShardingSphere-JDBC can be used with direct JDBC and integration surfaces such as MyBatis, JPA, and Hibernate; RouteContract's capture API is not ORM-specific. That describes the problem and API surface, not verified end-to-end compatibility with each of MyBatis, JPA, and Hibernate.
@@ -590,9 +595,9 @@ One capture retains at most 10,000 physical execution attempts. At the next atte
 
 ## Dependency and Release compatibility details
 
-For public **0.1.3**, use the [Central coordinate above](#install-013) and inspect your existing
+For public **0.1.4**, use the [Central coordinate above](#install-014) and inspect your existing
 ShardingSphere runtime graph for exact 5.5.3. RouteContract does not embed ShardingSphere or
-align all of its modules for the consumer. The [public release evidence](evidence/release-0.1.3-central.md)
+align all of its modules for the consumer. The [public release evidence](evidence/release-0.1.4-central.md)
 and [Java 17/21 consumer checks](java21-runtime-acceptance.md) describe the tested lanes.
 
 <details>
@@ -634,7 +639,7 @@ Snapshots and manifests do not store raw SQL, parameter values, connection prope
 
 ## Contributing and extension gates
 
-If you are trying public `0.1.3`, adapting one existing test, or asking about fit, use the [short feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)
+If you are trying public `0.1.4`, adapting one existing test, or asking about fit, use the [short feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)
 for a successful, blocked, unsupported, or not-a-fit outcome. Private-project experiences are welcome;
 you can describe your current verification method or a missing capability without installing anything.
 [Record the use stage separately from its evidence](../docs/user-feedback.md#recording-use-and-evidence).

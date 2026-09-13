@@ -1,0 +1,307 @@
+{
+  "workflowRun": 34779973994,
+  "workflowUrl": "https://github.com/ym0506/routecontract/actions/runs/34779973994",
+  "sourceRevision": "4dc50fa73734314be381bd65ab6faafac2212585",
+  "releaseVersion": "0.1.4",
+  "publicJarSha256": "b912725183a982ccddbfd4fa73ebe6a274590a674c0d72d94b0e1883d22b2816",
+  "result": "VERIFIED",
+  "evidenceLabels": [
+    "verified - MySQL",
+    "verified - ShardingSphere-JDBC 5.5.3"
+  ],
+  "externalAdoption": false,
+  "cells": [
+    {
+      "artifact": "first-project-Maven",
+      "directAssertions": {
+        "buildTool": "Maven",
+        "libraryVersion": "0.1.4",
+        "javaFeature": 17,
+        "exampleClassMajor": 61,
+        "libraryClassMajor": 61,
+        "publicJarSha256": "b912725183a982ccddbfd4fa73ebe6a274590a674c0d72d94b0e1883d22b2816",
+        "stages": [
+          {
+            "stage": "match",
+            "query": "equality",
+            "exitCode": 0,
+            "businessAssertionPassed": true,
+            "observedAttempts": 1,
+            "observedDataSources": 1,
+            "manifestFilesUnchanged": true
+          },
+          {
+            "stage": "range",
+            "query": "range",
+            "exitCode": 1,
+            "businessAssertionPassed": true,
+            "observedAttempts": 2,
+            "observedDataSources": 2,
+            "manifestFilesUnchanged": true
+          },
+          {
+            "stage": "restored",
+            "query": "equality",
+            "exitCode": 0,
+            "businessAssertionPassed": true,
+            "observedAttempts": 1,
+            "observedDataSources": 1,
+            "manifestFilesUnchanged": true
+          }
+        ],
+        "protectedFiles": {
+          "baselines/README.md": "0aa8444020ebd5e5de17a47e30d635a842c25aefc642de9b141418561492878c",
+          "baselines/find-paid-orders-by-user.approved.json": "a082ca797ebe40be5b8c9409893de7d9a861086d8d4b760cbc00e925b2436a60",
+          "build/routecontract/candidate.json": "a082ca797ebe40be5b8c9409893de7d9a861086d8d4b760cbc00e925b2436a60",
+          "build/routecontract/review.json": "8194c8b5026171db566cb9fecf27a9720cdc27cc3e75e34268b6de2091dd03ee",
+          "build/routecontract/review.md": "c4eb2cdd44f68fe49a16a7d4afe1795dca7a433415223fffcccf11974d125d3a"
+        },
+        "baselineArgumentIgnored": "-Droutecontract.baseline=build/routecontract/candidate.json"
+      },
+      "directSummarySha256": "20e504d9afed88f7365df1077a43a76285bbaf8de1d5673aef15339b390875f9",
+      "manifestStages": [
+        {
+          "stage": "match",
+          "status": "MATCH",
+          "observedAttempts": 1,
+          "observedDataSources": 1,
+          "reportSha256": "8194c8b5026171db566cb9fecf27a9720cdc27cc3e75e34268b6de2091dd03ee"
+        },
+        {
+          "stage": "range",
+          "status": "POLICY_VIOLATION",
+          "observedAttempts": 2,
+          "observedDataSources": 2,
+          "reportSha256": "c1ec8f1ee1057f06b3629f841652ef3a42f0484a84789ec88fded4bded848e5c"
+        },
+        {
+          "stage": "restored",
+          "status": "MATCH",
+          "observedAttempts": 1,
+          "observedDataSources": 1,
+          "reportSha256": "8194c8b5026171db566cb9fecf27a9720cdc27cc3e75e34268b6de2091dd03ee"
+        }
+      ],
+      "captureDoesNotApproveBaseline": true
+    },
+    {
+      "artifact": "first-project-Maven-java21",
+      "directAssertions": {
+        "buildTool": "Maven",
+        "libraryVersion": "0.1.4",
+        "javaFeature": 21,
+        "exampleClassMajor": 65,
+        "libraryClassMajor": 61,
+        "publicJarSha256": "b912725183a982ccddbfd4fa73ebe6a274590a674c0d72d94b0e1883d22b2816",
+        "stages": [
+          {
+            "stage": "match",
+            "query": "equality",
+            "exitCode": 0,
+            "businessAssertionPassed": true,
+            "observedAttempts": 1,
+            "observedDataSources": 1,
+            "manifestFilesUnchanged": true
+          },
+          {
+            "stage": "range",
+            "query": "range",
+            "exitCode": 1,
+            "businessAssertionPassed": true,
+            "observedAttempts": 2,
+            "observedDataSources": 2,
+            "manifestFilesUnchanged": true
+          },
+          {
+            "stage": "restored",
+            "query": "equality",
+            "exitCode": 0,
+            "businessAssertionPassed": true,
+            "observedAttempts": 1,
+            "observedDataSources": 1,
+            "manifestFilesUnchanged": true
+          }
+        ],
+        "protectedFiles": {
+          "baselines/README.md": "0aa8444020ebd5e5de17a47e30d635a842c25aefc642de9b141418561492878c",
+          "baselines/find-paid-orders-by-user.approved.json": "a082ca797ebe40be5b8c9409893de7d9a861086d8d4b760cbc00e925b2436a60",
+          "build/routecontract/candidate.json": "a082ca797ebe40be5b8c9409893de7d9a861086d8d4b760cbc00e925b2436a60",
+          "build/routecontract/review.json": "8194c8b5026171db566cb9fecf27a9720cdc27cc3e75e34268b6de2091dd03ee",
+          "build/routecontract/review.md": "c4eb2cdd44f68fe49a16a7d4afe1795dca7a433415223fffcccf11974d125d3a"
+        },
+        "baselineArgumentIgnored": "-Droutecontract.baseline=build/routecontract/candidate.json"
+      },
+      "directSummarySha256": "f7c87d629d95d521367c60e0534d65fedcf50066f25ea4c555178a1b7f72d6b6",
+      "manifestStages": [
+        {
+          "stage": "match",
+          "status": "MATCH",
+          "observedAttempts": 1,
+          "observedDataSources": 1,
+          "reportSha256": "8194c8b5026171db566cb9fecf27a9720cdc27cc3e75e34268b6de2091dd03ee"
+        },
+        {
+          "stage": "range",
+          "status": "POLICY_VIOLATION",
+          "observedAttempts": 2,
+          "observedDataSources": 2,
+          "reportSha256": "c1ec8f1ee1057f06b3629f841652ef3a42f0484a84789ec88fded4bded848e5c"
+        },
+        {
+          "stage": "restored",
+          "status": "MATCH",
+          "observedAttempts": 1,
+          "observedDataSources": 1,
+          "reportSha256": "8194c8b5026171db566cb9fecf27a9720cdc27cc3e75e34268b6de2091dd03ee"
+        }
+      ],
+      "captureDoesNotApproveBaseline": true
+    },
+    {
+      "artifact": "first-project-Gradle",
+      "directAssertions": {
+        "buildTool": "Gradle",
+        "libraryVersion": "0.1.4",
+        "javaFeature": 17,
+        "exampleClassMajor": 61,
+        "libraryClassMajor": 61,
+        "publicJarSha256": "b912725183a982ccddbfd4fa73ebe6a274590a674c0d72d94b0e1883d22b2816",
+        "stages": [
+          {
+            "stage": "match",
+            "query": "equality",
+            "exitCode": 0,
+            "businessAssertionPassed": true,
+            "observedAttempts": 1,
+            "observedDataSources": 1,
+            "manifestFilesUnchanged": true
+          },
+          {
+            "stage": "range",
+            "query": "range",
+            "exitCode": 1,
+            "businessAssertionPassed": true,
+            "observedAttempts": 2,
+            "observedDataSources": 2,
+            "manifestFilesUnchanged": true
+          },
+          {
+            "stage": "restored",
+            "query": "equality",
+            "exitCode": 0,
+            "businessAssertionPassed": true,
+            "observedAttempts": 1,
+            "observedDataSources": 1,
+            "manifestFilesUnchanged": true
+          }
+        ],
+        "protectedFiles": {
+          "baselines/README.md": "0aa8444020ebd5e5de17a47e30d635a842c25aefc642de9b141418561492878c",
+          "baselines/find-paid-orders-by-user.approved.json": "a082ca797ebe40be5b8c9409893de7d9a861086d8d4b760cbc00e925b2436a60",
+          "build/routecontract/candidate.json": "a082ca797ebe40be5b8c9409893de7d9a861086d8d4b760cbc00e925b2436a60",
+          "build/routecontract/review.json": "8194c8b5026171db566cb9fecf27a9720cdc27cc3e75e34268b6de2091dd03ee",
+          "build/routecontract/review.md": "c4eb2cdd44f68fe49a16a7d4afe1795dca7a433415223fffcccf11974d125d3a"
+        },
+        "baselineArgumentIgnored": "-ProutecontractBaseline=build/routecontract/candidate.json"
+      },
+      "directSummarySha256": "e99a20c12ba1a319552e25448be093cba5809f7757dfa1d366a741abd6b9631d",
+      "manifestStages": [
+        {
+          "stage": "match",
+          "status": "MATCH",
+          "observedAttempts": 1,
+          "observedDataSources": 1,
+          "reportSha256": "8194c8b5026171db566cb9fecf27a9720cdc27cc3e75e34268b6de2091dd03ee"
+        },
+        {
+          "stage": "range",
+          "status": "POLICY_VIOLATION",
+          "observedAttempts": 2,
+          "observedDataSources": 2,
+          "reportSha256": "c1ec8f1ee1057f06b3629f841652ef3a42f0484a84789ec88fded4bded848e5c"
+        },
+        {
+          "stage": "restored",
+          "status": "MATCH",
+          "observedAttempts": 1,
+          "observedDataSources": 1,
+          "reportSha256": "8194c8b5026171db566cb9fecf27a9720cdc27cc3e75e34268b6de2091dd03ee"
+        }
+      ],
+      "captureDoesNotApproveBaseline": true
+    },
+    {
+      "artifact": "first-project-Gradle-java21",
+      "directAssertions": {
+        "buildTool": "Gradle",
+        "libraryVersion": "0.1.4",
+        "javaFeature": 21,
+        "exampleClassMajor": 65,
+        "libraryClassMajor": 61,
+        "publicJarSha256": "b912725183a982ccddbfd4fa73ebe6a274590a674c0d72d94b0e1883d22b2816",
+        "stages": [
+          {
+            "stage": "match",
+            "query": "equality",
+            "exitCode": 0,
+            "businessAssertionPassed": true,
+            "observedAttempts": 1,
+            "observedDataSources": 1,
+            "manifestFilesUnchanged": true
+          },
+          {
+            "stage": "range",
+            "query": "range",
+            "exitCode": 1,
+            "businessAssertionPassed": true,
+            "observedAttempts": 2,
+            "observedDataSources": 2,
+            "manifestFilesUnchanged": true
+          },
+          {
+            "stage": "restored",
+            "query": "equality",
+            "exitCode": 0,
+            "businessAssertionPassed": true,
+            "observedAttempts": 1,
+            "observedDataSources": 1,
+            "manifestFilesUnchanged": true
+          }
+        ],
+        "protectedFiles": {
+          "baselines/README.md": "0aa8444020ebd5e5de17a47e30d635a842c25aefc642de9b141418561492878c",
+          "baselines/find-paid-orders-by-user.approved.json": "a082ca797ebe40be5b8c9409893de7d9a861086d8d4b760cbc00e925b2436a60",
+          "build/routecontract/candidate.json": "a082ca797ebe40be5b8c9409893de7d9a861086d8d4b760cbc00e925b2436a60",
+          "build/routecontract/review.json": "8194c8b5026171db566cb9fecf27a9720cdc27cc3e75e34268b6de2091dd03ee",
+          "build/routecontract/review.md": "c4eb2cdd44f68fe49a16a7d4afe1795dca7a433415223fffcccf11974d125d3a"
+        },
+        "baselineArgumentIgnored": "-ProutecontractBaseline=build/routecontract/candidate.json"
+      },
+      "directSummarySha256": "e6db02c4ce8129b28adc4933791f4b771209ec6d7ce7a0c61f5709915862be8d",
+      "manifestStages": [
+        {
+          "stage": "match",
+          "status": "MATCH",
+          "observedAttempts": 1,
+          "observedDataSources": 1,
+          "reportSha256": "8194c8b5026171db566cb9fecf27a9720cdc27cc3e75e34268b6de2091dd03ee"
+        },
+        {
+          "stage": "range",
+          "status": "POLICY_VIOLATION",
+          "observedAttempts": 2,
+          "observedDataSources": 2,
+          "reportSha256": "c1ec8f1ee1057f06b3629f841652ef3a42f0484a84789ec88fded4bded848e5c"
+        },
+        {
+          "stage": "restored",
+          "status": "MATCH",
+          "observedAttempts": 1,
+          "observedDataSources": 1,
+          "reportSha256": "8194c8b5026171db566cb9fecf27a9720cdc27cc3e75e34268b6de2091dd03ee"
+        }
+      ],
+      "captureDoesNotApproveBaseline": true
+    }
+  ]
+}

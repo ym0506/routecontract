@@ -6,7 +6,7 @@ Maven이나 Gradle로 실행할 수 있는 테스트 예제입니다. 쿼리를 
 반환되지만 데이터 소스를 한 곳 더 조회하는 상황을 만들고, RouteContract의 추가 검사가
 실패하는 것을 확인합니다. DB 설정과 검토된 기준 파일이 예제에 들어 있습니다.
 
-**Maven Central의 RouteContract 0.1.3**, **Java 17 또는 21**,
+**Maven Central의 RouteContract 0.1.4**, **Java 17 또는 21**,
 정확히 **ShardingSphere-JDBC 5.5.3**을 사용합니다. 지원 범위는 동기식·비배치
 `PreparedStatement` 호출입니다.
 
@@ -116,7 +116,7 @@ mvn -B test -Droutecontract.query=range
 ## 자신의 테스트와 CI로 옮기기
 
 실행 횟수부터 검사하려면 Java 테스트 코드에 기대값을 적으면 됩니다. **JSON 기준 파일은 선택 사항입니다.**
-[Central 테스트 의존성](../README.md#install-013)을 추가하고, 기존 ShardingSphere 설정을 유지한 채
+[Central 테스트 의존성](../README.md#install-014)을 추가하고, 기존 ShardingSphere 설정을 유지한 채
 동기식 repository/service 호출 한 개를 감쌉니다.
 
 ```java

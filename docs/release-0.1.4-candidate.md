@@ -1,7 +1,12 @@
-# 0.1.4 patch candidate
+# 0.1.4 diagnostic-correctness patch
 
-Status: **source preparation; not published**. Current installation instructions still use the
-immutable `0.1.3` release. This candidate uses the existing single artifact
+Status: **published on GitHub and Maven Central** on 2026-09-13 UTC.
+The [GitHub evidence](evidence/release-0.1.4-github.md) records twelve verified public assets.
+The [Central evidence](evidence/release-0.1.4-central.md) records thirty matching candidate
+files before publication, thirty matching anonymous public downloads, and fresh Maven/Gradle
+Java 17 MySQL consumers. The public first-project Maven/Gradle matrix also passed on Java
+17 and 21; its exact workflow revision and retained results are linked from the Central record. These are maintainer-run checks; independent adoption remains unverified.
+This patch uses the existing single artifact
 `io.github.ym0506.routecontract:routecontract-shardingsphere-5.5`; it is independent of the
 unreleased 0.2 core/adapter split.
 
@@ -30,7 +35,7 @@ The support boundary remains exact ShardingSphere-JDBC 5.5.3, Java 17 or 21, syn
 arbitrary application async, Proxy, batch, topology discovery or production-performance claim is
 part of this patch.
 
-## Acceptance before publication
+## Release acceptance checklist
 
 1. Rebase the candidate onto the merged correction and review the full source delta from the
    published 0.1.3 tag. Require clean source and consistent 0.1.4 generated artifact coordinates.
@@ -55,6 +60,6 @@ part of this patch.
    report the patch as publicly available.
 
 Exact procedures and historical evidence boundaries remain in [RELEASING.md](../RELEASING.md).
-No tag, signed bundle, public deployment, independent adoption or production result is implied
-by this preparation record. Version selection and existing author authorization do not fabricate
-the still-required artifact, review, signing or publication evidence.
+The checklist above records the acceptance requirements; completed checks are linked from the
+release evidence. Maintainer-run validation and publication do not establish independent external
+adoption or production results. The historical 0.1.3 files and its recorded exception remain unchanged.

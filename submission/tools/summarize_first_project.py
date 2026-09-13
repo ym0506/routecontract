@@ -12,7 +12,7 @@ STAGES = (
     ("range", "2. Same-result range query", "POLICY_VIOLATION", 2),
     ("restored", "3. Normal query restored", "MATCH", 1),
 )
-PUBLIC_JAR_SHA256 = "9e883e618eb09d9ecf30814151bb4b0a43eba02c78d288cc582fa7e57e6edba2"
+PUBLIC_JAR_SHA256 = "b912725183a982ccddbfd4fa73ebe6a274590a674c0d72d94b0e1883d22b2816"
 
 
 def verified_direct_runtime(evidence, outcome, build_tool, java_feature):
@@ -23,7 +23,7 @@ def verified_direct_runtime(evidence, outcome, build_tool, java_feature):
     try:
         path = evidence / "direct-assertions" / build_tool.lower() / "summary.json"
         report = json.loads(path.read_text(encoding="utf-8"))
-        if (report["buildTool"] != build_tool or report["libraryVersion"] != "0.1.3"
+        if (report["buildTool"] != build_tool or report["libraryVersion"] != "0.1.4"
                 or report["publicJarSha256"] != PUBLIC_JAR_SHA256):
             return False
         for field, expected in (("javaFeature", java_feature),
@@ -84,7 +84,7 @@ def render(evidence, outcomes, build_tool="Maven", java_feature=17):
                "Test runtime: **Not verified**; inspect the direct/runtime verification step.")
     lines = [
         "# RouteContract: same result, different execution", "",
-        "Public **0.1.3** · ShardingSphere-JDBC **5.5.3** · MySQL **8.4.11**", "",
+        "Public **0.1.4** · ShardingSphere-JDBC **5.5.3** · MySQL **8.4.11**", "",
         runtime, "",
         "Each verified stage checks the same synthetic order: **201 / user 3 / PAID**.", "",
         "| Stage | Verification | Contract | Physical JDBC attempts | Observed aliases |",

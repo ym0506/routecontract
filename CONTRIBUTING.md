@@ -107,7 +107,7 @@ publication and is not evidence of a signed candidate or public availability.
 
 ## Release feedback
 
-For a question before installation or feedback on current stable **0.1.3**, use the
+For a question before installation or feedback on current stable **0.1.4**, use the
 [question or user feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml).
 You can report a test using reviewed Java execution assertions or the optional JSON-baseline
 comparison. Neither installation nor a public application repository is required to ask a question.
