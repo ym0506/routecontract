@@ -1,6 +1,6 @@
 # RouteContract in one test
 
-A standalone example using **RouteContract 0.1.3 from Maven Central**, **Java 17 or 21**, exact
+A standalone example using **RouteContract 0.1.4 from Maven Central**, **Java 17 or 21**, exact
 **ShardingSphere-JDBC 5.5.3**, and two disposable **MySQL 8.4.11** containers.
 
 [Walkthrough: direct assertions, optional JSON comparison and CI](../../docs/first-project.md) ·

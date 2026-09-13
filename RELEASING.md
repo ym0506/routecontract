@@ -261,15 +261,16 @@ implemented and verified.
 The immutable GitHub Releases `v0.1.0` and `v0.1.2` remain unchanged and are
 not published to Maven Central.
 
-[0.1.3 is already published](docs/release-0.1.3-candidate.md) on GitHub and Maven Central,
-using the existing single artifact and exact ShardingSphere-JDBC 5.5.3 support. Its
-[Central evidence record](docs/evidence/release-0.1.3-central.md) retains the completed
-verification and the prepublication exception. The separate 0.2 core/adapter split and
-5.5.2 adapter remain unreleased.
+[0.1.4 is published](docs/release-0.1.4-candidate.md) on GitHub and Maven Central,
+using the existing single artifact and exact ShardingSphere-JDBC 5.5.3 support.
+Its [Central evidence](docs/evidence/release-0.1.4-central.md) includes the completed
+prepublication candidate comparison and anonymous public consumer checks. Historical
+[0.1.3 evidence](docs/evidence/release-0.1.3-central.md), including its recorded exception,
+remains unchanged. The separate 0.2 core/adapter split and 5.5.2 adapter remain unreleased.
 
 For a future publication, select a new, unpublished stable version strictly greater than
-`0.1.3` through a separate release approval. Preserve all existing tags and published
-coordinates; `0.1.3` is available for historical verification, not a new upload candidate.
+`0.1.4` through a separate release approval. Preserve all existing tags and published
+coordinates; `0.1.3` and `0.1.4` are historical verification inputs, not new upload candidates.
 This checklist does not select or authorize another release by itself. Selection does
 not approve bytes that have not yet been produced.
 
@@ -283,7 +284,7 @@ records required invariants rather than copying an unstable JSON schema.
 
 Before any upload, record and independently compare:
 
-- a new, unpublished stable project version strictly greater than `0.1.3`; its annotated `vVERSION` tag
+- a new, unpublished stable project version strictly greater than `0.1.4`; its annotated `vVERSION` tag
   object OID, raw-object size and SHA-256; its peeled commit and tree; and the
   public `main` commit from which that tag was created;
 - the successful release-evidence workflow identity and file SHA-256, run ID,

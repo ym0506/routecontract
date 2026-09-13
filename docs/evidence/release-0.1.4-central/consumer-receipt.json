@@ -1,0 +1,24 @@
+{
+  "artifacts": [
+    {
+      "module": "routecontract-shardingsphere-5.5",
+      "name": "routecontract-shardingsphere-5.5-0.1.4.jar",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4.jar",
+      "sha256": "b912725183a982ccddbfd4fa73ebe6a274590a674c0d72d94b0e1883d22b2816"
+    },
+    {
+      "module": "routecontract-shardingsphere-5.5",
+      "name": "routecontract-shardingsphere-5.5-0.1.4.pom",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4.pom",
+      "sha256": "8403ce5c48a378e4b3de99b44ab5421a86f22ec7146382872a791dca52d489bd"
+    },
+    {
+      "module": "routecontract-shardingsphere-5.5",
+      "name": "routecontract-shardingsphere-5.5-0.1.4.module",
+      "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4.module",
+      "sha256": "2f2f925ba66da46ed9732917e04428d4be959a92ba4f5854d4f808a67c20a3b5"
+    }
+  ],
+  "formatVersion": 1,
+  "routeContractVersion": "0.1.4"
+}

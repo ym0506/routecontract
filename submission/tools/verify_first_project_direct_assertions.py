@@ -14,7 +14,7 @@ EXAMPLE = Path(__file__).resolve().parents[2] / "examples" / "first-project"
 TEST_NAME = "paidOrdersKeepTheirBusinessResultAndExecutionContract"
 CLASS_NAME = "io.github.ym0506.routecontract.examples.firstproject.OrderContractTest"
 VIOLATION = "io.github.ym0506.routecontract.RouteContractViolationException"
-PUBLIC_JAR_SHA256 = "9e883e618eb09d9ecf30814151bb4b0a43eba02c78d288cc582fa7e57e6edba2"
+PUBLIC_JAR_SHA256 = "b912725183a982ccddbfd4fa73ebe6a274590a674c0d72d94b0e1883d22b2816"
 
 
 def manifest_files():
@@ -91,7 +91,7 @@ def main():
         print(f"{build}: direct {stage} verified ({count} attempts / {count} data sources)", flush=True)
 
     (evidence / "summary.json").write_text(json.dumps({
-        "buildTool": build, "libraryVersion": "0.1.3", "javaFeature": expected_java,
+        "buildTool": build, "libraryVersion": "0.1.4", "javaFeature": expected_java,
         "exampleClassMajor": expected_java + 44, "libraryClassMajor": 61,
         "publicJarSha256": PUBLIC_JAR_SHA256, "stages": stages,
         "protectedFiles": before, "baselineArgumentIgnored": command[-1],

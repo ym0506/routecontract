@@ -9,10 +9,10 @@ change. No installation, public repository, or maintainer role is needed to ask 
 Unsupported versions and not-a-fit experiences are useful too; describing them does not expand the
 released support boundary.
 
-설치 전 질문이나 적용 중 막힌 부분은 [현재 0.1.3 도움 Discussion](https://github.com/ym0506/routecontract/discussions/76)에
+설치 전 질문이나 적용 중 막힌 부분은 [설치 도움 Discussion (0.1.3 때 개설)](https://github.com/ym0506/routecontract/discussions/76)에
 짧은 댓글로 남겨도 됩니다.
 
-For a conversation, reply in the [current 0.1.3 setup-help Discussion](https://github.com/ym0506/routecontract/discussions/76).
+For a conversation, reply in the [setup-help Discussion (opened for 0.1.3)](https://github.com/ym0506/routecontract/discussions/76).
 A short comment is enough. If you prefer an issue, use the
 [short feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml).
 Only a short question or experience and the public-information check are required. For example:
@@ -37,7 +37,7 @@ ShardingSphere-JDBC 5.5.2를 사용하고 있습니다.
 2. **Try the demo if useful.** [Run the released MySQL demonstration in your browser](first-project.md#try-in-your-browser),
    or read the [application evaluations](application-evaluations.md) without installing anything.
    A demo run helps explain the tool; it is not a project integration.
-3. **Use one existing test.** Follow the [v0.1.3 first-project guide](first-project.md) ([한국어](first-project.ko.md)) in a repository
+3. **Use one existing test.** Follow the [v0.1.4 first-project guide](first-project.md) ([한국어](first-project.ko.md)) in a repository
    you are authorized to modify. Keep its business assertion. The supported released boundary is
    Java 17 or 21, exact ShardingSphere-JDBC 5.5.3 and synchronous non-batch `PreparedStatement` operations.
    Start with [direct Java assertions](first-project.md#adapt-one-existing-test) if you only need execution-count checks;

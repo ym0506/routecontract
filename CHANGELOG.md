@@ -5,8 +5,13 @@ RouteContract follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) a
 
 ## [Unreleased]
 
-The source candidate is [0.1.4](docs/release-0.1.4-candidate.md). It is not yet published;
-current public installation instructions continue to use 0.1.3.
+No additional unreleased runtime changes.
+
+## [0.1.4] - 2026-09-13
+
+Published as an immutable [GitHub release](https://github.com/ym0506/routecontract/releases/tag/v0.1.4).
+Also published on Maven Central with [public file and consumer verification](docs/evidence/release-0.1.4-central.md).
+See the [release status and boundaries](docs/release-0.1.4-candidate.md).
 
 ### Fixed
 

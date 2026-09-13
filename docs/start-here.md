@@ -25,7 +25,7 @@ This is an intentional synthetic example. Its [INLINE sharding configuration](..
 routes equality by `user_id % 2` and enables range queries across the configured targets.
 It does not mean every `BETWEEN` query behaves this way.
 
-**Start with the [current 0.1.3 MySQL example](first-project.md#run-the-published-dependency).**
+**Start with the [current 0.1.4 MySQL example](first-project.md#run-the-published-dependency).**
 It uses Java 17 or 21, Maven or Gradle, and Docker, and downloads the released library from Maven Central.
 The database setup and a reviewed expectation for this example are included.
 
@@ -47,7 +47,7 @@ To inspect the output without running anything, [read the example report](eviden
 
 ## Add it to an existing test
 
-For **Java 17 or 21 and exact ShardingSphere-JDBC 5.5.3**, add the [0.1.3 test dependency](../README.md#install-013)
+For **Java 17 or 21 and exact ShardingSphere-JDBC 5.5.3**, add the [0.1.4 test dependency](../README.md#install-014)
 and [wrap one repository or service call](first-project.md#adapt-one-existing-test). Keep your existing
 ShardingSphere setup and returned-value assertion. The supported calls are synchronous, non-batch
 `PreparedStatement` operations.
@@ -68,7 +68,7 @@ ShardingSphere는 애플리케이션의 SQL 하나를 여러 데이터베이스�
 SQL이나 샤딩 설정을 바꾼 뒤 반환된 주문은 같아도, 조회하는 DB가 하나에서 둘로 늘어날 수 있습니다.
 기존 반환값 검사는 그대로 두고, 실행 시도와 사용한 데이터 소스가 정한 기준에 맞는지도 검사합니다.
 
-[현재 0.1.3 MySQL 예제 실행](first-project.ko.md#예제-실행)부터 시작하세요.
+[현재 0.1.4 MySQL 예제 실행](first-project.ko.md#예제-실행)부터 시작하세요.
 Java 17 또는 21, Maven 또는 Gradle, Docker가 필요합니다. DB 구성과 이 예제에서 사용할 기준 파일은
 이미 준비되어 있습니다. 이 기준 파일을 자기 프로젝트의 기준으로 그대로 복사하지는 마세요.
 
@@ -95,7 +95,7 @@ Docker를 설치하기 어렵다면 [자기 GitHub fork에서 같은 예제 실�
 
 - [Application evaluations](application-evaluations.md) · [애플리케이션 실험](application-evaluations.ko.md)
 - [Report API and CLI](ci-review-report.md) · [Capture support boundary](reference-guide.md#v01-support-boundary)
-- [Published 0.1.3 verification](evidence/release-0.1.3-central.md) · [Help and use records](user-feedback.md)
+- [Published 0.1.4 verification](evidence/release-0.1.4-central.md) · [Help and use records](user-feedback.md)
 - **Historical 0.1.2 only:** [pinned Quick Start](reference-guide.md#quick-start), [local installer](install-local.md), [integration tooling](first-integration.md). These are not needed for the current example.
 - [Contributing](../CONTRIBUTING.md) · [Roadmap](product-roadmap.md). The 0.2 core split and 5.5.2 adapter remain unreleased.
 

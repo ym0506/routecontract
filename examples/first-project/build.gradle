@@ -4,7 +4,7 @@ repositories { mavenCentral() }
 // These align the runnable MySQL fixture with the released and verified dependency graph.
 // An existing ShardingSphere application keeps its own runtime dependencies.
 dependencies {
-    testImplementation 'io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.3'
+    testImplementation 'io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.4'
     testImplementation platform('com.fasterxml.jackson:jackson-bom:2.18.10')
     testImplementation('org.apache.shardingsphere:shardingsphere-jdbc:5.5.3') {
         exclude group: 'org.locationtech.jts.io', module: 'jts-io-common'

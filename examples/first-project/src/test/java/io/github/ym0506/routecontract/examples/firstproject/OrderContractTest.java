@@ -23,8 +23,8 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class OrderContractTest {
-    // Immutable public 0.1.3 JAR checksum from repo.maven.apache.org.
-    private static final String PUBLIC_JAR_SHA256 = "9e883e618eb09d9ecf30814151bb4b0a43eba02c78d288cc582fa7e57e6edba2";
+    // Immutable public 0.1.4 JAR checksum from repo.maven.apache.org.
+    private static final String PUBLIC_JAR_SHA256 = "b912725183a982ccddbfd4fa73ebe6a274590a674c0d72d94b0e1883d22b2816";
     private static final String OPERATION = "find-paid-orders-by-user";
     private static final ManifestPolicy PROPOSED_POLICY = ManifestPolicy.strict(1, 1);
     private static final DataSourceAliases ALIASES = DataSourceAliases.of(Map.of(
@@ -62,7 +62,7 @@ class OrderContractTest {
         Path libraryJar = Path.of(RouteContract.class.getProtectionDomain().getCodeSource().getLocation().toURI());
         String jarSha256 = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
                 .digest(Files.readAllBytes(libraryJar)));
-        assertEquals(PUBLIC_JAR_SHA256, jarSha256, "Use the immutable Maven Central 0.1.3 JAR");
+        assertEquals(PUBLIC_JAR_SHA256, jarSha256, "Use the immutable Maven Central 0.1.4 JAR");
         System.out.println("ROUTECONTRACT_RUNTIME java=" + feature + " classMajor=" + exampleClassMajor
                 + " libraryClassMajor=" + libraryClassMajor + " jarSha256=" + jarSha256);
     }

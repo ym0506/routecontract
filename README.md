@@ -4,12 +4,12 @@
 
 <p align="center">
   <a href="https://github.com/ym0506/routecontract/actions/workflows/ci.yml?query=branch%3Amain"><img src="https://github.com/ym0506/routecontract/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
-  <a href="https://central.sonatype.com/artifact/io.github.ym0506.routecontract/routecontract-shardingsphere-5.5/0.1.3"><img src="https://img.shields.io/badge/Maven_Central-0.1.3-277DA1" alt="Maven Central 0.1.3"></a>
+  <a href="https://central.sonatype.com/artifact/io.github.ym0506.routecontract/routecontract-shardingsphere-5.5/0.1.4"><img src="https://img.shields.io/badge/Maven_Central-0.1.4-277DA1" alt="Maven Central 0.1.4"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache_2.0-182C38" alt="Apache License 2.0"></a>
 </p>
 
 <p align="center">
-  <a href="#see-it-work">How it works</a> · <a href="#install-013">Install</a> · <a href="#usage">Usage</a> · <a href="#documentation">Documentation</a> · <a href="README.ko.md">한국어</a>
+  <a href="#see-it-work">How it works</a> · <a href="#install-014">Install</a> · <a href="#usage">Usage</a> · <a href="#documentation">Documentation</a> · <a href="README.ko.md">한국어</a>
 </p>
 
 **Your test can return the right order while querying an extra database.**
@@ -60,7 +60,7 @@ The released-5.5.3 MySQL reproduction shows why checking the expected data-sourc
 name matters even when the result and execution count stay equal. It credits the
 original reporter and includes both control cases and the failing contract command.
 
-## Install 0.1.3
+## Install 0.1.4
 
 For an existing **Java 17 or 21 · ShardingSphere-JDBC 5.5.3** test project.
 Supported operations are **synchronous, non-batch `PreparedStatement`** calls.
@@ -71,7 +71,7 @@ Supported operations are **synchronous, non-batch `PreparedStatement`** calls.
 repositories { mavenCentral() }
 
 dependencies {
-    testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.3")
+    testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.4")
 }
 ```
 
@@ -82,7 +82,7 @@ dependencies {
 <dependency>
   <groupId>io.github.ym0506.routecontract</groupId>
   <artifactId>routecontract-shardingsphere-5.5</artifactId>
-  <version>0.1.3</version>
+  <version>0.1.4</version>
   <scope>test</scope>
 </dependency>
 ```
@@ -149,7 +149,7 @@ with stable diagnostic codes and investigation steps.
 ## Try an example
 
 Use **Java 17 or 21, Maven 3.9.x and a running Docker engine**. The first run downloads dependencies
-and the MySQL image. The example uses **released 0.1.3 from Maven Central** and already includes
+and the MySQL image. The example uses **released 0.1.4 from Maven Central** and already includes
 a reviewed expectation file for its synthetic data.
 
 ```bash
@@ -178,12 +178,12 @@ example's generated report, so read the failing report before restoring the quer
 
 ## Supported scope
 
-| Area | Published v0.1.3 |
+| Area | Published v0.1.4 |
 | --- | --- |
-| Java | 17 and 21; [runtime verification](docs/java21-runtime-acceptance.md) |
+| Java | 17 and 21; [public runtime verification](docs/evidence/release-0.1.4-central.md#public-consumer-verification) |
 | ShardingSphere | JDBC, **exactly 5.5.3** |
 | Execution | Synchronous, non-batch `PreparedStatement` operations that return normally, without caller interruption |
-| Database verification | MySQL 8.4.11; [published Gradle and Maven consumer evidence](docs/evidence/release-0.1.3-central.md) |
+| Database verification | MySQL 8.4.11; [published Gradle and Maven consumer evidence](docs/evidence/release-0.1.4-central.md) |
 | Checks | Capture completeness, callback outcomes, attempt/data-source budgets, structural manifest differences |
 | CI output | Java assertions, deterministic Markdown/JSON reports, `ManifestReviewCli` |
 
@@ -192,7 +192,7 @@ coverage are outside this release's scope. Operations with no observed SQL, call
 or caller interruption cannot establish a passing contract. See the
 [full capture boundary](docs/reference-guide.md#v01-support-boundary).
 
-**Project status:** v0.1.3 is published on Maven Central. The
+**Project status:** v0.1.4 is published on Maven Central. The
 [0.2 core/adapter split](https://github.com/ym0506/routecontract/pull/62) is in development;
 5.5.2 support is unreleased. Published consumer checks are maintainer-run evidence.
 Independent integration and repeat use have not yet been verified.
@@ -210,7 +210,7 @@ Independent integration and repeat use have not yet been verified.
 | Inspect capture cleanup | [Repeated operations, retained-object controls and limitations](docs/capture-retention.md) |
 | Inspect observer cost | [Public 0.1.3: three conditions, raw measurements and limitations](docs/observer-cost.md) |
 | Examine application code | [Three evaluations: destination changes, query budgets and existing tests](docs/application-evaluations.md) · [한국어](docs/application-evaluations.ko.md) · Author-run experiments |
-| Inspect release evidence | [v0.1.3 Central verification](docs/evidence/release-0.1.3-central.md) · [Evidence matrix](docs/evidence-matrix.md) |
+| Inspect release evidence | [v0.1.4 Central verification](docs/evidence/release-0.1.4-central.md) · [Evidence matrix](docs/evidence-matrix.md) |
 | Explore earlier integration tooling | [v0.1.2 integration guide](docs/first-integration.md) — pinned historical workflow |
 | Contribute | [Contributing](CONTRIBUTING.md) · [Roadmap](docs/product-roadmap.md) |
 

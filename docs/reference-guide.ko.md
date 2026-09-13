@@ -24,12 +24,12 @@ Java assertion으로 검사합니다. 구조 비교와 리포트가 필요하면
 | 하고 싶은 일 | 시작점 |
 | --- | --- |
 | 설치 없이 검사 결과 이해하기 | [CI 리포트 읽기](evidence/ci-review-report-example.md) |
-| 공개 라이브러리로 통과 → 실패 → 통과 확인 | [0.1.3 첫 프로젝트](first-project.ko.md) — Java 17 또는 21, Maven/Gradle, Docker |
+| 공개 라이브러리로 통과 → 실패 → 통과 확인 | [0.1.4 첫 프로젝트](first-project.ko.md) — Java 17 또는 21, Maven/Gradle, Docker |
 | 로컬 Java·Docker 없이 실행 | [내 GitHub fork에서 실행](first-project.ko.md#try-in-your-browser) |
-| 기존 테스트 한 개에 적용 | [Central 의존성](#install-013)을 추가하고 [작업 한 개 감싸기](first-project.ko.md#기존-테스트-하나에-routecontract-적용하기); JSON 기준 파일은 선택 사항 |
+| 기존 테스트 한 개에 적용 | [Central 의존성](#install-014)을 추가하고 [작업 한 개 감싸기](first-project.ko.md#기존-테스트-하나에-routecontract-적용하기); JSON 기준 파일은 선택 사항 |
 | 적용 가능성 질문·경험 공유 | [짧은 피드백](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml) — 설치나 공개 저장소 없이 참여 가능 |
 
-현재 공개 버전은 **0.1.3**입니다. 첫 프로젝트 가이드는 Maven Central의 이 버전을 사용하며,
+현재 공개 버전은 **0.1.4**입니다. 첫 프로젝트 가이드는 Maven Central의 이 버전을 사용하며,
 Java assertion과 선택적인 Markdown·JSON 비교 리포트를 안내합니다.
 예전 0.1.2 명령은 과거 결과 재현을 위해 아래 접힌 항목에 보존했습니다.
 공개 피드백에는 SQL·바인딩 값·접속 정보·전체 로그를 넣지 마세요.
@@ -37,9 +37,9 @@ Java assertion과 선택적인 Markdown·JSON 비교 리포트를 안내합니�
 
 ![같은 주문을 반환하지만 관측된 실행 시도와 데이터 소스가 하나에서 둘로 늘어난 사례.](assets/execution-comparison.svg)
 
-## Install 0.1.3
+## Install 0.1.4
 
-[공개 파일 검증과 Gradle·Maven 설치 결과](../docs/evidence/release-0.1.3-central.md)와
+[공개 파일 검증과 Gradle·Maven 설치 결과](../docs/evidence/release-0.1.4-central.md)와
 현재 [Java 17/21 런타임 검증](java21-runtime-acceptance.md)을 확인할 수 있습니다.
 
 기존 **Java 17 또는 21 · ShardingSphere-JDBC 5.5.3** 테스트에 의존성을 추가하세요.
@@ -51,7 +51,7 @@ Gradle Groovy / Kotlin DSL:
 repositories { mavenCentral() }
 
 dependencies {
-    testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.3")
+    testImplementation("io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.1.4")
 }
 ```
 
@@ -61,7 +61,7 @@ Maven (`pom.xml`의 `<dependencies>` 안에 추가):
 <dependency>
   <groupId>io.github.ym0506.routecontract</groupId>
   <artifactId>routecontract-shardingsphere-5.5</artifactId>
-  <version>0.1.3</version>
+  <version>0.1.4</version>
   <scope>test</scope>
 </dependency>
 ```
@@ -70,10 +70,10 @@ Maven (`pom.xml`의 `<dependencies>` 안에 추가):
 RouteContract가 ShardingSphere를 설치하거나 전체 모듈의 버전을 강제하지는 않습니다.
 테스트 runtime의 ShardingSphere 모듈은 모두 정확히 5.5.3이어야 합니다.
 
-0.1.3 의존성 설치에 예전 로컬 설치기를 실행하거나 저장소를 clone할 필요는 없습니다.
+0.1.4 의존성 설치에 예전 로컬 설치기를 실행하거나 저장소를 clone할 필요는 없습니다.
 현재 Maven·Gradle 예제는 [첫 프로젝트 가이드](first-project.ko.md)를 사용하세요.
 
-## 0.1.3 실행하기
+## 0.1.4 실행하기
 
 Java 17 또는 21, Maven 3.9.x와 실행 중인 Docker가 필요합니다. 처음에는 의존성과 MySQL 이미지를
 내려받습니다. 새 checkout에서 실행하세요.
@@ -381,7 +381,7 @@ datasource-proxy도 충분히 신뢰할 수 있는 직접 구현 대안입니다
 | 혼합 자동화 | `scripts/`, `.github/workflows/`, `security/`, `gradle/` | `scripts/`에는 사용자용 Quick Start·Release-asset 설치 도구와 maintainer용 release·공급망·시연 검증 도구가 함께 있다. 모두 consumer runtime API는 아니다. |
 | 검증·제출 보조 | `submission/`, `scripts/video-demo-session.sh`, `docs/evidence-matrix.md` | 증거 추적·결과보고서·재현 패키징 자료이며 배포 제품이 아니다. |
 
-이 소스는 안정판 대상 project version `0.1.3`과 대응 tag 이름 `v0.1.3`을 선언합니다.
+이 소스는 안정판 대상 project version `0.1.4`과 대응 tag 이름 `v0.1.4`을 선언합니다.
 이 버전 문자열이나 checkout만으로 annotated tag, 공개·불변 non-prerelease
 Release, 동일 revision의 release-evidence run 또는 외부 사용자 결과를 증명하지는 않습니다.
 공개 자산은 [릴리스 절차](../RELEASING.md)에 따라 tag·Release·evidence run의 revision 일치와
@@ -516,7 +516,8 @@ MySQL 시나리오를 실행합니다. 이 명령은 예상된 위반을 검증�
 
 ## v0.1 지원 범위
 
-현재 공개 **0.1.3**의 범위입니다. [Java 17/21 런타임 검증](java21-runtime-acceptance.md)을 참고하세요.
+현재 공개 **0.1.4**의 범위입니다. [이번 버전의 공개 소비자 검증](evidence/release-0.1.4-central.md#public-consumer-verification)과
+[Java 17/21 지원을 처음 추가한 검증 기록](java21-runtime-acceptance.md)을 참고하세요.
 예전 0.1.2 설치기와 assisted runner에는 각각 문서화된 별도 제약이 적용됩니다.
 
 이 문제는 특정 ORM이나 repository API에 한정되지 않습니다. Apache ShardingSphere-JDBC는 direct JDBC와 MyBatis·JPA·Hibernate 같은 연결 방식에서 사용할 수 있고, RouteContract의 capture API도 ORM 전용이 아닙니다. 이는 문제와 capture API가 ORM 비종속적이라는 뜻이며, MyBatis·JPA·Hibernate별 end-to-end 호환성을 검증했다는 뜻은 아닙니다.
@@ -547,9 +548,9 @@ manifest match를 통과시키지 않습니다.
 
 ## 의존성·Release 호환성 상세
 
-현재 공개 **0.1.3**은 [위의 Central 좌표](#install-013)로 설치하고 기존 ShardingSphere runtime
+현재 공개 **0.1.4**은 [위의 Central 좌표](#install-014)로 설치하고 기존 ShardingSphere runtime
 전체가 정확히 5.5.3인지 확인합니다. RouteContract가 ShardingSphere를 내장하거나 모든 모듈 버전을
-맞춰주지는 않습니다. [공개 배포 근거](evidence/release-0.1.3-central.md)와
+맞춰주지는 않습니다. [공개 배포 근거](evidence/release-0.1.4-central.md)와
 [Java 17/21 소비자 검증](java21-runtime-acceptance.md)에서 확인된 실행 환경을 볼 수 있습니다.
 
 <details>
@@ -590,7 +591,7 @@ Javadoc classifier에는 OpenJDK standard-doclet 정적 자산과 `legal/` 고�
 
 ## 기여와 확장
 
-현재 공개 `0.1.3`을 실행하거나 기존 테스트에 적용했거나, 적용 가능성을 묻고 싶다면
+현재 공개 `0.1.4`을 실행하거나 기존 테스트에 적용했거나, 적용 가능성을 묻고 싶다면
 [짧은 피드백 양식](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml)에
 성공, blocker, 지원 범위 밖 또는 필요 없음 중 어느 결과든 남길 수 있습니다. 비공개 프로젝트의 사용 경험도 환영합니다. 설치 없이 검증 방법이나 필요한 기능만 알려주셔도 됩니다.
 사용 단계와 확인 가능한 근거는 [별도로 기록](../docs/user-feedback.md#recording-use-and-evidence)하며,

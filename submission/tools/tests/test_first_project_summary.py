@@ -34,9 +34,9 @@ class FirstProjectSummaryTest(unittest.TestCase):
         self.direct_path = self.root / "direct-assertions/maven/summary.json"
         self.direct_path.parent.mkdir(parents=True)
         self.direct = {
-            "buildTool": "Maven", "libraryVersion": "0.1.3", "javaFeature": 17,
+            "buildTool": "Maven", "libraryVersion": "0.1.4", "javaFeature": 17,
             "exampleClassMajor": 61, "libraryClassMajor": 61,
-            "publicJarSha256": "9e883e618eb09d9ecf30814151bb4b0a43eba02c78d288cc582fa7e57e6edba2",
+            "publicJarSha256": "b912725183a982ccddbfd4fa73ebe6a274590a674c0d72d94b0e1883d22b2816",
             "stages": [
                 {"stage": stage, "query": query, "exitCode": exit_code,
                  "businessAssertionPassed": True, "observedAttempts": count,
