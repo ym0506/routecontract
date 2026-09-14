@@ -108,6 +108,8 @@ These commands retain their original version and verification boundary. They are
 for current installation. The [archived 2:54 demonstration](https://www.youtube.com/watch?v=pcgvNNxd1mM)
 also belongs to this earlier workflow.
 
+<a id="quick-start"></a>
+
 ## Quick Start
 
 This MySQL demonstration is pinned to v0.1.2. To try the latest report feature first,
@@ -659,7 +661,7 @@ A new adapter or reporter is considered only after a documented user need, a ver
 - [Architecture and trust boundaries](../docs/architecture.md)
 - [Competitive analysis](../docs/competitive-analysis.md)
 - [Empirical datasource-proxy comparison](../docs/empirical-comparison.md)
-- [Verification evidence matrix](../docs/evidence-matrix.md)
+- [Historical contest evidence matrix](../docs/evidence-matrix.md)
 - [Isolated same-checkout Maven-publication consumer](../examples/standalone-consumer/README.md)
 - [Isolated Maven 3.9.14 onboarding pilot](../examples/maven-pilot/README.md)
 - [SBOM generation and review](../docs/sbom.md)

@@ -1,6 +1,9 @@
 # Competitive analysis and claim boundary
 
-Comparison sources last checked: 2026-08-11. RouteContract implementation status below reflects this source tree; evidence and publication status are date-scoped separately.
+The detailed source comparison below was recorded on **2026-08-11**. It retains the versions
+and evidence available then. For current released behavior, see [0.1.4 support](../README.md#supported-scope),
+[public consumer verification](evidence/release-0.1.4-central.md) and the later
+[application experiments](application-evaluations.md). Those experiments are maintainer-run, not adoption claims.
 
 This document answers a narrow question: does an existing tool already provide RouteContract's proposed workflow for Apache ShardingSphere-JDBC 5.5.3? It is a source-based comparison, not a benchmark and not a claim that every related project on the Internet was exhaustively searched.
 
@@ -8,7 +11,7 @@ RouteContract's v0.1 comparison target is:
 
 > Run one named, synchronous application operation; collect the physical JDBC execution attempts reported by ShardingSphere's `SQLExecutionHook`, including the hook-reported data-source names; reduce SQL and parameters to a value-minimized deterministic representation; and fail CI when an explicit budget or an approved observed-execution manifest changes.
 
-The v0.1 target above is implemented in this tree. Implementation alone does not prove publication or evidence maturity; [the evidence matrix](evidence-matrix.md) is authoritative for evidence status at its declared snapshot. This document must not be used by itself as proof that RouteContract passed on the submitted revision.
+The v0.1 target above is implemented in this tree. Implementation alone does not prove publication or evidence maturity; [the historical contest evidence matrix](evidence-matrix.md) records evidence status at its declared snapshot. This document must not be used by itself as proof that RouteContract passed on the submitted revision.
 
 ## What is and is not new
 
@@ -157,7 +160,7 @@ The project should be stopped or repositioned if any of the following occurs:
 4. Hook activation cannot be distinguished from a zero-execution operation, allowing an unloaded adapter to pass silently.
 5. A physical-`DataSource` wrapper implementation proves equally precise and materially simpler for the promised scope.
 
-## Current external evidence
+## Historical external evidence — 2026-08-11
 
 Apache ShardingSphere issue [#38456](https://github.com/apache/shardingsphere/issues/38456) is a public example in which a subquery was reported to expand to many actual SQLs while an equivalent JOIN produced one. The issue is open at the time of this review. RouteContract's local corpus contains an **issue-inspired reduced and modified fixture**; it is not an exact reproduction of the upstream report and must not be described as one. The related kernel-fix [PR #39112](https://github.com/apache/shardingsphere/pull/39112) was opened by GitHub user `Develop-KIM` and closed without merge after review identified a cross-layer routing-contract problem. `Develop-KIM` is not the participant's account, so this repository does not claim the PR as participant prior work. In all cases, that public history supports the reality and subtlety of route regressions; it does **not** establish acceptance, endorsement or usage of RouteContract.
 

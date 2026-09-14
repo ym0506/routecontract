@@ -447,7 +447,7 @@ class SubmissionClaimTextTest(unittest.TestCase):
             "THIRD_PARTY.md",
         ):
             self.assertIn(required, notice)
-        self.assertIn("Javadoc classifier", readme)
+        self.assertIn("Javadoc 배포물", readme)
         self.assertIn("THIRD_PARTY.md", readme)
 
     def test_storyboard_pins_caption_first_nonmisleading_cuts(self) -> None:
@@ -880,22 +880,22 @@ class SubmissionClaimTextTest(unittest.TestCase):
         self.assertIn("혼합 자동화", readme_ko)
         self.assertTrue(readme_ko.startswith("# RouteContract 상세 가이드\n"))
         self.assertIn(
-            "MyBatis·JPA·Hibernate별 end-to-end 호환성을 검증했다는 뜻은 아닙니다",
+            "MyBatis·JPA·Hibernate 각각의 실제 호출부터\n결과까지 호환성을 검증했다는 뜻은 아닙니다",
             readme_ko,
         )
         self.assertNotIn("위 Quick Start의 Jackson 2 BOM", readme_ko)
-        self.assertLess(readme_ko.index("## Quick Start"), readme_ko.index("## 가장 작은 사용 예"))
+        self.assertLess(readme_ko.index('<a id="quick-start"></a>'), readme_ko.index("## 가장 작은 사용 예"))
         self.assertLess(readme_ko.index("## 가장 작은 사용 예"), readme_ko.index("## 검증된 핵심 시나리오"))
-        self.assertLess(readme_ko.index("## 검증된 핵심 시나리오"), readme_ko.index("## 기존 도구와의 정확한 차이"))
-        self.assertLess(readme_ko.index("## 기존 도구와의 정확한 차이"), readme_ko.index("## 코드·공개 증거 경계"))
-        self.assertLess(readme_ko.index("## v0.1 지원 범위"), readme_ko.index("## 의존성·Release 호환성 상세"))
+        self.assertLess(readme_ko.index("## 검증된 핵심 시나리오"), readme_ko.index("## 기존 도구와 함께 쓰는 방법"))
+        self.assertLess(readme_ko.index("## 기존 도구와 함께 쓰는 방법"), readme_ko.index("## 코드·공개 증거 경계"))
+        self.assertLess(readme_ko.index("## v0.1 지원 범위"), readme_ko.index("## 의존성·릴리스 호환성 상세"))
         self.assertIn(
-            "[검증 증거 매트릭스](../docs/evidence-matrix.md)", readme_ko
+            "[과거 대회 검증 목록](../docs/evidence-matrix.md)", readme_ko
         )
         self.assertIn(
-            "datasource-proxy도 충분히 신뢰할 수 있는 직접 구현 대안", readme_ko
+            "datasource-proxy로도 비슷한 범위의 검사를 직접 만들 수 있습니다", readme_ko
         )
-        self.assertIn("모든 물리 data source wrapper 없이", readme_ko)
+        self.assertIn("물리 데이터 소스를 각각 감싸는 코드 없이", readme_ko)
         self.assertIn("docs/empirical-comparison.md", readme_ko)
         self.assertIn("Mixed automation", readme_en)
         self.assertTrue(readme_en.startswith("# RouteContract detailed guide\n"))
@@ -924,7 +924,7 @@ class SubmissionClaimTextTest(unittest.TestCase):
             for block in re.findall(r"```groovy\n(.*?)```", readme, re.DOTALL):
                 self.assertNotIn("routecontract-shardingsphere-5.5:0.1.2", block)
         self.assertIn(
-            "[Verification evidence matrix](../docs/evidence-matrix.md)",
+            "[Historical contest evidence matrix](../docs/evidence-matrix.md)",
             readme_en,
         )
         self.assertIn("RouteContract v0.1 implemented surface", competitive)
@@ -936,7 +936,7 @@ class SubmissionClaimTextTest(unittest.TestCase):
         self.assertIn("does not establish SQL semantic equivalence", specification)
         self.assertNotIn("semantic added/removed signatures", specification)
         for readme, heading in (
-            (readme_ko, "## 공개 Release 자산을 registry 없이 사용하기"),
+            (readme_ko, "## 공개 릴리스 파일을 직접 설치하기"),
             (readme_en, "## Consume public Release assets without a registry"),
         ):
             release_section = readme.split(heading, 1)[1].split("\n## ", 1)[0]
@@ -1390,18 +1390,18 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
                 "## Smallest usage example",
             ),
         ):
-            self.assertLess(readme.index("## Quick Start"), readme.index(next_heading))
+            self.assertLess(readme.index('<a id="quick-start"></a>'), readme.index(next_heading))
             self.assertLess(readme.index(next_heading), readme.index(usage_heading))
             section = readme[readme.index(next_heading):readme.index(usage_heading)]
             self.assertIn("(../docs/first-integration.md)", section)
             self.assertIn("5.5.3", section)
             self.assertIn("Maven Central", section)
             self.assertTrue(
-                "완결된 불변 온보딩 Release" in section
+                "`v0.1.2` 릴리스 자체에 완결된 설치 안내가 들어 있다는 뜻은 아닙니다" in section
                 or "self-contained immutable onboarding Release" in section
             )
             self.assertTrue(
-                "완료 시간을 약속하지" in section
+                "소요 시간을 정해 두지는\n않습니다" in section
                 or "no completion time is\npromised" in section
             )
             self.assertLess(
@@ -2129,7 +2129,7 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
     def test_reference_quick_start_stops_before_project_code_on_revision_mismatch(self) -> None:
         for readme_name in ("docs/reference-guide.ko.md", "docs/reference-guide.md"):
             readme = (REPOSITORY_ROOT / readme_name).read_text(encoding="utf-8")
-            quick_start = readme[readme.index("## Quick Start") :]
+            quick_start = readme[readme.index('<a id="quick-start"></a>') :]
             block = re.search(r"```bash\n(.*?)```", quick_start, flags=re.DOTALL).group(1)
 
             self.assertTrue(block.startswith("(\nset -euo pipefail\n"))

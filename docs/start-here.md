@@ -1,102 +1,88 @@
-# Start here
+# Documentation
+
+<a id="start-here"></a>
 
 <a id="routecontract-시작하기--start-here"></a>
 
-[한국어](#한국어) · [English README](../README.md)
+[English README](../README.md) · [한국어 README](../README.ko.md) · [한국어 안내](#한국어)
 
-RouteContract adds execution checks to **Java integration tests that already use ShardingSphere-JDBC**.
-ShardingSphere can send one application query to several configured databases. A test that checks
-only the returned rows can therefore pass after a SQL or sharding-rule change starts querying an
-extra database. RouteContract lets the test also check the observed execution attempts and data sources.
+Start with **released 0.1.4**, Java 17 or 21, and exact ShardingSphere-JDBC 5.5.3.
+The 0.2 core/adapter split and 5.5.2 support are in development, not a published installation path.
 
 <a id="목적에-맞는-한-경로만-선택하세요--choose-one-path"></a>
-
-## Run one example
-
-The included MySQL test asks for one user's paid orders. Both query forms return the same order:
-`order 201 / user 3 / PAID`. The execution changes:
-
-| Query predicate | Returned order | Observed JDBC attempts / data sources |
-| --- | --- | --- |
-| `user_id = ?`, bound value `3` | `201 / 3 / PAID` | 1 / 1 |
-| `user_id BETWEEN ? AND ?`, bound values `3, 3` | Same order | 2 / 2 |
-
-This is an intentional synthetic example. Its [INLINE sharding configuration](../examples/first-project/src/test/resources/sharding.yaml)
-routes equality by `user_id % 2` and enables range queries across the configured targets.
-It does not mean every `BETWEEN` query behaves this way.
-
-**Start with the [current 0.1.4 MySQL example](first-project.md#run-the-published-dependency).**
-It uses Java 17 or 21, Maven or Gradle, and Docker, and downloads the released library from Maven Central.
-The database setup and a reviewed expectation for this example are included.
-
 <a id="성공-기준--what-success-means"></a>
 
-1. Run the normal query. The order assertion passes and the execution report says `MATCH`.
-2. Select the range query. The order assertion still passes, but the added execution check fails:
-   the test allows one attempt and one data source and observes two of each.
-3. Read the report before restoring the normal query. Restore it and the test passes again.
+<a id="run-one-example"></a>
 
-`RCM201` means too many observed JDBC execution attempts; `RCM202` means too many distinct
-observed data sources. In this example, each is **observed 2, allowed 1**. These are hook-reported
-attempts, not physical-table counts or a measurement of latency.
+## Try it and apply it
 
-Without local Docker, use the [same demonstration in your GitHub fork](first-project.md#try-in-your-browser).
-To inspect the output without running anything, [read the example report](evidence/ci-review-report-example.md).
+| Your next step | Guide | What you will see |
+| --- | --- | --- |
+| Understand the output first | [Example report](evidence/ci-review-report-example.md) | The same order is returned, but attempts/data sources rise from 1 to 2. |
+| Run a complete example | [First project](first-project.md) · [한국어](first-project.ko.md) | A passing query, an expected execution-check failure and a passing restored query. |
+| Try without local Docker | [Run in your GitHub fork](first-project.md#try-in-your-browser) | The same MySQL example and retained reports in Actions. |
+| Add checks to your test | [Adapt one operation](first-project.md#adapt-one-existing-test) | Ordinary Java assertions; a saved JSON baseline is optional. |
+| Review execution changes in CI | [Baseline walkthrough](first-project.md#capture-and-review-your-first-baseline) · [Report API and CLI](ci-review-report.md) | A reviewed expectation, a candidate and an explained comparison. |
 
 <a id="도입-전에-확인할-세-가지--check-fit"></a>
+<a id="add-it-to-an-existing-test"></a>
 
-## Add it to an existing test
+## Understand the design and choose a tool
 
-For **Java 17 or 21 and exact ShardingSphere-JDBC 5.5.3**, add the [0.1.4 test dependency](../README.md#install-014)
-and [wrap one repository or service call](first-project.md#adapt-one-existing-test). Keep your existing
-ShardingSphere setup and returned-value assertion. The supported calls are synchronous, non-batch
-`PreparedStatement` operations.
+- [Design decisions and code](design-decisions.md): why observation happens at the physical hook, how worker events are attributed, and why incomplete captures cannot pass.
+- [Architecture](architecture.md) and [specification](specification.md): event lifecycle, state, contract eligibility and information boundaries.
+- [API reference](reference-guide.md) · [한국어 상세 가이드](reference-guide.ko.md): APIs and detailed examples, with historical workflows labelled separately.
+- [Tool comparison](competitive-analysis.md) and [datasource-proxy experiment](empirical-comparison.md): built-in diagnostics, existing JDBC tools and the cost of custom wiring.
+- [Security and data handling](../SECURITY.md): what the library retains and what to review before sharing.
 
-Choose the expected execution for that operation. If you use a saved JSON expectation (a *baseline*),
-review it before committing it; the example's baseline belongs only to its synthetic data.
-On a later SQL or configuration change, an unexpected execution change can fail the ordinary test
-and CI build. Inspect the change before deciding to fix it or review a new expectation.
-A higher count alone does not prove a performance problem.
+## Inspect results and their limits
 
-[Ask a question or get setup help](https://github.com/ym0506/routecontract/discussions/76).
-A version and short question are enough; a private project can stay private.
+| Evidence | Scope |
+| --- | --- |
+| [0.1.4 public installation checks](evidence/release-0.1.4-central.md) | Public Central artifacts; recorded Gradle/Maven and Java 17/21 consumers. |
+| [Application experiments](application-evaluations.md) · [한국어](application-evaluations.ko.md) | Maintainer-run 0.1.3 evaluations: changed destinations, different budgets and capture in an existing test. |
+| [Observer cost](observer-cost.md) | Local 0.1.3 timing/allocation experiment; no general latency claim. |
+| [Capture retention](capture-retention.md) | Repeated-operation and retained-object diagnostics with stated limitations. |
+| [Use and feedback](user-feedback.md) | Conversations, assistance, integration and repeat use distinguished from verification and publication permission. |
+
+The release checks and experiments are maintainer-run evidence. Independent integration and
+repeat use have not yet been verified. Each record retains its own version and environment;
+a historical experiment does not become current-version evidence when a new release ships.
+
+## Ask or contribute
+
+[Ask about fit or an installation blocker](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml).
+A short question and your version are enough; no installation or public repository is required.
+Keep private SQL, bind values, connection details and full logs out of public issues.
+
+For implementation work, read [Contributing](../CONTRIBUTING.md), then the
+[roadmap](product-roadmap.md). A useful contribution can be a confusing diagnostic with a
+reproducer, a missing safe control or a documented compatibility failure.
 
 ## 한국어
 
-RouteContract는 **ShardingSphere-JDBC를 이미 사용하는 Java 통합 테스트**에 넣는 라이브러리입니다.
-ShardingSphere는 애플리케이션의 SQL 하나를 여러 데이터베이스로 보낼 수 있습니다.
-SQL이나 샤딩 설정을 바꾼 뒤 반환된 주문은 같아도, 조회하는 DB가 하나에서 둘로 늘어날 수 있습니다.
-기존 반환값 검사는 그대로 두고, 실행 시도와 사용한 데이터 소스가 정한 기준에 맞는지도 검사합니다.
+현재 공개 버전은 **0.1.4**입니다. Java 17·21과 **ShardingSphere-JDBC 5.5.3**에서,
+동기식으로 실행하는 비배치 `PreparedStatement` 작업을 검사합니다.
 
-[현재 0.1.4 MySQL 예제 실행](first-project.ko.md#예제-실행)부터 시작하세요.
-Java 17 또는 21, Maven 또는 Gradle, Docker가 필요합니다. DB 구성과 이 예제에서 사용할 기준 파일은
-이미 준비되어 있습니다. 이 기준 파일을 자기 프로젝트의 기준으로 그대로 복사하지는 마세요.
-
-1. 정상 쿼리를 실행하면 주문 검증과 실행 검사가 모두 통과하고 `MATCH`가 나옵니다.
-2. 범위 쿼리로 바꾸면 같은 주문을 반환하지만 실행 시도와 데이터 소스가 각각 1에서 2로 늘어납니다.
-   테스트는 각각 최대 1을 허용하므로 실패해야 합니다.
-3. 실패 리포트를 읽은 뒤 정상 쿼리로 돌아가면 다시 통과합니다.
-
-`RCM201`은 JDBC 실행 시도 수 초과, `RCM202`는 서로 다른 데이터 소스 수 초과입니다.
-이 예제에서는 둘 다 **허용 1, 관측 2**입니다. 예제의 INLINE 샤딩 설정이 범위 조회를 모든
-설정 대상에 보내도록 허용해서 생기는 차이이며, 모든 `BETWEEN` 조회가 그렇다는 뜻은 아닙니다.
-관측한 수치는 물리 테이블 수나 응답 시간 측정값이 아닙니다.
-
-Docker를 설치하기 어렵다면 [자기 GitHub fork에서 같은 예제 실행](first-project.ko.md#try-in-your-browser)을
-선택할 수 있습니다. 동작을 확인했다면 [기존 테스트 한 개에 적용](first-project.ko.md#자신의-테스트와-ci로-옮기기)으로
-이어가세요. 자기 테스트의 반환값·실행 기준은 직접 검토해야 합니다.
-현재 지원 범위는 Java 17 또는 21·정확히 ShardingSphere-JDBC 5.5.3의 동기식·비배치 `PreparedStatement`입니다.
-
-[설치 전 질문이나 적용 도움](https://github.com/ym0506/routecontract/discussions/76)은 사용 버전과
-짧은 질문으로 시작해도 됩니다. 비공개 SQL·바인딩 값·접속 정보·전체 로그를 공개할 필요는 없습니다.
+- 동작부터 보고 싶다면 [첫 프로젝트](first-project.ko.md)를 따라가세요. 같은 주문을 반환하면서
+  조회 대상이 늘어나는 상황을 만들고, 테스트가 실패하는 이유를 확인합니다.
+- 설치 전에 결과만 보려면 [리포트 예제](evidence/ci-review-report-example.md)를 읽으세요.
+  로컬 Docker 없이 실행하려면 [GitHub Actions 안내](first-project.ko.md#try-in-your-browser)를 이용하세요.
+- 내 코드에 넣으려면 [기존 테스트에 적용하는 방법](first-project.ko.md#자신의-테스트와-ci로-옮기기)을 보세요.
+  반환값 검사는 유지하고, 그 작업에 필요한 실행 횟수나 대상 검사를 더합니다.
+- 설계를 검토하려면 [설계 판단과 코드](design-decisions.ko.md), 사용법을 자세히 보려면
+  [한국어 상세 가이드](reference-guide.ko.md)를 읽으세요.
+- 실제로 무엇을 확인했는지는 [애플리케이션 실험](application-evaluations.ko.md)과
+  [0.1.4 설치 검증](evidence/release-0.1.4-central.md)에 나와 있습니다. 자체 실험과 외부 사용 실적은 구분합니다.
 
 <details>
-<summary>Reference, earlier versions and contribution / 상세 자료·이전 버전·기여</summary>
+<summary>Earlier releases and contest records / 이전 버전·대회 기록</summary>
 
-- [Application evaluations](application-evaluations.md) · [애플리케이션 실험](application-evaluations.ko.md)
-- [Report API and CLI](ci-review-report.md) · [Capture support boundary](reference-guide.md#v01-support-boundary)
-- [Published 0.1.4 verification](evidence/release-0.1.4-central.md) · [Help and use records](user-feedback.md)
-- **Historical 0.1.2 only:** [pinned Quick Start](reference-guide.md#quick-start), [local installer](install-local.md), [integration tooling](first-integration.md). These are not needed for the current example.
-- [Contributing](../CONTRIBUTING.md) · [Roadmap](product-roadmap.md). The 0.2 core split and 5.5.2 adapter remain unreleased.
+These records preserve their original versions and claims. They are not the recommended path
+for a new installation.
+
+- [Historical v0.1.2 Quick Start](reference-guide.md#quick-start), [local installer](install-local.md) and [integration tooling](first-integration.md).
+- [Historical contest evidence matrix](evidence-matrix.md) and [August development plan](development-plan.md).
+- [Release history](../CHANGELOG.md) and [release procedure](../RELEASING.md).
 
 </details>
