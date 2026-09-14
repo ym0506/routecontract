@@ -16,11 +16,11 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / 'scripts'))
 from legacy_artifact_inputs import (ARTIFACT, GROUP, LegacyInputError, digest,
-                                    load_registry, obtain_payload, verify_layout)
+                                    load_current_registry as load_registry, obtain_payload, verify_layout)
 from public_split_artifacts import MODULES, load_consumer_receipt
 
 FIXTURE = ROOT / 'examples/gradle-legacy-artifact-consumer'
-REGISTRY = ROOT / 'scripts/legacy-artifact-inputs.json'
+REGISTRY = ROOT / 'scripts/legacy-artifact-inputs-current.json'
 NAMESPACE = 'https://schema.gradle.org/dependency-verification'
 PRODUCTION_PATHS = ['build.gradle', 'settings.gradle', 'gradle.properties', 'gradle', 'gradlew', 'LICENSE', 'NOTICE'] + [
     f'{module}/{suffix}' for module in MODULES for suffix in ('build.gradle', 'gradle.lockfile', 'src/main')]
@@ -270,7 +270,7 @@ def main() -> None:
                 raise ResolverError('Isolated repository input changed during the run')
         summary = {'formatVersion': 1, 'status': 'VERIFIED' if not args.case_ids else 'PARTIAL_VERIFIED',
                    'fullGradleA27Matrix': not bool(args.case_ids), 'caseCount': len(results), 'requiredCaseCount': len(all_cases),
-                   'registrySha256': initial_snapshot['scripts/legacy-artifact-inputs.json'],
+                   'registrySha256': initial_snapshot[str(REGISTRY.relative_to(ROOT))],
                    'stagedReceiptSha256': digest(receipt_bytes), 'verificationMetadataSha256': digest(metadata.read_bytes()),
                    'sourceBinding': binding, 'results': sorted(results, key=lambda case: case['caseId']),
                    'boundary': 'Real Gradle 9.7.1 / Java 17 resolution and pinned first-party JAR materialization. '

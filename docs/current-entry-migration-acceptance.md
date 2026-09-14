@@ -1,6 +1,11 @@
 # Current API entry and legacy migration contract (0.2 candidate)
 
-Status: the existing A-29 plan passed all 64 checks once on independently
+Current upgrade coverage now includes the public 0.1.4 artifact. The
+[five-version acceptance](legacy-014-coverage-acceptance.md) requires 76 fresh
+JVM cases. All 76 passed against the integrated `5800ed2` candidate on
+2026-09-14; see the [current result](evidence/legacy-014-upgrade-2026-09-14.md).
+
+Historical status: the original A-29 plan passed all 64 checks once on independently
 reviewed local 0.2.0 staging from final producer
 `86a0be5d2e444f3b73925122fa448d9d1a324edd`, using the frozen consumer checkout
 `3ad510a0af972231fbd074607936ee52be3cad1f` with identical production/publication

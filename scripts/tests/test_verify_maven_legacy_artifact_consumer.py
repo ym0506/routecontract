@@ -25,7 +25,7 @@ GROUP = 'io.github.ym0506.routecontract'
 ADAPTER = 'routecontract-shardingsphere-5.5'
 CORE = 'routecontract-core'
 CURRENT = '0.2.0'
-VERSIONS = ('0.1.0', '0.1.2', '0.1.3', '0.1.0-rc2')
+VERSIONS = ('0.1.0', '0.1.2', '0.1.3', '0.1.0-rc2', '0.1.4')
 N = '{http://maven.apache.org/POM/4.0.0}'
 
 
@@ -38,7 +38,7 @@ class MavenLegacyConsumerTest(unittest.TestCase):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name)
-        self.registry = MODULE.load_registry(SCRIPT_ROOT / 'legacy-artifact-inputs.json')
+        self.registry = MODULE.load_registry(SCRIPT_ROOT / 'legacy-artifact-inputs-current.json')
         self.plan = MODULE.cases(self.registry)
         self.by_id = {case['caseId']: case for case in self.plan}
 
@@ -50,9 +50,9 @@ class MavenLegacyConsumerTest(unittest.TestCase):
         expected = {f'{version}-{suffix}' for version in VERSIONS for suffix in suffixes}
         expected.add('0.1.3-core-without-policy-control')
         self.assertEqual(expected, set(self.by_id))
-        self.assertEqual(45, len(self.plan))
+        self.assertEqual(56, len(self.plan))
         self.assertEqual(len(self.plan), len(self.by_id), 'Duplicate cases cannot replace required coverage')
-        self.assertEqual(Counter({'RESOLVED': 13, 'ENFORCER_REJECTED': 24, 'STRICT_RANGE_CONFLICT': 8}),
+        self.assertEqual(Counter({'RESOLVED': 16, 'ENFORCER_REJECTED': 30, 'STRICT_RANGE_CONFLICT': 10}),
                          Counter(case['expected'] for case in self.plan))
         self.assertEqual(set(VERSIONS), {case['legacyVersion'] for case in self.plan})
 
@@ -81,8 +81,8 @@ class MavenLegacyConsumerTest(unittest.TestCase):
     def test_strict_carriers_keep_singleton_ranges_and_consumers_have_no_management(self):
         repository = self.root / 'repository'
         inventory = MODULE.prepare_carriers(self.registry, repository, CURRENT)
-        self.assertEqual(16, len(inventory))
-        self.assertEqual(16, len({pin['relativePath'] for pin in inventory}))
+        self.assertEqual(20, len(inventory))
+        self.assertEqual(20, len({pin['relativePath'] for pin in inventory}))
         self.assertFalse(list(repository.rglob('*.jar')), 'Carriers are POM graph inputs, not fabricated JARs')
         by_module = {pin['module']: pin for pin in inventory}
         for case in self.plan:

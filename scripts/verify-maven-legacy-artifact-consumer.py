@@ -17,13 +17,13 @@ import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / 'scripts'))
-from legacy_artifact_inputs import ARTIFACT, GROUP, digest, load_registry
+from legacy_artifact_inputs import ARTIFACT, GROUP, digest, load_current_registry as load_registry
 from public_split_artifacts import load_consumer_receipt
 import staged_maven_repository as mirror
 from maven_legacy_central_cache import cached_central
 
 FIXTURE = ROOT / 'examples/maven-legacy-artifact-consumer'
-REGISTRY = ROOT / 'scripts/legacy-artifact-inputs.json'
+REGISTRY = ROOT / 'scripts/legacy-artifact-inputs-current.json'
 GROUP_PATH = GROUP.replace('.', '/')
 FIXTURE_GROUP = GROUP + '.fixtures'
 MIRROR_ID = 'routecontract-maven-legacy-verified'
@@ -402,7 +402,7 @@ def main() -> None:
                 raise VerificationError('Isolated repository input changed during execution')
         summary = {'formatVersion': 1, 'status': 'PARTIAL_VERIFIED' if args.case_ids else 'VERIFIED',
                    'fullMavenA27Matrix': not bool(args.case_ids), 'caseCount': len(results), 'requiredCaseCount': len(all_cases),
-                   'registrySha256': initial['scripts/legacy-artifact-inputs.json'], 'stagedReceiptSha256': digest(receipt_bytes),
+                   'registrySha256': initial[str(REGISTRY.relative_to(ROOT))], 'stagedReceiptSha256': digest(receipt_bytes),
                    'sourceBinding': binding, 'results': sorted(results, key=lambda case: case['caseId']),
                    'boundary': 'Maven 3.9.14 / Java17 actual resolver and consumer Enforcer against reviewed local staging/public legacy bytes; no SQL, A28, or public0.2 publication claim.'}
         write_json(evidence / 'summary.json', summary)

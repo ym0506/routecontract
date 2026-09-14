@@ -21,7 +21,7 @@ SPEC = importlib.util.spec_from_file_location(
 )
 MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
-LEGACY_VERSIONS = ('0.1.0', '0.1.2', '0.1.3', '0.1.0-rc2')
+LEGACY_VERSIONS = ('0.1.0', '0.1.2', '0.1.3', '0.1.0-rc2', '0.1.4')
 CURRENT = '0.2.0'
 CORE = 'routecontract-core'
 ADAPTER_552 = 'routecontract-shardingsphere-5.5.2'
@@ -39,7 +39,7 @@ class LegacyResolverRunnerTest(unittest.TestCase):
         self.root = Path(temporary.name)
 
     def plan(self):
-        registry = MODULE.load_registry(SCRIPT_ROOT / 'legacy-artifact-inputs.json')
+        registry = MODULE.load_registry(SCRIPT_ROOT / 'legacy-artifact-inputs-current.json')
         inventory = []
         for legacy in registry['distributed']:
             jar = next(pin for pin in legacy['payloads'] if pin['extension'] == 'jar')
@@ -64,9 +64,9 @@ class LegacyResolverRunnerTest(unittest.TestCase):
         required.add('0.1.3-core-without-ownership-control')
         observed = [case['caseId'] for case in cases]
         self.assertEqual(required, set(observed))
-        self.assertEqual(37, len(observed))
+        self.assertEqual(46, len(observed))
         self.assertEqual(len(observed), len(set(observed)), 'Duplicate cases cannot replace missing coverage')
-        self.assertEqual(Counter({'RESOLVED': 13, 'CAPABILITY_CONFLICT': 16, 'STRICT_VERSION_CONFLICT': 8}),
+        self.assertEqual(Counter({'RESOLVED': 16, 'CAPABILITY_CONFLICT': 20, 'STRICT_VERSION_CONFLICT': 10}),
                          Counter(case['expected'] for case in cases))
         self.assertEqual(set(LEGACY_VERSIONS), {case['legacyVersion'] for case in cases})
 
@@ -91,7 +91,7 @@ class LegacyResolverRunnerTest(unittest.TestCase):
             for pin in inventory if pin['version'] == CURRENT and pin['module'] in (CORE, ADAPTER_553)
         }
         mediated = [case for case in cases if '-mediated-' in case['caseId']]
-        self.assertEqual(8, len(mediated))
+        self.assertEqual(10, len(mediated))
         for case in mediated:
             with self.subTest(case=case['caseId']):
                 self.assertEqual('RESOLVED', case['expected'])
@@ -109,7 +109,7 @@ class LegacyResolverRunnerTest(unittest.TestCase):
     def test_strict_cases_keep_both_incompatible_same_ga_requirements(self):
         cases, _ = self.plan()
         strict = [case for case in cases if '-strict-' in case['caseId']]
-        self.assertEqual(8, len(strict))
+        self.assertEqual(10, len(strict))
         for case in strict:
             with self.subTest(case=case['caseId']):
                 self.assertEqual('STRICT_VERSION_CONFLICT', case['expected'])
@@ -163,7 +163,7 @@ class LegacyResolverRunnerTest(unittest.TestCase):
         original = source.read_bytes()
         source.write_bytes(original[:-1] + bytes([original[-1] ^ 1]))
         destination = self.root / 'isolated'
-        registry = MODULE.load_registry(SCRIPT_ROOT / 'legacy-artifact-inputs.json')
+        registry = MODULE.load_registry(SCRIPT_ROOT / 'legacy-artifact-inputs-current.json')
         with mock.patch.object(MODULE, 'obtain_payload') as obtain:
             with self.assertRaisesRegex(MODULE.ResolverError, 'does not match reviewed receipt'):
                 MODULE.prepare_repository(repository, receipt, registry, destination, None)

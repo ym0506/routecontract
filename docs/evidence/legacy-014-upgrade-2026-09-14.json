@@ -1,0 +1,2506 @@
+{
+  "formatVersion": 1,
+  "date": "2026-09-14",
+  "status": "VERIFIED",
+  "scope": "Current A29 application-entry and A27 resolver upgrade qualification, including published0.1.4",
+  "stagedProducer": "5800ed2960aefbf63c01d2ebaf2265278d662494",
+  "consumerCheckout": "6c1992e17de2138137d575a4589448edd624bf21",
+  "stagedReceiptSha256": "9a4d745ff11508a8ab08dd8bced6a7893d8f6e6ff5baab34b3445aea652ba49c",
+  "currentRegistrySha256": "15d1f7fea7eba3496fce142ab81434134ad4058844457cf58020f5565273ab99",
+  "historicalRegistrySha256": "f03dc0d63a23e68fd4cc6895efff1ba1175143e084b76f25f8e70fd19a04419f",
+  "legacyVersions": [
+    "0.1.0",
+    "0.1.2",
+    "0.1.3",
+    "0.1.0-rc2",
+    "0.1.4"
+  ],
+  "public014Input": {
+    "status": "PASS",
+    "payloads": [
+      {
+        "name": "routecontract-shardingsphere-5.5-0.1.4.jar",
+        "extension": "jar",
+        "url": "https://repo.maven.apache.org/maven2/io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4.jar",
+        "sha256": "b912725183a982ccddbfd4fa73ebe6a274590a674c0d72d94b0e1883d22b2816",
+        "byteCount": 86106
+      },
+      {
+        "name": "routecontract-shardingsphere-5.5-0.1.4.pom",
+        "extension": "pom",
+        "url": "https://repo.maven.apache.org/maven2/io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4.pom",
+        "sha256": "8403ce5c48a378e4b3de99b44ab5421a86f22ec7146382872a791dca52d489bd",
+        "byteCount": 2138
+      },
+      {
+        "name": "routecontract-shardingsphere-5.5-0.1.4.module",
+        "extension": "module",
+        "url": "https://repo.maven.apache.org/maven2/io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.4/routecontract-shardingsphere-5.5-0.1.4.module",
+        "sha256": "2f2f925ba66da46ed9732917e04428d4be959a92ba4f5854d4f808a67c20a3b5",
+        "byteCount": 4049
+      }
+    ],
+    "layout": {
+      "entries": {
+        "io/github/ym0506/routecontract/RouteContract.class": "127b7cf26116010a583442a2bdb0e910a751f5ea9fb45aec08768fc5b05159c0",
+        "io/github/ym0506/routecontract/internal/CaptureRegistry.class": "ff330accda68b513ab077a2da3062629ad848104154bdd450d7e8a12f7689056",
+        "io/github/ym0506/routecontract/internal/RouteContractSqlExecutionHook.class": "fc02e4d56946ab2e03105f515dc797fda4a5c68455ecb445e726139af64e2747",
+        "META-INF/services/org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook": "b39919b122bf4b6d685eea2ba9b6589345e8169355edb30921a8eb1a80189f55"
+      },
+      "hookProvider": "io.github.ym0506.routecontract.internal.RouteContractSqlExecutionHook"
+    },
+    "newCurrentNamesAbsent": true,
+    "sourceLayout": {
+      "routecontract-shardingsphere-5.5/src/main/java/io/github/ym0506/routecontract/RouteContract.java": "8b30bcbc453a0df76861d73f8704bb360bcfc567f4b2c0da82ad0d75c3ad71f6",
+      "routecontract-shardingsphere-5.5/src/main/java/io/github/ym0506/routecontract/internal/CaptureRegistry.java": "7fb1e42f0769e89ee4f0dc1704480c966bd394c4e4cb9911c6cab9b778e7fe09",
+      "routecontract-shardingsphere-5.5/src/main/java/io/github/ym0506/routecontract/internal/RouteContractSqlExecutionHook.java": "8106e7fc2e059946e0474cfafe88304a05cc4b74f7aea89bb071dac285f6ab1a",
+      "routecontract-shardingsphere-5.5/src/main/resources/META-INF/services/org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook": "b39919b122bf4b6d685eea2ba9b6589345e8169355edb30921a8eb1a80189f55"
+    },
+    "historicalRegistrySha256": "f03dc0d63a23e68fd4cc6895efff1ba1175143e084b76f25f8e70fd19a04419f"
+  },
+  "environment": {
+    "javaRuntime": "Temurin 17.0.20.1+1",
+    "gradle": "9.7.1",
+    "maven": "3.9.14",
+    "platform": "macOS aarch64",
+    "mysql": "8.4.11",
+    "mysqlImage": "mysql:8.4.11@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb",
+    "initialDependencyCaches": "absent; only pinned Gradle ZIP seeded",
+    "attemptsPerMatrix": 1
+  },
+  "unitVerification": {
+    "focusedTests": 93,
+    "submissionTests": 346,
+    "scriptTests": 1080,
+    "scriptSkips": 3,
+    "failures": 0,
+    "errors": 0
+  },
+  "a29": {
+    "status": "PASS",
+    "auditType": "Separate automated retained-file checks by the same agent; no human review",
+    "cases": 76,
+    "freshJvms": 76,
+    "collisionCases": 60,
+    "new014CollisionCases": 12,
+    "mysqlBusinessExecutions": 4,
+    "ownedMysqlContainerRemoved": true,
+    "noJvmOrTestRerun": true,
+    "summarySha256": "610e234655cf6b187b66f2d6d716be9614f13ecfd5bfb701a6e861d3e081700e",
+    "auditScriptSha256": "fe73e2e49fffd19806f0f05d2d5225542b378e4d597a98a7a968f620fb963a5a",
+    "results": [
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "clean",
+          "expected": "CLEAN_NO_SQL",
+          "id": "5.5.2-clean-current-capture",
+          "legacy": null,
+          "mode": "current-capture",
+          "order": null,
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 1,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": {
+          "collectorDiagnostics": [
+            "RC_NO_START_CALLBACK_OBSERVED"
+          ],
+          "observedPhysicalAttemptCount": 0,
+          "runtimeIdentity": {
+            "adapterContractVersion": 1,
+            "adapterId": "apache-shardingsphere-jdbc/sql-execution-hook",
+            "infraExecutorImplementationVersion": "5.5.2",
+            "infraSpiImplementationVersion": "5.5.2"
+          },
+          "schemaVersion": 2,
+          "status": "INCOMPLETE"
+        },
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "8f6f308860c01189c36ef77ef8a6e20d76d768118d9feb246d3e7506c5bad471",
+        "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "observedSha256": "6aa679153f3747d55a26f303b3c94c5fc4d67f42d1e230c1fd484715ddad4147"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "clean",
+          "expected": "CLEAN_NO_SQL",
+          "id": "5.5.2-clean-current-capture-result",
+          "legacy": null,
+          "mode": "current-capture-result",
+          "order": null,
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 1,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": {
+          "collectorDiagnostics": [
+            "RC_NO_START_CALLBACK_OBSERVED"
+          ],
+          "observedPhysicalAttemptCount": 0,
+          "runtimeIdentity": {
+            "adapterContractVersion": 1,
+            "adapterId": "apache-shardingsphere-jdbc/sql-execution-hook",
+            "infraExecutorImplementationVersion": "5.5.2",
+            "infraSpiImplementationVersion": "5.5.2"
+          },
+          "schemaVersion": 2,
+          "status": "INCOMPLETE"
+        },
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "2390753fa2b445974f9601539a8505ab8a4b071722ee760791bc2a3d484cdd48",
+        "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "observedSha256": "9db6700bf3a7a3e3332892bad54c9a4cb9656f6be7f545f7fbb6844dbeff5e43"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "clean",
+          "expected": "CLEAN_NO_SQL",
+          "id": "5.5.2-clean-compatibility-capture",
+          "legacy": null,
+          "mode": "compatibility-capture",
+          "order": null,
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 1,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": {
+          "collectorDiagnostics": [
+            "RC_NO_START_CALLBACK_OBSERVED"
+          ],
+          "observedPhysicalAttemptCount": 0,
+          "runtimeIdentity": {
+            "adapterContractVersion": 1,
+            "adapterId": "apache-shardingsphere-jdbc/sql-execution-hook",
+            "infraExecutorImplementationVersion": "5.5.2",
+            "infraSpiImplementationVersion": "5.5.2"
+          },
+          "schemaVersion": 2,
+          "status": "INCOMPLETE"
+        },
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "30d77cdbe941e1b376b66879db1c3ee235b0aa48bb7ead8543751ce19f614dd4",
+        "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "observedSha256": "4ad11b34a3b15e3f2ef95284c97976a9e9c5fbcc7d7e77aaeb1d6c2779b76c9b"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "clean",
+          "expected": "CLEAN_NO_SQL",
+          "id": "5.5.2-clean-compatibility-capture-result",
+          "legacy": null,
+          "mode": "compatibility-capture-result",
+          "order": null,
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 1,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": {
+          "collectorDiagnostics": [
+            "RC_NO_START_CALLBACK_OBSERVED"
+          ],
+          "observedPhysicalAttemptCount": 0,
+          "runtimeIdentity": {
+            "adapterContractVersion": 1,
+            "adapterId": "apache-shardingsphere-jdbc/sql-execution-hook",
+            "infraExecutorImplementationVersion": "5.5.2",
+            "infraSpiImplementationVersion": "5.5.2"
+          },
+          "schemaVersion": 2,
+          "status": "INCOMPLETE"
+        },
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "925446ab03f99d148d2ac312bc84c567206186022ed889e4c941e6e9bc367c51",
+        "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "observedSha256": "a28c2c5a22416a226cd511f2d302bab0d0583df2972f8d433bdee8a94f7f5224"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "clean",
+          "expected": "CLEAN_SQL",
+          "id": "5.5.2-clean-sql",
+          "legacy": null,
+          "mode": "sql",
+          "order": null,
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 1,
+        "businessRows": [
+          "201:3:PAID"
+        ],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "580a4956158f0ce7a13b28b6baf13416d176bcf480c93a603672546a30eba8d0",
+        "logSha256": "18065568026f5e094d4c435da63e831d42d9e598fcf4989e7a99f172422583b6",
+        "observedSha256": "5f7eb0c92ba002730024353bfa91dbd5c589926f4122beb32519a7315290d623"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "clean",
+          "expected": "CLEAN_CAPTURED_SQL",
+          "id": "5.5.2-clean-startup-sql",
+          "legacy": null,
+          "mode": "startup-sql",
+          "order": null,
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 1,
+        "physicalBusinessExecutions": 1,
+        "businessRows": [
+          "201:3:PAID"
+        ],
+        "snapshot": {
+          "collectorDiagnostics": [],
+          "observedPhysicalAttemptCount": 1,
+          "runtimeIdentity": {
+            "adapterContractVersion": 1,
+            "adapterId": "apache-shardingsphere-jdbc/sql-execution-hook",
+            "infraExecutorImplementationVersion": "5.5.2",
+            "infraSpiImplementationVersion": "5.5.2"
+          },
+          "schemaVersion": 2,
+          "status": "COMPLETE"
+        },
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "7ac0f74f77f88d0256d87c46e98b3e3cd10d6e1829483f4ddde110c9898e348b",
+        "logSha256": "18065568026f5e094d4c435da63e831d42d9e598fcf4989e7a99f172422583b6",
+        "observedSha256": "2fc99a118b9de81fd39f9bd004259cd9c480d1a137a6ebd6f1f800bcf7811483"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.2-0.1.0-legacy-first-current-capture",
+          "legacy": "0.1.0",
+          "mode": "current-capture",
+          "order": "legacy-first",
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "e029a686828adbf180b70bd82c899e671a1de8e62271a8786e5b49ab89e53b93",
+        "logSha256": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72",
+        "observedSha256": "b39b52faabbb3fe81b1168b043c79152df7a2d30fb9ab77af9be9108e0abba27"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.2-0.1.0-legacy-first-current-capture-result",
+          "legacy": "0.1.0",
+          "mode": "current-capture-result",
+          "order": "legacy-first",
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "12b646a9006744599291d8c1810172ff1322bac6a02c3ae2607ca4b99a59d99b",
+        "logSha256": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010",
+        "observedSha256": "66cae7ec2f240da8419a1ec81d6e6a04b70b2a30e741473d08f59674fe8b482f"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "sql-collision",
+          "expected": "COLLISION",
+          "id": "5.5.2-0.1.0-legacy-first-sql",
+          "legacy": "0.1.0",
+          "mode": "sql",
+          "order": "legacy-first",
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "9417a66f2315e483a0485556e00cc4685b75a3057fae6aacd18ac82c2a057c4f",
+        "logSha256": "f944292767e3a653f675a251baed5358866c9b2ec0588360f30bb9e1cd21140f",
+        "observedSha256": "64128ad96d2f0a00df284fca206b831352a0deb97a6a36cb31f0606ebb90eb5e"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.2-0.1.0-legacy-last-current-capture",
+          "legacy": "0.1.0",
+          "mode": "current-capture",
+          "order": "legacy-last",
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "7eb62f3614352c53d72c9819343cd99215bf8ec14968810048aa4ee67b323d9b",
+        "logSha256": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72",
+        "observedSha256": "374b91c7f74d598ad0a4fdbda38b8955c9e387af5f6c79d11d6ca86716399d4f"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.2-0.1.0-legacy-last-current-capture-result",
+          "legacy": "0.1.0",
+          "mode": "current-capture-result",
+          "order": "legacy-last",
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "6f17572756b5ca5b445ea620f3b51faed748602a92c118f66046d21e382ffd8a",
+        "logSha256": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010",
+        "observedSha256": "07e013152cccc60be22e8e2428b7caf35afaf372903a741f016c8f2058966d01"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "sql-collision",
+          "expected": "COLLISION",
+          "id": "5.5.2-0.1.0-legacy-last-sql",
+          "legacy": "0.1.0",
+          "mode": "sql",
+          "order": "legacy-last",
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "bc62812e2443bd5bda2ee708f6bb4ffe1d0d84efab12e466a62aa9c8e3ba1f1f",
+        "logSha256": "f944292767e3a653f675a251baed5358866c9b2ec0588360f30bb9e1cd21140f",
+        "observedSha256": "118d05dc257cf3e1e4c3f5d9ba04e35ede508c9b266984a8e3dd538caa8bbf07"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.2-0.1.2-legacy-first-current-capture",
+          "legacy": "0.1.2",
+          "mode": "current-capture",
+          "order": "legacy-first",
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "f8d59e6070b179c06e440699d1fc017889fd333532a636878fce80a68ea72108",
+        "logSha256": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72",
+        "observedSha256": "b29a757c1de731f427152f4c056912ea25a24841147218e58e3333d2b54b1d29"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.2-0.1.2-legacy-first-current-capture-result",
+          "legacy": "0.1.2",
+          "mode": "current-capture-result",
+          "order": "legacy-first",
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "744298da9e138a774f39324893be5be223a1e9f3314452c2011cfea178cee1eb",
+        "logSha256": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010",
+        "observedSha256": "cc032cf59d65366337b5ad792245d7342c1832c3eddc22178c5661d5a67d8f8d"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "sql-collision",
+          "expected": "COLLISION",
+          "id": "5.5.2-0.1.2-legacy-first-sql",
+          "legacy": "0.1.2",
+          "mode": "sql",
+          "order": "legacy-first",
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "6f2e03c2ab67c81c7f8dcca944c409b5f74f2b4c68042a7b5cc327b590572846",
+        "logSha256": "f944292767e3a653f675a251baed5358866c9b2ec0588360f30bb9e1cd21140f",
+        "observedSha256": "4d990a746a8f77bb6b57a45c74e1da8809c864fd3042dedbc59f2625f7286610"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.2-0.1.2-legacy-last-current-capture",
+          "legacy": "0.1.2",
+          "mode": "current-capture",
+          "order": "legacy-last",
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "e6f1985e4e2510bb22e3bdd95925c4fd0e59315bc14959c753cb5094b793b38e",
+        "logSha256": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72",
+        "observedSha256": "ca4538ca0d3e72a41044a6cf640ab8204f0bfacee8be00d5948aea9a43a7f73c"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.2-0.1.2-legacy-last-current-capture-result",
+          "legacy": "0.1.2",
+          "mode": "current-capture-result",
+          "order": "legacy-last",
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "dc62d3688fd4a24c54b26e48282f2324edb995f5eb16ab75da22c4063770e23e",
+        "logSha256": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010",
+        "observedSha256": "05257c5f9a07801986445882c2424e8906bad1faad9b75e5bbc459abc1744901"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "sql-collision",
+          "expected": "COLLISION",
+          "id": "5.5.2-0.1.2-legacy-last-sql",
+          "legacy": "0.1.2",
+          "mode": "sql",
+          "order": "legacy-last",
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "633569a3b82e78e65f5aa5f51a3453fe7d984fb565955334c2e7c60f8f87358a",
+        "logSha256": "f944292767e3a653f675a251baed5358866c9b2ec0588360f30bb9e1cd21140f",
+        "observedSha256": "40ebb2c25f34ef9fcf6cc71c114637f9b6c8d2cd24f406835624cdb1926d1224"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.2-0.1.3-legacy-first-current-capture",
+          "legacy": "0.1.3",
+          "mode": "current-capture",
+          "order": "legacy-first",
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "d3290a8059a4648daaee3e985bc2ba9aaeac05fd6c46596d0d761fa08cd415dc",
+        "logSha256": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72",
+        "observedSha256": "99b32c49cbfa78bd5b5c5d00fb7171135d8986e5de000bbb313f36d25f78aea3"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.2-0.1.3-legacy-first-current-capture-result",
+          "legacy": "0.1.3",
+          "mode": "current-capture-result",
+          "order": "legacy-first",
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "a13ca42ac01c5f46438d35d3ded7ab2b450c0c2b5be9d950c2eb4f51056515ad",
+        "logSha256": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010",
+        "observedSha256": "80b70ae52c82b25dd0e653c8461a273bee66dbfcb3bc88106704157e6d22fe40"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "sql-collision",
+          "expected": "COLLISION",
+          "id": "5.5.2-0.1.3-legacy-first-sql",
+          "legacy": "0.1.3",
+          "mode": "sql",
+          "order": "legacy-first",
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "3b8018c79042f35eddfead02d94e81db0810560ee532404186a0ff18e4032e0b",
+        "logSha256": "f944292767e3a653f675a251baed5358866c9b2ec0588360f30bb9e1cd21140f",
+        "observedSha256": "d75a5b1ebbf0763a0c60b56bc67d78b2db4e879ac820cea9bfb63946de1e20f7"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.2-0.1.3-legacy-last-current-capture",
+          "legacy": "0.1.3",
+          "mode": "current-capture",
+          "order": "legacy-last",
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "418e812acafb87f256afa086bd0f630e075dc0edb60bc62e18d8f0c2b1e02b51",
+        "logSha256": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72",
+        "observedSha256": "af9af794ce64ab0897f36a9b89ab523b15c160dec404a00d76bd45d26beb2e33"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.2-0.1.3-legacy-last-current-capture-result",
+          "legacy": "0.1.3",
+          "mode": "current-capture-result",
+          "order": "legacy-last",
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "0133f9b2282c91742e1dd9a481c3bc56f46911c95e6fd584f4d5ef0a3e1fe6d4",
+        "logSha256": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010",
+        "observedSha256": "6c729792a077fd4ecea70e2f1c5864189689344a0241772680f98798bdb4d9f2"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "sql-collision",
+          "expected": "COLLISION",
+          "id": "5.5.2-0.1.3-legacy-last-sql",
+          "legacy": "0.1.3",
+          "mode": "sql",
+          "order": "legacy-last",
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "6e958fd6464b5f100649f511a40fccc141f9be0d943cf295c7d545b4e19d2351",
+        "logSha256": "f944292767e3a653f675a251baed5358866c9b2ec0588360f30bb9e1cd21140f",
+        "observedSha256": "298c601d24ed1ed97bb7db410d9620cafdf921994bbec8a6b7d7c59587e15371"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.2-0.1.0-rc2-legacy-first-current-capture",
+          "legacy": "0.1.0-rc2",
+          "mode": "current-capture",
+          "order": "legacy-first",
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "b23151ff5a4cad29104b67a1f4138d066269592c8a22a4aba63c9fafce3e8645",
+        "logSha256": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72",
+        "observedSha256": "d82ec09ac683e9f32d1d20fe523e6f0776244ff7ac26bfd7abc3f338cbd73249"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.2-0.1.0-rc2-legacy-first-current-capture-result",
+          "legacy": "0.1.0-rc2",
+          "mode": "current-capture-result",
+          "order": "legacy-first",
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "cb3a1070cf1f678b8307ba9a3079c9675ec5520762ee45c31fee4f3816e636cd",
+        "logSha256": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010",
+        "observedSha256": "25deeb0457c525bfbabc0520a2fb4645741250502d1d8db4f318645600bf59cb"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "sql-collision",
+          "expected": "COLLISION",
+          "id": "5.5.2-0.1.0-rc2-legacy-first-sql",
+          "legacy": "0.1.0-rc2",
+          "mode": "sql",
+          "order": "legacy-first",
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "0a3d7c8b15b5a4288c198780e4ba806d837df32740ec69ce4b7f83ef954830b2",
+        "logSha256": "f944292767e3a653f675a251baed5358866c9b2ec0588360f30bb9e1cd21140f",
+        "observedSha256": "62057ea4cf7aeb10af7754fb8610281d1d94d9a553869bc05f59f101e82cf8a7"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.2-0.1.0-rc2-legacy-last-current-capture",
+          "legacy": "0.1.0-rc2",
+          "mode": "current-capture",
+          "order": "legacy-last",
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "ba75f77f2d4eebac1f08107bf3f33f8d62c3212d91d7ca9fa37ffbab91e9f3de",
+        "logSha256": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72",
+        "observedSha256": "3cd7c18d299c7a0e610d44dbb33bcc1b26fb316ebd91d83412d788c15a0bd8e6"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.2-0.1.0-rc2-legacy-last-current-capture-result",
+          "legacy": "0.1.0-rc2",
+          "mode": "current-capture-result",
+          "order": "legacy-last",
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "f43c5970667aad570890117bd5d6e63722c8a36b7b8777c46d20d5b54059e0be",
+        "logSha256": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010",
+        "observedSha256": "682367ae707f31a710cbebd9a03c01d634450a8e0efccd1be5a4cd35db646598"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "sql-collision",
+          "expected": "COLLISION",
+          "id": "5.5.2-0.1.0-rc2-legacy-last-sql",
+          "legacy": "0.1.0-rc2",
+          "mode": "sql",
+          "order": "legacy-last",
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "600f0749733dcffddbc6552c083aefb4655682eef6931fb6703cf960058303ff",
+        "logSha256": "f944292767e3a653f675a251baed5358866c9b2ec0588360f30bb9e1cd21140f",
+        "observedSha256": "b9609477e3d1d6353f63759a6fce7b84ce2a9e4cdb7016e7a98a9dc0bf89ab66"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.2-0.1.4-legacy-first-current-capture",
+          "legacy": "0.1.4",
+          "mode": "current-capture",
+          "order": "legacy-first",
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "d830f0d1290f2564560ef5fdc70930e8d88a57e01583329e3c3ec19053fa7e2e",
+        "logSha256": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72",
+        "observedSha256": "0fc98ac93835e0c08ada2fcc8fb8069b53f96195ecd00e108decd50ec0bf6596"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.2-0.1.4-legacy-first-current-capture-result",
+          "legacy": "0.1.4",
+          "mode": "current-capture-result",
+          "order": "legacy-first",
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "7c3d1a8777653c489bdb7eafc134db6f2f145f0ed8f70b109ee92765e7f653cf",
+        "logSha256": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010",
+        "observedSha256": "c75a2baecdfd81407e70d0839a4dc2c9443a071501fb79bc406ebf786e7a94fe"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "sql-collision",
+          "expected": "COLLISION",
+          "id": "5.5.2-0.1.4-legacy-first-sql",
+          "legacy": "0.1.4",
+          "mode": "sql",
+          "order": "legacy-first",
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "137c70867a939ae5579058d111be1cd9cd2a3df19d6bb46b25d5afc04afc0646",
+        "logSha256": "f944292767e3a653f675a251baed5358866c9b2ec0588360f30bb9e1cd21140f",
+        "observedSha256": "aa8f76f490463b362deabcf07d76e40bdf7e0e81d83759307c64d15c28a25366"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.2-0.1.4-legacy-last-current-capture",
+          "legacy": "0.1.4",
+          "mode": "current-capture",
+          "order": "legacy-last",
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "b2c462d67359c0847e301ec8e58f3bda34a72a395f0bdc00701412209f2a38a2",
+        "logSha256": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72",
+        "observedSha256": "921bcfe5bd98354edc1fc5148f2cd88428ee257b90baaf41057f4a4ad103e084"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.2-0.1.4-legacy-last-current-capture-result",
+          "legacy": "0.1.4",
+          "mode": "current-capture-result",
+          "order": "legacy-last",
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "59e3dc7776d172143bac6fba230e39a114e0b4be4089b3562eb8bed2b6d2f2bd",
+        "logSha256": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010",
+        "observedSha256": "2c7b09df2d0b2267c6aacb039db6925c6e1466fb3f90cec1cac5db888ed0bc1c"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "sql-collision",
+          "expected": "COLLISION",
+          "id": "5.5.2-0.1.4-legacy-last-sql",
+          "legacy": "0.1.4",
+          "mode": "sql",
+          "order": "legacy-last",
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "cae5f4325f1d5cef917207598d6f9e03f0baa17e5660aff318e74f2dd6353771",
+        "logSha256": "f944292767e3a653f675a251baed5358866c9b2ec0588360f30bb9e1cd21140f",
+        "observedSha256": "a12d013e62225d6802df04535bbff0ae19ebebcf8f087da3bd236ae7b7455eee"
+      },
+      {
+        "case": {
+          "adapter": null,
+          "category": "startup-rejection",
+          "expected": "RC_ADAPTER_NOT_FOUND",
+          "id": "5.5.2-missing-adapter-startup",
+          "legacy": null,
+          "mode": "startup",
+          "order": null,
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "69b68dca442f4c31512e8065d456bc930bd66e1f4054bd069c35aef4efd7ebe1",
+        "logSha256": "ec351163eadaa5deb1b25b886bdb2c043d406303876bdde23f197c93a0e0843d",
+        "observedSha256": "261d0922b635b90b479d30f1f5811212d6c412c6addf681d65596258bce269f6"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "startup-rejection",
+          "expected": "RC_UNSUPPORTED_SHARDINGSPHERE_RUNTIME",
+          "id": "5.5.2-wrong-adapter-startup",
+          "legacy": null,
+          "mode": "startup",
+          "order": null,
+          "runtime": "5.5.2"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "2544a11edadc4aed32122665fdfec7572a1421af1116b152292922558d8931bd",
+        "logSha256": "c2a4cbe8045123542207cc6f632bb8c10bccb2623c8647b7ac2f64ebf24e4144",
+        "observedSha256": "add638f6a68cc3ac4945ce3edf9a3a5f0b4e4fb2ec9b6742841406e0e5963583"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "clean",
+          "expected": "CLEAN_NO_SQL",
+          "id": "5.5.3-clean-current-capture",
+          "legacy": null,
+          "mode": "current-capture",
+          "order": null,
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 1,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": {
+          "collectorDiagnostics": [
+            "RC_NO_START_CALLBACK_OBSERVED"
+          ],
+          "observedPhysicalAttemptCount": 0,
+          "runtimeIdentity": {
+            "adapterContractVersion": 1,
+            "adapterId": "apache-shardingsphere-jdbc/sql-execution-hook",
+            "infraExecutorImplementationVersion": "5.5.3",
+            "infraSpiImplementationVersion": "5.5.3"
+          },
+          "schemaVersion": 2,
+          "status": "INCOMPLETE"
+        },
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "515d093aaa7c4c8245a21aaa70a5dceef714959d644629df98f3ac5644ad7325",
+        "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "observedSha256": "9c32a35c754336817f8e0f010fbbb312d6cfdd399dff2ced489c8f1644e02b2d"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "clean",
+          "expected": "CLEAN_NO_SQL",
+          "id": "5.5.3-clean-current-capture-result",
+          "legacy": null,
+          "mode": "current-capture-result",
+          "order": null,
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 1,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": {
+          "collectorDiagnostics": [
+            "RC_NO_START_CALLBACK_OBSERVED"
+          ],
+          "observedPhysicalAttemptCount": 0,
+          "runtimeIdentity": {
+            "adapterContractVersion": 1,
+            "adapterId": "apache-shardingsphere-jdbc/sql-execution-hook",
+            "infraExecutorImplementationVersion": "5.5.3",
+            "infraSpiImplementationVersion": "5.5.3"
+          },
+          "schemaVersion": 2,
+          "status": "INCOMPLETE"
+        },
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "3d210af933dec21cd1fbd59cc5975a43cd07dce91ed51971473f6715808bc7c0",
+        "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "observedSha256": "81d0d83db52972cd2c937890152ad44e47476a153b0483aa6f19357eb70e333c"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "clean",
+          "expected": "CLEAN_NO_SQL",
+          "id": "5.5.3-clean-compatibility-capture",
+          "legacy": null,
+          "mode": "compatibility-capture",
+          "order": null,
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 1,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": {
+          "collectorDiagnostics": [
+            "RC_NO_START_CALLBACK_OBSERVED"
+          ],
+          "observedPhysicalAttemptCount": 0,
+          "runtimeIdentity": {
+            "adapterContractVersion": 1,
+            "adapterId": "apache-shardingsphere-jdbc/sql-execution-hook",
+            "infraExecutorImplementationVersion": "5.5.3",
+            "infraSpiImplementationVersion": "5.5.3"
+          },
+          "schemaVersion": 2,
+          "status": "INCOMPLETE"
+        },
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "b300d5cc051b8b91ceeadace61139c90feeb968ece402f6bcab59b6616da3f8a",
+        "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "observedSha256": "f0a0e2e7c0a691e54b6c11eedd053b75565a33933e7066a316cc2e3beee231dd"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "clean",
+          "expected": "CLEAN_NO_SQL",
+          "id": "5.5.3-clean-compatibility-capture-result",
+          "legacy": null,
+          "mode": "compatibility-capture-result",
+          "order": null,
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 1,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": {
+          "collectorDiagnostics": [
+            "RC_NO_START_CALLBACK_OBSERVED"
+          ],
+          "observedPhysicalAttemptCount": 0,
+          "runtimeIdentity": {
+            "adapterContractVersion": 1,
+            "adapterId": "apache-shardingsphere-jdbc/sql-execution-hook",
+            "infraExecutorImplementationVersion": "5.5.3",
+            "infraSpiImplementationVersion": "5.5.3"
+          },
+          "schemaVersion": 2,
+          "status": "INCOMPLETE"
+        },
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "9fe184d13780c90b9592b1c67e2b0de773c28fb64f619ffc6ff4312468173d8c",
+        "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "observedSha256": "5ceb708a1a17253095c668a9343e674c3dab9e80e5bddc5e7a4cab63abec6e1e"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "clean",
+          "expected": "CLEAN_SQL",
+          "id": "5.5.3-clean-sql",
+          "legacy": null,
+          "mode": "sql",
+          "order": null,
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 1,
+        "businessRows": [
+          "201:3:PAID"
+        ],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "e25b818e2bd21aa8181f4b4aeec99f312aed9364cba54ebed28a2ca1b78a6cc6",
+        "logSha256": "ebd4a5f33e1caa32227bf6fc0a61f41d6e42fdbcd976580439a2970dc2fced1f",
+        "observedSha256": "e5fafe373a73fecafca28d6d550d1056879d1c5cd226785b8b9752ddf2c77f62"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "clean",
+          "expected": "CLEAN_CAPTURED_SQL",
+          "id": "5.5.3-clean-startup-sql",
+          "legacy": null,
+          "mode": "startup-sql",
+          "order": null,
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 1,
+        "physicalBusinessExecutions": 1,
+        "businessRows": [
+          "201:3:PAID"
+        ],
+        "snapshot": {
+          "collectorDiagnostics": [],
+          "observedPhysicalAttemptCount": 1,
+          "runtimeIdentity": {
+            "adapterContractVersion": 1,
+            "adapterId": "apache-shardingsphere-jdbc/sql-execution-hook",
+            "infraExecutorImplementationVersion": "5.5.3",
+            "infraSpiImplementationVersion": "5.5.3"
+          },
+          "schemaVersion": 2,
+          "status": "COMPLETE"
+        },
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "ff2fbf387506d8f0c99e476f0bc24134b9a9d712a09269709cccc85b46c31df3",
+        "logSha256": "05fb4d94a9858f27f8a0f43853382c361389239befb175984dfdf4ba398bdc4d",
+        "observedSha256": "c04e5b0809d9d649114a750ed7b535090c35b0f3f08940c7d29b43b5f20b1f15"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.3-0.1.0-legacy-first-current-capture",
+          "legacy": "0.1.0",
+          "mode": "current-capture",
+          "order": "legacy-first",
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "95dd240b0d7fbe39ef042248752a13fdf28856a70c4baf61d71a1e1a6d748d8d",
+        "logSha256": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72",
+        "observedSha256": "ffa41bdb7d019f06b6cdaa91e9f197ad75ec5fc64897e2ab07c1e198a382960f"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.3-0.1.0-legacy-first-current-capture-result",
+          "legacy": "0.1.0",
+          "mode": "current-capture-result",
+          "order": "legacy-first",
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "d54fffa817fa8ca4152cd7bf4f289c3f5eb7881e8f62fca4a37eff1035c35521",
+        "logSha256": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010",
+        "observedSha256": "d28ffe8a86954d88839a5d7f995055c8c3387c758aa42d3400d4f407f5548f03"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "sql-collision",
+          "expected": "COLLISION",
+          "id": "5.5.3-0.1.0-legacy-first-sql",
+          "legacy": "0.1.0",
+          "mode": "sql",
+          "order": "legacy-first",
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "d146422fae37586ac711b6dc1f8c174afad3e49d236415121593ea2a6db4ce2a",
+        "logSha256": "fea1fdbcabe1521e2dbb7a167b60d5d5be4ef3b760cc9a55c134c567a436463a",
+        "observedSha256": "25b4e0d1c107699c91be8364470bd6a8dfa80444837c102a383fb0b774ba1495"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.3-0.1.0-legacy-last-current-capture",
+          "legacy": "0.1.0",
+          "mode": "current-capture",
+          "order": "legacy-last",
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "a8047c006dfed9579cb00201cd3a889e3ea6627098deea846cddab622b3ffcc7",
+        "logSha256": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72",
+        "observedSha256": "5b46f467b8501986965b9e6aa4038dd13ed840e19587b3f4bedf890b4913b3e5"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.3-0.1.0-legacy-last-current-capture-result",
+          "legacy": "0.1.0",
+          "mode": "current-capture-result",
+          "order": "legacy-last",
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "fb7768d8a1de860a3b8f83115e8f17d3e0dcf175a1133206984be50b65c8d92f",
+        "logSha256": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010",
+        "observedSha256": "9490feb639a1c7bdd4d08ea0bcdb2529c311cd715f984d18c4d5408263e9645c"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "sql-collision",
+          "expected": "COLLISION",
+          "id": "5.5.3-0.1.0-legacy-last-sql",
+          "legacy": "0.1.0",
+          "mode": "sql",
+          "order": "legacy-last",
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "db4884d9e1bdc5199d1804b058ac3736d8236c13dd3587c98d4cebb511a5fbbf",
+        "logSha256": "2716906fb068d8b286de9fb2b56ad6fd66b5e9c7efe842508114b73d050f1c14",
+        "observedSha256": "c1de3c630b3ff803d91ce80108dca1a38f3071b08bd19d212cf8121ce14fb67a"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.3-0.1.2-legacy-first-current-capture",
+          "legacy": "0.1.2",
+          "mode": "current-capture",
+          "order": "legacy-first",
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "f78e896e77078af1c2dacfb965b63224e2568f603439ef32651a83cc4c3d1372",
+        "logSha256": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72",
+        "observedSha256": "28e76c20e5ee3670543f2a0229d3e3ba5162659b64d352bc1fd49d9f2b177b3a"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.3-0.1.2-legacy-first-current-capture-result",
+          "legacy": "0.1.2",
+          "mode": "current-capture-result",
+          "order": "legacy-first",
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "7831a3f2393144085e17707265a987ddc82a1e31f93e4c99cfc628395c821101",
+        "logSha256": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010",
+        "observedSha256": "4c7e41f4fe48d3bef0254389731f16e22695eac70f666c49cb4ab849bfb2c0e1"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "sql-collision",
+          "expected": "COLLISION",
+          "id": "5.5.3-0.1.2-legacy-first-sql",
+          "legacy": "0.1.2",
+          "mode": "sql",
+          "order": "legacy-first",
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "953031bfcbc9f1f9b5de3cfc86dd39eb116cd8c5616ebebc90dde590b035320b",
+        "logSha256": "aa2c3f6e16149264cb4c5ff8746231853d51688a23eff73107d70e801439a902",
+        "observedSha256": "6459715c739faff38061cbd8a51cf1db6db6f67ad9deed582a26eb2abf77a9f8"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.3-0.1.2-legacy-last-current-capture",
+          "legacy": "0.1.2",
+          "mode": "current-capture",
+          "order": "legacy-last",
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "398aedbafb55b94f03b0567a9a759aa7e0973a97b49418df43c98606ef218d05",
+        "logSha256": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72",
+        "observedSha256": "f2bbd3582e95aa4498e8654edca38006f18bea859e612d1eb1f4913e1b8463ff"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.3-0.1.2-legacy-last-current-capture-result",
+          "legacy": "0.1.2",
+          "mode": "current-capture-result",
+          "order": "legacy-last",
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "a79c0dfb8f8152de7c51f090dbdd2b176d3ecad5df89fa690c7b2098ab73b1f5",
+        "logSha256": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010",
+        "observedSha256": "900417f8407ddeac1418fa48f4d1a04fe9fdba034e74441edfd4679fe9065c22"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "sql-collision",
+          "expected": "COLLISION",
+          "id": "5.5.3-0.1.2-legacy-last-sql",
+          "legacy": "0.1.2",
+          "mode": "sql",
+          "order": "legacy-last",
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "ad31220bb8c25f7de4e7729c0016a7962563ad6a0360dafb84d67d6557341a8d",
+        "logSha256": "1f3955c7c746cf45f4b7573ffaa3523a0e8e7b9d95987709ddf9ce734a52968b",
+        "observedSha256": "84dff2c85cc5e205483bf26670e6a8756d935dd73d34f33c513ed979edb1bf3b"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.3-0.1.3-legacy-first-current-capture",
+          "legacy": "0.1.3",
+          "mode": "current-capture",
+          "order": "legacy-first",
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "e936085f9d805a4ded4118f385ab8f5023f580bcbdc3c1ed274ba1a7028d291c",
+        "logSha256": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72",
+        "observedSha256": "187fb7ed9566746bd2dcfd51606fd9b201f8ec0d6c3d680a96f940217b8eea54"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.3-0.1.3-legacy-first-current-capture-result",
+          "legacy": "0.1.3",
+          "mode": "current-capture-result",
+          "order": "legacy-first",
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "70dffc4cf0690babdf36cbd6bd4d229f42db863d04f8f2c8ec7150a477a25681",
+        "logSha256": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010",
+        "observedSha256": "b0f4ac2995ff040025bc035903aaac74b92fb9371d35edf6ba6c063a26cba9af"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "sql-collision",
+          "expected": "COLLISION",
+          "id": "5.5.3-0.1.3-legacy-first-sql",
+          "legacy": "0.1.3",
+          "mode": "sql",
+          "order": "legacy-first",
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "924816d15fcb9c9caa21680b518b763cf7b2c13d461b948c3ce0b484ddc3c0e8",
+        "logSha256": "83dcc425fb6a9066f7bc5ebd517c3c8d810bbb83de2badc07c79305f08fbbbc0",
+        "observedSha256": "92dbce69ec2af1dd075137d077436b72dd2687fbdd7f19bc2efb6c8288d01d91"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.3-0.1.3-legacy-last-current-capture",
+          "legacy": "0.1.3",
+          "mode": "current-capture",
+          "order": "legacy-last",
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "cdbfa0513d80002e6041ccba3ac8b90f1458737aaaadc5236d95e80146d63651",
+        "logSha256": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72",
+        "observedSha256": "0cc292856bd9c496e1541237c052f3a6b55d141f02ecfd4e7adb0ed7df17aa1d"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.3-0.1.3-legacy-last-current-capture-result",
+          "legacy": "0.1.3",
+          "mode": "current-capture-result",
+          "order": "legacy-last",
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "ebeb308f89a19bdf7e90efdad2b606feea6b416466ddf3db4c3d4c31fcd5d1c5",
+        "logSha256": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010",
+        "observedSha256": "468178da97dc08ddbd36932c72acc724dca18ab229cd13f45b98752d6c16cb77"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "sql-collision",
+          "expected": "COLLISION",
+          "id": "5.5.3-0.1.3-legacy-last-sql",
+          "legacy": "0.1.3",
+          "mode": "sql",
+          "order": "legacy-last",
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "97add1e3ded2efc26d81726924914262405d4f3c7b325d07b2ccc6e0e498da86",
+        "logSha256": "32246a8dcce34533dcb4bb1dc71b91947e47022b31b594072e8c6f6390209939",
+        "observedSha256": "36433d8e34a573b5d7b07e1c6667a6e8b979450eb589ab504659e0d0ee18ef51"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.3-0.1.0-rc2-legacy-first-current-capture",
+          "legacy": "0.1.0-rc2",
+          "mode": "current-capture",
+          "order": "legacy-first",
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "c409bded3c8b2f7a25227313d52022f30808ba210f9a538c1eba85258c95ba05",
+        "logSha256": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72",
+        "observedSha256": "8010b721b849c6bc8cd17f3f74bff8b53c70ae07f5de1909b4b4a0e7078ce0a8"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.3-0.1.0-rc2-legacy-first-current-capture-result",
+          "legacy": "0.1.0-rc2",
+          "mode": "current-capture-result",
+          "order": "legacy-first",
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "3f8a5f91e38805877807db13afc3fcebf5367c053daa98604c2c0ddccbcf1ec0",
+        "logSha256": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010",
+        "observedSha256": "788a9081c49981bf66bef0c0f2ff00ef10406f797a0a3e817f4fd4c1b2423f0a"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "sql-collision",
+          "expected": "COLLISION",
+          "id": "5.5.3-0.1.0-rc2-legacy-first-sql",
+          "legacy": "0.1.0-rc2",
+          "mode": "sql",
+          "order": "legacy-first",
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "8a40aacd688d171098406985864e11f3b9f4a321b3c14168e65b74de8aa9517c",
+        "logSha256": "7590ddfc4b50fc5c88426aeeca0bce6414fa829f9f12f448f4303b4176cddb3d",
+        "observedSha256": "f88f30cae2d16956e4dfde7a4d91941e53d6ffbf7ef6b98b6413ba897171299c"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.3-0.1.0-rc2-legacy-last-current-capture",
+          "legacy": "0.1.0-rc2",
+          "mode": "current-capture",
+          "order": "legacy-last",
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "60bdf78feb5017fe98a94562c4681afea23625d68be14f8198cc162a9a5b1c00",
+        "logSha256": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72",
+        "observedSha256": "de27cca37f69dba7c52b6b6f3492c1ad707bacc4d6f75b8518e1b975434ae101"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.3-0.1.0-rc2-legacy-last-current-capture-result",
+          "legacy": "0.1.0-rc2",
+          "mode": "current-capture-result",
+          "order": "legacy-last",
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "d5629838fa1f5781456cdf60ce8449d3c8932730af825cda76ba1162e235449b",
+        "logSha256": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010",
+        "observedSha256": "661af2e52f538e90180182d2efbb90e2b6f82f5a335f947791fb72b134808093"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "sql-collision",
+          "expected": "COLLISION",
+          "id": "5.5.3-0.1.0-rc2-legacy-last-sql",
+          "legacy": "0.1.0-rc2",
+          "mode": "sql",
+          "order": "legacy-last",
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "e6a1b08109dced03dc62f4de1b021f04f35d38645ba71ab575fe7571757951ad",
+        "logSha256": "8714b6646492a43b4b5b9e02786bed81f97492bdd4fb2f208243105b784835c1",
+        "observedSha256": "4ba801038119d7fccffcf03df0b1e9e704b5dd45a3cdd9bb19e81a917d600977"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.3-0.1.4-legacy-first-current-capture",
+          "legacy": "0.1.4",
+          "mode": "current-capture",
+          "order": "legacy-first",
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "c9c2805fb3ccdf92d001302e42c0858bb0737f44edfea90442bff5a6a53f3cb7",
+        "logSha256": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72",
+        "observedSha256": "a24603778a53c9e1283be8c04daf181685640a01900592aa401b4d8a3394430c"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.3-0.1.4-legacy-first-current-capture-result",
+          "legacy": "0.1.4",
+          "mode": "current-capture-result",
+          "order": "legacy-first",
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "2f187f91d3ee6e3ee4dc5a5fd3fb32c57ddac1b5f08b590405052247c534fa73",
+        "logSha256": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010",
+        "observedSha256": "7cdf414c01e0be95c981fff9dc59d7e2b74e10006c3d7070b6c1c64902c4342d"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "sql-collision",
+          "expected": "COLLISION",
+          "id": "5.5.3-0.1.4-legacy-first-sql",
+          "legacy": "0.1.4",
+          "mode": "sql",
+          "order": "legacy-first",
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "4472c8df5ca5c5d3d7011d32f1dc59d19c5f2d96514136cdc7ef710440a04de1",
+        "logSha256": "e9edd39a6826e9d3460257a3eb1b7b51713edffbf8f23d2380220175f26abf00",
+        "observedSha256": "eb5839ab8852af831acc9ffd22a1367c1f77fea170c84b12dccb98f4b4d56f39"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.3-0.1.4-legacy-last-current-capture",
+          "legacy": "0.1.4",
+          "mode": "current-capture",
+          "order": "legacy-last",
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "65880e3f2592458fbbb0398b91aed2765d9a99c1e9a6c3925e810d3a72ba27f3",
+        "logSha256": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72",
+        "observedSha256": "62f0342694dfeb55112d5b72ea580aa100248c8658cf08ca76d56628d70102fa"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "capture-collision",
+          "expected": "COLLISION",
+          "id": "5.5.3-0.1.4-legacy-last-current-capture-result",
+          "legacy": "0.1.4",
+          "mode": "current-capture-result",
+          "order": "legacy-last",
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "436fa1efbccb46e8f8a9f3f63eafdd4e0104ad6c1e4f80c3c19efff9a4edae76",
+        "logSha256": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010",
+        "observedSha256": "d648261c824ec6ac3af8becaf972ec8e511bc6ce0377acbd9821ee7887a10300"
+      },
+      {
+        "case": {
+          "adapter": "5.5.3",
+          "category": "sql-collision",
+          "expected": "COLLISION",
+          "id": "5.5.3-0.1.4-legacy-last-sql",
+          "legacy": "0.1.4",
+          "mode": "sql",
+          "order": "legacy-last",
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "bb1f07e78e3a47f907ee4343d6729e6a96c93feb3714d3bd927879f169d9555a",
+        "logSha256": "6b469ad43c2a9d1de4cbd62003cf6c078fd9c0b1031f20bef878354b4a5d3d0a",
+        "observedSha256": "ba3e523b25516449c9c4864826dfe889af715aaf9b65fa128c5e2146006351a5"
+      },
+      {
+        "case": {
+          "adapter": null,
+          "category": "startup-rejection",
+          "expected": "RC_ADAPTER_NOT_FOUND",
+          "id": "5.5.3-missing-adapter-startup",
+          "legacy": null,
+          "mode": "startup",
+          "order": null,
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "6d64805018536de438ff22f0d4a52738d896a5504a6819b2a00dc76163fa1e58",
+        "logSha256": "ec351163eadaa5deb1b25b886bdb2c043d406303876bdde23f197c93a0e0843d",
+        "observedSha256": "ede0905212d193da1e7b385df02b2186d07daf8a535cbe27927158e84411e357"
+      },
+      {
+        "case": {
+          "adapter": "5.5.2",
+          "category": "startup-rejection",
+          "expected": "RC_UNSUPPORTED_SHARDINGSPHERE_RUNTIME",
+          "id": "5.5.3-wrong-adapter-startup",
+          "legacy": null,
+          "mode": "startup",
+          "order": null,
+          "runtime": "5.5.3"
+        },
+        "outcome": "PASS",
+        "exitCode": 0,
+        "actionEntries": 0,
+        "physicalBusinessExecutions": 0,
+        "businessRows": [],
+        "snapshot": null,
+        "currentEntryAndGuardOrigin": "reviewed-core-0.2.0",
+        "commandSha256": "25fd82455fa18e6b0e10879bba8df67231a57706dd76f357d173f6c4f4aabf6e",
+        "logSha256": "ee61c84cbf4a635e8697959a05f237788ca8265ca17fcf7fc63f91874435eec8",
+        "observedSha256": "47279c7c7879c68b4e329a34932937d02cd085ead09b5ead8d361aef9aed99d1"
+      }
+    ]
+  },
+  "a27": {
+    "status": "PASS",
+    "auditType": "Separate automated retained-file checks by the same agent; no human review",
+    "noResolverRerun": true,
+    "auditScriptSha256": "017897edddc68ff3d471351472d166f782c82e1a25913b30930f3da605374701",
+    "lanes": [
+      {
+        "tool": "gradle",
+        "status": "PASS",
+        "cases": 46,
+        "outcomes": {
+          "CAPABILITY_CONFLICT": 20,
+          "RESOLVED": 16,
+          "STRICT_VERSION_CONFLICT": 10
+        },
+        "selectedArtifactOccurrences": 27,
+        "summarySha256": "bf83768f17fe4721b9bff3dfe3badde5ff4b7fe1da2c9403e99fe307fc04118c",
+        "registrySha256": "15d1f7fea7eba3496fce142ab81434134ad4058844457cf58020f5565273ab99",
+        "receiptSha256": "9a4d745ff11508a8ab08dd8bced6a7893d8f6e6ff5baab34b3445aea652ba49c",
+        "results": [
+          {
+            "caseId": "0.1.0-552-legacy-first",
+            "logSha256": "7d2c2be56ad026e2bd8c26ef35c48e1f46ffb9427e1e0493fef9cb90715862c7",
+            "result": "CAPABILITY_CONFLICT",
+            "resultSha256": "5c037a860bc77b36d206e642e3dc5cec3842a027e22252de4ce77804540ef792"
+          },
+          {
+            "caseId": "0.1.0-552-legacy-last",
+            "logSha256": "3d0fbac4e9c4ddbc245c5958ba5c1794df39319457d4554c1af697bd2f46df59",
+            "result": "CAPABILITY_CONFLICT",
+            "resultSha256": "a0dd42754739318645e1f66564cbc1b06080f16ee253fb2617df43098fad40c0"
+          },
+          {
+            "caseId": "0.1.0-alone",
+            "logSha256": "c505a6976bd0c1325c3d36fd07311fabaec633ce6bbc123f3d7a489a407f2277",
+            "result": "RESOLVED",
+            "resultSha256": "f042f9bc76550bf2f7e65d33d4fa8651441a613adbce1a7e1f8a611276f78530"
+          },
+          {
+            "caseId": "0.1.0-core-legacy-first",
+            "logSha256": "b7314176e2bf6cdfcde034862f39951e68fecd8df264a6f06b42c2abe9caca4e",
+            "result": "CAPABILITY_CONFLICT",
+            "resultSha256": "e2055c3e9876e7b70e4dde1c620b9cf8c476d862afc11e421c04b9ef37095ab2"
+          },
+          {
+            "caseId": "0.1.0-core-legacy-last",
+            "logSha256": "07c5347df1eec383e1627fa62a1f1c79e3936209698c3d242327259c92801191",
+            "result": "CAPABILITY_CONFLICT",
+            "resultSha256": "256f216f1806a3a22f689873dff98d91f6bdf950e48edf9444f9035d2376030c"
+          },
+          {
+            "caseId": "0.1.0-mediated-legacy-first",
+            "logSha256": "e796eb2445326b23efe96f925e9e5808e673f698db48f2ddcd1448a335bb898c",
+            "result": "RESOLVED",
+            "resultSha256": "9fd5b34a7ee6191ec0f70f8644b70e861401858e9223991c1c482ab664147bc3"
+          },
+          {
+            "caseId": "0.1.0-mediated-legacy-last",
+            "logSha256": "8bf9601eb5dc493e7063e551995cf9ee245ac591c2033177459ff8f830d3d5db",
+            "result": "RESOLVED",
+            "resultSha256": "664716bb95df5c1e2e54154c45a18ef9ea8d85ee8ceec60536dacd0cabbb2bb7"
+          },
+          {
+            "caseId": "0.1.0-rc2-552-legacy-first",
+            "logSha256": "4dec7331c86313635b5a5634bd604a8cdecdc1f013e8298b64b52a44cea9635f",
+            "result": "CAPABILITY_CONFLICT",
+            "resultSha256": "483c26b033a75997cd0b7d2ea33241dda6db8e305fc3c8be602e33874744cc95"
+          },
+          {
+            "caseId": "0.1.0-rc2-552-legacy-last",
+            "logSha256": "561902925e77136af06cc49e8e251c4c1e051b0eeafb90a67f5981516fd0fb94",
+            "result": "CAPABILITY_CONFLICT",
+            "resultSha256": "df0b1c37bc79595743a16d65371c11a23a5dd3405399a01f56507b13b4d589a0"
+          },
+          {
+            "caseId": "0.1.0-rc2-alone",
+            "logSha256": "1b0c71cd69ce7e9793b03e03355fe185b8fc9f7e5509a1fe8808719b7e21a02f",
+            "result": "RESOLVED",
+            "resultSha256": "d4a3e4010d1053f2d999c7f3228c57ced21094e8338db615466e1474767ec73e"
+          },
+          {
+            "caseId": "0.1.0-rc2-core-legacy-first",
+            "logSha256": "cc5a57a7600081acc451e3c873cca649ffc44cc692463bd8e3d37af9518f2a5a",
+            "result": "CAPABILITY_CONFLICT",
+            "resultSha256": "2c9a21ed0833dddd3eb1f1d7be8587b93b106f2aa8938dd61aba1db0f5cb12ed"
+          },
+          {
+            "caseId": "0.1.0-rc2-core-legacy-last",
+            "logSha256": "df49f111521c674308326bf56c15d7a493595bf643c4ebe712b000d55020cc0b",
+            "result": "CAPABILITY_CONFLICT",
+            "resultSha256": "b99fa32a1b4305135f7ddf38861c0e4ef4ecc0180ea3848407a0a02c8f10d01f"
+          },
+          {
+            "caseId": "0.1.0-rc2-mediated-legacy-first",
+            "logSha256": "f1d5e6794128e305191f8068ed6d75bd1cd38abb2df9276d2e1bf8a39631a7c9",
+            "result": "RESOLVED",
+            "resultSha256": "5724251c9d310ba00095fd349eee1f70e734b5815326912a16815944ee0074ac"
+          },
+          {
+            "caseId": "0.1.0-rc2-mediated-legacy-last",
+            "logSha256": "a42f9994e03c93846ccb398990ea74962cafad597c3a8c471aa284ad5ec96885",
+            "result": "RESOLVED",
+            "resultSha256": "a393e1d332305ed9e22b34b2ed80f148b473f9efff867b59636f6077c2952c8e"
+          },
+          {
+            "caseId": "0.1.0-rc2-strict-legacy-first",
+            "logSha256": "ab491131f653be5e6e68cc22a6c5c2a44e6032402c037849cbee9ebff3b0cea9",
+            "result": "STRICT_VERSION_CONFLICT",
+            "resultSha256": "b1b3b89da1d3f055e58f47de58e6b5a060270fe8a2ed34d0bda9b40f817b6572"
+          },
+          {
+            "caseId": "0.1.0-rc2-strict-legacy-last",
+            "logSha256": "9dd53afe4202638fe9b2d7e73bafb24521d3183f29fb26e541176aa2b1e1e429",
+            "result": "STRICT_VERSION_CONFLICT",
+            "resultSha256": "6289a3e13daf72ec6ef2770b43df20b1aca4fd560daadd7a060125e9a1d7df34"
+          },
+          {
+            "caseId": "0.1.0-strict-legacy-first",
+            "logSha256": "230297358de0848e6bb1d8f007373777c8f1ba10ba137499fc982c60bad19652",
+            "result": "STRICT_VERSION_CONFLICT",
+            "resultSha256": "00ad86fef1da46aaf52c7912156284498ae5bb043de2f9fd236aac125b73b21e"
+          },
+          {
+            "caseId": "0.1.0-strict-legacy-last",
+            "logSha256": "d0c39c683a1915e08c3a2774f50cdbfbe273f09f617c89a207c931ee0a923eb6",
+            "result": "STRICT_VERSION_CONFLICT",
+            "resultSha256": "852af5f6ea747ac6a745e149a217297495539a2a2a5ec82dc810cb6e3637a154"
+          },
+          {
+            "caseId": "0.1.2-552-legacy-first",
+            "logSha256": "ef52aefd0cf8dfacb466c20bedc5f8a961f97be431bbf51da9ea0e15806a3961",
+            "result": "CAPABILITY_CONFLICT",
+            "resultSha256": "36db5b418de1448c66f142a85eefc70fe96dab95610911e08e73586fee8f5a0b"
+          },
+          {
+            "caseId": "0.1.2-552-legacy-last",
+            "logSha256": "b0bdc249e71aec29f9fbe2bbdf0177fa87a20bca3c1234f0c5cbde4f249ca7a1",
+            "result": "CAPABILITY_CONFLICT",
+            "resultSha256": "b73b400c16dc62fd326229f1d4ab69fd6140e7a125b7a7af5794d1c9e3192782"
+          },
+          {
+            "caseId": "0.1.2-alone",
+            "logSha256": "1c831c579d871676b7e5f2882170d8f8e3a4c4f48a89f4c1f152bf34eb90ce55",
+            "result": "RESOLVED",
+            "resultSha256": "c024494a5f1bd0600728520af3afa41838863e5e901212049b456a1d766d89c1"
+          },
+          {
+            "caseId": "0.1.2-core-legacy-first",
+            "logSha256": "b93ed8d822e09f03e34cfe69ccee12a0995173572c7616618c787c1098e87001",
+            "result": "CAPABILITY_CONFLICT",
+            "resultSha256": "523a8fc101eaba7647c31853fde1e66b70037cabfe465e77ec444609fe63ec7c"
+          },
+          {
+            "caseId": "0.1.2-core-legacy-last",
+            "logSha256": "01a36df7fb699ad2a784777f8581bdde14e9cbd0537bc784fd91cfdca95b536a",
+            "result": "CAPABILITY_CONFLICT",
+            "resultSha256": "e49173460bb8a4f81521838543560833c90afd81942d3e576d28822d111b8b42"
+          },
+          {
+            "caseId": "0.1.2-mediated-legacy-first",
+            "logSha256": "f262801cbdaab356bb8ce2ec066155abde8600b57302a0d5419ec12b2970eb4e",
+            "result": "RESOLVED",
+            "resultSha256": "d23ddc16bdfd86a8690a68d73b23a58c07fb3d6bb2e2299d6971ac06f14e060e"
+          },
+          {
+            "caseId": "0.1.2-mediated-legacy-last",
+            "logSha256": "7b8df052c2b48a4db3298d8ed303dd5513170f11bbc2372eff7a3acb9c247382",
+            "result": "RESOLVED",
+            "resultSha256": "1650f93026c76ff67e969356e7c6ef4294c8f51dc0a1cc7c3db4a51b8c42175c"
+          },
+          {
+            "caseId": "0.1.2-strict-legacy-first",
+            "logSha256": "ba256f6ba41941971afcd9afda8bcab5d617d7916550ec6efe7474b188e7438e",
+            "result": "STRICT_VERSION_CONFLICT",
+            "resultSha256": "facb02b4b318dae8be68a624ed7b34fa3faf261d1290e29be738147fb8098dff"
+          },
+          {
+            "caseId": "0.1.2-strict-legacy-last",
+            "logSha256": "5a7f68235ed8454c30d4a9fe67a0a03b7d2bd6907170312048c1f95ce09cc21b",
+            "result": "STRICT_VERSION_CONFLICT",
+            "resultSha256": "c14c179ae23b5d3caa7248fa0f8f6e3c6268388be3c7a82bfbe99022144a203e"
+          },
+          {
+            "caseId": "0.1.3-552-legacy-first",
+            "logSha256": "40e86f0a69c26fc816ffc139de3734fb8abef2c17962de904caabd9c2105fa42",
+            "result": "CAPABILITY_CONFLICT",
+            "resultSha256": "a736ef3cf3fe3f6c0436685e4e888c8d893ff9bf6dcc790c7a07f87f5b30cf74"
+          },
+          {
+            "caseId": "0.1.3-552-legacy-last",
+            "logSha256": "6fbef26b55012adb159c80c4954716208a60f8ceab6cc59f244dce7aba1eec5e",
+            "result": "CAPABILITY_CONFLICT",
+            "resultSha256": "89f5457afaf24e23bec804ebd5f756a57f273f8cf140be2fd663ee36afd77e84"
+          },
+          {
+            "caseId": "0.1.3-alone",
+            "logSha256": "bc0aada962b0817276c2fa44a5b90fb3efb5dc55fb2c6c11bdddc329474d406f",
+            "result": "RESOLVED",
+            "resultSha256": "09ab3c8f5c6e840897c3c7cb63b7cf30012e09095f9b270eec02e313980c8ab5"
+          },
+          {
+            "caseId": "0.1.3-core-legacy-first",
+            "logSha256": "b3e87cea9b572d0e17f76c89e682d2fbfac70591af080fe2abac537955c553ff",
+            "result": "CAPABILITY_CONFLICT",
+            "resultSha256": "e9130d902ac086c7aa6bdb0381dc7a0bb4e72f057aef39be4e4ac0396e6887f4"
+          },
+          {
+            "caseId": "0.1.3-core-legacy-last",
+            "logSha256": "9cf5a7f15177bf375f2e51a0889583444477d9a560e000abc9f0e9572a41c966",
+            "result": "CAPABILITY_CONFLICT",
+            "resultSha256": "75469d6c043473e9c822094753d36e2ed7f6e55dd22772655a3a2320414c763d"
+          },
+          {
+            "caseId": "0.1.3-core-without-ownership-control",
+            "logSha256": "e3ea951b1180871738c48945a8885fcf90e5fb1c4ccf44b715592e9fd9337e23",
+            "result": "RESOLVED",
+            "resultSha256": "d919db31b688273df50f3b153405121e1b344084b3338798ccda07eed941584e"
+          },
+          {
+            "caseId": "0.1.3-mediated-legacy-first",
+            "logSha256": "2ae9c4f797d18e0905ec0381c9f6de6ddf0bf9731ce0dd766cd942ef767c1832",
+            "result": "RESOLVED",
+            "resultSha256": "0d4216758a2870fb7ecea093972dde8384082b822702198560ee1c25eeab355f"
+          },
+          {
+            "caseId": "0.1.3-mediated-legacy-last",
+            "logSha256": "6dfbd11f12cfa604f1a97df8831495abcfb59fc9285033654136d8ff93df41d2",
+            "result": "RESOLVED",
+            "resultSha256": "1cb83a550279bdeb5cf18924abb7eb61a2e48f7c1ca698b68686016d0628e908"
+          },
+          {
+            "caseId": "0.1.3-strict-legacy-first",
+            "logSha256": "e827cce81a32530b742c139160f768d8a2f528ba097ccec365c1bad9e9a3c0cc",
+            "result": "STRICT_VERSION_CONFLICT",
+            "resultSha256": "8219b61025d8c9de67eaaf47ee02d0b26fa972d65d01ee4c301d1078ffa32452"
+          },
+          {
+            "caseId": "0.1.3-strict-legacy-last",
+            "logSha256": "0d7ffc57cc763dbb480b9142ff120506edbc5c8280dab202c60c2b693e088211",
+            "result": "STRICT_VERSION_CONFLICT",
+            "resultSha256": "a3ce46a4b8bff84190e27d389bab7a31428e7cad2412c1e1ebc3606867845d7e"
+          },
+          {
+            "caseId": "0.1.4-552-legacy-first",
+            "logSha256": "1a9f59048003ffb426b3cd6ea46a97a905aeb97d162d46ee08cd9781dc7f9400",
+            "result": "CAPABILITY_CONFLICT",
+            "resultSha256": "480fffd7816517a32c3a84545193cbe13d5dad7099dc0de301911f01111e4d6c"
+          },
+          {
+            "caseId": "0.1.4-552-legacy-last",
+            "logSha256": "d63d563c464b888bfa21e46762e203ab03c8adc9dbcbeeba0e72eba56c3128f2",
+            "result": "CAPABILITY_CONFLICT",
+            "resultSha256": "b399fdc84a5cc294c4c37e0ebf721ada4263e647e498c9f32092fea083a413af"
+          },
+          {
+            "caseId": "0.1.4-alone",
+            "logSha256": "527edd5cbfbc01f32f04ba08a2bb121b90f6e01c4f8c2bf9c219a08566ec7213",
+            "result": "RESOLVED",
+            "resultSha256": "14fc04492d0f22063de49b9ba09a16b37b9731f79b797c4ac2dc222d5d0d2c80"
+          },
+          {
+            "caseId": "0.1.4-core-legacy-first",
+            "logSha256": "04b50b6440b76e5492f798214ca0cdbca2df83d15d1ad428c26275e6db7e4df7",
+            "result": "CAPABILITY_CONFLICT",
+            "resultSha256": "d37ff8375acf39a422fccd33d6b8d67a08b4bb4a65ad41a47921babcbd71a573"
+          },
+          {
+            "caseId": "0.1.4-core-legacy-last",
+            "logSha256": "df2286e6f54fea50be4b6dcc7cfce049b968d6c5e8fa66557eda6854246631c4",
+            "result": "CAPABILITY_CONFLICT",
+            "resultSha256": "3c0b64a9da0adf1ffedd32ab958259cfe4a567f4d37a55656ed178969f8f000e"
+          },
+          {
+            "caseId": "0.1.4-mediated-legacy-first",
+            "logSha256": "dc2e36dd27c6f76479677fcae73f1479ed93f99d3e9281bb248209abf434d4b7",
+            "result": "RESOLVED",
+            "resultSha256": "2ec97cbc5cbd91be7db206a22fb0a65c177141c310b097fd3905c46bf2633dbf"
+          },
+          {
+            "caseId": "0.1.4-mediated-legacy-last",
+            "logSha256": "631039dce0bb50ffce1643180ddf42243611605c44e2740e9e5271b8bb710fd6",
+            "result": "RESOLVED",
+            "resultSha256": "c561f8daca8f2d26c01aacb994a1750840ce7c040208054d100a98acfadc707d"
+          },
+          {
+            "caseId": "0.1.4-strict-legacy-first",
+            "logSha256": "6c023b270b3dd047eae890a77c9ddbd0c9f63150ae07d3d49cd15e7a66cb76b7",
+            "result": "STRICT_VERSION_CONFLICT",
+            "resultSha256": "64a8ab3d7cf7d7c18d22913a2408af077f8fed27054862b3620faf9365736092"
+          },
+          {
+            "caseId": "0.1.4-strict-legacy-last",
+            "logSha256": "365aa0bbb30b391549926cbebd6b950ac8ce0ecbfad2df67f63fb1696d52038e",
+            "result": "STRICT_VERSION_CONFLICT",
+            "resultSha256": "e7581159416d9d8e0655170237fc07cdb12f55c1c9223daf6b44d7532926814b"
+          }
+        ]
+      },
+      {
+        "tool": "maven",
+        "status": "PASS",
+        "cases": 56,
+        "outcomes": {
+          "ENFORCER_REJECTED": 30,
+          "RESOLVED": 16,
+          "STRICT_RANGE_CONFLICT": 10
+        },
+        "selectedArtifactOccurrences": 92,
+        "summarySha256": "5d78e4b5ed48e008c641978f33a9f5a825b0236b904518fe4b1cefd110ec7d3b",
+        "registrySha256": "15d1f7fea7eba3496fce142ab81434134ad4058844457cf58020f5565273ab99",
+        "receiptSha256": "9a4d745ff11508a8ab08dd8bced6a7893d8f6e6ff5baab34b3445aea652ba49c",
+        "results": [
+          {
+            "caseId": "0.1.0-552-legacy-first",
+            "reportSha256": "ec16c69c489c6645c0629fea2d7e9be4ecd00e8dbcc84bfa6bbfdace6e817032",
+            "result": "ENFORCER_REJECTED"
+          },
+          {
+            "caseId": "0.1.0-552-legacy-last",
+            "reportSha256": "f5fec458bb4002e1b9d82699c76a441ef0294e9c1b5b2e18282b39d10ddcbb3f",
+            "result": "ENFORCER_REJECTED"
+          },
+          {
+            "caseId": "0.1.0-alone",
+            "reportSha256": "2c3010112407091cb9fc8dc21e4c1cc4f456d04a4ff2254215f1c2bc28d2ce86",
+            "result": "RESOLVED"
+          },
+          {
+            "caseId": "0.1.0-bare-legacy-first",
+            "reportSha256": "a228eca3c8865b525e9d01501e785d8294c12d4c5a95e67497482928a4578473",
+            "result": "ENFORCER_REJECTED"
+          },
+          {
+            "caseId": "0.1.0-bare-legacy-last",
+            "reportSha256": "1197d63554d3f40ae19ef098314007f3088124ea2e63f5914dea4fd0c776c02a",
+            "result": "ENFORCER_REJECTED"
+          },
+          {
+            "caseId": "0.1.0-core-legacy-first",
+            "reportSha256": "900b9b18fe0944d7c0dbf45232e8ec5b5d2587159f4af338573387b9e4e929d9",
+            "result": "ENFORCER_REJECTED"
+          },
+          {
+            "caseId": "0.1.0-core-legacy-last",
+            "reportSha256": "349435e63b38dbea9d4a98db7b932c194c3d4cb6ca3307a77a4e93a60c31bbeb",
+            "result": "ENFORCER_REJECTED"
+          },
+          {
+            "caseId": "0.1.0-managed-legacy-first",
+            "reportSha256": "12a0dd9d93d5b559aab848e0b6bc3780919243ec7e9327a53042346b3d076c23",
+            "result": "RESOLVED"
+          },
+          {
+            "caseId": "0.1.0-managed-legacy-last",
+            "reportSha256": "6d0abb1cf1637d4e9363ec0f2b7d775fe574071a0bec24f5bd5461b49773e80b",
+            "result": "RESOLVED"
+          },
+          {
+            "caseId": "0.1.0-rc2-552-legacy-first",
+            "reportSha256": "3892dd45d59fc1b81ea8621f5d5511537b494f98b1725414098525c77d2eec24",
+            "result": "ENFORCER_REJECTED"
+          },
+          {
+            "caseId": "0.1.0-rc2-552-legacy-last",
+            "reportSha256": "652120dd1064708ef4c067ffa1c427ebcdc7f89cfde73339e2f04027759be129",
+            "result": "ENFORCER_REJECTED"
+          },
+          {
+            "caseId": "0.1.0-rc2-alone",
+            "reportSha256": "56584c007800be015456060df753004fdd6e41c600d9438a1e51526f926f18dd",
+            "result": "RESOLVED"
+          },
+          {
+            "caseId": "0.1.0-rc2-bare-legacy-first",
+            "reportSha256": "a6fbe9140d8db91e1ef42f1d1a3246d45aec545774521c40b4758edcdcadfb58",
+            "result": "ENFORCER_REJECTED"
+          },
+          {
+            "caseId": "0.1.0-rc2-bare-legacy-last",
+            "reportSha256": "76ade9b499e153cad2cc8bc1596252a2e60e305337c7dbcd2805b4f9076dbc42",
+            "result": "ENFORCER_REJECTED"
+          },
+          {
+            "caseId": "0.1.0-rc2-core-legacy-first",
+            "reportSha256": "ab2d044798cd298bfd6facf36d30cf3ae480626e1f4085bdfb0f65bbdec8e728",
+            "result": "ENFORCER_REJECTED"
+          },
+          {
+            "caseId": "0.1.0-rc2-core-legacy-last",
+            "reportSha256": "61dcf3aaebf9ca7cbf1618531bcfbc92612e20553540b37d4fdafec6c95b3928",
+            "result": "ENFORCER_REJECTED"
+          },
+          {
+            "caseId": "0.1.0-rc2-managed-legacy-first",
+            "reportSha256": "8f43011788c7dbd91c034e79b148d8a1267f16b3110bf55695117d8c5ea39a07",
+            "result": "RESOLVED"
+          },
+          {
+            "caseId": "0.1.0-rc2-managed-legacy-last",
+            "reportSha256": "9c21fae8618873e06d7ccf043b930dc33ff671abde5533590dd8768f2b385a2f",
+            "result": "RESOLVED"
+          },
+          {
+            "caseId": "0.1.0-rc2-strict-legacy-first",
+            "reportSha256": "76c7c3989ded2f03ebdc41b3e8d937090caa9d61a6abd0536fc30cf9b0da64f6",
+            "result": "STRICT_RANGE_CONFLICT"
+          },
+          {
+            "caseId": "0.1.0-rc2-strict-legacy-last",
+            "reportSha256": "9abf9c1f37581d97ec201175919d2ee8767ff469a3cbb1b7b1bb4a24d052c283",
+            "result": "STRICT_RANGE_CONFLICT"
+          },
+          {
+            "caseId": "0.1.0-strict-legacy-first",
+            "reportSha256": "bf9f53db9230e322da2bf1d009c5334e12d314cd49355358046de94063f988d7",
+            "result": "STRICT_RANGE_CONFLICT"
+          },
+          {
+            "caseId": "0.1.0-strict-legacy-last",
+            "reportSha256": "84f72c48eb656241220cecb5c87dc43251708e2666dfe268ef8926bbb265489b",
+            "result": "STRICT_RANGE_CONFLICT"
+          },
+          {
+            "caseId": "0.1.2-552-legacy-first",
+            "reportSha256": "fed4e87d8425d0d57220c61faac70dfcb153e702640d8ad4bc0b4a7f7426c057",
+            "result": "ENFORCER_REJECTED"
+          },
+          {
+            "caseId": "0.1.2-552-legacy-last",
+            "reportSha256": "7da462d2712b4945cd1d26d9c85b9eac562e3559231da6db2ee118d0138138fc",
+            "result": "ENFORCER_REJECTED"
+          },
+          {
+            "caseId": "0.1.2-alone",
+            "reportSha256": "6508a5d063f76cdb2643da99d7ce5412884fe819ba5de25cfe860a71c51892e7",
+            "result": "RESOLVED"
+          },
+          {
+            "caseId": "0.1.2-bare-legacy-first",
+            "reportSha256": "b39af5f19f10790c0bc63acab28a57e28b65e851b7e14f852ae34ad9a430c211",
+            "result": "ENFORCER_REJECTED"
+          },
+          {
+            "caseId": "0.1.2-bare-legacy-last",
+            "reportSha256": "95cabbbb99dea63882146107d2fbb5c32726d9f950ba57b97b9907c19481e327",
+            "result": "ENFORCER_REJECTED"
+          },
+          {
+            "caseId": "0.1.2-core-legacy-first",
+            "reportSha256": "8c5f6e91579b00fa75a0818c869982720e455407865e5bf13da6af22a2a85187",
+            "result": "ENFORCER_REJECTED"
+          },
+          {
+            "caseId": "0.1.2-core-legacy-last",
+            "reportSha256": "2571c5082d88b52ad0b4be0d4a491098772f49a43e7a70759b3efeef5ae3be80",
+            "result": "ENFORCER_REJECTED"
+          },
+          {
+            "caseId": "0.1.2-managed-legacy-first",
+            "reportSha256": "3481e89c0ead4e058b5c9f33e2025740ab4fa0ade4d947dd4f9f419ef1ae7dcf",
+            "result": "RESOLVED"
+          },
+          {
+            "caseId": "0.1.2-managed-legacy-last",
+            "reportSha256": "751574e6cff02498d2e766b6a0eac4ee4a6dba457db7e3affa2e405a6b5d2ede",
+            "result": "RESOLVED"
+          },
+          {
+            "caseId": "0.1.2-strict-legacy-first",
+            "reportSha256": "2d018df4000307ca65ebe40bc177f9558d3fe38e8164dddd486a301384849362",
+            "result": "STRICT_RANGE_CONFLICT"
+          },
+          {
+            "caseId": "0.1.2-strict-legacy-last",
+            "reportSha256": "5c8ff6d528f136861abfefd57ef6534b44b921e151a59d7238b50b498f12174a",
+            "result": "STRICT_RANGE_CONFLICT"
+          },
+          {
+            "caseId": "0.1.3-552-legacy-first",
+            "reportSha256": "ddb283db8463543d2502ac7bf0546543aa770640127ce5a6eda8999b1c3dbd32",
+            "result": "ENFORCER_REJECTED"
+          },
+          {
+            "caseId": "0.1.3-552-legacy-last",
+            "reportSha256": "513a86a1499483f64f82d443da690733efca0bece98c0d012575bf8c9e94dfb6",
+            "result": "ENFORCER_REJECTED"
+          },
+          {
+            "caseId": "0.1.3-alone",
+            "reportSha256": "7b68cc58025e5959d4e7fd8dc91fb2715e55f29c8b53b5a123833bba1e898a04",
+            "result": "RESOLVED"
+          },
+          {
+            "caseId": "0.1.3-bare-legacy-first",
+            "reportSha256": "2426a02634a6fe7f651fa4d900e519d831bb2b57a0ad08d8946c95f0b5f22a8e",
+            "result": "ENFORCER_REJECTED"
+          },
+          {
+            "caseId": "0.1.3-bare-legacy-last",
+            "reportSha256": "90192765a37661b26eedeedf08da09d654008db7f063d4726c692398a8258df8",
+            "result": "ENFORCER_REJECTED"
+          },
+          {
+            "caseId": "0.1.3-core-legacy-first",
+            "reportSha256": "2c3b2e20d77846d7a25f04303aee1cf1194bc1a16983e7886eeaf5e8750625f9",
+            "result": "ENFORCER_REJECTED"
+          },
+          {
+            "caseId": "0.1.3-core-legacy-last",
+            "reportSha256": "1cdb5d47a46ae4c53ff63786ceb09389bbea78653e70bdaf18ce980fb071eef4",
+            "result": "ENFORCER_REJECTED"
+          },
+          {
+            "caseId": "0.1.3-core-without-policy-control",
+            "reportSha256": "dfabdafb5db6daf34ae5fb5f9d3c4c1aae4f7d39688e05739e4939db06ce62d0",
+            "result": "RESOLVED"
+          },
+          {
+            "caseId": "0.1.3-managed-legacy-first",
+            "reportSha256": "ba881e8114abe7a0da902694bba03c46beaa9fc36e2da77bc07a8e5570cd5566",
+            "result": "RESOLVED"
+          },
+          {
+            "caseId": "0.1.3-managed-legacy-last",
+            "reportSha256": "45e89a2bcc661acdf47200fcd100542dfe103dae756080de986db2f02849563a",
+            "result": "RESOLVED"
+          },
+          {
+            "caseId": "0.1.3-strict-legacy-first",
+            "reportSha256": "c69d74415609115145207e4dc5c4ddb87da40c13bc11be830a86aa7061f9f3c1",
+            "result": "STRICT_RANGE_CONFLICT"
+          },
+          {
+            "caseId": "0.1.3-strict-legacy-last",
+            "reportSha256": "8f5f8154ffec8dad74bc4a16bd363b2ca900d6083a68a6074a176ddb054f0359",
+            "result": "STRICT_RANGE_CONFLICT"
+          },
+          {
+            "caseId": "0.1.4-552-legacy-first",
+            "reportSha256": "1af70b0e1f31430434054fe5e23babec422fe252d5346445c807bc5881670ce4",
+            "result": "ENFORCER_REJECTED"
+          },
+          {
+            "caseId": "0.1.4-552-legacy-last",
+            "reportSha256": "c2586501f230ba70b1dcf5936a961eaac8a2f15a3d68edc8c9b150acaa7eab67",
+            "result": "ENFORCER_REJECTED"
+          },
+          {
+            "caseId": "0.1.4-alone",
+            "reportSha256": "144432a7011f563d994901eabce076565b9242ecf786800524e8639cb0fffc06",
+            "result": "RESOLVED"
+          },
+          {
+            "caseId": "0.1.4-bare-legacy-first",
+            "reportSha256": "32fb2d46d72ddb7bc14e0809362255434ba9ba80cb9015c0f21125b4f6576d51",
+            "result": "ENFORCER_REJECTED"
+          },
+          {
+            "caseId": "0.1.4-bare-legacy-last",
+            "reportSha256": "4ef75fa52c9d0967271696a380da5e8ef54fabf44970909e7dba369f95c7e3f4",
+            "result": "ENFORCER_REJECTED"
+          },
+          {
+            "caseId": "0.1.4-core-legacy-first",
+            "reportSha256": "bfb457e121e3ff4bb3406e96013ea098cb4c484ca3aa42b4f40785c521d5c438",
+            "result": "ENFORCER_REJECTED"
+          },
+          {
+            "caseId": "0.1.4-core-legacy-last",
+            "reportSha256": "9fae265995078fc7663d9ce8e143c2d87a75110d5b4cf118e3a5a15fe2b328ae",
+            "result": "ENFORCER_REJECTED"
+          },
+          {
+            "caseId": "0.1.4-managed-legacy-first",
+            "reportSha256": "a898c26b720e89d3657fa49c6fbdfc3edacc57580e7762676653d07decbc7ee3",
+            "result": "RESOLVED"
+          },
+          {
+            "caseId": "0.1.4-managed-legacy-last",
+            "reportSha256": "6d4e5c74caa64b31a0dac35ac7ac9ae52067032c56b52a7ea5803ab4f75d24e5",
+            "result": "RESOLVED"
+          },
+          {
+            "caseId": "0.1.4-strict-legacy-first",
+            "reportSha256": "7acceac1e88ffa38afd07cdcb2867d03f712574afd520924c3f4f25c46d66356",
+            "result": "STRICT_RANGE_CONFLICT"
+          },
+          {
+            "caseId": "0.1.4-strict-legacy-last",
+            "reportSha256": "c0e3e994a43dc35258e4f8fbd8c669afafb41b0d5947b10480f73e0660fad8a9",
+            "result": "STRICT_RANGE_CONFLICT"
+          }
+        ]
+      }
+    ]
+  },
+  "originalA28Status": "FAILED",
+  "humanReview": null,
+  "fullReleaseApproval": false,
+  "public02Consumption": false,
+  "limitations": [
+    "A29 uses the new api.RouteContract entry; manually mixed legacy-first calls to the old FQCN retain the documented diagnostic limitation.",
+    "A29 clean MySQL controls cover four fixed business PreparedStatement executions; setup and metadata SQL are excluded.",
+    "A27 counts are resolver cases, not MySQL or product JUnit tests.",
+    "Other-JDK, offline, full API migration, final release, authentic human baseline approval and external adoption are separate."
+  ]
+}

@@ -17,14 +17,14 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / 'scripts'))
-from legacy_artifact_inputs import ARTIFACT, GROUP, digest, load_registry
+from legacy_artifact_inputs import ARTIFACT, GROUP, digest, load_current_registry as load_registry
 from public_split_artifacts import load_consumer_receipt
 
 FIXTURE = ROOT / 'examples/current-entry-successor-consumer'
 BASE_FIXTURE = ROOT / 'examples/staged-split-artifact-consumer'
-REGISTRY = ROOT / 'scripts/legacy-artifact-inputs.json'
+REGISTRY = ROOT / 'scripts/legacy-artifact-inputs-current.json'
 ADAPTERS = {'5.5.2': 'routecontract-shardingsphere-5.5.2', '5.5.3': ARTIFACT}
-LEGACIES = {'0.1.0', '0.1.2', '0.1.3', '0.1.0-rc2'}
+LEGACIES = {'0.1.0', '0.1.2', '0.1.3', '0.1.0-rc2', '0.1.4'}
 MYSQL_IMAGE = 'mysql:8.4.11@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb'
 PROBE = 'io.github.ym0506.routecontract.consumer.CurrentEntrySuccessorProbe'
 CURRENT_CLASSES = ('io/github/ym0506/routecontract/api/RouteContract.class',
@@ -58,8 +58,8 @@ def write_json(path, value):
 
 def cases(registry):
     versions = [item['version'] for item in registry['distributed']]
-    if len(versions) != 4 or set(versions) != LEGACIES:
-        raise RuntimeAcceptanceError('A-29 requires exactly the four audited distributed legacy versions')
+    if len(versions) != 5 or set(versions) != LEGACIES:
+        raise RuntimeAcceptanceError('A-29 requires exactly the five audited distributed legacy versions')
     result = []
     for runtime in ADAPTERS:
         for mode in ('current-capture', 'current-capture-result', 'compatibility-capture',
@@ -190,11 +190,11 @@ def classify(case, observed, expected_origins):
 def completion_status(required, results, partial=False):
     canonical = cases(load_registry(REGISTRY))
     required_by_id = {case['id']: case for case in canonical}
-    exact_plan = (len(required) == 64 and len({case['id'] for case in required}) == 64
+    exact_plan = (len(required) == 76 and len({case['id'] for case in required}) == 76
                   and {case['id']: case for case in required} == required_by_id)
     actual_ids = [result.get('case', {}).get('id') for result in results]
     pids = [result.get('observed', {}).get('pid') for result in results]
-    exact_results = (len(results) == 64 and len(set(actual_ids)) == 64
+    exact_results = (len(results) == 76 and len(set(actual_ids)) == 76
                      and set(actual_ids) == set(required_by_id)
                      and all(result['case'] == required_by_id.get(result['case']['id']) for result in results))
     fresh = all(type(pid) is int and pid > 0 for pid in pids) and len(set(pids)) == len(pids)
@@ -499,7 +499,7 @@ def main():
             if len(args.case_ids) != len(set(args.case_ids)) or set(args.case_ids) - {case['id'] for case in required}:
                 raise RuntimeAcceptanceError('Unknown or duplicate diagnostic case ID')
             selected = [case for case in required if case['id'] in args.case_ids]
-        write_json(evidence / 'case-plan.json', {'requiredCount': 64, 'captureCollisions': 32, 'sqlCollisions': 16,
+        write_json(evidence / 'case-plan.json', {'requiredCount': 76, 'captureCollisions': 40, 'sqlCollisions': 20,
                    'cleanControls': 12, 'startupRejections': 4, 'required': required, 'selected': selected})
         java_home = args.java_home.resolve()
         split.verify_toolchain(ROOT, java_home)
@@ -541,10 +541,10 @@ def main():
                 raise RuntimeAcceptanceError('Verified repository input changed during execution')
         completion = (dict(status='PREPARED', fullA29Matrix=False, executedCount=0, passedCount=0) if args.prepare_only
                       else completion_status(required, results, partial=bool(args.case_ids)))
-        summary = {'formatVersion': 1, 'gate': 'A29', **completion, 'requiredCount': 64,
-                   'captureCollisionCount': 32, 'sqlCollisionCount': 16, 'cleanControlCount': 12,
+        summary = {'formatVersion': 1, 'gate': 'A29', **completion, 'requiredCount': 76,
+                   'captureCollisionCount': 40, 'sqlCollisionCount': 20, 'cleanControlCount': 12,
                    'startupRejectionCount': 4, 'originalA28Status': 'FAILED', 'sourceBinding': binding,
-                   'registrySha256': initial['scripts/legacy-artifact-inputs.json'],
+                   'registrySha256': initial[str(REGISTRY.relative_to(ROOT))],
                    'stagedReceiptSha256': args.expected_staged_receipt_sha256,
                    'fixtureInputsSha256': digest((evidence / 'fixture-inputs.json').read_bytes()),
                    'inventorySha256': digest((evidence / 'verified-input-inventory.json').read_bytes()),

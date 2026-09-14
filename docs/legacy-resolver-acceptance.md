@@ -1,6 +1,12 @@
 # Real legacy resolver acceptance for the 0.2 candidate
 
-Status: the local Gradle 37-case and Maven 45-case runs passed on 2026-09-08
+Current coverage uses the separate format-2 five-version registry, including
+public 0.1.4. Its Gradle 46-case and Maven 56-case executions passed on
+2026-09-14 against `5800ed2`; see the
+[current result](evidence/legacy-014-upgrade-2026-09-14.md) and
+[upgrade acceptance](legacy-014-coverage-acceptance.md).
+
+Historical status: the local Gradle 37-case and Maven 45-case runs passed on 2026-09-08
 against reviewed source `86a0be5`; see the [execution evidence](evidence/legacy-resolver-86a0be5-2026-09-08.md).
 The [earlier 4e06694 execution](evidence/legacy-resolver-4e06694-2026-09-08.md) remains preserved.
 This file specifies the resolver work item, not the whole release requirement
@@ -10,8 +16,8 @@ manual-classpath or adoption claim. Original A-28 remains FAILED; the separate
 the changed application entry and preserves that historical failure.
 
 The fixture must consume the actual published all-in-one JAR/POM bytes of
-`0.1.0`, `0.1.2`, `0.1.3`, and distributed `0.1.0-rc2`. The public `0.1.3`
-Gradle Module Metadata is also an input. A checked-in registry binds each
+`0.1.0`, `0.1.2`, `0.1.3`, `0.1.4`, and distributed `0.1.0-rc2`. The public
+`0.1.3` and `0.1.4` Gradle Module Metadata are also inputs. A checked-in registry binds each
 download to its public URL, exact size/SHA-256, tag commit, and inspected legacy
 class/service entries. `0.1.1` and `0.1.0-rc1` are retained separately as tag-only layout
 evidence; a tag is not evidence that a binary was distributed.
