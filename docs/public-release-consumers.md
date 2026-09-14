@@ -5,8 +5,7 @@ The dated 0.1.3 records below remain historical results.
 
 
 Status: post-publication verification commands for the single-module, exact ShardingSphere-JDBC 5.5.3 release.
-See the [0.1.3 Central record](evidence/release-0.1.3-central.md) for current public availability
-and consumer evidence. The preparation, local-control and missing-version sections below retain
+See the [0.1.3 Central record](evidence/release-0.1.3-central.md) for that release's publication and consumer evidence. The preparation, local-control and missing-version sections below retain
 their historical verification limits. The v0.1.2 installer and separate 0.2 adapter plan are unchanged.
 
 ## Acceptance contract

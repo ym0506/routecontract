@@ -17,10 +17,11 @@ Here, an **attempt** means a physical JDBC execution attempt reported by
 ShardingSphere's `SQLExecutionHook`. An alias identifies an observed data-source name.
 Neither count measures physical tables, network round trips, transaction commits or latency.
 
-The released support boundary remains **Java 17, exactly ShardingSphere-JDBC 5.5.3,
-synchronous non-batch `PreparedStatement` operations**. The Java 21 and PostgreSQL
-results below describe the specific evaluated paths and dependency graphs.
-They do not establish general support for those environments.
+These experiments used **0.1.3** and retain their recorded JDK and database conditions below.
+For a new installation, [released 0.1.4 supports Java 17 and 21 with exactly
+ShardingSphere-JDBC 5.5.3](../README.md#supported-scope), for synchronous, non-batch
+`PreparedStatement` operations. The PostgreSQL experiment covers only its stated path and
+dependency graph; it does not establish general PostgreSQL coverage.
 
 ## Same count, different data source
 
@@ -133,7 +134,7 @@ comparison when counts alone cannot express the requirement. Review intentional
 changes before approving a new baseline; a difference by itself does not prove a bug.
 
 [Try the browser demonstration](first-project.md#try-in-your-browser),
-[apply 0.1.3 to one existing test](first-project.md), or
+[apply 0.1.4 to one existing test](first-project.md), or
 [ask about a version or missing check](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml).
 No installation is needed to ask about fit. See [how use and feedback are recorded](user-feedback.md)
 for the distinction between an author experiment, a project integration and repeat use.

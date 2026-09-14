@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="#see-it-work">How it works</a> · <a href="#install-014">Install</a> · <a href="#usage">Usage</a> · <a href="#documentation">Documentation</a> · <a href="README.ko.md">한국어</a>
+  <a href="#usage">Usage</a> · <a href="#see-it-work">Example</a> · <a href="#install-014">Install</a> · <a href="#documentation">Documentation</a> · <a href="README.ko.md">한국어</a>
 </p>
 
 **Your test can return the right order while querying an extra database.**
@@ -23,6 +23,41 @@ RouteContract adds an execution check to your existing
 Keep the returned-value assertion, then check how many JDBC execution attempts the operation
 makes and which configured data sources it uses. If those assertions fail, your normal
 JUnit/Maven/Gradle test run fails in CI as well.
+
+**Supported environment:** Java 17 or 21 · ShardingSphere-JDBC **5.5.3** · synchronous, non-batch `PreparedStatement` tests.
+
+<a id="smallest-usage-example"></a>
+<a id="가장-작은-사용-예"></a>
+
+## Usage
+
+Wrap one operation in an existing integration test:
+
+```java
+import io.github.ym0506.routecontract.RouteAssertions;
+import io.github.ym0506.routecontract.RouteContract;
+import io.github.ym0506.routecontract.RouteSnapshot;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+RouteSnapshot snapshot = RouteContract.capture("orders.find-by-user-id", () -> {
+    Order actual = orderRepository.findByUserId(3L);
+    assertEquals(201L, actual.id()); // Keep the business-result assertion.
+});
+
+RouteAssertions.assertThat(snapshot)
+        .hasCompleteCapture()
+        .hasNoReportedExecutionFailures()
+        .hasExactlyObservedPhysicalAttempts(1)
+        .observesExactlyDataSourceNames("ds_1");
+```
+
+`Order` and `orderRepository` stand for your existing test fixture. The operation must use the
+supported JDBC execution scope; adapt the operation, expected result, data-source name and
+budget to your fixture. A hook callback returning does not prove a transaction committed.
+
+Start with these Java assertions; no saved JSON file is required. For a reviewed execution
+history and Markdown/JSON reports, use the [optional baseline comparison](#approved-manifests-and-structural-manifest-diffs).
 
 ## See it work
 
@@ -95,57 +130,6 @@ Keep your existing ShardingSphere and data-source configuration. Every ShardingS
 in the test runtime must be **exactly 5.5.3**; RouteContract does not supply ShardingSphere or
 align its dependency graph. No repository clone or local installer is needed for this dependency.
 
-<a id="smallest-usage-example"></a>
-<a id="가장-작은-사용-예"></a>
-
-## Usage
-
-Wrap one operation in an existing integration test:
-
-```java
-import io.github.ym0506.routecontract.RouteAssertions;
-import io.github.ym0506.routecontract.RouteContract;
-import io.github.ym0506.routecontract.RouteSnapshot;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-RouteSnapshot snapshot = RouteContract.capture("orders.find-by-user-id", () -> {
-    Order actual = orderRepository.findByUserId(3L);
-    assertEquals(201L, actual.id()); // Keep the business-result assertion.
-});
-
-RouteAssertions.assertThat(snapshot)
-        .hasCompleteCapture()
-        .hasNoReportedExecutionFailures()
-        .hasExactlyObservedPhysicalAttempts(1)
-        .observesExactlyDataSourceNames("ds_1");
-```
-
-`Order` and `orderRepository` stand for your existing test fixture. The operation must use the
-supported JDBC execution scope; adapt the operation, expected result, data-source name and
-budget to your fixture. A hook callback returning does not prove a transaction committed.
-
-These Java assertions check the observation directly. The runnable example also writes a report
-and compares the current execution with a reviewed JSON file, as described next.
-
-<a id="approved-manifests-and-structural-manifest-diffs"></a>
-
-### Review a baseline, then check it in CI
-
-A **manifest** is a JSON file containing the observed execution, data-source aliases and limits.
-The **candidate** describes this run; the **baseline** is the reviewed file used as the expectation.
-
-1. Capture a representative operation and write a **candidate manifest**.
-2. Review its observations, non-sensitive data-source aliases and budgets in version control.
-3. Approve the baseline explicitly. Compare subsequent candidates against that baseline in CI.
-
-Candidates never approve themselves. Intentional changes need a new review.
-Follow [one project from Central install to a failing CI check](docs/first-project.md),
-with runnable Maven and Gradle examples.
-The [manifest example](docs/reference-guide.md#approved-manifests-and-structural-manifest-diffs)
-shows the Java API; [CI review reports](docs/ci-review-report.md) add Markdown or JSON output
-with stable diagnostic codes and investigation steps.
-
 <a id="quick-start"></a>
 
 ## Try an example
@@ -178,6 +162,28 @@ example's generated report, so read the failing report before restoring the quer
 [Gradle commands and applying it to your own test](docs/first-project.md) ·
 [Run the same MySQL demo in GitHub Actions](docs/first-project.md#try-in-your-browser)
 
+<a id="approved-manifests-and-structural-manifest-diffs"></a>
+<a id="review-a-baseline-then-check-it-in-ci"></a>
+
+<details>
+<summary><strong>Optional: review a baseline, then check it in CI</strong></summary>
+
+A **manifest** is a JSON file containing the observed execution, data-source aliases and limits.
+The **candidate** describes this run; the **baseline** is the reviewed file used as the expectation.
+
+1. Capture a representative operation and write a **candidate manifest**.
+2. Review its observations, non-sensitive data-source aliases and budgets in version control.
+3. Approve the baseline explicitly. Compare subsequent candidates against that baseline in CI.
+
+Candidates never approve themselves. Intentional changes need a new review.
+Follow [one project from Central install to a failing CI check](docs/first-project.md),
+with runnable Maven and Gradle examples.
+The [manifest example](docs/reference-guide.md#approved-manifests-and-structural-manifest-diffs)
+shows the Java API; [CI review reports](docs/ci-review-report.md) add Markdown or JSON output
+with stable diagnostic codes and investigation steps.
+
+</details>
+
 ## Supported scope
 
 | Area | Published v0.1.4 |
@@ -201,20 +207,14 @@ Independent integration and repeat use have not yet been verified.
 
 ## Documentation
 
-| Topic | Guide |
+| I want to… | Start with… |
 | --- | --- |
-| Find your next step | [Start here](docs/start-here.md) |
-| Apply the released library to one project | [First project](docs/first-project.md) · [한국어](docs/first-project.ko.md) |
-| API, policies and detailed reproduction | [Detailed guide](docs/reference-guide.md) · [한국어 상세 가이드](docs/reference-guide.ko.md) |
-| Review failures in CI | [Report guide and CLI](docs/ci-review-report.md) · [Example report](docs/evidence/ci-review-report-example.md) |
-| Understand what is observed | [Architecture](docs/architecture.md) · [Specification](docs/specification.md) |
-| Compare with existing tools | [Tool comparison](docs/competitive-analysis.md) · [Measured datasource-proxy fixture](docs/empirical-comparison.md) |
-| Inspect capture cleanup | [Repeated operations, retained-object controls and limitations](docs/capture-retention.md) |
-| Inspect observer cost | [Public 0.1.3: three conditions, raw measurements and limitations](docs/observer-cost.md) |
-| Examine application code | [Three evaluations: destination changes, query budgets and existing tests](docs/application-evaluations.md) · [한국어](docs/application-evaluations.ko.md) · Author-run experiments |
-| Inspect release evidence | [v0.1.4 Central verification](docs/evidence/release-0.1.4-central.md) · [Evidence matrix](docs/evidence-matrix.md) |
-| Explore earlier integration tooling | [v0.1.2 integration guide](docs/first-integration.md) — pinned historical workflow |
-| Contribute | [Contributing](CONTRIBUTING.md) · [Roadmap](docs/product-roadmap.md) |
+| Run the example or adapt an existing test | [First project](docs/first-project.md) · [한국어](docs/first-project.ko.md) |
+| Understand an execution-check failure | [Report guide](docs/ci-review-report.md) · [Example report](docs/evidence/ci-review-report-example.md) |
+| Review the design and implementation | [Design decisions and code](docs/design-decisions.md) · [API reference](docs/reference-guide.md) |
+| Judge whether it fits my problem | [Tool comparison](docs/competitive-analysis.md) · [Application experiments](docs/application-evaluations.md) |
+| Inspect released behavior and limitations | [0.1.4 consumer verification](docs/evidence/release-0.1.4-central.md) · [All evidence and guides](docs/start-here.md) |
+| Contribute a fix or discuss a missing check | [Contributing](CONTRIBUTING.md) · [Roadmap](docs/product-roadmap.md) |
 
 ### Data handling
 

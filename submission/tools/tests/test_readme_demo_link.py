@@ -14,7 +14,7 @@ class ReadmeDemoLinkContractTest(unittest.TestCase):
         ):
             with self.subTest(page=relative):
                 readme = (REPOSITORY_ROOT / "docs" / relative).read_text(encoding="utf-8")
-                entry = readme.split("## Install 0.1.4", 1)[0]
+                entry = readme.split('<a id="install-013"></a>', 1)[0]
                 self.assertIn(f"({guide})", entry)
                 self.assertIn(f"({guide}#try-in-your-browser)", entry)
                 self.assertNotIn(VIDEO_URL, entry)

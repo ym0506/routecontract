@@ -1,8 +1,9 @@
 # CI review reports
 
-Available in v0.1.3 through [GitHub Release assets](https://github.com/ym0506/routecontract/releases/tag/v0.1.3)
-and a [Maven Central test dependency](../README.md#install-013); see the
-[Central verification record](evidence/release-0.1.3-central.md).
+Introduced in v0.1.3 and included in the current [0.1.4 Maven Central dependency](../README.md#install-014).
+Use the [first-project guide](first-project.md) for current installation and real-MySQL checks.
+The [0.1.3 release record](evidence/release-0.1.3-central.md) and pinned commands below retain
+the original report demonstration.
 The v0.1.2 local installer does not include these APIs.
 
 ## See the result first
@@ -22,6 +23,9 @@ The approved baseline supplies these limits. Inspect the changed query and shard
 understand why the extra execution happened, then fix it or review an intentional change.
 
 ## Try the released report without Docker
+
+This reproduction is pinned to **v0.1.3**. It is useful for inspecting the report format;
+new integrations should use [0.1.4](first-project.md).
 
 You need Git and Java 17. The first run needs network access for Gradle and Java
 dependencies. This checks the committed example manifests; it does not start a
@@ -73,7 +77,7 @@ identifies the published binaries and the tagged CI run.
 The [first-project guide](first-project.md) connects the published dependency, one MySQL test,
 candidate capture, baseline review and a failing CI comparison with Maven or Gradle.
 
-With the v0.1.3 library on the test classpath, call
+With the current 0.1.4 library on the test classpath, call
 `ManifestReviewReport.compare(approved, candidate)`, then `toMarkdown()` or `toJson()`.
 Use `verification()` with the existing assertions; the report is a presentation layer.
 The CLI main class is `io.github.ym0506.routecontract.manifest.ManifestReviewCli`,

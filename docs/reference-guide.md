@@ -108,6 +108,8 @@ These commands retain their original version and verification boundary. They are
 for current installation. The [archived 2:54 demonstration](https://www.youtube.com/watch?v=pcgvNNxd1mM)
 also belongs to this earlier workflow.
 
+<a id="quick-start"></a>
+
 ## Quick Start
 
 This MySQL demonstration is pinned to v0.1.2. To try the latest report feature first,
