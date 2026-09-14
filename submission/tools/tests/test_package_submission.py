@@ -1065,7 +1065,7 @@ class SubmissionClaimTextTest(unittest.TestCase):
             )
             self.assertEqual(
                 1,
-                workflow.count(
+                quick_start_block.count(
                     'git status --porcelain=v1 --untracked-files=all '
                     "--ignore-submodules=none"
                 ),
@@ -2017,9 +2017,9 @@ class FirstIntegrationDocumentationContractTest(unittest.TestCase):
             "https://raw.githubusercontent.com/ym0506/routecontract/2264b6e6292ee80f131148f2acef601cbaede096/scripts/prepare_maven_v0_1_2_checksums.py",
             "https://raw.githubusercontent.com/ym0506/routecontract/917fadf86f3d47b8c5177bbdd372070e985d57d6/scripts/verify-external-maven-integration.sh",
             "verify-external-maven-integration.sh",
-            hashlib.sha256(
-                (REPOSITORY_ROOT / "scripts" / "verify-external-maven-integration.sh").read_bytes()
-            ).hexdigest(),
+            # This public guide downloads an immutable stable-line revision.
+            # The local 0.2 verifier uses the extended three-artifact installer.
+            "8c53eaac7677ed2274e4bab5e5d553e6d4445988df946a66464df0f75f7b2686",
             'bash "${tool_dir}/verify-external-maven-integration.sh"',
         ):
             self.assertIn(required, maven_ci_block)

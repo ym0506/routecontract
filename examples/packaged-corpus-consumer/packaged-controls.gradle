@@ -1,0 +1,110 @@
+import groovy.json.JsonOutput
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
+import java.security.MessageDigest
+
+// Applied after the unchanged corpus build, except for its single project-to-JAR dependency.
+def routeGroup = 'io.github.ym0506.routecontract'
+def runtimeVersion = providers.gradleProperty('packagedRuntime').get()
+if (!(runtimeVersion in ['5.5.2', '5.5.3'])) throw new GradleException('Exact corpus runtime required')
+def adapter = runtimeVersion == '5.5.2' ? 'routecontract-shardingsphere-5.5.2' : 'routecontract-shardingsphere-5.5'
+def routeVersion = '0.2.0'
+def repository = file(providers.gradleProperty('packagedRepository').get()).canonicalFile
+if (!repository.isDirectory()) throw new GradleException('Reviewed staged repository required')
+if (project.hasProperty('routecontractGenerate552Evidence')) {
+    throw new GradleException('Corpus golden-generation opt-in is forbidden')
+}
+def expectedHashes = ['routecontract-core', adapter].collectEntries { name ->
+    def value = providers.gradleProperty("packagedSha256.${name}").get()
+    if (!(value ==~ /[0-9a-f]{64}/)) throw new GradleException('Reviewed JAR hash required')
+    [(name): value]
+}
+repositories {
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'reviewedPackagedCorpusStaging'
+                url = repository.toURI()
+                metadataSources { gradleMetadata(); mavenPom() }
+            }
+        }
+        filter { includeGroup routeGroup }
+    }
+    mavenCentral { content { excludeGroup routeGroup } }
+}
+dependencyLocking { lockAllConfigurations(); lockMode = LockMode.STRICT }
+configurations.configureEach {
+    resolutionStrategy.eachDependency { details ->
+        if (details.requested.group == routeGroup && details.requested.version != routeVersion) {
+            throw new GradleException('Only the reviewed coordinated first-party version is allowed')
+        }
+        if (details.requested.group == 'org.apache.shardingsphere' && details.requested.version != runtimeVersion) {
+            throw new GradleException('The full requested ShardingSphere group must match the exact corpus runtime')
+        }
+    }
+}
+def digest = { File value -> MessageDigest.getInstance('SHA-256').digest(value.bytes).encodeHex().toString() }
+def graphTask = tasks.register('verifyPackagedCorpusGraph') {
+    doLast {
+        def expected = ["${routeGroup}:routecontract-core:${routeVersion}", "${routeGroup}:${adapter}:${routeVersion}"].sort()
+        def graph = [:]
+        [configurations.testCompileClasspath, configurations.testRuntimeClasspath].each { conf ->
+            def result = conf.incoming.resolutionResult
+            def components = result.allComponents.findAll { it.id != result.root.id }
+            if (components.any { !(it.id instanceof ModuleComponentIdentifier) }) {
+                throw new GradleException('Project/source components cannot prove packaged consumption')
+            }
+            def modules = components.collect { it.moduleVersion.toString() }.sort()
+            def firstParty = modules.findAll { it.startsWith(routeGroup + ':') }
+            if (firstParty != expected) throw new GradleException('Exactly the reviewed core and adapter are required')
+            def sharding = components.findAll { it.moduleVersion.group == 'org.apache.shardingsphere' }
+            if (sharding.empty || sharding.any { it.moduleVersion.version != runtimeVersion }) {
+                throw new GradleException('Mixed selected ShardingSphere graph')
+            }
+            def artifacts = conf.resolvedConfiguration.resolvedArtifacts.collect { artifact ->
+                def entry = [coordinate: artifact.moduleVersion.id.toString(), name: artifact.file.name,
+                             path: artifact.file.canonicalPath, sha256: digest(artifact.file)]
+                if (artifact.moduleVersion.id.group == routeGroup) {
+                    if (artifact.extension != 'jar' || entry.sha256 != expectedHashes[artifact.name]) {
+                        throw new GradleException('Selected first-party JAR bytes differ from the reviewed input')
+                    }
+                }
+                entry
+            }.sort { a, b -> a.coordinate <=> b.coordinate }
+            graph[conf.name] = [modules: modules, artifacts: artifacts]
+        }
+        if (!sourceSets.main.allSource.empty) throw new GradleException('The standalone consumer must have no production sources')
+        def output = layout.buildDirectory.file('packaged-corpus/selected-graphs.json').get().asFile
+        output.parentFile.mkdirs()
+        output.text = JsonOutput.prettyPrint(JsonOutput.toJson(graph)) + '\n'
+        println "ROUTECONTRACT_PACKAGED_CORPUS_GRAPH runtime=${runtimeVersion} firstParty=2"
+    }
+}
+java { toolchain { languageVersion = JavaLanguageVersion.of(17) } }
+tasks.withType(JavaCompile).configureEach {
+    options.release = 17
+    options.encoding = 'UTF-8'
+    options.compilerArgs += ['-Xlint:all', '-Werror']
+}
+tasks.named('test') {
+    dependsOn graphTask
+    useJUnitPlatform()
+    maxParallelForks = 1
+    forkEvery = 0
+    classpath = files(sourceSets.test.output, configurations.testRuntimeClasspath)
+    systemProperty 'routecontract.repositoryRoot', file('review-inputs').canonicalPath
+    systemProperty 'routecontract.generate552Evidence', 'false'
+    systemProperty 'junit.jupiter.extensions.autodetection.enabled', 'true'
+    systemProperty 'packaged.runtime', runtimeVersion
+    systemProperty 'packaged.coreSha256', expectedHashes['routecontract-core']
+    systemProperty 'packaged.adapterSha256', expectedHashes[adapter]
+    systemProperty 'packaged.expectedSuites', providers.gradleProperty('packagedExpectedSuites').get()
+    systemProperty 'packaged.provenanceDirectory', layout.buildDirectory.dir('packaged-corpus/provenance').get().asFile.canonicalPath
+    doFirst {
+        def rows = classpath.files.collect { f -> [path: f.canonicalPath, directory: f.isDirectory(),
+                                                  sha256: f.isFile() ? digest(f) : null] }
+        def output = layout.buildDirectory.file('packaged-corpus/test-runtime-classpath.json').get().asFile
+        output.parentFile.mkdirs()
+        output.text = JsonOutput.prettyPrint(JsonOutput.toJson(rows)) + '\n'
+    }
+    testLogging { events 'passed', 'failed', 'skipped'; showStandardStreams = true; exceptionFormat = 'full' }
+}

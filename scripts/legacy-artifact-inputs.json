@@ -1,0 +1,365 @@
+{
+  "formatVersion": 1,
+  "groupId": "io.github.ym0506.routecontract",
+  "artifactId": "routecontract-shardingsphere-5.5",
+  "distributed": [
+    {
+      "version": "0.1.0",
+      "tag": "v0.1.0",
+      "sourceRevision": "db203cfd9202ff10cd22c41cf04034eca5177341",
+      "payloads": [
+        {
+          "name": "routecontract-shardingsphere-5.5-0.1.0.jar",
+          "extension": "jar",
+          "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.0/routecontract-shardingsphere-5.5-0.1.0.jar",
+          "sha256": "d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc",
+          "byteCount": 75891
+        },
+        {
+          "name": "routecontract-shardingsphere-5.5-0.1.0.pom",
+          "extension": "pom",
+          "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.0/routecontract-shardingsphere-5.5.pom",
+          "sha256": "05570bfa238ef77db255a46efdd5bbb25e994ae0137db86491a46a25e28deac9",
+          "byteCount": 1929
+        }
+      ],
+      "layout": {
+        "entries": {
+          "io/github/ym0506/routecontract/RouteContract.class": "127b7cf26116010a583442a2bdb0e910a751f5ea9fb45aec08768fc5b05159c0",
+          "io/github/ym0506/routecontract/internal/CaptureRegistry.class": "ff330accda68b513ab077a2da3062629ad848104154bdd450d7e8a12f7689056",
+          "io/github/ym0506/routecontract/internal/RouteContractSqlExecutionHook.class": "fc02e4d56946ab2e03105f515dc797fda4a5c68455ecb445e726139af64e2747",
+          "META-INF/services/org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook": "b39919b122bf4b6d685eea2ba9b6589345e8169355edb30921a8eb1a80189f55"
+        },
+        "hookProvider": "io.github.ym0506.routecontract.internal.RouteContractSqlExecutionHook"
+      },
+      "provenance": {
+        "releaseApiUrl": "https://api.github.com/repos/ym0506/routecontract/releases/tags/v0.1.0",
+        "releaseId": 376522178,
+        "immutable": true,
+        "prerelease": false,
+        "tagObjectSha": "e3944631ad827e88d4936b75e9b738ef50a22b20",
+        "sha256sums": {
+          "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.0/SHA256SUMS",
+          "sha256": "820ed33eb8bfe8d47f3ec8782d2aa99f2879227c4ee066ecafc467e61abb8684",
+          "byteCount": 1155
+        },
+        "apiReceiptSha256": "d636dc218adc53009b57b17ac0c8d9c73b30274fa6e33765d2e4314a56f02873",
+        "tagObjectApiReceiptSha256": "e5e1bcea7d6029de7f7564e26d11cf4d52e4e86ded7b4d371d5d00e43685a6de",
+        "sourceArchive": {
+          "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.0/routecontract-0.1.0-source.zip",
+          "sha256": "4660119ff29b21fe11a2e00a2626ce09848b25652b57e1b0e0cbea7bf96eb8ea",
+          "byteCount": 937986
+        },
+        "sourceLayout": {
+          "routecontract-shardingsphere-5.5/src/main/java/io/github/ym0506/routecontract/RouteContract.java": "8b30bcbc453a0df76861d73f8704bb360bcfc567f4b2c0da82ad0d75c3ad71f6",
+          "routecontract-shardingsphere-5.5/src/main/java/io/github/ym0506/routecontract/internal/CaptureRegistry.java": "7fb1e42f0769e89ee4f0dc1704480c966bd394c4e4cb9911c6cab9b778e7fe09",
+          "routecontract-shardingsphere-5.5/src/main/java/io/github/ym0506/routecontract/internal/RouteContractSqlExecutionHook.java": "8106e7fc2e059946e0474cfafe88304a05cc4b74f7aea89bb071dac285f6ab1a",
+          "routecontract-shardingsphere-5.5/src/main/resources/META-INF/services/org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook": "b39919b122bf4b6d685eea2ba9b6589345e8169355edb30921a8eb1a80189f55"
+        },
+        "githubPayloads": [
+          {
+            "name": "routecontract-shardingsphere-5.5-0.1.0.jar",
+            "assetId": 529411732,
+            "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.0/routecontract-shardingsphere-5.5-0.1.0.jar",
+            "sha256": "d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc",
+            "byteCount": 75891
+          },
+          {
+            "name": "routecontract-shardingsphere-5.5.pom",
+            "assetId": 529411726,
+            "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.0/routecontract-shardingsphere-5.5.pom",
+            "sha256": "05570bfa238ef77db255a46efdd5bbb25e994ae0137db86491a46a25e28deac9",
+            "byteCount": 1929
+          }
+        ]
+      }
+    },
+    {
+      "version": "0.1.2",
+      "tag": "v0.1.2",
+      "sourceRevision": "fc4fdd16c21574afa1150654ce354cf8004b138b",
+      "payloads": [
+        {
+          "name": "routecontract-shardingsphere-5.5-0.1.2.jar",
+          "extension": "jar",
+          "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.2/routecontract-shardingsphere-5.5-0.1.2.jar",
+          "sha256": "d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc",
+          "byteCount": 75891
+        },
+        {
+          "name": "routecontract-shardingsphere-5.5-0.1.2.pom",
+          "extension": "pom",
+          "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.2/routecontract-shardingsphere-5.5.pom",
+          "sha256": "70b5d4161d1532e9f9cb699071790a7806d87658511d931477544fa06037b85d",
+          "byteCount": 2138
+        }
+      ],
+      "layout": {
+        "entries": {
+          "io/github/ym0506/routecontract/RouteContract.class": "127b7cf26116010a583442a2bdb0e910a751f5ea9fb45aec08768fc5b05159c0",
+          "io/github/ym0506/routecontract/internal/CaptureRegistry.class": "ff330accda68b513ab077a2da3062629ad848104154bdd450d7e8a12f7689056",
+          "io/github/ym0506/routecontract/internal/RouteContractSqlExecutionHook.class": "fc02e4d56946ab2e03105f515dc797fda4a5c68455ecb445e726139af64e2747",
+          "META-INF/services/org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook": "b39919b122bf4b6d685eea2ba9b6589345e8169355edb30921a8eb1a80189f55"
+        },
+        "hookProvider": "io.github.ym0506.routecontract.internal.RouteContractSqlExecutionHook"
+      },
+      "provenance": {
+        "releaseApiUrl": "https://api.github.com/repos/ym0506/routecontract/releases/tags/v0.1.2",
+        "releaseId": 379208302,
+        "immutable": true,
+        "prerelease": false,
+        "tagObjectSha": "6adacbe04d60b3af83d9067a14a878d26a6c90f5",
+        "sha256sums": {
+          "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.2/SHA256SUMS",
+          "sha256": "7849adf417f0170b08d01902b023e8b328d8796f7c2aeacc471eb7acf8e2b217",
+          "byteCount": 1155
+        },
+        "apiReceiptSha256": "5149370c2b4d99e24fe71df38f8116cbbecaf3270b0407258be4b7ee5727d9b4",
+        "tagObjectApiReceiptSha256": "8a714a68827552ab4760926805e0a5fec12eafa20f4f68d2048fefe4a694d54e",
+        "sourceArchive": {
+          "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.2/routecontract-0.1.2-source.zip",
+          "sha256": "a510da99006922b2d24c17e04bd26c5f14b600ee1ffb1f4b03785e82a71a0030",
+          "byteCount": 1062150
+        },
+        "sourceLayout": {
+          "routecontract-shardingsphere-5.5/src/main/java/io/github/ym0506/routecontract/RouteContract.java": "8b30bcbc453a0df76861d73f8704bb360bcfc567f4b2c0da82ad0d75c3ad71f6",
+          "routecontract-shardingsphere-5.5/src/main/java/io/github/ym0506/routecontract/internal/CaptureRegistry.java": "7fb1e42f0769e89ee4f0dc1704480c966bd394c4e4cb9911c6cab9b778e7fe09",
+          "routecontract-shardingsphere-5.5/src/main/java/io/github/ym0506/routecontract/internal/RouteContractSqlExecutionHook.java": "8106e7fc2e059946e0474cfafe88304a05cc4b74f7aea89bb071dac285f6ab1a",
+          "routecontract-shardingsphere-5.5/src/main/resources/META-INF/services/org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook": "b39919b122bf4b6d685eea2ba9b6589345e8169355edb30921a8eb1a80189f55"
+        },
+        "githubPayloads": [
+          {
+            "name": "routecontract-shardingsphere-5.5-0.1.2.jar",
+            "assetId": 536290346,
+            "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.2/routecontract-shardingsphere-5.5-0.1.2.jar",
+            "sha256": "d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc",
+            "byteCount": 75891
+          },
+          {
+            "name": "routecontract-shardingsphere-5.5.pom",
+            "assetId": 536290344,
+            "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.2/routecontract-shardingsphere-5.5.pom",
+            "sha256": "70b5d4161d1532e9f9cb699071790a7806d87658511d931477544fa06037b85d",
+            "byteCount": 2138
+          }
+        ]
+      }
+    },
+    {
+      "version": "0.1.3",
+      "tag": "v0.1.3",
+      "sourceRevision": "f1efd71e32078dd5812268a1ad24ee73110ff61f",
+      "payloads": [
+        {
+          "name": "routecontract-shardingsphere-5.5-0.1.3.jar",
+          "extension": "jar",
+          "url": "https://repo.maven.apache.org/maven2/io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.3/routecontract-shardingsphere-5.5-0.1.3.jar",
+          "sha256": "9e883e618eb09d9ecf30814151bb4b0a43eba02c78d288cc582fa7e57e6edba2",
+          "byteCount": 84926
+        },
+        {
+          "name": "routecontract-shardingsphere-5.5-0.1.3.pom",
+          "extension": "pom",
+          "url": "https://repo.maven.apache.org/maven2/io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.3/routecontract-shardingsphere-5.5-0.1.3.pom",
+          "sha256": "1db9eb4e8527341ed12184111913b7a56de979c5fc4195afcbdb162cb4e730d9",
+          "byteCount": 2138
+        },
+        {
+          "name": "routecontract-shardingsphere-5.5-0.1.3.module",
+          "extension": "module",
+          "url": "https://repo.maven.apache.org/maven2/io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.3/routecontract-shardingsphere-5.5-0.1.3.module",
+          "sha256": "eb3d2c9f8b308eb61d8e4d3e3e83e2937423a898bab0b8a623d4abf71eeb44a0",
+          "byteCount": 4050
+        }
+      ],
+      "layout": {
+        "entries": {
+          "io/github/ym0506/routecontract/RouteContract.class": "127b7cf26116010a583442a2bdb0e910a751f5ea9fb45aec08768fc5b05159c0",
+          "io/github/ym0506/routecontract/internal/CaptureRegistry.class": "ff330accda68b513ab077a2da3062629ad848104154bdd450d7e8a12f7689056",
+          "io/github/ym0506/routecontract/internal/RouteContractSqlExecutionHook.class": "fc02e4d56946ab2e03105f515dc797fda4a5c68455ecb445e726139af64e2747",
+          "META-INF/services/org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook": "b39919b122bf4b6d685eea2ba9b6589345e8169355edb30921a8eb1a80189f55"
+        },
+        "hookProvider": "io.github.ym0506.routecontract.internal.RouteContractSqlExecutionHook"
+      },
+      "provenance": {
+        "releaseApiUrl": "https://api.github.com/repos/ym0506/routecontract/releases/tags/v0.1.3",
+        "releaseId": 384084222,
+        "immutable": true,
+        "prerelease": false,
+        "tagObjectSha": "e65484c2fb50b8e73235acca9a4daed27a9e703a",
+        "sha256sums": {
+          "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.3/SHA256SUMS",
+          "sha256": "a5db817d6851675c6de1e9cd889cae78abe0aaa0df623e776e21150175a4a49e",
+          "byteCount": 1155
+        },
+        "apiReceiptSha256": "52619cc901aa3143e9c35510f5abea567860bd4fc7e6b43a646fca002dd36cea",
+        "tagObjectApiReceiptSha256": "857f4a1ce1a06daed1ab9943f83e85b707a37238e35279d5ee1acd2619750700",
+        "sourceArchive": {
+          "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.3/routecontract-0.1.3-source.zip",
+          "sha256": "cf187c0635ce2c3f35334e28dbe84635ebc6017a31d9a4027dfd7961fa9c4214",
+          "byteCount": 1498065
+        },
+        "sourceLayout": {
+          "routecontract-shardingsphere-5.5/src/main/java/io/github/ym0506/routecontract/RouteContract.java": "8b30bcbc453a0df76861d73f8704bb360bcfc567f4b2c0da82ad0d75c3ad71f6",
+          "routecontract-shardingsphere-5.5/src/main/java/io/github/ym0506/routecontract/internal/CaptureRegistry.java": "7fb1e42f0769e89ee4f0dc1704480c966bd394c4e4cb9911c6cab9b778e7fe09",
+          "routecontract-shardingsphere-5.5/src/main/java/io/github/ym0506/routecontract/internal/RouteContractSqlExecutionHook.java": "8106e7fc2e059946e0474cfafe88304a05cc4b74f7aea89bb071dac285f6ab1a",
+          "routecontract-shardingsphere-5.5/src/main/resources/META-INF/services/org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook": "b39919b122bf4b6d685eea2ba9b6589345e8169355edb30921a8eb1a80189f55"
+        },
+        "githubPayloads": [
+          {
+            "name": "routecontract-shardingsphere-5.5-0.1.3.jar",
+            "assetId": 548777183,
+            "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.3/routecontract-shardingsphere-5.5-0.1.3.jar",
+            "sha256": "9e883e618eb09d9ecf30814151bb4b0a43eba02c78d288cc582fa7e57e6edba2",
+            "byteCount": 84926
+          },
+          {
+            "name": "routecontract-shardingsphere-5.5.pom",
+            "assetId": 548777191,
+            "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.3/routecontract-shardingsphere-5.5.pom",
+            "sha256": "1db9eb4e8527341ed12184111913b7a56de979c5fc4195afcbdb162cb4e730d9",
+            "byteCount": 2138
+          }
+        ],
+        "reviewedManifest": {
+          "sha256": "c8a9465e6a1114a02c986d8175b90a5d9f6565ff6bd669d524128b62e4bab53a",
+          "byteCount": 1097
+        },
+        "publicReadbackReceipt": {
+          "sha256": "128d029c21585a9cca4b803c4210bebcf5fa8619cae4441e58357a431aaa95c2",
+          "byteCount": 8523,
+          "verifiedEntryCount": 30,
+          "bundleSha256": "b57fe15bb6e911e625d945786e30916e1ee5fa4412889687a6a189c9f17acb22",
+          "reviewedManifestSha256": "c8a9465e6a1114a02c986d8175b90a5d9f6565ff6bd669d524128b62e4bab53a"
+        }
+      }
+    },
+    {
+      "version": "0.1.0-rc2",
+      "tag": "v0.1.0-rc2",
+      "sourceRevision": "4cb8b368fef4ca15ad2f09a8c4a17f820e80d16b",
+      "payloads": [
+        {
+          "name": "routecontract-shardingsphere-5.5-0.1.0-rc2.jar",
+          "extension": "jar",
+          "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.0-rc2/routecontract-shardingsphere-5.5-0.1.0-rc2.jar",
+          "sha256": "d0e45bc3d6d88f94ee801143356d7472306d852ec58f6517f0e39aeee0213fdb",
+          "byteCount": 75465
+        },
+        {
+          "name": "routecontract-shardingsphere-5.5-0.1.0-rc2.pom",
+          "extension": "pom",
+          "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.0-rc2/routecontract-shardingsphere-5.5.pom",
+          "sha256": "569bb8ad2e40237156d73903be508c5b65be6ab1fcfc63834c0529f314507075",
+          "byteCount": 1933
+        }
+      ],
+      "layout": {
+        "entries": {
+          "io/github/ym0506/routecontract/RouteContract.class": "127b7cf26116010a583442a2bdb0e910a751f5ea9fb45aec08768fc5b05159c0",
+          "io/github/ym0506/routecontract/internal/CaptureRegistry.class": "ff330accda68b513ab077a2da3062629ad848104154bdd450d7e8a12f7689056",
+          "io/github/ym0506/routecontract/internal/RouteContractSqlExecutionHook.class": "fc02e4d56946ab2e03105f515dc797fda4a5c68455ecb445e726139af64e2747",
+          "META-INF/services/org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook": "b39919b122bf4b6d685eea2ba9b6589345e8169355edb30921a8eb1a80189f55"
+        },
+        "hookProvider": "io.github.ym0506.routecontract.internal.RouteContractSqlExecutionHook"
+      },
+      "provenance": {
+        "releaseApiUrl": "https://api.github.com/repos/ym0506/routecontract/releases/tags/v0.1.0-rc2",
+        "releaseId": 374131524,
+        "immutable": true,
+        "prerelease": true,
+        "tagObjectSha": "5ef16e7e3271751a2d38a81137a852584fb02805",
+        "sha256sums": {
+          "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.0-rc2/SHA256SUMS",
+          "sha256": "1a163253a37cf395b8092e7a24f36020ea7c0519d0fc7b5517742e8fbc019522",
+          "byteCount": 1171
+        },
+        "apiReceiptSha256": "ae8f4a57b11312ed671f16fe867d31446fb810ab6a18c6739b1dcc045dea96cc",
+        "tagObjectApiReceiptSha256": "5411599fddd77bab524491d62f96e26a2252e5ffe738c8ae375816f69302dc7d",
+        "sourceArchive": {
+          "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.0-rc2/routecontract-0.1.0-rc2-source.zip",
+          "sha256": "0844bdae7a6330fc944bca9062ae6204f26475911cc5122bc3c8d0c5ec26952c",
+          "byteCount": 813334
+        },
+        "sourceLayout": {
+          "routecontract-shardingsphere-5.5/src/main/java/io/github/ym0506/routecontract/RouteContract.java": "8b30bcbc453a0df76861d73f8704bb360bcfc567f4b2c0da82ad0d75c3ad71f6",
+          "routecontract-shardingsphere-5.5/src/main/java/io/github/ym0506/routecontract/internal/CaptureRegistry.java": "7fb1e42f0769e89ee4f0dc1704480c966bd394c4e4cb9911c6cab9b778e7fe09",
+          "routecontract-shardingsphere-5.5/src/main/java/io/github/ym0506/routecontract/internal/RouteContractSqlExecutionHook.java": "8106e7fc2e059946e0474cfafe88304a05cc4b74f7aea89bb071dac285f6ab1a",
+          "routecontract-shardingsphere-5.5/src/main/resources/META-INF/services/org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook": "b39919b122bf4b6d685eea2ba9b6589345e8169355edb30921a8eb1a80189f55"
+        },
+        "githubPayloads": [
+          {
+            "name": "routecontract-shardingsphere-5.5-0.1.0-rc2.jar",
+            "assetId": 523082216,
+            "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.0-rc2/routecontract-shardingsphere-5.5-0.1.0-rc2.jar",
+            "sha256": "d0e45bc3d6d88f94ee801143356d7472306d852ec58f6517f0e39aeee0213fdb",
+            "byteCount": 75465
+          },
+          {
+            "name": "routecontract-shardingsphere-5.5.pom",
+            "assetId": 523082212,
+            "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.0-rc2/routecontract-shardingsphere-5.5.pom",
+            "sha256": "569bb8ad2e40237156d73903be508c5b65be6ab1fcfc63834c0529f314507075",
+            "byteCount": 1933
+          }
+        ]
+      }
+    }
+  ],
+  "tagOnly": [
+    {
+      "version": "0.1.0-rc1",
+      "tag": "v0.1.0-rc1",
+      "sourceRevision": "09a7d5b1fb22a03567f4c2970c5b79ba185aa455",
+      "tagObjectSha": "e9564b151b15265ce154242824b243d07ae683ae",
+      "sourceLayout": {
+        "entries": {
+          "routecontract-shardingsphere-5.5/src/main/java/io/github/ym0506/routecontract/RouteContract.java": "8b30bcbc453a0df76861d73f8704bb360bcfc567f4b2c0da82ad0d75c3ad71f6",
+          "routecontract-shardingsphere-5.5/src/main/java/io/github/ym0506/routecontract/internal/CaptureRegistry.java": "7fb1e42f0769e89ee4f0dc1704480c966bd394c4e4cb9911c6cab9b778e7fe09",
+          "routecontract-shardingsphere-5.5/src/main/java/io/github/ym0506/routecontract/internal/RouteContractSqlExecutionHook.java": "8106e7fc2e059946e0474cfafe88304a05cc4b74f7aea89bb071dac285f6ab1a",
+          "routecontract-shardingsphere-5.5/src/main/resources/META-INF/services/org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook": "b39919b122bf4b6d685eea2ba9b6589345e8169355edb30921a8eb1a80189f55"
+        },
+        "hookProvider": "io.github.ym0506.routecontract.internal.RouteContractSqlExecutionHook"
+      },
+      "matchesDistributedSourceLayouts": [
+        "0.1.0",
+        "0.1.2",
+        "0.1.3",
+        "0.1.0-rc2"
+      ],
+      "provenance": {
+        "releaseApiUrl": "https://api.github.com/repos/ym0506/routecontract/releases/tags/v0.1.0-rc1",
+        "observedReleaseStatus": 404,
+        "tagObjectApiReceiptSha256": "cfce62ee25c9429cc659826ca9d8d3e79ca9738532449e0f005a7ec567a2bec5"
+      },
+      "evidenceBoundary": "Source-layout identity only; no distributed JAR or runtime execution claimed."
+    },
+    {
+      "version": "0.1.1",
+      "tag": "v0.1.1",
+      "sourceRevision": "68078604a273b5529e72f0fac936dc459d44d1f9",
+      "tagObjectSha": "906a0d3c056173d8e51af86714934477ee2cb69a",
+      "sourceLayout": {
+        "entries": {
+          "routecontract-shardingsphere-5.5/src/main/java/io/github/ym0506/routecontract/RouteContract.java": "8b30bcbc453a0df76861d73f8704bb360bcfc567f4b2c0da82ad0d75c3ad71f6",
+          "routecontract-shardingsphere-5.5/src/main/java/io/github/ym0506/routecontract/internal/CaptureRegistry.java": "7fb1e42f0769e89ee4f0dc1704480c966bd394c4e4cb9911c6cab9b778e7fe09",
+          "routecontract-shardingsphere-5.5/src/main/java/io/github/ym0506/routecontract/internal/RouteContractSqlExecutionHook.java": "8106e7fc2e059946e0474cfafe88304a05cc4b74f7aea89bb071dac285f6ab1a",
+          "routecontract-shardingsphere-5.5/src/main/resources/META-INF/services/org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook": "b39919b122bf4b6d685eea2ba9b6589345e8169355edb30921a8eb1a80189f55"
+        },
+        "hookProvider": "io.github.ym0506.routecontract.internal.RouteContractSqlExecutionHook"
+      },
+      "matchesDistributedSourceLayouts": [
+        "0.1.0",
+        "0.1.2",
+        "0.1.3",
+        "0.1.0-rc2"
+      ],
+      "provenance": {
+        "releaseApiUrl": "https://api.github.com/repos/ym0506/routecontract/releases/tags/v0.1.1",
+        "observedReleaseStatus": 404,
+        "tagObjectApiReceiptSha256": "15e7d96bb67e0050afd998547f5a210cf91b704c5273ea085cf17b9b1ee3afdc"
+      },
+      "evidenceBoundary": "Source-layout identity only; no distributed JAR or runtime execution claimed."
+    }
+  ]
+}

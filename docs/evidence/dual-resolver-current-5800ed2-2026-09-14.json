@@ -1,0 +1,103 @@
+{
+  "formatVersion": 1,
+  "status": "INCOMPLETE",
+  "producer": "5800ed2960aefbf63c01d2ebaf2265278d662494",
+  "verifierRevision": "3e3f693ce6a00b1292693d15fb4cbaf05d0e3a16",
+  "receiptSha256": "9a4d745ff11508a8ab08dd8bced6a7893d8f6e6ff5baab34b3445aea652ba49c",
+  "inputManifestSha256": "313bb68f5692d730cd283ff7967f00bac6f7111d72c37deb957d54094e9771a0",
+  "gradleDistributionSha256": "acd53f1edaf02f1a8ff99879f8a34b302661a057d9b063ae9e35b552f804d20a",
+  "nativeInvocationExitCode": 1,
+  "summarySha256": "a1cac3642bad3830e30a71f7d2cc38e8257f8376438a8bc25d18c708d52d8772",
+  "nativePassedCases": [
+    {
+      "caseId": "gradle-5.5.2-selected-first",
+      "result": "NATIVE_CAPABILITY_REJECTED",
+      "capabilities": [
+        "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.2.0"
+      ],
+      "actualRootProject": "root project 'dual-resolver-boundary-consumer'",
+      "actualRootRequests": [
+        "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5.2:0.2.0",
+        "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.2.0",
+        "org.apache.shardingsphere:shardingsphere-infra-executor:5.5.2",
+        "org.apache.shardingsphere:shardingsphere-infra-spi:5.5.2",
+        "org.apache.shardingsphere:shardingsphere-infra-database-core:5.5.2"
+      ],
+      "nativeEvidenceFiles": {
+        "native-capability-rejection-command.json": "5c6b896e39ad22339c246959518d8921dc49866be1f85cc2ed4548e1d8943d92",
+        "native-capability-rejection.log": "5290eee5d447c1230527dc8c8db8777da3b055ebe94f550c9c89a5740a5288de"
+      },
+      "graphSha256": "2e31c4577a9cf4568606088807f4b468011c0312ce21d359893177421d85df34",
+      "resultSha256": "638c2914edeb20616cdafb78323a436e64b78841e12f2ea0f58bf0d494bd2811",
+      "intrinsicFormats": []
+    },
+    {
+      "caseId": "gradle-5.5.2-opposite-first",
+      "result": "NATIVE_CAPABILITY_AND_INTRINSIC_STRICT_REJECTED",
+      "capabilities": [
+        "io.github.ym0506.routecontract:routecontract-shardingsphere-hook-adapter:1"
+      ],
+      "actualRootProject": "root project 'dual-resolver-boundary-consumer'",
+      "actualRootRequests": [
+        "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.2.0",
+        "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5.2:0.2.0",
+        "org.apache.shardingsphere:shardingsphere-infra-executor:5.5.2",
+        "org.apache.shardingsphere:shardingsphere-infra-spi:5.5.2",
+        "org.apache.shardingsphere:shardingsphere-infra-database-core:5.5.2"
+      ],
+      "nativeEvidenceFiles": {
+        "native-capability-rejection-command.json": "d3211be9f7028b9e04d4ee832d3d33e337a5e1ada9f812e980dce5a905958995",
+        "native-capability-rejection.log": "459add7b7d0ff395f5e6663c1cc841c80e5478a9d844a8c18b965135b3d8e9aa"
+      },
+      "graphSha256": "f754c09013c0d4f3f76cbd03111ad8fe138d6c525ec6a1061e801224e4846d45",
+      "resultSha256": "88684fbb2a40f74ff8237809b181bf074fc7a662aae2572f1e0bdff43b608733",
+      "intrinsicFormats": [
+        "path",
+        "compact-constraints",
+        "compact-constraints"
+      ]
+    },
+    {
+      "caseId": "gradle-5.5.3-selected-first",
+      "result": "NATIVE_CAPABILITY_AND_INTRINSIC_STRICT_REJECTED",
+      "capabilities": [
+        "io.github.ym0506.routecontract:routecontract-shardingsphere-hook-adapter:1"
+      ],
+      "actualRootProject": "root project 'dual-resolver-boundary-consumer'",
+      "actualRootRequests": [
+        "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.2.0",
+        "io.github.ym0506.routecontract:routecontract-shardingsphere-5.5.2:0.2.0",
+        "org.apache.shardingsphere:shardingsphere-infra-executor:5.5.3",
+        "org.apache.shardingsphere:shardingsphere-infra-spi:5.5.3",
+        "org.apache.shardingsphere:shardingsphere-database-connector-core:5.5.3"
+      ],
+      "nativeEvidenceFiles": {
+        "native-capability-rejection-command.json": "c0fe90cb17f69dcd4d53a97c2206b0776d74ad1b2ef98d14fdb228bf55e38fe4",
+        "native-capability-rejection.log": "72935193f6e6127f1f7b5c1733588cde697d29a1a67aec4068f651e33fdc9338"
+      },
+      "graphSha256": "7a760e4432a82e83906110b84bbe61ae2267d2a562946b2b922631d77cf6fe40",
+      "resultSha256": "70a6018a2060ec9419379d75ee75b45db4966f1b6b7fd4a2f5a958c23658965b",
+      "intrinsicFormats": [
+        "path",
+        "compact-constraints",
+        "compact-constraints",
+        "compact-constraints"
+      ]
+    }
+  ],
+  "failedCase": {
+    "id": "gradle-5.5.3-opposite-first",
+    "failure": "Each intrinsic collision must show exactly both published contradictory adapter paths",
+    "graphSha256": "6c67847a915af4645f06d1fa97228d718a8c1218a529c91c46d96ea650bc16ac",
+    "nativeLogSha256": "079ebdf13a1c506ee7ae1136d95301f93cda1ca0efa4427feecb0d4b22b3dca1"
+  },
+  "additionalDiagnostic": {
+    "qualifyingExecution": false,
+    "nativeLogSha256": "3d7f87f79845b5598ae4a24b5218a458c4f0e9dcb7263e01dd779b58b23ab971",
+    "conclusion": "AssessedSelection also has only ordinary 5.5.3 REQUESTED paths; missing adapter paths not recovered"
+  },
+  "fullTenCaseGateComplete": false,
+  "mysqlExecutions": 0,
+  "humanReview": null,
+  "public02": false
+}

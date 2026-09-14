@@ -5,8 +5,19 @@ pluginManagement {
     }
 }
 
+gradle.beforeProject { configuredProject ->
+    if (configuredProject.path == ':') {
+        configuredProject.apply from: new File(
+                settingsDir, 'gradle/routecontract-central-publication.gradle')
+    }
+}
+
 rootProject.name = 'routecontract'
 
+include 'routecontract-core'
 include 'routecontract-shardingsphere-5.5'
+include 'routecontract-shardingsphere-5.5.2'
 include 'mysql-example'
 project(':mysql-example').projectDir = file('examples/mysql')
+include 'mysql-5.5.2-example'
+project(':mysql-5.5.2-example').projectDir = file('examples/mysql-5.5.2')

@@ -1,0 +1,242 @@
+{
+  "schemaVersion": 1,
+  "status": "SOURCE_CHECKS_AND_EXACT_CLEAN_REVISION_SCAN_VERIFIED",
+  "date": "2026-09-08",
+  "previousFindings": {
+    "count": 6,
+    "inventoryPackages": 318,
+    "evidence": "retained pinned local diagnostic; not a release scan",
+    "summarySha256": "20908391f0f844c3247de568d2376f1355564771c3c0160173ebc725aa1614a6"
+  },
+  "corrections": [
+    {
+      "previous": "com.google.protobuf:protobuf-java:3.21.9",
+      "selected": "com.google.protobuf:protobuf-java:4.31.1",
+      "scope": "mysql552 compile/runtime; runtime already used 4.31.1",
+      "advisory": "CVE-2024-7254",
+      "source": "https://github.com/protocolbuffers/protobuf/security/advisories/GHSA-735f-pc8j-v9w8"
+    },
+    {
+      "previous": "commons-lang:commons-lang:2.4",
+      "selected": null,
+      "producerMigration": "net.hydromatic:aggdesigner-algorithm:6.0 -> 6.1, coordinated with Calcite 1.42.0",
+      "scope": "mysql552 full JDBC fixture; removed by upstream producer migration, without a new exclusion",
+      "advisory": "CVE-2025-48924",
+      "source": "https://raw.githubusercontent.com/CVEProject/cvelistV5/main/cves/2025/48xxx/CVE-2025-48924.json"
+    },
+    {
+      "previous": "net.minidev:json-smart:2.5.0",
+      "selected": "net.minidev:json-smart:2.5.2",
+      "aligned": "net.minidev:accessors-smart:2.5.2",
+      "scope": "mysql552 full JDBC fixture",
+      "advisory": "CVE-2024-57699",
+      "source": "https://github.com/netplex/json-smart-v2/releases/tag/2.5.2"
+    },
+    {
+      "previous": "org.apache.calcite:calcite-core:1.38.0",
+      "selected": "org.apache.calcite:calcite-core:1.42.0",
+      "aligned": [
+        "org.apache.calcite:calcite-linq4j:1.42.0",
+        "org.apache.calcite.avatica:avatica-core:1.28.0",
+        "org.apache.calcite.avatica:avatica-metrics:1.28.0"
+      ],
+      "scope": "mysql552 full JDBC fixture",
+      "advisory": "CVE-2026-46718",
+      "source": "https://raw.githubusercontent.com/CVEProject/cvelistV5/main/cves/2026/46xxx/CVE-2026-46718.json"
+    },
+    {
+      "previous": "org.apache.commons:commons-lang3:3.15.0",
+      "selected": "org.apache.commons:commons-lang3:3.18.0",
+      "scope": "published 552 adapter direct runtime dependency and 552 fixtures",
+      "advisory": "CVE-2025-48924",
+      "source": "https://raw.githubusercontent.com/CVEProject/cvelistV5/main/cves/2025/48xxx/CVE-2025-48924.json"
+    },
+    {
+      "previous": "org.apache.httpcomponents.core5:httpcore5:5.2.3",
+      "selected": "org.apache.httpcomponents.core5:httpcore5:5.4.3",
+      "scope": "mysql552 full JDBC fixture",
+      "advisory": "CVE-2026-54399",
+      "source": "https://raw.githubusercontent.com/CVEProject/cvelistV5/main/cves/2026/54xxx/CVE-2026-54399.json"
+    }
+  ],
+  "executionIdentity": {
+    "kind": "frozen modified working-tree snapshot",
+    "baseRevision": "e43585ec2de21676942f9339f891d21d75f03029",
+    "modifiedFileCount": 14,
+    "frozenInputSha256": "58f7927410831451e7c3ee0cfba17b57a5c3f30cfd2aecf78ddd182d3670d104",
+    "fileManifestSha256": "0052ba6a78974051c889a2247b3067e52d66bf8e48a7c38c91521f79cfba256e",
+    "executedAsCleanIntegrationRevision": false
+  },
+  "integration": {
+    "dependencyRevision": "5fdfc3dcd3f4190e4c2b9e381b0b096169b387bb",
+    "dependencyReviewSha256": "d588df4535e869bcff4b5f34fb4ac63d4b7bc01b0709c2df0ed60c592fe877ad",
+    "corpusContractRevision": "cef11a11284d95b7bca9c16f97db5ded11bc64e0",
+    "corpusSourceRevision": "5fdfc3dcd3f4190e4c2b9e381b0b096169b387bb",
+    "corpusContractSha256": "444d29f4c3b217b62bf1189775f15903a53469032f7fae60dc08d23e78916a52"
+  },
+  "verification": {
+    "java": "17.0.15",
+    "gradle": "8.14.4",
+    "strictDependencyVerification": true,
+    "adapter552": {
+      "tests": 31,
+      "suites": 6,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "evidenceLabels": [
+        "verified - unit",
+        "verified - ShardingSphere-JDBC 5.5.2"
+      ]
+    },
+    "mysql552": {
+      "tests": 14,
+      "suites": 2,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "shapes": 8,
+      "repetitionsPerShape": 20,
+      "captureIsolationPairs": 20,
+      "pairEvidence": "unchanged barrier-backed loop and passed method; no separate pair-count marker or callback-overlap claim",
+      "evidenceLabels": [
+        "verified - MySQL",
+        "verified - ShardingSphere-JDBC 5.5.2"
+      ]
+    },
+    "sourceCommandSha256": "4fc19674286a6da93e2d60da0cbad4fa52076ab31fd6cf2f08d93eef394b3ded",
+    "sourceLogSha256": "6bbd8d03019788b40f2321b2d8afb54b7647d701892bc927da51cdd7346d55d1",
+    "fullEofAndExitZero": true,
+    "focusedTests": {
+      "sbomUniqueMethods": 66,
+      "policy": 127,
+      "osvParser": 13,
+      "optionalOfficialSyntheticTest": "passed separately after initial opt-in skip"
+    },
+    "sbom": {
+      "pairs": 6,
+      "officialDocumentsPassed": 12,
+      "inventoryPackages": 306,
+      "inventorySha256": "dc4e37e0ae12230acbc1366fdb7ca6f6d28ac077bef9cc7fc6d760e5d8b51387"
+    },
+    "trust": {
+      "newPins": 17,
+      "newGavs": 9,
+      "metadataSha256": "b832beb18973afe30e1bbadddc64fa1a6b1b9b4cf05023e77a5eccd53cbdce61",
+      "publisherSidecars": {
+        "sha512": 7,
+        "sha1": 10
+      },
+      "independentReview": true,
+      "signatureAuthenticationClaim": false
+    },
+    "graphs": {
+      "sourceConfigurations": 14,
+      "externalAcquisitionConfigurations": 6,
+      "strictArtifactListsEqualAcquisition": true,
+      "additionalStrictLockEdges": 781,
+      "originalEdgesRemovedOrChanged": 0,
+      "externalAcquisition": "resolution only, using the historical 86 receipt; not corrected first-party consumer execution",
+      "reviewedRuntimeDifference": {
+        "source552": "commons-logging:commons-logging:1.3.5",
+        "external552": "commons-logging:commons-logging:1.2"
+      },
+      "strictArtifactComparisonBaseline": "reviewed acquisition graph for corrected dependencies"
+    }
+  },
+  "preserved": {
+    "exactShardingSphereVersions": [
+      "5.5.2",
+      "5.5.3"
+    ],
+    "safe553Policy": true,
+    "corpusSuites": 6,
+    "corpusMethods": 28,
+    "originalInputCount": 39,
+    "unchangedInputPins": 37,
+    "reviewedBuildAndLockPinsChanged": 2,
+    "corpus552GoldenJsons": 14,
+    "operation552Manifests": 2,
+    "newDependencyExclusions": 0,
+    "scannerAllowances": 0,
+    "newHttpClientOrH2Dependencies": 0,
+    "goldenGenerationEnabled": false
+  },
+  "independentReviewSha256": {
+    "source": "cbcf8579abe6f98081fcfe39c95c4c4e286f6640c2d84c3f6227e931f08e28a6",
+    "trustAndGraphs": "4df2a6d38c78c8950d334bcb7071c90d65eb242aa5536cde875ae8adc647236c",
+    "strictGraph": "fe50af5284f094e6f08cd16d28b08b0777517d67eb6ac8b59fbef69e52dd5cb4",
+    "corpusFingerprint": "eb52b66c89a24b86a0f2888432877ae2da2f8d9ca56f0578edb90872c651222d"
+  },
+  "retainedAttempts": {
+    "expectedRed": [
+      "two new publication/runtime assertions failed on previous Lang3 dependency",
+      "new SBOM test exposed acceptance of previous Calcite graph"
+    ],
+    "diagnosedBeforeRetry": [
+      "diagnostic attempted to hash a project output directory",
+      "synthetic aggregate needed deduplication after both profiles selected the same Calcite GAV; diagnostic assertion corrected",
+      "CycloneDX requested one additional json-path POM before task execution; independent publisher pin added"
+    ],
+    "rawFailuresPreserved": true
+  },
+  "cleanRevisionScan": {
+    "status": "PASS",
+    "revision": "cef11a11284d95b7bca9c16f97db5ded11bc64e0",
+    "sourceTree": "72b559c795a501d2f428fd562cd2eb814532d461",
+    "environment": "local macOS arm64 / Homebrew Java17; not pinned Temurin CI or release preparation",
+    "wrapperExitCode": 0,
+    "fullEof": true,
+    "sbomPairs": 6,
+    "officialDocumentsPassed": 12,
+    "publishedPomLockPairs": 3,
+    "inventoryPackages": 306,
+    "rawPackages": 306,
+    "rawPackageSetExactlyEqualsInventory": true,
+    "findings": 0,
+    "acceptedVulnerabilityExceptions": 0,
+    "existingLicenseReviewExceptions": 1,
+    "policyUnchanged": true,
+    "oldSixFindingPurlsAbsent": true,
+    "sourceAndToolPinsUnchanged": true,
+    "inventorySha256": "dc4e37e0ae12230acbc1366fdb7ca6f6d28ac077bef9cc7fc6d760e5d8b51387",
+    "retainedInventory": "canonical reconstruction from retained actual aggregate SBOM; matches runner hash; original temporary inventory intentionally removed",
+    "summarySha256": "995a079cbbaa61ce828c3ac96b7bc60514584351563758e46b92757d58da7278",
+    "sanitizedEvidenceSha256": "60ccd80cd7cdf4f16e792e9ba2828d12414468aba109eb9060e04cda84d1f96e",
+    "rawResultSha256": "841cd39034911d9889142db8b61cfbcda27151f948654dec28937d98f02dd4c2",
+    "scanLogSha256": "e83e78d6f06ce9b501f6278239b891916bd4f2103acda07b1d43654f832bc51e",
+    "scanner": {
+      "name": "OSV-Scanner",
+      "version": "2.5.0",
+      "binarySha256": "fff5a2e351b7f0a60001e87cbf862e82fb82e2792d368b533fec7a5865a73da2",
+      "databaseGeneration": "1788523358826365",
+      "databaseSha256": "bc2546e64b47af11125e1c35a07ef66afa28716de2cf48f28bf50aa66a0fcf7d",
+      "configuration": "empty explicit configuration",
+      "configurationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "scope": "point-in-time exact graph and pinned advisory database; no unbounded vulnerability-free claim",
+    "supplementalIndependentRootReviewSha256": "cac9232b86665bffb57ef3728ed7131d20ced2c744357c5280a669081d724b4e"
+  },
+  "boundaries": {
+    "thinAdapterDoesNotSupplyWholeApplicationDependencyPolicy": true,
+    "sqlFederationCoverageClaim": false,
+    "offlineOrNoPullClaim": false,
+    "correctedPackagedRuntimeBinding": "PENDING",
+    "newStageClaim": false,
+    "newConsumerMatrixClaim": false,
+    "public02Claim": false,
+    "adoptionClaim": false,
+    "humanReview": null,
+    "releaseApprovalClaim": false,
+    "historical86EvidenceUnchanged": true
+  },
+  "reproduction": {
+    "checkoutRevision": "cef11a11284d95b7bca9c16f97db5ded11bc64e0",
+    "java": "17.0.15",
+    "gradleWrapper": "8.14.4",
+    "docker": "running for source MySQL tests",
+    "sourceTaskCommand": "./gradlew --no-daemon --no-build-cache --console=plain --dependency-verification=strict --max-workers=2 :routecontract-shardingsphere-5.5.2:test :mysql-5.5.2-example:test",
+    "cleanScanCommand": "bash scripts/run-final-supply-chain-scan.sh --revision cef11a11284d95b7bca9c16f97db5ded11bc64e0",
+    "sourceReplayBoundary": "verifies integrated source inputs; does not recreate original modified working-tree execution"
+  }
+}

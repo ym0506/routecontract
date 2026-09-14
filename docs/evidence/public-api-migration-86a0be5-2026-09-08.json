@@ -1,0 +1,162 @@
+{
+  "formatVersion": 1,
+  "gate": "A26",
+  "status": "PASSED_BOUNDED_LOCAL_A26",
+  "evidenceLabels": [
+    "verified - MySQL",
+    "verified - ShardingSphere-JDBC 5.5.3"
+  ],
+  "producerRevision": "86a0be5d2e444f3b73925122fa448d9d1a324edd",
+  "consumerRevision": "3ad510a0af972231fbd074607936ee52be3cad1f",
+  "productionPublicationInputsIdentical": true,
+  "execution": {
+    "count": 1,
+    "startedAt": "2026-09-08T11:19:11.625339+00:00",
+    "finishedAt": "2026-09-08T11:22:32.270445+00:00",
+    "elapsedSeconds": 200.645,
+    "exitCode": 0,
+    "commandWithLocationPlaceholders": [
+      "python3",
+      "-B",
+      "-I",
+      "scripts/verify-public-api-migration.py",
+      "--legacy-repository",
+      "${PINNED_LEGACY_REPOSITORY}",
+      "--repository",
+      "${REVIEWED_STAGED_REPOSITORY}",
+      "--evidence-directory",
+      "${ABSENT_EVIDENCE_DIRECTORY}"
+    ],
+    "javaHome": "${JAVA17_HOME}",
+    "javaVersion": "17.0.15",
+    "gradleVersion": "8.14.4",
+    "mysqlImage": "mysql:8.4.11@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb",
+    "runtime": "5.5.3"
+  },
+  "inputs": {
+    "reviewedReceiptSha256": "1f4bb21b430a03a44d89e6daddc1fbdede1886250637ef83cecedfd71e350c7e",
+    "runnerSha256": "b1893cd2171a458bfd5253a27a0ca6935499f2d2adddd13a94a6b13f4be7835d",
+    "a26SourceInputCount": 21,
+    "allNineStagedPayloadsUnchanged": true,
+    "sourceAndInputHashesUnchanged": true,
+    "stagedPayloads": [
+      {
+        "relativePath": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.jar",
+        "size": 95418,
+        "sha256": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac"
+      },
+      {
+        "relativePath": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.pom",
+        "size": 2043,
+        "sha256": "ccf3a3854e9f369facb1fe63eabc7303c507a7df2a6438372fc77259428519ce"
+      },
+      {
+        "relativePath": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.module",
+        "size": 4564,
+        "sha256": "6878a932dde5696019f6d34d8d07590d0e293c119a16d77bfb1f601e6f9c8a64"
+      },
+      {
+        "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.jar",
+        "size": 30470,
+        "sha256": "e48e67b2ce2c5d75d60d6794fe93c34d34697daff810a7b1f9c977095c5a02e5"
+      },
+      {
+        "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.pom",
+        "size": 2864,
+        "sha256": "d6a5232c2d43ec109fc04924635af245b930c99e449c13bd7949c8f62a518945"
+      },
+      {
+        "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.module",
+        "size": 6086,
+        "sha256": "dca55d4f57ef7b8b9d577abc37858ba3a53b901d617086640b50befcd1a1ac96"
+      },
+      {
+        "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.jar",
+        "size": 30459,
+        "sha256": "d5e73f86004fc5a00ebdf3069440d16f8eaf2e033e8b57a7d096ace26630fbe4"
+      },
+      {
+        "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.pom",
+        "size": 2862,
+        "sha256": "baa1a36766d63969f38a90d6ba3c6b9f3d6004e230ed42f2a8778053bc172a3f"
+      },
+      {
+        "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.module",
+        "size": 6418,
+        "sha256": "b3dd0230824a5bf442069e183074ca24e610e0c3eebbac7dc968557205cc8dac"
+      }
+    ],
+    "consumedCurrentModules": [
+      "routecontract-core",
+      "routecontract-shardingsphere-5.5"
+    ],
+    "legacyVersion": "0.1.2",
+    "legacyPublicInputRecordSha256": "3d3b74073d281e525d161ddf228daa40ec499af7c3af0d7e9040bbfb2db97d33",
+    "legacyArtifactSha256": {
+      "routecontract-shardingsphere-5.5-0.1.2.jar": "d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc",
+      "routecontract-shardingsphere-5.5-0.1.2.pom": "70b5d4161d1532e9f9cb699071790a7806d87658511d931477544fa06037b85d"
+    },
+    "legacyInputBoundary": "Previously authenticated retained public release bytes, reused without modification; no fresh public first-party download or signed-tag attestation."
+  },
+  "results": {
+    "mysqlJunit": {
+      "0.1.2": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "0.2.0": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    "oldMySqlBytecodeClassesUnchanged": 3,
+    "publicApiProbes": {
+      "publicTypes": 26,
+      "preservedMemberDescriptors": 167,
+      "oldBytecodeClasses": 4,
+      "sourceConstantRejections": 2,
+      "enumNewValuesRejectedByOldBytecode": 2,
+      "enumBinaryAndSourceChangesObserved": true,
+      "unchangedMySqlSourceRecompiled": true,
+      "explicitIdentitySourcePassed": true,
+      "moduleCaptureRejectedBeforeAction": true,
+      "schema1CodecBytesEqual": true
+    },
+    "businessResultUnchanged": true,
+    "equalityAttempts": 1,
+    "rangeAttempts": 2,
+    "rangeVerification": "POLICY_VIOLATION",
+    "rangeCodes": [
+      "RCM201",
+      "RCM202"
+    ],
+    "all75RetainedFilesBound": true,
+    "intentionalNegativeLogs": 5,
+    "unexpectedEofOrShutdownErrors": 0,
+    "moduleCaptureMarker": "RC_UNSUPPORTED_MODULE_PATH",
+    "moduleCaptureActionEntered": false
+  },
+  "migrationLimits": [
+    "Legacy constructors still accept schema 1 while recompiled schema constants are 2; affected unchanged source needs explicit migration.",
+    "Record components/equality/hashCode/toString include runtime identity; no cross-version hash-value stability claim.",
+    "Old exhaustive enum-switch bytecode rejects the two new values; unchanged exhaustive switch source needs new cases.",
+    "The public API code source moves to transitive core. Module-path capture remains unsupported.",
+    "A26 exercises exact 5.5.3 clean classpath migration only. Binding the unused 5.5.2 payload does not exercise 5.5.2."
+  ],
+  "retainedLocalEvidenceSha256": {
+    "summary.json": "86821cb23e22444894cb415128bce214dc8f1b6e24047542af7d35fe3e57a0c3",
+    "wrapper-record.json": "b45e157ebdf07c3789ee54420439b8789925ea05cc3a4153c00f68c4a8e5ce27",
+    "runner.log": "691234a8b2b7482c59bf07a2d0eaa727e79428421ea8d6397698a79ade90f410",
+    "frozen-launch-inputs.json": "0a3b39847addac8b7736b8022db34b591f44c79136bdf581488034c297f0ca75",
+    "independent-input-audit.json": "76672271abc2269b54ea71ba625d74c63c1700607308a1a9b222ab5703fe2f86",
+    "independent-raw-audit.json": "4bfcfedb5cc15bee6e2f276616ea231c60b3724b7629926777e1a68c12c36682"
+  },
+  "publicRepositoryConsumption": false,
+  "completeBehavioralCompatibility": false,
+  "originalA28Status": "FAILED",
+  "boundary": "One unchanged bounded runner execution on reviewed unsigned local86 staging. Raw logs/paths/SQL/connection details remain local; this is not public 0.2 availability, release approval, universal compatibility or independent adoption."
+}

@@ -1,0 +1,891 @@
+{
+  "formatVersion": 1,
+  "producer": "5800ed2960aefbf63c01d2ebaf2265278d662494",
+  "consumerRevision": "efcfbb4ca30ad8dd1531f97c654068c36bb8410a",
+  "receiptSha256": "9a4d745ff11508a8ab08dd8bced6a7893d8f6e6ff5baab34b3445aea652ba49c",
+  "environment": {
+    "os": "macOS 26.4.1 arm64",
+    "java": "Temurin 17.0.20.1+1",
+    "gradle": "9.7.1",
+    "shardingSphere": [
+      "5.5.2",
+      "5.5.3"
+    ],
+    "mysql": "8.4.11",
+    "mysqlManifestDigest": "sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb"
+  },
+  "runtimeMatrices": [
+    {
+      "name": "boundary",
+      "passed": 28,
+      "nativeExitCode": 0,
+      "summarySha256": "89b0a3a2f9bd7b030d3e05c711a6a94467da4a39c558fb5f15fac50babb28fe9",
+      "outerLogSha256": "121e677a13f1461c4d48596b9180512a7ef7705e205efdd2759a47ed55051591"
+    },
+    {
+      "name": "mixed-anchor",
+      "passed": 14,
+      "nativeExitCode": 0,
+      "summarySha256": "b791dbb6c4c3d1dc02ac50485601ac1cc0ffa76f3c1480cd48c140c606a5cd0f",
+      "outerLogSha256": "b8aba9283f91385c9f47542872cb7df14343f32378669cf79cb81eb860ecc33e"
+    },
+    {
+      "name": "lifecycle",
+      "passed": 6,
+      "nativeExitCode": 0,
+      "summarySha256": "6179310da0482be3623f3f7df5d8f7df5d9573e0e895671b85d09a38f730c442",
+      "outerLogSha256": "022570b746418e2da2e1842ce096bb6025536bcb7bb028e4b858a6b9dcef89f0"
+    }
+  ],
+  "runtimeAudit": {
+    "totalCases": 48,
+    "matrices": {
+      "boundary": {
+        "cases": 28,
+        "positiveControls": 4,
+        "rejections": 24,
+        "fixtureInputs": 27,
+        "summarySha256": "89b0a3a2f9bd7b030d3e05c711a6a94467da4a39c558fb5f15fac50babb28fe9"
+      },
+      "mixed-anchor": {
+        "cases": 14,
+        "positiveControls": 2,
+        "rejections": 12,
+        "fixtureInputs": 19,
+        "summarySha256": "b791dbb6c4c3d1dc02ac50485601ac1cc0ffa76f3c1480cd48c140c606a5cd0f"
+      },
+      "lifecycle": {
+        "cases": 6,
+        "positiveControls": 2,
+        "rejections": 4,
+        "fixtureInputs": 22,
+        "summarySha256": "6179310da0482be3623f3f7df5d8f7df5d9573e0e895671b85d09a38f730c442"
+      }
+    },
+    "observedUniquePids": 42,
+    "lifecycleSeparateNativeInvocations": 6,
+    "caseFileHashesChecked": 138,
+    "caseResults": [
+      {
+        "matrix": "boundary",
+        "case": "5.5.2-matching-sequence",
+        "runtime": "5.5.2",
+        "expected": "SEQUENCE_SUCCESS",
+        "outcome": "PASS",
+        "observedSha256": "77179bf62fd66e1d245da0084bbcf7320da821b78e7246b6e77e8edcce6d4336",
+        "logSha256": "d6c58fec439fee70f31cc10869808965dd325f651feebfdcfd2d0dae7172b3e2"
+      },
+      {
+        "matrix": "boundary",
+        "case": "5.5.2-wrong-adapter-capture",
+        "runtime": "5.5.2",
+        "expected": "RC_UNSUPPORTED_SHARDINGSPHERE_RUNTIME",
+        "outcome": "PASS",
+        "observedSha256": "cee16ec3cc00d8870d87a68a6afc103c486649126ab99f6a588fd81ec7577234",
+        "logSha256": "775a26fec79c66034e52aafbf501eb2d562b85396ff75a6521afff41ece9120c"
+      },
+      {
+        "matrix": "boundary",
+        "case": "5.5.2-wrong-adapter-sql",
+        "runtime": "5.5.2",
+        "expected": "RC_UNSUPPORTED_SHARDINGSPHERE_RUNTIME",
+        "outcome": "PASS",
+        "observedSha256": "e5619b9a9e710ad631967684364dd3905b58fb0a23244d7d2b471301eec78c9a",
+        "logSha256": "7d880e5976b67a1353af43768e1e2a81a60e3734b21236f4610b96a3b6ad0861"
+      },
+      {
+        "matrix": "boundary",
+        "case": "5.5.2-core-only-core-only",
+        "runtime": "5.5.2",
+        "expected": "RC_ADAPTER_NOT_FOUND",
+        "outcome": "PASS",
+        "observedSha256": "c23de89bfa692bc686378fd71fcabb74a8c892d220bdc8a8ef61286c4979f4b7",
+        "logSha256": "6b7a5981bb458c0d91c3aea9a10530094a42a41336c36aab7c6a44a2e41bd7df"
+      },
+      {
+        "matrix": "boundary",
+        "case": "5.5.2-dual-5.5.2-5.5.3-capture",
+        "runtime": "5.5.2",
+        "expected": "RC_MULTIPLE_ROUTE_CONTRACT_ADAPTERS",
+        "outcome": "PASS",
+        "observedSha256": "02b8fb9a41b9a631cfc0fcac03776f4d3307db8f6242648109067f2dc7deba2c",
+        "logSha256": "73f8395db192031ad6262e2da94555eefa62dbc712ffc0c1915f7deb783f9fba"
+      },
+      {
+        "matrix": "boundary",
+        "case": "5.5.2-module-dual-5.5.2-5.5.3-capture",
+        "runtime": "5.5.2",
+        "expected": "RC_UNSUPPORTED_MODULE_PATH",
+        "outcome": "PASS",
+        "observedSha256": "ce84fa72090518a596ed44ee7aea66a8bf9ee8ce6b9e9de6c228243cd9e424b5",
+        "logSha256": "881951f03a1cc5bab1bfc162f4a78925c9510cc97cd5fcc5aca8f6672fa2e564"
+      },
+      {
+        "matrix": "boundary",
+        "case": "5.5.2-dual-5.5.2-5.5.3-sql",
+        "runtime": "5.5.2",
+        "expected": "RC_MULTIPLE_ROUTE_CONTRACT_ADAPTERS",
+        "outcome": "PASS",
+        "observedSha256": "d5dfda8409e0c4603f69812df5fa582c71bde9f9c64fe0b142e79feefbf5cadf",
+        "logSha256": "e80ff4e25c6762d349b4affec20196de13ec73b8af744dfc70c5646008359da5"
+      },
+      {
+        "matrix": "boundary",
+        "case": "5.5.2-module-dual-5.5.2-5.5.3-sql",
+        "runtime": "5.5.2",
+        "expected": "RC_UNSUPPORTED_MODULE_PATH",
+        "outcome": "PASS",
+        "observedSha256": "c142704b6c13c084e09ac713fbc102b7b641ce1542e6ae96dd154fa03055b908",
+        "logSha256": "a3e27f89062fc2ca56b9811a2bd3308b1a581ca94d3493f7d1b3adc45eefb982"
+      },
+      {
+        "matrix": "boundary",
+        "case": "5.5.2-dual-5.5.3-5.5.2-capture",
+        "runtime": "5.5.2",
+        "expected": "RC_MULTIPLE_ROUTE_CONTRACT_ADAPTERS",
+        "outcome": "PASS",
+        "observedSha256": "f28797268c3439cb91417b044cbf63926198937424aeefb91759da0dd5a26b49",
+        "logSha256": "73f8395db192031ad6262e2da94555eefa62dbc712ffc0c1915f7deb783f9fba"
+      },
+      {
+        "matrix": "boundary",
+        "case": "5.5.2-module-dual-5.5.3-5.5.2-capture",
+        "runtime": "5.5.2",
+        "expected": "RC_UNSUPPORTED_MODULE_PATH",
+        "outcome": "PASS",
+        "observedSha256": "5abcf230fa655cdb7ecaf8abd5c8945add571847d9fc853f226565c27471bb5e",
+        "logSha256": "881951f03a1cc5bab1bfc162f4a78925c9510cc97cd5fcc5aca8f6672fa2e564"
+      },
+      {
+        "matrix": "boundary",
+        "case": "5.5.2-dual-5.5.3-5.5.2-sql",
+        "runtime": "5.5.2",
+        "expected": "RC_MULTIPLE_ROUTE_CONTRACT_ADAPTERS",
+        "outcome": "PASS",
+        "observedSha256": "f65511c8797275ab8dc29c35bf1c9519f190b64ed1b98a827d411e9450f45d1a",
+        "logSha256": "b11f390c40ea27670e5dc10002137240d8e295cb6a73ee5779bbccbbe8b2ffc2"
+      },
+      {
+        "matrix": "boundary",
+        "case": "5.5.2-module-dual-5.5.3-5.5.2-sql",
+        "runtime": "5.5.2",
+        "expected": "RC_UNSUPPORTED_MODULE_PATH",
+        "outcome": "PASS",
+        "observedSha256": "eab71bf8c72af6ad7432230d421ef5a79d746de75b435e73d319fc3676c55d81",
+        "logSha256": "a3e27f89062fc2ca56b9811a2bd3308b1a581ca94d3493f7d1b3adc45eefb982"
+      },
+      {
+        "matrix": "boundary",
+        "case": "5.5.2-module-single-capture",
+        "runtime": "5.5.2",
+        "expected": "RC_UNSUPPORTED_MODULE_PATH",
+        "outcome": "PASS",
+        "observedSha256": "84add7337e2a8df701c4d885568c14f2981ec87b40497e3ac51031530669aaa8",
+        "logSha256": "881951f03a1cc5bab1bfc162f4a78925c9510cc97cd5fcc5aca8f6672fa2e564"
+      },
+      {
+        "matrix": "boundary",
+        "case": "5.5.2-module-single-sql",
+        "runtime": "5.5.2",
+        "expected": "RC_UNSUPPORTED_MODULE_PATH",
+        "outcome": "PASS",
+        "observedSha256": "fc48626c9d80a9218fc33cd3b401b0ea034e545d5439b38f0c8b5600a1f81289",
+        "logSha256": "a3e27f89062fc2ca56b9811a2bd3308b1a581ca94d3493f7d1b3adc45eefb982"
+      },
+      {
+        "matrix": "boundary",
+        "case": "5.5.3-matching-sequence",
+        "runtime": "5.5.3",
+        "expected": "SEQUENCE_SUCCESS",
+        "outcome": "PASS",
+        "observedSha256": "4baec5aceb0189b21efbb08f104efde8da5344cd34315ac061f53c37553f38b2",
+        "logSha256": "b8a7f917249ab249c7d281acb07d59a717877890744caa5a2d222bc9aaa102a4"
+      },
+      {
+        "matrix": "boundary",
+        "case": "5.5.3-wrong-adapter-capture",
+        "runtime": "5.5.3",
+        "expected": "RC_UNSUPPORTED_SHARDINGSPHERE_RUNTIME",
+        "outcome": "PASS",
+        "observedSha256": "b0dd895cc9ecb73e2c7b4c6e9a98a7459111f7b4387a420e8eb6b5609a6ded9d",
+        "logSha256": "2e1b322816bf467fa2f222751c7d0a5d0c14dba26fc841f8cc2d2abe5c0c5a2e"
+      },
+      {
+        "matrix": "boundary",
+        "case": "5.5.3-wrong-adapter-sql",
+        "runtime": "5.5.3",
+        "expected": "RC_UNSUPPORTED_SHARDINGSPHERE_RUNTIME",
+        "outcome": "PASS",
+        "observedSha256": "a1d2322e756a8ac12d4863419faa57ced149877f8418b629be9b89199b0a9170",
+        "logSha256": "2d934702ec08d1061b4a965fe0e81c3a52ddbcd987a7642ba920999246416b04"
+      },
+      {
+        "matrix": "boundary",
+        "case": "5.5.3-core-only-core-only",
+        "runtime": "5.5.3",
+        "expected": "RC_ADAPTER_NOT_FOUND",
+        "outcome": "PASS",
+        "observedSha256": "b8c2f78eb43888edc382d91cd8016d1457629a93c90b8229c7f1c3fb6093f6dc",
+        "logSha256": "931f5a4fa929a66d44f747baf1c3e8d45c8d44d07b1659643846e917ef6c766d"
+      },
+      {
+        "matrix": "boundary",
+        "case": "5.5.3-dual-5.5.2-5.5.3-capture",
+        "runtime": "5.5.3",
+        "expected": "RC_MULTIPLE_ROUTE_CONTRACT_ADAPTERS",
+        "outcome": "PASS",
+        "observedSha256": "1a82781df7a266f51d097c50455ddaf674f40ffbd29ae4075889b542e4454ff8",
+        "logSha256": "73f8395db192031ad6262e2da94555eefa62dbc712ffc0c1915f7deb783f9fba"
+      },
+      {
+        "matrix": "boundary",
+        "case": "5.5.3-module-dual-5.5.2-5.5.3-capture",
+        "runtime": "5.5.3",
+        "expected": "RC_UNSUPPORTED_MODULE_PATH",
+        "outcome": "PASS",
+        "observedSha256": "0f90c58fcf79d150e4a6c376f676e7cec8e53050f4db64ec9d5bef0d14de4b11",
+        "logSha256": "881951f03a1cc5bab1bfc162f4a78925c9510cc97cd5fcc5aca8f6672fa2e564"
+      },
+      {
+        "matrix": "boundary",
+        "case": "5.5.3-dual-5.5.2-5.5.3-sql",
+        "runtime": "5.5.3",
+        "expected": "RC_MULTIPLE_ROUTE_CONTRACT_ADAPTERS",
+        "outcome": "PASS",
+        "observedSha256": "b2ed54cea2a1e0d8ded26e2ea4d02f039cb1745685f887610d4ab531679062f6",
+        "logSha256": "11b78b2a32fc00885225c24235473cf972e1f0337ebb83425a51427da6e90ed1"
+      },
+      {
+        "matrix": "boundary",
+        "case": "5.5.3-module-dual-5.5.2-5.5.3-sql",
+        "runtime": "5.5.3",
+        "expected": "RC_UNSUPPORTED_MODULE_PATH",
+        "outcome": "PASS",
+        "observedSha256": "acc4ac16129fd23d806cc27a1aaa3f0a061b9641fed7484c8655d6840ce7ff08",
+        "logSha256": "a822531bbd9ce948082f720f6d0e30f08a4c278b053478b2c0cf635d6574bacf"
+      },
+      {
+        "matrix": "boundary",
+        "case": "5.5.3-dual-5.5.3-5.5.2-capture",
+        "runtime": "5.5.3",
+        "expected": "RC_MULTIPLE_ROUTE_CONTRACT_ADAPTERS",
+        "outcome": "PASS",
+        "observedSha256": "cd7d6c04f2d66514bfc289502d65485c716c9a94e188db9b1e9c8fcf1e54d95d",
+        "logSha256": "73f8395db192031ad6262e2da94555eefa62dbc712ffc0c1915f7deb783f9fba"
+      },
+      {
+        "matrix": "boundary",
+        "case": "5.5.3-module-dual-5.5.3-5.5.2-capture",
+        "runtime": "5.5.3",
+        "expected": "RC_UNSUPPORTED_MODULE_PATH",
+        "outcome": "PASS",
+        "observedSha256": "8485928d7383076f4462955798950f4bab9ccaade15211418676e232470a08a6",
+        "logSha256": "881951f03a1cc5bab1bfc162f4a78925c9510cc97cd5fcc5aca8f6672fa2e564"
+      },
+      {
+        "matrix": "boundary",
+        "case": "5.5.3-dual-5.5.3-5.5.2-sql",
+        "runtime": "5.5.3",
+        "expected": "RC_MULTIPLE_ROUTE_CONTRACT_ADAPTERS",
+        "outcome": "PASS",
+        "observedSha256": "f1c0a6e69a741f4ffbe6a06b15e7206223a2a5d773353303a5f41d1e67c66309",
+        "logSha256": "b3abb1e7dc8409d1bb6033be7db60c3b13320f9f81e70dcc92da70f75580bd4d"
+      },
+      {
+        "matrix": "boundary",
+        "case": "5.5.3-module-dual-5.5.3-5.5.2-sql",
+        "runtime": "5.5.3",
+        "expected": "RC_UNSUPPORTED_MODULE_PATH",
+        "outcome": "PASS",
+        "observedSha256": "7cdcd5fc5a245758e3cfbf3849eba49981c940037bedc2d588cb07ba1dab80d2",
+        "logSha256": "289a0b9fa6769ac4b8c404fb354d92def50fd302ab145a8caaf4061274138b61"
+      },
+      {
+        "matrix": "boundary",
+        "case": "5.5.3-module-single-capture",
+        "runtime": "5.5.3",
+        "expected": "RC_UNSUPPORTED_MODULE_PATH",
+        "outcome": "PASS",
+        "observedSha256": "a72219ffde68fd57f2d2ff0564c6c634be9c1ba065d8bd533f327be754eaae63",
+        "logSha256": "881951f03a1cc5bab1bfc162f4a78925c9510cc97cd5fcc5aca8f6672fa2e564"
+      },
+      {
+        "matrix": "boundary",
+        "case": "5.5.3-module-single-sql",
+        "runtime": "5.5.3",
+        "expected": "RC_UNSUPPORTED_MODULE_PATH",
+        "outcome": "PASS",
+        "observedSha256": "48f0402e329d97044fbc0711eee877cb762e9eeb9032b7390809bb312dda437e",
+        "logSha256": "85ee878521f89fc88da03cd640ee9600ae7e59d2c4d5bf6f1ad74b1b5ebe89df"
+      },
+      {
+        "matrix": "mixed-anchor",
+        "case": "e5.5.2-s5.5.2-d5.5.2-forward",
+        "runtime": "5.5.2",
+        "expected": "CLEAN_NO_SQL",
+        "outcome": "PASS",
+        "observedSha256": "8da0b520e84fdefaca28c9b6e732e2616db5d0ad95649cc917f84c8606c73588",
+        "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "matrix": "mixed-anchor",
+        "case": "e5.5.2-s5.5.2-d5.5.3-forward",
+        "runtime": "5.5.3",
+        "expected": "RC_MIXED_SHARDINGSPHERE_RUNTIME",
+        "outcome": "PASS",
+        "observedSha256": "6784f81b43394386dda7a33cf8ab45677157abd09ebdd445dda0819989f2a1bd",
+        "logSha256": "e6b4f2dc8f9a7d2bd00c22023c79400d9737fe29af31a7646c232ac5df2988b3"
+      },
+      {
+        "matrix": "mixed-anchor",
+        "case": "e5.5.2-s5.5.2-d5.5.3-reverse",
+        "runtime": "5.5.3",
+        "expected": "RC_MIXED_SHARDINGSPHERE_RUNTIME",
+        "outcome": "PASS",
+        "observedSha256": "40578b6f0d1b87d0d6a3da872ca09d27b323a4db386b526af313a57c9d14c799",
+        "logSha256": "e6b4f2dc8f9a7d2bd00c22023c79400d9737fe29af31a7646c232ac5df2988b3"
+      },
+      {
+        "matrix": "mixed-anchor",
+        "case": "e5.5.2-s5.5.3-d5.5.2-forward",
+        "runtime": "5.5.2",
+        "expected": "RC_MIXED_SHARDINGSPHERE_RUNTIME",
+        "outcome": "PASS",
+        "observedSha256": "6f5d6422c90caa7ff4de570df677c3817a0bc89432c53a3581e463f3f423234e",
+        "logSha256": "67123f1cc28b0b9e36c8f7cd6157686c2d0e944c32275f05b51d7d1b356c179d"
+      },
+      {
+        "matrix": "mixed-anchor",
+        "case": "e5.5.2-s5.5.3-d5.5.2-reverse",
+        "runtime": "5.5.2",
+        "expected": "RC_MIXED_SHARDINGSPHERE_RUNTIME",
+        "outcome": "PASS",
+        "observedSha256": "093d43e4b6ae28b55a1e78008006cfe94c5f7739f50ba4822976283e196b7968",
+        "logSha256": "67123f1cc28b0b9e36c8f7cd6157686c2d0e944c32275f05b51d7d1b356c179d"
+      },
+      {
+        "matrix": "mixed-anchor",
+        "case": "e5.5.2-s5.5.3-d5.5.3-forward",
+        "runtime": "5.5.3",
+        "expected": "RC_MIXED_SHARDINGSPHERE_RUNTIME",
+        "outcome": "PASS",
+        "observedSha256": "1d0c6146ac030e6769533d559576fb23928bdb8a328420684c85997aab556baa",
+        "logSha256": "51dc0a4b0f472a3eee2c17df7f99b37eba722595d4388ab44e4ae67cdc5e78ca"
+      },
+      {
+        "matrix": "mixed-anchor",
+        "case": "e5.5.2-s5.5.3-d5.5.3-reverse",
+        "runtime": "5.5.3",
+        "expected": "RC_MIXED_SHARDINGSPHERE_RUNTIME",
+        "outcome": "PASS",
+        "observedSha256": "0114d0c0116f39fa6931bb79dc459a27c956b1466d8055a687729d1089eb442a",
+        "logSha256": "51dc0a4b0f472a3eee2c17df7f99b37eba722595d4388ab44e4ae67cdc5e78ca"
+      },
+      {
+        "matrix": "mixed-anchor",
+        "case": "e5.5.3-s5.5.2-d5.5.2-forward",
+        "runtime": "5.5.2",
+        "expected": "RC_MIXED_SHARDINGSPHERE_RUNTIME",
+        "outcome": "PASS",
+        "observedSha256": "3305ac4bfa23adc3c7bec94d9fce53553a54daabce497fcbb21709a74dbbbd91",
+        "logSha256": "2bd914db099dbc7c1291e0a44643ea525ef714b49f2d95862b6a064f0574d4c0"
+      },
+      {
+        "matrix": "mixed-anchor",
+        "case": "e5.5.3-s5.5.2-d5.5.2-reverse",
+        "runtime": "5.5.2",
+        "expected": "RC_MIXED_SHARDINGSPHERE_RUNTIME",
+        "outcome": "PASS",
+        "observedSha256": "c3e35243f6a515b7f51e2a9934b7c95bbfcc71b30a710b2c85ff2f19ad6a5c2b",
+        "logSha256": "2bd914db099dbc7c1291e0a44643ea525ef714b49f2d95862b6a064f0574d4c0"
+      },
+      {
+        "matrix": "mixed-anchor",
+        "case": "e5.5.3-s5.5.2-d5.5.3-forward",
+        "runtime": "5.5.3",
+        "expected": "RC_MIXED_SHARDINGSPHERE_RUNTIME",
+        "outcome": "PASS",
+        "observedSha256": "4eb40a0e5e6308a04a814c91d5876096acff89ccb53176b167e6f3a7fdd5f86a",
+        "logSha256": "60fe2534c3e243062ec999619b58d428b6ce4737d072a811232fc2c59dc5a093"
+      },
+      {
+        "matrix": "mixed-anchor",
+        "case": "e5.5.3-s5.5.2-d5.5.3-reverse",
+        "runtime": "5.5.3",
+        "expected": "RC_MIXED_SHARDINGSPHERE_RUNTIME",
+        "outcome": "PASS",
+        "observedSha256": "3b6a366dfb6ebe6adda0f5922c702949ff08e7d829fc79fe35d1fe5d7cdd2a31",
+        "logSha256": "60fe2534c3e243062ec999619b58d428b6ce4737d072a811232fc2c59dc5a093"
+      },
+      {
+        "matrix": "mixed-anchor",
+        "case": "e5.5.3-s5.5.3-d5.5.2-forward",
+        "runtime": "5.5.2",
+        "expected": "RC_MIXED_SHARDINGSPHERE_RUNTIME",
+        "outcome": "PASS",
+        "observedSha256": "e661154febad41fcf13ec7e86101095c081e1fb1c67fc8bf3da23751476c530b",
+        "logSha256": "06802ca39dd69289a62e1456923f8e8bb6c160f95dfb706afc91e115a911477b"
+      },
+      {
+        "matrix": "mixed-anchor",
+        "case": "e5.5.3-s5.5.3-d5.5.2-reverse",
+        "runtime": "5.5.2",
+        "expected": "RC_MIXED_SHARDINGSPHERE_RUNTIME",
+        "outcome": "PASS",
+        "observedSha256": "857ce885057086cad943690403450d8b9bbe89a3581724a9f37aa5fdc9f7dbd0",
+        "logSha256": "06802ca39dd69289a62e1456923f8e8bb6c160f95dfb706afc91e115a911477b"
+      },
+      {
+        "matrix": "mixed-anchor",
+        "case": "e5.5.3-s5.5.3-d5.5.3-forward",
+        "runtime": "5.5.3",
+        "expected": "CLEAN_NO_SQL",
+        "outcome": "PASS",
+        "observedSha256": "6ecc07be11cdeea76888d309299b18bdbe7a25eeaee39f1e4946af2ef5ae9c42",
+        "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "matrix": "lifecycle",
+        "case": "A11-552",
+        "runtime": "5.5.2",
+        "expected": "RC_SHARDINGSPHERE_PROVIDER_NOT_ACTIVE",
+        "outcome": "PASS",
+        "observedSha256": "e017b41d028ac3bf7e2f2edbf79284b7d211d96d27c9ce84d718b14222caf3b9",
+        "logSha256": "91f388d9af05111913a0cceecc7c2aaf60d22108b6460445ce1978076948e7f2"
+      },
+      {
+        "matrix": "lifecycle",
+        "case": "A12-552",
+        "runtime": "5.5.2",
+        "expected": "CAPTURED",
+        "outcome": "PASS",
+        "observedSha256": "9171d2fbd072251ec2685881d67f04148ea8de3a3cf3e64faabe360459f88291",
+        "logSha256": "2df64faab6460acd9ff6dfd489d8a6e817e37638587337acc7da55c8e2b5a34a"
+      },
+      {
+        "matrix": "lifecycle",
+        "case": "A13-552",
+        "runtime": "5.5.2",
+        "expected": "RC_ADAPTER_CLASSLOADER_MISMATCH",
+        "outcome": "PASS",
+        "observedSha256": "a98f4b75281f4ea9d13a07a6dc459d76e2141c107243a8f58892ac9d7b65bd91",
+        "logSha256": "4905129c6befdbefe9b2cafb1335f6dc5a502b8e3eb11385933f747b7c0d3c01"
+      },
+      {
+        "matrix": "lifecycle",
+        "case": "A11-553",
+        "runtime": "5.5.3",
+        "expected": "RC_SHARDINGSPHERE_PROVIDER_NOT_ACTIVE",
+        "outcome": "PASS",
+        "observedSha256": "3427f083f20e89471883504f3d3b86a413e558fae190e6dbf4df7e739a2e75a2",
+        "logSha256": "6b23a1d9581c9d8b5bb7ca0a52db5d86caeff0586f595983f48ab760e0564c54"
+      },
+      {
+        "matrix": "lifecycle",
+        "case": "A12-553",
+        "runtime": "5.5.3",
+        "expected": "CAPTURED",
+        "outcome": "PASS",
+        "observedSha256": "4001d2f83bec13cf25727ce0f51275d052cd561444008cf6e30c5adc5324128e",
+        "logSha256": "13c72bf1d1e4c9d61e911a008c26c7b89284a9c9ab9def29f0b00159f48d18a1"
+      },
+      {
+        "matrix": "lifecycle",
+        "case": "A13-553",
+        "runtime": "5.5.3",
+        "expected": "RC_ADAPTER_CLASSLOADER_MISMATCH",
+        "outcome": "PASS",
+        "observedSha256": "0dc18807ef72e31c766a21e90ffcec7df7a810afce15162c7ac8d874ee4c9cd6",
+        "logSha256": "dfcb426cdf11d1c8b29857cdb9f5dbb1f1be3e527ed28f17e158a1cab2415794"
+      }
+    ]
+  },
+  "runtimeAuditSha256": "01450b3f75da47fa960abc9003e635daf76862f2ef092b9ebad91f133bad77d6",
+  "gradleA24": {
+    "status": "PASS",
+    "readOnlyAudit": true,
+    "nativeRerun": false,
+    "cases": 28,
+    "mysqlTests": 24,
+    "rejections": 16,
+    "originControls": 4,
+    "fixtureInputsChecked": 23,
+    "candidateArtifactsChecked": 9,
+    "frozenCacheFilesChecked": 7464,
+    "caseEvidenceHashesChecked": 88,
+    "consumerClassfilesChecked": 40,
+    "summarySha256": "f83ac47cd0287e955eb1ccaafae2273cc0bf8192d84cd32d72edc9bb35c1d4a3",
+    "receiptSha256": "9a4d745ff11508a8ab08dd8bced6a7893d8f6e6ff5baab34b3445aea652ba49c",
+    "caseRecords": [
+      {
+        "profile": "groovy",
+        "runtime": "5.5.2",
+        "case": "online",
+        "result": "MYSQL_AND_REPORTS_VERIFIED",
+        "resultSha256": "5ccda015ea8c59f13830bdd488778123a90d0d8615939ad6160c878811d25da9",
+        "commandSha256": "b8e69b1d79dc9b5a15114c3f4974791f1fad7bd7c86ba1d5eef669110b356604",
+        "logSha256": "47fc6afb247af9f3c516ecb93e28af06088a16184a277f9d9ccfbfce27feec79"
+      },
+      {
+        "profile": "groovy",
+        "runtime": "5.5.2",
+        "case": "offline",
+        "result": "MYSQL_AND_REPORTS_VERIFIED",
+        "resultSha256": "d70c742e6f7de5972225b58918a1692b3c92ef4522bc0392960400142b4efeef",
+        "commandSha256": "ce42bf9f2b6de50056c5cbb63bccc1dcaf3c827c42fbe411eabb739b1ee5b465",
+        "logSha256": "bfff0ad0a6fe2cae8819e0694c7aa3060c014a96734932e73a8022ae074905d5"
+      },
+      {
+        "profile": "groovy",
+        "runtime": "5.5.2",
+        "case": "bad-checksum",
+        "result": "NATIVE_CHECKSUM_REJECTED",
+        "resultSha256": "e21b250a6ba3fb12a2b68314e1e28889b6e581ec73c8f447ff5e76f2774738a3",
+        "commandSha256": "2dc27bf7eb18c86db5284553187780a7d3fcb6ecd900b57ea9277094d7e34862",
+        "logSha256": "99692066123812aff500609452882eeb9d7d9f08d051a962c058680b04ddaa92"
+      },
+      {
+        "profile": "groovy",
+        "runtime": "5.5.2",
+        "case": "wrong-origin",
+        "result": "WRONG_ORIGIN_REJECTED",
+        "resultSha256": "c5328bb1247f2e937c15e3fb1bd87412ccf0c43a227655af09e70ecb96d2dcc3",
+        "commandSha256": "5f82bd5d580f81a0bcee7e2c81a9e947b8ac6a61474cf018a32f88f4da3af370",
+        "logSha256": "870a920574e0a657cb94ec54d75de2a629e79e31eb8beb1c6680bd4b02eadff4"
+      },
+      {
+        "profile": "groovy",
+        "runtime": "5.5.2",
+        "case": "origin-control",
+        "result": "UNPROTECTED_ORIGIN_CONTROL_RESOLVED",
+        "resultSha256": "11a7bdb38e2fd4edfdb317a9eaf6aafb737a26e8156d5237b19d0615fb148efb",
+        "commandSha256": "9ecce20b220341ea3f36edf9249f58d89a32e846c3496cee0f41ecdf1e4065d0",
+        "logSha256": "ce2c4863f8a1fff1d627d926eb5de5590722368763df384d545f8e9f3c49af0c"
+      },
+      {
+        "profile": "groovy",
+        "runtime": "5.5.2",
+        "case": "wrong-anchor",
+        "result": "EXACT_RUNTIME_POLICY_REJECTED",
+        "resultSha256": "769e0ea954cd11942352d7f4dcb7879eabb56425a3a58974dbeaf98db5dd4223",
+        "commandSha256": "dd83c88f492434cd9a37ab8032eeea0d4c1e46b0807d1197c34a625cccf5ae09",
+        "logSha256": "cc8b0f7212922ce47f757de7c24f3e73ba2d46a3e72577d0c68ae93ad5b82758"
+      },
+      {
+        "profile": "groovy",
+        "runtime": "5.5.2",
+        "case": "wrong-non-anchor",
+        "result": "EXACT_RUNTIME_POLICY_REJECTED",
+        "resultSha256": "e9b58cb94f2abc2e98f7fc3148aa613c1d576d800ca961e609a2638a4c378ae3",
+        "commandSha256": "cb384f6a96200357b48a337f21b263386c08986afe8cf8065bf3b1e57acbb5c4",
+        "logSha256": "235bb840130c075641d36b0ae71ec62fb9b3fa5d7ca14ce6a1e13dd9bfc37846"
+      },
+      {
+        "profile": "groovy",
+        "runtime": "5.5.3",
+        "case": "online",
+        "result": "MYSQL_AND_REPORTS_VERIFIED",
+        "resultSha256": "e9097fd69ee8a67717782a3cf6300467145a4c60c75d2503fac3d642998b04f1",
+        "commandSha256": "72507f553085ab1885c3b7274e74cb3f793cf4b92f57f377b96940efd8e99138",
+        "logSha256": "327e0cc9420633e5721bc1cbef57f7ebf2c1c6b784273753afa6aed0cbfcd151"
+      },
+      {
+        "profile": "groovy",
+        "runtime": "5.5.3",
+        "case": "offline",
+        "result": "MYSQL_AND_REPORTS_VERIFIED",
+        "resultSha256": "3488a7cccd483df5023f86d199752e19c10ce179e97cf78af70b4de791472e91",
+        "commandSha256": "bf071968fd220fd517286fd1062305b03bff220e39f958719cb1a058cfc2938f",
+        "logSha256": "c461f0e8223960a433e20ba2a55a66653e3c4f7af1ceaf92fdebdfa02dc6dfdd"
+      },
+      {
+        "profile": "groovy",
+        "runtime": "5.5.3",
+        "case": "bad-checksum",
+        "result": "NATIVE_CHECKSUM_REJECTED",
+        "resultSha256": "95103fdde123c4dea59425006b9d8f08952e2dd908a70c9f32c3a32623d0a89a",
+        "commandSha256": "42c46237b8893fe7be50bfd8762c6bccf1cfda911407d422d6782c6309c54a51",
+        "logSha256": "040de7326a7f12133c9c98a0c4e2b7f6053f1e33a6f8d630ea86abff2932b607"
+      },
+      {
+        "profile": "groovy",
+        "runtime": "5.5.3",
+        "case": "wrong-origin",
+        "result": "WRONG_ORIGIN_REJECTED",
+        "resultSha256": "434ebf8eaedcd87f0c1a0b08f3b2fd57cab74f74a821664bfd5b9796e5f5853d",
+        "commandSha256": "f9af1d4fffd230490244dc76b5edcde8b71ba9e0911e08618753fce7f3ec3cd8",
+        "logSha256": "25e5fa4647bd955981c3ab81f42fbfec2864c6cc3cd29881fa727d9cfcdabd34"
+      },
+      {
+        "profile": "groovy",
+        "runtime": "5.5.3",
+        "case": "origin-control",
+        "result": "UNPROTECTED_ORIGIN_CONTROL_RESOLVED",
+        "resultSha256": "29bb2a3c3d887b5dd8b3e07719259ed68d2e9c5d0fe4587ecb8c87f3cc90fe11",
+        "commandSha256": "c955b9987a57200c434220f8e2ef1e5a9f174827d96940e838072e6a9beddf15",
+        "logSha256": "e044cf660375868fd6de269a5af659eb2a0c309524f0959479c8da67ce433beb"
+      },
+      {
+        "profile": "groovy",
+        "runtime": "5.5.3",
+        "case": "wrong-anchor",
+        "result": "EXACT_RUNTIME_POLICY_REJECTED",
+        "resultSha256": "3a4667fbea5d8b63cb3b5beb4edf96bf9c902890db24267c0d1cd552428aba62",
+        "commandSha256": "162d091f2d50aef8126f4f93ff4d3e1ab39110e2d867d3aa7d4e388ffb31c40f",
+        "logSha256": "1724468d18f09ec7e6e1b9f1ecbddcb263f5ea6ce9e15ffa4cc6c4d15f3023b5"
+      },
+      {
+        "profile": "groovy",
+        "runtime": "5.5.3",
+        "case": "wrong-non-anchor",
+        "result": "EXACT_RUNTIME_POLICY_REJECTED",
+        "resultSha256": "bf4c7ff33a7caaf7b2fe3963f94f1f630f758c23aa53579a84db67d64be4a2d4",
+        "commandSha256": "c32138100db1a9980c130aa8a894b22c713e01f765ba1b9f63cc7351f366e62d",
+        "logSha256": "6f8b6fbe6969bf4d5ad6a23b5ce4fc28ec8ede2d456f87e4d917e07b11eec740"
+      },
+      {
+        "profile": "kotlin",
+        "runtime": "5.5.2",
+        "case": "online",
+        "result": "MYSQL_AND_REPORTS_VERIFIED",
+        "resultSha256": "82dba5320e6901a7bf0359ba8a0339398cb773e45ccab30e6ef9576bb51b094a",
+        "commandSha256": "1e225518fd826ac5db156741067404385df46f0cd7bb952b0dc70706d8fa7327",
+        "logSha256": "eef7b5443466fc2699b26baf0f2c553b4c258d9384d87efcc1cbf4481a90647d"
+      },
+      {
+        "profile": "kotlin",
+        "runtime": "5.5.2",
+        "case": "offline",
+        "result": "MYSQL_AND_REPORTS_VERIFIED",
+        "resultSha256": "a717b149a40a2d1c0668a87d4f4af9d8bec2386315aca054f358f2c3e2458aea",
+        "commandSha256": "a8d8ba7d6bd87fae27c164247849b3f2297e4dabc4ba51625b37adde376d8956",
+        "logSha256": "6b25e04f128d9b64a1ebf756e276aa7e8ccbee0aa976312fd558e57d97a1214b"
+      },
+      {
+        "profile": "kotlin",
+        "runtime": "5.5.2",
+        "case": "bad-checksum",
+        "result": "NATIVE_CHECKSUM_REJECTED",
+        "resultSha256": "89d6944aaec93b3738341938effee87aadaed6d99f0b5cf42c5d3ee62bd23502",
+        "commandSha256": "b909bad72b0ba2a334c5787dd2859483914b22b441daed51412f5cfc371e953c",
+        "logSha256": "e48e9e56cc02310a03cfb5c4fdb25afb9ad73564208cb1c5507c15693cd8b1eb"
+      },
+      {
+        "profile": "kotlin",
+        "runtime": "5.5.2",
+        "case": "wrong-origin",
+        "result": "WRONG_ORIGIN_REJECTED",
+        "resultSha256": "304354a2359eb1c2fbf47a71199c89565c1b376963c7be8a10b213d7004c6aad",
+        "commandSha256": "e03117ad497f6c622a89a367eba8331bb77f320ae01b16d76e3c3d82673deb63",
+        "logSha256": "a1129e30f924d97fa839c69afb85b1522c5ef49f3ee6875123177a92e131ef9c"
+      },
+      {
+        "profile": "kotlin",
+        "runtime": "5.5.2",
+        "case": "origin-control",
+        "result": "UNPROTECTED_ORIGIN_CONTROL_RESOLVED",
+        "resultSha256": "6e8b77fb6f8dfda84a3c42fc813e728fc8fef74390ed221ab7c5224ff56e60f9",
+        "commandSha256": "18a54610d178327abf86cb57f32c10b7ac0a8df47ae49a602badca43956447d0",
+        "logSha256": "ec6ddc1d8f426544877dd5b00bdfbe73c0c3e2e5b1eea5809981f33e7027d643"
+      },
+      {
+        "profile": "kotlin",
+        "runtime": "5.5.2",
+        "case": "wrong-anchor",
+        "result": "EXACT_RUNTIME_POLICY_REJECTED",
+        "resultSha256": "08274ee47870c7ea55381052b120a7f76a540d50eec0459994be0161aa6bd81e",
+        "commandSha256": "84a43cd9c75dbcf81c38c70bbeb9f521ca48260866f4bb129b478f4bde09cddc",
+        "logSha256": "a394c26f3c7ff5ccf21dc985bbd3d90882f876c239719844173026730f14d34e"
+      },
+      {
+        "profile": "kotlin",
+        "runtime": "5.5.2",
+        "case": "wrong-non-anchor",
+        "result": "EXACT_RUNTIME_POLICY_REJECTED",
+        "resultSha256": "896f32613642f697a8473866e77d7bbe4610ea9b8ffb05a7ee3e380c044de4cd",
+        "commandSha256": "4083499bb47bac5f3c7ec6edd87c0a79cedba8843ec3571c6ef1b8a83e7fc25f",
+        "logSha256": "8bc455fa7e645d0f98668acd685ee45a6d902e484dfefe91e37076159cc8b21c"
+      },
+      {
+        "profile": "kotlin",
+        "runtime": "5.5.3",
+        "case": "online",
+        "result": "MYSQL_AND_REPORTS_VERIFIED",
+        "resultSha256": "d4f84cec32846fd1baea1578e301993745863de812b570b6782ddfa597af0d83",
+        "commandSha256": "4d6793a61c7dd5189bcdc034fda49f3e6e4eb30b78b877dce653c7ef51903bd9",
+        "logSha256": "1d79b3323aeedadf61f50cee8bc9d31ca960aeec69b42b1fe08bf69f79bdb160"
+      },
+      {
+        "profile": "kotlin",
+        "runtime": "5.5.3",
+        "case": "offline",
+        "result": "MYSQL_AND_REPORTS_VERIFIED",
+        "resultSha256": "709eafc7e7f8debdf01a0719a57bc67d62a2f0425a9e3f762f8d0a8abd4e4e76",
+        "commandSha256": "d2a41e6ace62d59a8aec3acd4f81ae4b321a3d5dc71e62ab23194a9b6f96783d",
+        "logSha256": "06ffc53a0041d9eae9a6104e309b83e09dc2065ac00f7a9ab54ee5bdc51b17db"
+      },
+      {
+        "profile": "kotlin",
+        "runtime": "5.5.3",
+        "case": "bad-checksum",
+        "result": "NATIVE_CHECKSUM_REJECTED",
+        "resultSha256": "63a5b9f89b5f14f0c3f131c116cac1084ada488b076340c701d00e9c74c5ff16",
+        "commandSha256": "f0483f082bbb54c8655ea9c99c65d3e492ddc3b30401dba2edf5d8750049216a",
+        "logSha256": "b58b3574d2101a87b6eb12fbf6105a9716517671206afa0de74b402292034aae"
+      },
+      {
+        "profile": "kotlin",
+        "runtime": "5.5.3",
+        "case": "wrong-origin",
+        "result": "WRONG_ORIGIN_REJECTED",
+        "resultSha256": "f507f56834f34d2dc472343e1498a9d60b806d77c91f49c445273aa8071d0806",
+        "commandSha256": "0cdc00d1fb776312404aad2346a50040fb9c8b635364ed75676d47e1f311655d",
+        "logSha256": "a1e8317170f5bcd341321c0d60a5c4ed7ba7d90e7ae3a9ddcc1da16bcb3d69cb"
+      },
+      {
+        "profile": "kotlin",
+        "runtime": "5.5.3",
+        "case": "origin-control",
+        "result": "UNPROTECTED_ORIGIN_CONTROL_RESOLVED",
+        "resultSha256": "a71fbe35dedbd5bc5fd3588d1a4130aa5f3c75994973cb0a8bb9618eff0972ab",
+        "commandSha256": "999b3613abcd307296d2a2b5cc648014770dceb07255d8a94221239d68324b08",
+        "logSha256": "231c568da0204486bf3355e97e808b45ed24ebde3f9a44d1bd4747e0ca7f3cdb"
+      },
+      {
+        "profile": "kotlin",
+        "runtime": "5.5.3",
+        "case": "wrong-anchor",
+        "result": "EXACT_RUNTIME_POLICY_REJECTED",
+        "resultSha256": "1b81c8f19fc632c258d8e3909fe5dc4c1ca543ab03cbec829b8b2d2c0ab1ece6",
+        "commandSha256": "2db73e1a139e1e06367e305b711aa5f21c6a3f466179d1257b2240f37fbb2466",
+        "logSha256": "a4cbe30c984821d4750df08d496a852716660d4ccb9c10e180d5d7562f6691e1"
+      },
+      {
+        "profile": "kotlin",
+        "runtime": "5.5.3",
+        "case": "wrong-non-anchor",
+        "result": "EXACT_RUNTIME_POLICY_REJECTED",
+        "resultSha256": "89f82f26010b97da82195be9586a82bee87e3fd30c1aabe888c79266cf634cf1",
+        "commandSha256": "0257ad901cdadd63aa31dbb060097f45b1bfc192d2aeafcdd067c075dfe05c16",
+        "logSha256": "02333eae9d2dda00dba8fd4a08f3a915785134079f741f2b10cd64b56e115e5a"
+      }
+    ],
+    "publicConsumption": false,
+    "humanReview": null
+  },
+  "gradleAuditSha256": "23fa50f4e21608f2dd23922f17c2533af0108503922507ea99356867d245e45f",
+  "gradleInputManifestSha256": "d67aabcbeea01a2dbcc2f270b5c97720c7db679dce7f42044a0db121affa11d2",
+  "gradleExplicitInputManifestSupplied": true,
+  "gradleInvocationRecordSha256": "5c09727d9418f91a8d7c60b72f7ef25abdb4ffc184f072aedd45594849fbf8e8",
+  "priorGradleAttempts": [
+    {
+      "attempt": 1,
+      "result": "FAILED",
+      "cause": "Maven Central DNS resolution failed during checksum case",
+      "countsIncludedInFinalResult": false
+    },
+    {
+      "attempt": 2,
+      "result": "FAILED",
+      "cause": "Calcite 1.42.0 download timed out during online compilation",
+      "countsIncludedInFinalResult": false
+    },
+    {
+      "attempt": 3,
+      "result": "NATIVE_28_PASS",
+      "repeatAcceptance": "NOT_COMPLETE",
+      "cause": "Recorded invocation omitted explicitly supplied frozen input manifest",
+      "retainedAuditSha256": "edc94098dcc26dae7c4f482edaadbe9f3bb4ceb4d5ae6bad330370bbb531f447",
+      "countsIncludedInFinalResult": false
+    }
+  ],
+  "artifactAndRetainedUnitAudit": {
+    "status": "PASS",
+    "readOnlyAudit": true,
+    "nativeTestRerun": false,
+    "producer": "5800ed2960aefbf63c01d2ebaf2265278d662494",
+    "receiptSha256": "9a4d745ff11508a8ab08dd8bced6a7893d8f6e6ff5baab34b3445aea652ba49c",
+    "jarRecords": [
+      {
+        "module": "routecontract-core",
+        "sha256": "45b28314c02d6fad7c2113ba6c9399af780aa397a5abe1bc76806172cce7ed90",
+        "productionClasses": 44,
+        "compiledClassBytesEqualTestedCheckout": true,
+        "services": {}
+      },
+      {
+        "module": "routecontract-shardingsphere-5.5",
+        "sha256": "e48e67b2ce2c5d75d60d6794fe93c34d34697daff810a7b1f9c977095c5a02e5",
+        "productionClasses": 9,
+        "compiledClassBytesEqualTestedCheckout": true,
+        "services": {
+          "META-INF/services/io.github.ym0506.routecontract.spi.RouteContractRuntimeAdapter": [
+            "io.github.ym0506.routecontract.shardingsphere553.internal.ShardingSphere553RuntimeAdapter"
+          ],
+          "META-INF/services/org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook": [
+            "io.github.ym0506.routecontract.shardingsphere553.internal.RouteContract553SqlExecutionHook"
+          ]
+        }
+      },
+      {
+        "module": "routecontract-shardingsphere-5.5.2",
+        "sha256": "d5e73f86004fc5a00ebdf3069440d16f8eaf2e033e8b57a7d096ace26630fbe4",
+        "productionClasses": 9,
+        "compiledClassBytesEqualTestedCheckout": true,
+        "services": {
+          "META-INF/services/io.github.ym0506.routecontract.spi.RouteContractRuntimeAdapter": [
+            "io.github.ym0506.routecontract.shardingsphere552.internal.ShardingSphere552RuntimeAdapter"
+          ],
+          "META-INF/services/org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook": [
+            "io.github.ym0506.routecontract.shardingsphere552.internal.RouteContract552SqlExecutionHook"
+          ]
+        }
+      }
+    ],
+    "adapterClassIntersection": [],
+    "jdepsExit": 0,
+    "coreShardingSphereClassDependencies": [],
+    "jdepsLogSha256": "65303bb7948fe16e57f8d48184d9f72ea362a52492dabbe67a57fa00cf852e39",
+    "retainedUnitSuites": [
+      {
+        "module": "routecontract-core",
+        "suite": "ManifestRuntimeCompatibilityMatrixTest",
+        "tests": 606,
+        "sha256": "4d2cfa6842f42af830dc4ad1eff5247cd210a19e19ea4f9e83c1e456f938c800",
+        "timestamp": "2026-09-13T21:55:14.925Z",
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "module": "routecontract-shardingsphere-5.5",
+        "suite": "ObservedExecutionManifestTest",
+        "tests": 22,
+        "sha256": "0e272866df98d5f65a59426d7de9f6951bb4ac3fef40b62dd08ffdb83b737e8b",
+        "timestamp": "2026-09-13T21:55:16.962Z",
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ],
+    "unitEvidenceBoundary": "Existing producer test execution plus exact compiled production-class equality to staged JARs; not fresh packaged execution of 628 cases."
+  },
+  "artifactUnitAuditSha256": "d1b06a0cb0465250ac60a99fdf3b1416904fc8b361e5fcf1a756855614a8b916",
+  "boundaries": {
+    "humanReview": null,
+    "public02": false,
+    "externalAdoption": false,
+    "fullReleaseAcceptance": false,
+    "originalA28Status": "FAILED",
+    "gradleJava21": "NOT_EXECUTED",
+    "manualA09IsFinite": true,
+    "nativeUnitTestRerun": false,
+    "wholeGroupPoliciesAndMaven": "Separate current evidence; not a new combined runner result"
+  },
+  "evidenceLabels": [
+    "verified - unit",
+    "verified - MySQL",
+    "verified - ShardingSphere-JDBC 5.5.2",
+    "verified - ShardingSphere-JDBC 5.5.3"
+  ]
+}

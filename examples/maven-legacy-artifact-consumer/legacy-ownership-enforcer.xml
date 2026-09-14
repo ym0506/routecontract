@@ -1,0 +1,34 @@
+<!-- Consumer-owned policy for an asserted RouteContract 0.2/core lane.
+     Insert this plugin under build/plugins. Existing exact ShardingSphere
+     group-version rules remain complementary and are not replaced here. -->
+<plugin xmlns="http://maven.apache.org/POM/4.0.0">
+  <groupId>org.apache.maven.plugins</groupId>
+  <artifactId>maven-enforcer-plugin</artifactId>
+  <version>3.6.3</version>
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.maven.enforcer</groupId>
+      <artifactId>enforcer-rules</artifactId>
+      <version>3.6.3</version>
+    </dependency>
+  </dependencies>
+  <executions>
+    <execution>
+      <id>routecontract-no-legacy-in-split-consumer</id>
+      <phase>validate</phase>
+      <goals><goal>enforce</goal></goals>
+      <configuration>
+        <fail>true</fail>
+        <rules>
+          <requireJavaVersion><version>[17,18)</version></requireJavaVersion>
+          <bannedDependencies>
+            <searchTransitive>true</searchTransitive>
+            <excludes>
+              <exclude>io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:(,0.2.0)</exclude>
+            </excludes>
+          </bannedDependencies>
+        </rules>
+      </configuration>
+    </execution>
+  </executions>
+</plugin>

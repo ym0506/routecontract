@@ -1,0 +1,2841 @@
+{
+  "formatVersion": 1,
+  "gate": "A29",
+  "status": "VERIFIED",
+  "fullA29Matrix": true,
+  "executedCount": 64,
+  "passedCount": 64,
+  "uniqueProcessCount": 64,
+  "originalA28Status": "FAILED",
+  "evidenceLabels": [
+    "verified - MySQL",
+    "verified - ShardingSphere-JDBC 5.5.2",
+    "verified - ShardingSphere-JDBC 5.5.3"
+  ],
+  "producerRevision": "86a0be5d2e444f3b73925122fa448d9d1a324edd",
+  "consumerRevision": "3ad510a0af972231fbd074607936ee52be3cad1f",
+  "productionPublicationInputsIdentical": true,
+  "execution": {
+    "count": 1,
+    "startedAt": "2026-09-08T11:25:54.937327+00:00",
+    "finishedAt": "2026-09-08T11:27:49.531184+00:00",
+    "elapsedSeconds": 114.594,
+    "exitCode": 0,
+    "commandWithLocationPlaceholders": [
+      "python3",
+      "-B",
+      "scripts/verify-current-entry-successor.py",
+      "--repository",
+      "${REVIEWED_STAGED_REPOSITORY}",
+      "--staged-receipt",
+      "${REVIEWED_RECEIPT}",
+      "--expected-staged-receipt-sha256",
+      "1f4bb21b430a03a44d89e6daddc1fbdede1886250637ef83cecedfd71e350c7e",
+      "--staged-source-revision",
+      "86a0be5d2e444f3b73925122fa448d9d1a324edd",
+      "--evidence-directory",
+      "${ABSENT_EVIDENCE_DIRECTORY}",
+      "--java-home",
+      "${JAVA17_HOME}",
+      "--gradle-distribution-zip",
+      "${PINNED_GRADLE_ZIP}"
+    ],
+    "javaVersion": "17.0.15",
+    "gradleVersion": "8.14.4",
+    "gradleDistributionSha256": "f1771298a70f6db5a29daf62378c4e18a17fc33c9ba6b14362e0cdf40610380d",
+    "mysqlImage": "mysql:8.4.11@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb",
+    "mysqlContainerRemoved": true
+  },
+  "groups": {
+    "captureCollisions": 32,
+    "ordinarySqlCollisions": 16,
+    "cleanControls": 12,
+    "startupRejections": 4
+  },
+  "inputs": {
+    "receiptSha256": "1f4bb21b430a03a44d89e6daddc1fbdede1886250637ef83cecedfd71e350c7e",
+    "runnerSha256": "eaabf2aa584e7497ba89980ad814b94bc1a4d9b0a91cb8b7bce7f9e1dfdd4000",
+    "frozenSourceFileCount": 30,
+    "allSourceAndPayloadHashesUnchanged": true,
+    "artifactInventory": [
+      {
+        "byteCount": 95418,
+        "module": "routecontract-core",
+        "name": "routecontract-core-0.2.0.jar",
+        "origin": "staged",
+        "relativePath": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.jar",
+        "sha256": "9115e1f6e96bece66d29045e3550fc72aa15a217ee82f3289598a9bc693e32ac",
+        "version": "0.2.0"
+      },
+      {
+        "byteCount": 2043,
+        "module": "routecontract-core",
+        "name": "routecontract-core-0.2.0.pom",
+        "origin": "staged",
+        "relativePath": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.pom",
+        "sha256": "ccf3a3854e9f369facb1fe63eabc7303c507a7df2a6438372fc77259428519ce",
+        "version": "0.2.0"
+      },
+      {
+        "byteCount": 4564,
+        "module": "routecontract-core",
+        "name": "routecontract-core-0.2.0.module",
+        "origin": "staged",
+        "relativePath": "io/github/ym0506/routecontract/routecontract-core/0.2.0/routecontract-core-0.2.0.module",
+        "sha256": "6878a932dde5696019f6d34d8d07590d0e293c119a16d77bfb1f601e6f9c8a64",
+        "version": "0.2.0"
+      },
+      {
+        "byteCount": 30470,
+        "module": "routecontract-shardingsphere-5.5",
+        "name": "routecontract-shardingsphere-5.5-0.2.0.jar",
+        "origin": "staged",
+        "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.jar",
+        "sha256": "e48e67b2ce2c5d75d60d6794fe93c34d34697daff810a7b1f9c977095c5a02e5",
+        "version": "0.2.0"
+      },
+      {
+        "byteCount": 2864,
+        "module": "routecontract-shardingsphere-5.5",
+        "name": "routecontract-shardingsphere-5.5-0.2.0.pom",
+        "origin": "staged",
+        "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.pom",
+        "sha256": "d6a5232c2d43ec109fc04924635af245b930c99e449c13bd7949c8f62a518945",
+        "version": "0.2.0"
+      },
+      {
+        "byteCount": 6086,
+        "module": "routecontract-shardingsphere-5.5",
+        "name": "routecontract-shardingsphere-5.5-0.2.0.module",
+        "origin": "staged",
+        "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.2.0/routecontract-shardingsphere-5.5-0.2.0.module",
+        "sha256": "dca55d4f57ef7b8b9d577abc37858ba3a53b901d617086640b50befcd1a1ac96",
+        "version": "0.2.0"
+      },
+      {
+        "byteCount": 30459,
+        "module": "routecontract-shardingsphere-5.5.2",
+        "name": "routecontract-shardingsphere-5.5.2-0.2.0.jar",
+        "origin": "staged",
+        "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.jar",
+        "sha256": "d5e73f86004fc5a00ebdf3069440d16f8eaf2e033e8b57a7d096ace26630fbe4",
+        "version": "0.2.0"
+      },
+      {
+        "byteCount": 2862,
+        "module": "routecontract-shardingsphere-5.5.2",
+        "name": "routecontract-shardingsphere-5.5.2-0.2.0.pom",
+        "origin": "staged",
+        "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.pom",
+        "sha256": "baa1a36766d63969f38a90d6ba3c6b9f3d6004e230ed42f2a8778053bc172a3f",
+        "version": "0.2.0"
+      },
+      {
+        "byteCount": 6418,
+        "module": "routecontract-shardingsphere-5.5.2",
+        "name": "routecontract-shardingsphere-5.5.2-0.2.0.module",
+        "origin": "staged",
+        "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5.2/0.2.0/routecontract-shardingsphere-5.5.2-0.2.0.module",
+        "sha256": "b3dd0230824a5bf442069e183074ca24e610e0c3eebbac7dc968557205cc8dac",
+        "version": "0.2.0"
+      },
+      {
+        "byteCount": 75891,
+        "extension": "jar",
+        "module": "routecontract-shardingsphere-5.5",
+        "name": "routecontract-shardingsphere-5.5-0.1.0.jar",
+        "origin": "public-legacy",
+        "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.0/routecontract-shardingsphere-5.5-0.1.0.jar",
+        "sha256": "d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc",
+        "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.0/routecontract-shardingsphere-5.5-0.1.0.jar",
+        "version": "0.1.0"
+      },
+      {
+        "byteCount": 1929,
+        "extension": "pom",
+        "module": "routecontract-shardingsphere-5.5",
+        "name": "routecontract-shardingsphere-5.5-0.1.0.pom",
+        "origin": "public-legacy",
+        "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.0/routecontract-shardingsphere-5.5-0.1.0.pom",
+        "sha256": "05570bfa238ef77db255a46efdd5bbb25e994ae0137db86491a46a25e28deac9",
+        "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.0/routecontract-shardingsphere-5.5.pom",
+        "version": "0.1.0"
+      },
+      {
+        "byteCount": 75891,
+        "extension": "jar",
+        "module": "routecontract-shardingsphere-5.5",
+        "name": "routecontract-shardingsphere-5.5-0.1.2.jar",
+        "origin": "public-legacy",
+        "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.2/routecontract-shardingsphere-5.5-0.1.2.jar",
+        "sha256": "d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc",
+        "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.2/routecontract-shardingsphere-5.5-0.1.2.jar",
+        "version": "0.1.2"
+      },
+      {
+        "byteCount": 2138,
+        "extension": "pom",
+        "module": "routecontract-shardingsphere-5.5",
+        "name": "routecontract-shardingsphere-5.5-0.1.2.pom",
+        "origin": "public-legacy",
+        "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.2/routecontract-shardingsphere-5.5-0.1.2.pom",
+        "sha256": "70b5d4161d1532e9f9cb699071790a7806d87658511d931477544fa06037b85d",
+        "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.2/routecontract-shardingsphere-5.5.pom",
+        "version": "0.1.2"
+      },
+      {
+        "byteCount": 84926,
+        "extension": "jar",
+        "module": "routecontract-shardingsphere-5.5",
+        "name": "routecontract-shardingsphere-5.5-0.1.3.jar",
+        "origin": "public-legacy",
+        "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.3/routecontract-shardingsphere-5.5-0.1.3.jar",
+        "sha256": "9e883e618eb09d9ecf30814151bb4b0a43eba02c78d288cc582fa7e57e6edba2",
+        "url": "https://repo.maven.apache.org/maven2/io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.3/routecontract-shardingsphere-5.5-0.1.3.jar",
+        "version": "0.1.3"
+      },
+      {
+        "byteCount": 2138,
+        "extension": "pom",
+        "module": "routecontract-shardingsphere-5.5",
+        "name": "routecontract-shardingsphere-5.5-0.1.3.pom",
+        "origin": "public-legacy",
+        "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.3/routecontract-shardingsphere-5.5-0.1.3.pom",
+        "sha256": "1db9eb4e8527341ed12184111913b7a56de979c5fc4195afcbdb162cb4e730d9",
+        "url": "https://repo.maven.apache.org/maven2/io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.3/routecontract-shardingsphere-5.5-0.1.3.pom",
+        "version": "0.1.3"
+      },
+      {
+        "byteCount": 4050,
+        "extension": "module",
+        "module": "routecontract-shardingsphere-5.5",
+        "name": "routecontract-shardingsphere-5.5-0.1.3.module",
+        "origin": "public-legacy",
+        "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.3/routecontract-shardingsphere-5.5-0.1.3.module",
+        "sha256": "eb3d2c9f8b308eb61d8e4d3e3e83e2937423a898bab0b8a623d4abf71eeb44a0",
+        "url": "https://repo.maven.apache.org/maven2/io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.3/routecontract-shardingsphere-5.5-0.1.3.module",
+        "version": "0.1.3"
+      },
+      {
+        "byteCount": 75465,
+        "extension": "jar",
+        "module": "routecontract-shardingsphere-5.5",
+        "name": "routecontract-shardingsphere-5.5-0.1.0-rc2.jar",
+        "origin": "public-legacy",
+        "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.0-rc2/routecontract-shardingsphere-5.5-0.1.0-rc2.jar",
+        "sha256": "d0e45bc3d6d88f94ee801143356d7472306d852ec58f6517f0e39aeee0213fdb",
+        "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.0-rc2/routecontract-shardingsphere-5.5-0.1.0-rc2.jar",
+        "version": "0.1.0-rc2"
+      },
+      {
+        "byteCount": 1933,
+        "extension": "pom",
+        "module": "routecontract-shardingsphere-5.5",
+        "name": "routecontract-shardingsphere-5.5-0.1.0-rc2.pom",
+        "origin": "public-legacy",
+        "relativePath": "io/github/ym0506/routecontract/routecontract-shardingsphere-5.5/0.1.0-rc2/routecontract-shardingsphere-5.5-0.1.0-rc2.pom",
+        "sha256": "569bb8ad2e40237156d73903be508c5b65be6ab1fcfc63834c0529f314507075",
+        "url": "https://github.com/ym0506/routecontract/releases/download/v0.1.0-rc2/routecontract-shardingsphere-5.5.pom",
+        "version": "0.1.0-rc2"
+      }
+    ],
+    "runtimeGraphs": {
+      "5.5.2": {
+        "compiledProbeClasses": 2,
+        "runtimeArtifacts": 203,
+        "shardingSphereArtifacts": 122
+      },
+      "5.5.3": {
+        "compiledProbeClasses": 2,
+        "runtimeArtifacts": 145,
+        "shardingSphereArtifacts": 75
+      }
+    }
+  },
+  "audit": {
+    "independentlyReconstructedCanonicalCases": 64,
+    "allRawCasesAndCommandsBound": true,
+    "jvmLogLinesReadThroughEof": 844,
+    "expectedCaughtExceptionChains": 52,
+    "unexpectedUncaughtOrShutdownErrors": 0,
+    "everyObservedClassOriginCheckedAgainstActualClasspathAndJarBytes": true
+  },
+  "results": [
+    {
+      "case": {
+        "adapter": "5.5.2",
+        "category": "clean",
+        "expected": "CLEAN_NO_SQL",
+        "id": "5.5.2-clean-current-capture",
+        "legacy": null,
+        "mode": "current-capture",
+        "order": null,
+        "runtime": "5.5.2"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": true,
+      "actionEntries": 1,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": {
+        "collectorDiagnostics": [
+          "RC_NO_START_CALLBACK_OBSERVED"
+        ],
+        "observedPhysicalAttemptCount": 0,
+        "runtimeIdentity": {
+          "adapterContractVersion": 1,
+          "adapterId": "apache-shardingsphere-jdbc/sql-execution-hook",
+          "infraExecutorImplementationVersion": "5.5.2",
+          "infraSpiImplementationVersion": "5.5.2"
+        },
+        "schemaVersion": 2,
+        "status": "INCOMPLETE"
+      },
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "a8e5da2a0acb5b5151f76ba0924dfbbff7b9cc24642e929a4f1485ee23d8210b",
+        "observed": "9a94b47d1e8543e41523964bbde23043be764c89c84f8319afe40dceb9435931",
+        "jvmLog": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.2",
+        "category": "clean",
+        "expected": "CLEAN_NO_SQL",
+        "id": "5.5.2-clean-current-capture-result",
+        "legacy": null,
+        "mode": "current-capture-result",
+        "order": null,
+        "runtime": "5.5.2"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": true,
+      "actionEntries": 1,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": {
+        "collectorDiagnostics": [
+          "RC_NO_START_CALLBACK_OBSERVED"
+        ],
+        "observedPhysicalAttemptCount": 0,
+        "runtimeIdentity": {
+          "adapterContractVersion": 1,
+          "adapterId": "apache-shardingsphere-jdbc/sql-execution-hook",
+          "infraExecutorImplementationVersion": "5.5.2",
+          "infraSpiImplementationVersion": "5.5.2"
+        },
+        "schemaVersion": 2,
+        "status": "INCOMPLETE"
+      },
+      "resultValue": "current-entry-sentinel",
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "bc279fc589dd13d2383e4cf3e01d79272fc9c4c78cdfc17d093bd61a8081a4c6",
+        "observed": "15e0b8ef2c5c9d428b7230cf3259c957a4ba936249b2d34d497275406a878a87",
+        "jvmLog": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.2",
+        "category": "clean",
+        "expected": "CLEAN_NO_SQL",
+        "id": "5.5.2-clean-compatibility-capture",
+        "legacy": null,
+        "mode": "compatibility-capture",
+        "order": null,
+        "runtime": "5.5.2"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": true,
+      "actionEntries": 1,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": {
+        "collectorDiagnostics": [
+          "RC_NO_START_CALLBACK_OBSERVED"
+        ],
+        "observedPhysicalAttemptCount": 0,
+        "runtimeIdentity": {
+          "adapterContractVersion": 1,
+          "adapterId": "apache-shardingsphere-jdbc/sql-execution-hook",
+          "infraExecutorImplementationVersion": "5.5.2",
+          "infraSpiImplementationVersion": "5.5.2"
+        },
+        "schemaVersion": 2,
+        "status": "INCOMPLETE"
+      },
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "68cb1e737ab11200a809b38cefa2dca7d46f48c60cf01e207ab1828f9872c64f",
+        "observed": "5b60d4d5517cd07a580f380f9f97f7b130df264ede0b4f6582f7892e4f01b68f",
+        "jvmLog": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.2",
+        "category": "clean",
+        "expected": "CLEAN_NO_SQL",
+        "id": "5.5.2-clean-compatibility-capture-result",
+        "legacy": null,
+        "mode": "compatibility-capture-result",
+        "order": null,
+        "runtime": "5.5.2"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": true,
+      "actionEntries": 1,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": {
+        "collectorDiagnostics": [
+          "RC_NO_START_CALLBACK_OBSERVED"
+        ],
+        "observedPhysicalAttemptCount": 0,
+        "runtimeIdentity": {
+          "adapterContractVersion": 1,
+          "adapterId": "apache-shardingsphere-jdbc/sql-execution-hook",
+          "infraExecutorImplementationVersion": "5.5.2",
+          "infraSpiImplementationVersion": "5.5.2"
+        },
+        "schemaVersion": 2,
+        "status": "INCOMPLETE"
+      },
+      "resultValue": "current-entry-sentinel",
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "17fd5ac7c25fd486f23dfee90f398c48942db9edd9b6dcac0e7083b307bd6ae0",
+        "observed": "7c0f5b5c7ed199b17b50882c82d3c107999952bfe7df534f6db8d66e65429c84",
+        "jvmLog": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.2",
+        "category": "clean",
+        "expected": "CLEAN_SQL",
+        "id": "5.5.2-clean-sql",
+        "legacy": null,
+        "mode": "sql",
+        "order": null,
+        "runtime": "5.5.2"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": true,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 1,
+      "datasourceConstructionEntered": true,
+      "businessRows": [
+        "201:3:PAID"
+      ],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "f2ac9fb660c0b1581e996826a0e100af2eaa5767ce0e60b52caa059a7631d90b",
+        "observed": "8c00201d2a1fd59b7d830f75c4c0376b297b8415979944fcbcb1b1c566ec097d",
+        "jvmLog": "18065568026f5e094d4c435da63e831d42d9e598fcf4989e7a99f172422583b6"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.2",
+        "category": "clean",
+        "expected": "CLEAN_CAPTURED_SQL",
+        "id": "5.5.2-clean-startup-sql",
+        "legacy": null,
+        "mode": "startup-sql",
+        "order": null,
+        "runtime": "5.5.2"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": true,
+      "actionEntries": 1,
+      "physicalBusinessExecutions": 1,
+      "datasourceConstructionEntered": true,
+      "businessRows": [
+        "201:3:PAID"
+      ],
+      "captureSnapshot": {
+        "collectorDiagnostics": [],
+        "observedPhysicalAttemptCount": 1,
+        "runtimeIdentity": {
+          "adapterContractVersion": 1,
+          "adapterId": "apache-shardingsphere-jdbc/sql-execution-hook",
+          "infraExecutorImplementationVersion": "5.5.2",
+          "infraSpiImplementationVersion": "5.5.2"
+        },
+        "schemaVersion": 2,
+        "status": "COMPLETE"
+      },
+      "resultValue": [
+        "201:3:PAID"
+      ],
+      "verifiedRuntimeIdentity": {
+        "adapterContractVersion": 1,
+        "adapterId": "apache-shardingsphere-jdbc/sql-execution-hook",
+        "infraExecutorImplementationVersion": "5.5.2",
+        "infraSpiImplementationVersion": "5.5.2"
+      },
+      "linkageFailure": false,
+      "diagnosticCodes": [],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "c888b1bb5cad8d2d9289722b12535d34fdb8993bc5da3db09f0d608ac3139b84",
+        "observed": "84cad419ae0009519e97eb2acf1584f117a2bffd312a8ae730916ee13737a130",
+        "jvmLog": "18065568026f5e094d4c435da63e831d42d9e598fcf4989e7a99f172422583b6"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.2",
+        "category": "capture-collision",
+        "expected": "COLLISION",
+        "id": "5.5.2-0.1.0-legacy-first-current-capture",
+        "legacy": "0.1.0",
+        "mode": "current-capture",
+        "order": "legacy-first",
+        "runtime": "5.5.2"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-shardingsphere-5.5-0.1.0.jar",
+        "captureRegistryOrigin": "routecontract-shardingsphere-5.5-0.1.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "cfec2ea495878c927134112da310fc0e54bba05d3bd2932b6d54cb5f635eb344",
+        "observed": "903211dd954a1be44ebdf1e88e8a92b644e6951be1fbed3ac938dfa401751be2",
+        "jvmLog": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.2",
+        "category": "capture-collision",
+        "expected": "COLLISION",
+        "id": "5.5.2-0.1.0-legacy-first-current-capture-result",
+        "legacy": "0.1.0",
+        "mode": "current-capture-result",
+        "order": "legacy-first",
+        "runtime": "5.5.2"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-shardingsphere-5.5-0.1.0.jar",
+        "captureRegistryOrigin": "routecontract-shardingsphere-5.5-0.1.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "c13766336b667f525502b197dbbcf230890cdc5ab3c54bc18e40410620a56773",
+        "observed": "f3c001674fd59fbf0e567f324e7b595d71738096576c79abfea09bd87ab74774",
+        "jvmLog": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.2",
+        "category": "sql-collision",
+        "expected": "COLLISION",
+        "id": "5.5.2-0.1.0-legacy-first-sql",
+        "legacy": "0.1.0",
+        "mode": "sql",
+        "order": "legacy-first",
+        "runtime": "5.5.2"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": true,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-shardingsphere-5.5-0.1.0.jar",
+        "captureRegistryOrigin": "routecontract-shardingsphere-5.5-0.1.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "130d0707111770b03de0acee3159bc2c2f0dc79a7ab1dc44dd623fa259c930b4",
+        "observed": "4519c6c2bfd80d70056c083f4687909ac78c14985f72ac31e4e67421fc52c099",
+        "jvmLog": "f944292767e3a653f675a251baed5358866c9b2ec0588360f30bb9e1cd21140f"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.2",
+        "category": "capture-collision",
+        "expected": "COLLISION",
+        "id": "5.5.2-0.1.0-legacy-last-current-capture",
+        "legacy": "0.1.0",
+        "mode": "current-capture",
+        "order": "legacy-last",
+        "runtime": "5.5.2"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "69299fdbb13afbd678ea239065fab76999787748d3cb44ec9b927ddd4511b40a",
+        "observed": "c9908fcff791a6e373595f45c03c7a8f65326690ab206f897294c404fcd8d7c0",
+        "jvmLog": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.2",
+        "category": "capture-collision",
+        "expected": "COLLISION",
+        "id": "5.5.2-0.1.0-legacy-last-current-capture-result",
+        "legacy": "0.1.0",
+        "mode": "current-capture-result",
+        "order": "legacy-last",
+        "runtime": "5.5.2"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "4b79270dd7ffc52c01898b3b5fecfa7f42327698dbe4498481448cb1ce2fe35a",
+        "observed": "2cd8fd21680accf0f7ad26677870fec866395c6081fb140eda7c7fa5359c7fc3",
+        "jvmLog": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.2",
+        "category": "sql-collision",
+        "expected": "COLLISION",
+        "id": "5.5.2-0.1.0-legacy-last-sql",
+        "legacy": "0.1.0",
+        "mode": "sql",
+        "order": "legacy-last",
+        "runtime": "5.5.2"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": true,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "678d0f72ccee474a216063861833593d194070c335b039d3389e507988151f16",
+        "observed": "f2c7761dc9ab076cc94f8d226047dfa0c8caa51b4bc5e8c4fbc5c47e78b7e61b",
+        "jvmLog": "f944292767e3a653f675a251baed5358866c9b2ec0588360f30bb9e1cd21140f"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.2",
+        "category": "capture-collision",
+        "expected": "COLLISION",
+        "id": "5.5.2-0.1.2-legacy-first-current-capture",
+        "legacy": "0.1.2",
+        "mode": "current-capture",
+        "order": "legacy-first",
+        "runtime": "5.5.2"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-shardingsphere-5.5-0.1.2.jar",
+        "captureRegistryOrigin": "routecontract-shardingsphere-5.5-0.1.2.jar"
+      },
+      "retainedRawSha256": {
+        "command": "08e4899ad78a7af0a448f246ae9b366683e719b39b9c313490858ff9fe0f3e2a",
+        "observed": "c39185164d0b3ae5019d3878860a11f327a92d5683cc5acd13c9ac2351198513",
+        "jvmLog": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.2",
+        "category": "capture-collision",
+        "expected": "COLLISION",
+        "id": "5.5.2-0.1.2-legacy-first-current-capture-result",
+        "legacy": "0.1.2",
+        "mode": "current-capture-result",
+        "order": "legacy-first",
+        "runtime": "5.5.2"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-shardingsphere-5.5-0.1.2.jar",
+        "captureRegistryOrigin": "routecontract-shardingsphere-5.5-0.1.2.jar"
+      },
+      "retainedRawSha256": {
+        "command": "d92327278ec462934e6c5573ecdf7a344e1bf0c77447732aca92ddd86316af1b",
+        "observed": "3e70b58551470815d4d02209b46adce319b46bdc4553ec5a75a29222da9064ad",
+        "jvmLog": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.2",
+        "category": "sql-collision",
+        "expected": "COLLISION",
+        "id": "5.5.2-0.1.2-legacy-first-sql",
+        "legacy": "0.1.2",
+        "mode": "sql",
+        "order": "legacy-first",
+        "runtime": "5.5.2"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": true,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-shardingsphere-5.5-0.1.2.jar",
+        "captureRegistryOrigin": "routecontract-shardingsphere-5.5-0.1.2.jar"
+      },
+      "retainedRawSha256": {
+        "command": "fcc57dbd75cac5fcc6e4dbfade533956aae9f1c796eac0ac8ce458d693d92c61",
+        "observed": "db19e6075aad2a9651057178a3a26cc01d18c78b5c48fa72a41403de95186141",
+        "jvmLog": "f944292767e3a653f675a251baed5358866c9b2ec0588360f30bb9e1cd21140f"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.2",
+        "category": "capture-collision",
+        "expected": "COLLISION",
+        "id": "5.5.2-0.1.2-legacy-last-current-capture",
+        "legacy": "0.1.2",
+        "mode": "current-capture",
+        "order": "legacy-last",
+        "runtime": "5.5.2"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "33d7e6831f19c0206d13f61346e8f6c86925ddee603fdfaeadbf293a49667fb8",
+        "observed": "6960c4b851024ebeae72132f03414af5c993e7d57945f2b936e133947c13edfd",
+        "jvmLog": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.2",
+        "category": "capture-collision",
+        "expected": "COLLISION",
+        "id": "5.5.2-0.1.2-legacy-last-current-capture-result",
+        "legacy": "0.1.2",
+        "mode": "current-capture-result",
+        "order": "legacy-last",
+        "runtime": "5.5.2"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "aa014ee9385d937cf47b35dd2c6e17c19c91c273f9a37c59bafc1c17a246099f",
+        "observed": "695b05f1254731d2a3951364a947fc847c80d92b3cdfef7b3a5fd2267dc467fa",
+        "jvmLog": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.2",
+        "category": "sql-collision",
+        "expected": "COLLISION",
+        "id": "5.5.2-0.1.2-legacy-last-sql",
+        "legacy": "0.1.2",
+        "mode": "sql",
+        "order": "legacy-last",
+        "runtime": "5.5.2"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": true,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "3d3c5cc5c359561c1f6fddbb6d5346d1ffeb387d7b47353d67ff3fa8f4e7b5d8",
+        "observed": "e0e43c12bd13afb220ac237167a55e92946f76d683024384cf3183a908ff132c",
+        "jvmLog": "f944292767e3a653f675a251baed5358866c9b2ec0588360f30bb9e1cd21140f"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.2",
+        "category": "capture-collision",
+        "expected": "COLLISION",
+        "id": "5.5.2-0.1.3-legacy-first-current-capture",
+        "legacy": "0.1.3",
+        "mode": "current-capture",
+        "order": "legacy-first",
+        "runtime": "5.5.2"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-shardingsphere-5.5-0.1.3.jar",
+        "captureRegistryOrigin": "routecontract-shardingsphere-5.5-0.1.3.jar"
+      },
+      "retainedRawSha256": {
+        "command": "d80e150d2a10e3d26f393c695637225f5d4a60d7bd41c1e1be93ce3951f4f271",
+        "observed": "5ecfdc37c1b332809dc1f13733a42ca87699a76a6f47328de1ef3c65dc6ef5d1",
+        "jvmLog": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.2",
+        "category": "capture-collision",
+        "expected": "COLLISION",
+        "id": "5.5.2-0.1.3-legacy-first-current-capture-result",
+        "legacy": "0.1.3",
+        "mode": "current-capture-result",
+        "order": "legacy-first",
+        "runtime": "5.5.2"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-shardingsphere-5.5-0.1.3.jar",
+        "captureRegistryOrigin": "routecontract-shardingsphere-5.5-0.1.3.jar"
+      },
+      "retainedRawSha256": {
+        "command": "175da0410ee6d0f32b22477a376445ae01dfa4c633e940f6d22a51c818f0c925",
+        "observed": "c60fe079beecfe7eacd4a31048fa9a71d62ec0404b936755a581eef1afeec1ad",
+        "jvmLog": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.2",
+        "category": "sql-collision",
+        "expected": "COLLISION",
+        "id": "5.5.2-0.1.3-legacy-first-sql",
+        "legacy": "0.1.3",
+        "mode": "sql",
+        "order": "legacy-first",
+        "runtime": "5.5.2"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": true,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-shardingsphere-5.5-0.1.3.jar",
+        "captureRegistryOrigin": "routecontract-shardingsphere-5.5-0.1.3.jar"
+      },
+      "retainedRawSha256": {
+        "command": "260bf8fc3c0e823710ec28b9a293f711aeaf788f7f27fe4c49d7221698b281a6",
+        "observed": "ac553cd32a4a2e5ed1d8371d0cc220c2fb780689c0c1583808ef387dccdd5d21",
+        "jvmLog": "f944292767e3a653f675a251baed5358866c9b2ec0588360f30bb9e1cd21140f"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.2",
+        "category": "capture-collision",
+        "expected": "COLLISION",
+        "id": "5.5.2-0.1.3-legacy-last-current-capture",
+        "legacy": "0.1.3",
+        "mode": "current-capture",
+        "order": "legacy-last",
+        "runtime": "5.5.2"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "a3f5661241e6d3a6af1bb73fc11155929b78f8915be931cdbec64e17647fdddc",
+        "observed": "1dfd5b95f93f3c1b37f55627afe3b93278afce6dcfa3ef0f686b490801f8a2dd",
+        "jvmLog": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.2",
+        "category": "capture-collision",
+        "expected": "COLLISION",
+        "id": "5.5.2-0.1.3-legacy-last-current-capture-result",
+        "legacy": "0.1.3",
+        "mode": "current-capture-result",
+        "order": "legacy-last",
+        "runtime": "5.5.2"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "2fc267840c6883e2fffa3ad1a1dd0aef256f143777c0cc40c8293fafc893a872",
+        "observed": "c9991d55e02f60834d6ec37512fb71ae8110d5d3c34934131d5dd2f0ddbb697f",
+        "jvmLog": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.2",
+        "category": "sql-collision",
+        "expected": "COLLISION",
+        "id": "5.5.2-0.1.3-legacy-last-sql",
+        "legacy": "0.1.3",
+        "mode": "sql",
+        "order": "legacy-last",
+        "runtime": "5.5.2"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": true,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "4ffd2b33b6fe662d43dd1e93ef0d968259e5f794d7c065ab1446c2ef1b1f33b9",
+        "observed": "fe279b14088f29999a028625e1b09b201dbae7401f7750bd0ee9c9f62560c9fb",
+        "jvmLog": "f944292767e3a653f675a251baed5358866c9b2ec0588360f30bb9e1cd21140f"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.2",
+        "category": "capture-collision",
+        "expected": "COLLISION",
+        "id": "5.5.2-0.1.0-rc2-legacy-first-current-capture",
+        "legacy": "0.1.0-rc2",
+        "mode": "current-capture",
+        "order": "legacy-first",
+        "runtime": "5.5.2"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-shardingsphere-5.5-0.1.0-rc2.jar",
+        "captureRegistryOrigin": "routecontract-shardingsphere-5.5-0.1.0-rc2.jar"
+      },
+      "retainedRawSha256": {
+        "command": "77b789145f557a5b5e22813c956d9918bd864176f62c2639cf826bbf5d7554ed",
+        "observed": "4886fb2ce43c3b0ec1c3856a4c450271d3362a80992d9b4a367a83ddf698e69a",
+        "jvmLog": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.2",
+        "category": "capture-collision",
+        "expected": "COLLISION",
+        "id": "5.5.2-0.1.0-rc2-legacy-first-current-capture-result",
+        "legacy": "0.1.0-rc2",
+        "mode": "current-capture-result",
+        "order": "legacy-first",
+        "runtime": "5.5.2"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-shardingsphere-5.5-0.1.0-rc2.jar",
+        "captureRegistryOrigin": "routecontract-shardingsphere-5.5-0.1.0-rc2.jar"
+      },
+      "retainedRawSha256": {
+        "command": "44fe52f9ea61ecb1a50272a7197d2aa4cef9a04e19a8cd7a4440d9c4f3dadf3f",
+        "observed": "c631decb88a430d8926fa6755103adaa67121c5163bdd94488ed787d0dc1502e",
+        "jvmLog": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.2",
+        "category": "sql-collision",
+        "expected": "COLLISION",
+        "id": "5.5.2-0.1.0-rc2-legacy-first-sql",
+        "legacy": "0.1.0-rc2",
+        "mode": "sql",
+        "order": "legacy-first",
+        "runtime": "5.5.2"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": true,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-shardingsphere-5.5-0.1.0-rc2.jar",
+        "captureRegistryOrigin": "routecontract-shardingsphere-5.5-0.1.0-rc2.jar"
+      },
+      "retainedRawSha256": {
+        "command": "a7782080203791a8197c419b9d6f8b01f90df45094fb2974746551f23216fa4b",
+        "observed": "94925c2ef12ea330a1b10a479c47a574340aa13a56c3f46846fe68b10e3d8577",
+        "jvmLog": "f944292767e3a653f675a251baed5358866c9b2ec0588360f30bb9e1cd21140f"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.2",
+        "category": "capture-collision",
+        "expected": "COLLISION",
+        "id": "5.5.2-0.1.0-rc2-legacy-last-current-capture",
+        "legacy": "0.1.0-rc2",
+        "mode": "current-capture",
+        "order": "legacy-last",
+        "runtime": "5.5.2"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "449b807bb7d7c6d8e03b76dd7b4639a6c3e3aa29216d0f49377af4db19db0ebb",
+        "observed": "ccbd26cfacdecd4c33b4626982360952984e184e28bdc7bf5a72a73889c05fee",
+        "jvmLog": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.2",
+        "category": "capture-collision",
+        "expected": "COLLISION",
+        "id": "5.5.2-0.1.0-rc2-legacy-last-current-capture-result",
+        "legacy": "0.1.0-rc2",
+        "mode": "current-capture-result",
+        "order": "legacy-last",
+        "runtime": "5.5.2"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "5c3f7964e47c75c51bfe721c540ecc1a1c0c5850cc72db442c40ab1c9e035198",
+        "observed": "759cf6b2ffc3b21184d94f8e64002398ba0d08e342a25b692f98097a2be90107",
+        "jvmLog": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.2",
+        "category": "sql-collision",
+        "expected": "COLLISION",
+        "id": "5.5.2-0.1.0-rc2-legacy-last-sql",
+        "legacy": "0.1.0-rc2",
+        "mode": "sql",
+        "order": "legacy-last",
+        "runtime": "5.5.2"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": true,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "0a45f38790b336204f064eae229063bb3acc7afbe35555028a2dafd137d93dbf",
+        "observed": "09b957823adff78374ba67ad799c0bafae5bda333b3b3404575a79bef4ccf897",
+        "jvmLog": "f944292767e3a653f675a251baed5358866c9b2ec0588360f30bb9e1cd21140f"
+      }
+    },
+    {
+      "case": {
+        "adapter": null,
+        "category": "startup-rejection",
+        "expected": "RC_ADAPTER_NOT_FOUND",
+        "id": "5.5.2-missing-adapter-startup",
+        "legacy": null,
+        "mode": "startup",
+        "order": null,
+        "runtime": "5.5.2"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_ADAPTER_NOT_FOUND"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "7dd56766318fd061976ba04e35152eca933e0c9feec086777f677045a6830857",
+        "observed": "e5a78f810d66d6a23ddf627de57f21dc2cb796c521a5d9c02cab180ec639e6a8",
+        "jvmLog": "ec351163eadaa5deb1b25b886bdb2c043d406303876bdde23f197c93a0e0843d"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.3",
+        "category": "startup-rejection",
+        "expected": "RC_UNSUPPORTED_SHARDINGSPHERE_RUNTIME",
+        "id": "5.5.2-wrong-adapter-startup",
+        "legacy": null,
+        "mode": "startup",
+        "order": null,
+        "runtime": "5.5.2"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_UNSUPPORTED_SHARDINGSPHERE_RUNTIME"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "520ae605353aa2e47034108e7d5460d3bcf1f29b7e887087f4bcff752e96cbd6",
+        "observed": "36acc8ff2ebf41d30e081162f0d6d474ea23f7454b057c5ee3f0aa621f9779b5",
+        "jvmLog": "c2a4cbe8045123542207cc6f632bb8c10bccb2623c8647b7ac2f64ebf24e4144"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.3",
+        "category": "clean",
+        "expected": "CLEAN_NO_SQL",
+        "id": "5.5.3-clean-current-capture",
+        "legacy": null,
+        "mode": "current-capture",
+        "order": null,
+        "runtime": "5.5.3"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": true,
+      "actionEntries": 1,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": {
+        "collectorDiagnostics": [
+          "RC_NO_START_CALLBACK_OBSERVED"
+        ],
+        "observedPhysicalAttemptCount": 0,
+        "runtimeIdentity": {
+          "adapterContractVersion": 1,
+          "adapterId": "apache-shardingsphere-jdbc/sql-execution-hook",
+          "infraExecutorImplementationVersion": "5.5.3",
+          "infraSpiImplementationVersion": "5.5.3"
+        },
+        "schemaVersion": 2,
+        "status": "INCOMPLETE"
+      },
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "5e3f4babd2c4bef4a0956f1039e2ebf03851a7af21959d770bc313cb42882ae8",
+        "observed": "7a9d6711eb80475ed1078cb1c80c660b18ee96612c545e9d34ab637f77b4b844",
+        "jvmLog": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.3",
+        "category": "clean",
+        "expected": "CLEAN_NO_SQL",
+        "id": "5.5.3-clean-current-capture-result",
+        "legacy": null,
+        "mode": "current-capture-result",
+        "order": null,
+        "runtime": "5.5.3"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": true,
+      "actionEntries": 1,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": {
+        "collectorDiagnostics": [
+          "RC_NO_START_CALLBACK_OBSERVED"
+        ],
+        "observedPhysicalAttemptCount": 0,
+        "runtimeIdentity": {
+          "adapterContractVersion": 1,
+          "adapterId": "apache-shardingsphere-jdbc/sql-execution-hook",
+          "infraExecutorImplementationVersion": "5.5.3",
+          "infraSpiImplementationVersion": "5.5.3"
+        },
+        "schemaVersion": 2,
+        "status": "INCOMPLETE"
+      },
+      "resultValue": "current-entry-sentinel",
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "afd0f3a55a7e9cda45b5c0f3806a0dff22cbdf95c46e387660240f9cfe463215",
+        "observed": "b618c71910bb1e14d9a79b3ff6c7eaef57458e8139a59cf66a178a615013fc56",
+        "jvmLog": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.3",
+        "category": "clean",
+        "expected": "CLEAN_NO_SQL",
+        "id": "5.5.3-clean-compatibility-capture",
+        "legacy": null,
+        "mode": "compatibility-capture",
+        "order": null,
+        "runtime": "5.5.3"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": true,
+      "actionEntries": 1,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": {
+        "collectorDiagnostics": [
+          "RC_NO_START_CALLBACK_OBSERVED"
+        ],
+        "observedPhysicalAttemptCount": 0,
+        "runtimeIdentity": {
+          "adapterContractVersion": 1,
+          "adapterId": "apache-shardingsphere-jdbc/sql-execution-hook",
+          "infraExecutorImplementationVersion": "5.5.3",
+          "infraSpiImplementationVersion": "5.5.3"
+        },
+        "schemaVersion": 2,
+        "status": "INCOMPLETE"
+      },
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "f16ce09eb8e89c04c241439178ba65c38958c761ac3b6cf621b9741652072588",
+        "observed": "df120e4c65797a08e4f9ef7f6ff7ec6e1e770ee4cb189cd621ed36379ede6a0c",
+        "jvmLog": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.3",
+        "category": "clean",
+        "expected": "CLEAN_NO_SQL",
+        "id": "5.5.3-clean-compatibility-capture-result",
+        "legacy": null,
+        "mode": "compatibility-capture-result",
+        "order": null,
+        "runtime": "5.5.3"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": true,
+      "actionEntries": 1,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": {
+        "collectorDiagnostics": [
+          "RC_NO_START_CALLBACK_OBSERVED"
+        ],
+        "observedPhysicalAttemptCount": 0,
+        "runtimeIdentity": {
+          "adapterContractVersion": 1,
+          "adapterId": "apache-shardingsphere-jdbc/sql-execution-hook",
+          "infraExecutorImplementationVersion": "5.5.3",
+          "infraSpiImplementationVersion": "5.5.3"
+        },
+        "schemaVersion": 2,
+        "status": "INCOMPLETE"
+      },
+      "resultValue": "current-entry-sentinel",
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "899253b30c638fe403b38fcd01389adecea215eb2418dfd91659fa3313d967c1",
+        "observed": "8e205b3ebbbfa2e6abe134efe1c655e7a85c39410a2fa488ed3fdea003ae53c8",
+        "jvmLog": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.3",
+        "category": "clean",
+        "expected": "CLEAN_SQL",
+        "id": "5.5.3-clean-sql",
+        "legacy": null,
+        "mode": "sql",
+        "order": null,
+        "runtime": "5.5.3"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": true,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 1,
+      "datasourceConstructionEntered": true,
+      "businessRows": [
+        "201:3:PAID"
+      ],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "db321ae0f25967c2e9d0d9576410e78cc5f3902ef40bab488893595b5d64fc0a",
+        "observed": "4c8c8e6cd35a2e7965440310576ed4f0ba5ee3596647b1d0956d35413c9f4854",
+        "jvmLog": "117bc20ea66ac151216279d0c63f05782bd8478dc3d4993bf0aba0b58ab71bdb"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.3",
+        "category": "clean",
+        "expected": "CLEAN_CAPTURED_SQL",
+        "id": "5.5.3-clean-startup-sql",
+        "legacy": null,
+        "mode": "startup-sql",
+        "order": null,
+        "runtime": "5.5.3"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": true,
+      "actionEntries": 1,
+      "physicalBusinessExecutions": 1,
+      "datasourceConstructionEntered": true,
+      "businessRows": [
+        "201:3:PAID"
+      ],
+      "captureSnapshot": {
+        "collectorDiagnostics": [],
+        "observedPhysicalAttemptCount": 1,
+        "runtimeIdentity": {
+          "adapterContractVersion": 1,
+          "adapterId": "apache-shardingsphere-jdbc/sql-execution-hook",
+          "infraExecutorImplementationVersion": "5.5.3",
+          "infraSpiImplementationVersion": "5.5.3"
+        },
+        "schemaVersion": 2,
+        "status": "COMPLETE"
+      },
+      "resultValue": [
+        "201:3:PAID"
+      ],
+      "verifiedRuntimeIdentity": {
+        "adapterContractVersion": 1,
+        "adapterId": "apache-shardingsphere-jdbc/sql-execution-hook",
+        "infraExecutorImplementationVersion": "5.5.3",
+        "infraSpiImplementationVersion": "5.5.3"
+      },
+      "linkageFailure": false,
+      "diagnosticCodes": [],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "d015d262bff5ef5ec7ad08cbfbcabb41062e4655aac2b7cbee4b72a73e9d059a",
+        "observed": "df3862ddd4ac09be4b3978f3cb4657e210ba848389e072bc078d3ce2c61dbec4",
+        "jvmLog": "108929c4d1bca9d24e605bd78d0d85da5ff8d5cdbd9ee133e892ea7d201e0af0"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.3",
+        "category": "capture-collision",
+        "expected": "COLLISION",
+        "id": "5.5.3-0.1.0-legacy-first-current-capture",
+        "legacy": "0.1.0",
+        "mode": "current-capture",
+        "order": "legacy-first",
+        "runtime": "5.5.3"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-shardingsphere-5.5-0.1.0.jar",
+        "captureRegistryOrigin": "routecontract-shardingsphere-5.5-0.1.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "a57a6f88202ac18e6a790de18aa57791332aba02052ca7286ebc63c20153f1d5",
+        "observed": "5e90c1e33788ad8138f7ba005fcd069793c4a92c5f268dbca73fc8c8ed3dca40",
+        "jvmLog": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.3",
+        "category": "capture-collision",
+        "expected": "COLLISION",
+        "id": "5.5.3-0.1.0-legacy-first-current-capture-result",
+        "legacy": "0.1.0",
+        "mode": "current-capture-result",
+        "order": "legacy-first",
+        "runtime": "5.5.3"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-shardingsphere-5.5-0.1.0.jar",
+        "captureRegistryOrigin": "routecontract-shardingsphere-5.5-0.1.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "37ce19b2b82460208830b0ef3745164546b23d6f8717eb3fa66256a8166f0821",
+        "observed": "f7a00013644ce659cdd1ee41c1ea15c3e8a6c0b1225dc928972e28dea7da60ce",
+        "jvmLog": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.3",
+        "category": "sql-collision",
+        "expected": "COLLISION",
+        "id": "5.5.3-0.1.0-legacy-first-sql",
+        "legacy": "0.1.0",
+        "mode": "sql",
+        "order": "legacy-first",
+        "runtime": "5.5.3"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": true,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-shardingsphere-5.5-0.1.0.jar",
+        "captureRegistryOrigin": "routecontract-shardingsphere-5.5-0.1.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "954bd861402fc5d73d73a32fbdc470984a2d16c5af31499cf7d607941a619197",
+        "observed": "59340d8c4bf322fc21ddc74a08b57ab0e475f903cff4e5666d193c3ea2426b1f",
+        "jvmLog": "9ee63ebd1a6b96ea557349a32476de879e184fd20a6d63e5fec263e5a1b29336"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.3",
+        "category": "capture-collision",
+        "expected": "COLLISION",
+        "id": "5.5.3-0.1.0-legacy-last-current-capture",
+        "legacy": "0.1.0",
+        "mode": "current-capture",
+        "order": "legacy-last",
+        "runtime": "5.5.3"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "1926670f4ff15d49232f3c6fad634e3cd19797bfdecfb81582ae730e111b78e4",
+        "observed": "0abd6bec33a6aa52e630c48e595abf210bc80790253e2e4665342c11dbe37d0d",
+        "jvmLog": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.3",
+        "category": "capture-collision",
+        "expected": "COLLISION",
+        "id": "5.5.3-0.1.0-legacy-last-current-capture-result",
+        "legacy": "0.1.0",
+        "mode": "current-capture-result",
+        "order": "legacy-last",
+        "runtime": "5.5.3"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "b193554751aa589fca75533f9a471ef5c54c60e97d6b6eb56454d92d4e67adad",
+        "observed": "70e530212dce84abee12c775c0b95bf1641651d44dd1502387e03e4124a85f0b",
+        "jvmLog": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.3",
+        "category": "sql-collision",
+        "expected": "COLLISION",
+        "id": "5.5.3-0.1.0-legacy-last-sql",
+        "legacy": "0.1.0",
+        "mode": "sql",
+        "order": "legacy-last",
+        "runtime": "5.5.3"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": true,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "5f7d1153c534640cd6be610ccaec95004af604fe12ea97fb3d41f58bb502e860",
+        "observed": "d85aaf53490f9a6b42eabe97e14a7c5d5987e56899aa0c9ec6814dc15f42a217",
+        "jvmLog": "9ada7a3d3c830da0c1275b06fb75618d5794b9cfcabe362ea76fe88a8faefc98"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.3",
+        "category": "capture-collision",
+        "expected": "COLLISION",
+        "id": "5.5.3-0.1.2-legacy-first-current-capture",
+        "legacy": "0.1.2",
+        "mode": "current-capture",
+        "order": "legacy-first",
+        "runtime": "5.5.3"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-shardingsphere-5.5-0.1.2.jar",
+        "captureRegistryOrigin": "routecontract-shardingsphere-5.5-0.1.2.jar"
+      },
+      "retainedRawSha256": {
+        "command": "b334c970459fa7b8b579d2cd4bf682b6e0a86636d408fd70062b323a29789945",
+        "observed": "1afd902e7a85ecfab112e3069a37fc765f90f14a2d1bea0fe24edbdd2291393e",
+        "jvmLog": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.3",
+        "category": "capture-collision",
+        "expected": "COLLISION",
+        "id": "5.5.3-0.1.2-legacy-first-current-capture-result",
+        "legacy": "0.1.2",
+        "mode": "current-capture-result",
+        "order": "legacy-first",
+        "runtime": "5.5.3"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-shardingsphere-5.5-0.1.2.jar",
+        "captureRegistryOrigin": "routecontract-shardingsphere-5.5-0.1.2.jar"
+      },
+      "retainedRawSha256": {
+        "command": "4efb1a6406347594482e565a60ecfe6122c59e303d016b72a688b65e66b6335f",
+        "observed": "de72eda68e0dce787106c83ba863e3ef80f38bc2b5ace3d3752f17bd0e5085e3",
+        "jvmLog": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.3",
+        "category": "sql-collision",
+        "expected": "COLLISION",
+        "id": "5.5.3-0.1.2-legacy-first-sql",
+        "legacy": "0.1.2",
+        "mode": "sql",
+        "order": "legacy-first",
+        "runtime": "5.5.3"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": true,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-shardingsphere-5.5-0.1.2.jar",
+        "captureRegistryOrigin": "routecontract-shardingsphere-5.5-0.1.2.jar"
+      },
+      "retainedRawSha256": {
+        "command": "2f138411e7d162834bfda882d1e785de46956023ee6a6c63cf6d220224b0d3a5",
+        "observed": "9ff6f6792a25bd8e5ff869cf28cf6271ceaf15f12dfa3cb0f14e2f6118dbf381",
+        "jvmLog": "42b52a75ddb89dfc38dc0836f1d9b4ff0d7249810ad6c2196e0c55e104238a02"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.3",
+        "category": "capture-collision",
+        "expected": "COLLISION",
+        "id": "5.5.3-0.1.2-legacy-last-current-capture",
+        "legacy": "0.1.2",
+        "mode": "current-capture",
+        "order": "legacy-last",
+        "runtime": "5.5.3"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "362ebf6a9d88157b10b6c75d41649cf87b4ee0660d713844b38275071f1ab414",
+        "observed": "4abf12570d14f3afded221ae474300d9e600cf54779271e1e53060750e333f3d",
+        "jvmLog": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.3",
+        "category": "capture-collision",
+        "expected": "COLLISION",
+        "id": "5.5.3-0.1.2-legacy-last-current-capture-result",
+        "legacy": "0.1.2",
+        "mode": "current-capture-result",
+        "order": "legacy-last",
+        "runtime": "5.5.3"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "f2d04aeac14db2bdc5b2fb4ac69c653ee9dcea870eaef87a2c4b1bc2d07acf54",
+        "observed": "c02b4152f221dd49354d4ec1f5fef39138a5fa61c1e61eab0d4658af6398a7b2",
+        "jvmLog": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.3",
+        "category": "sql-collision",
+        "expected": "COLLISION",
+        "id": "5.5.3-0.1.2-legacy-last-sql",
+        "legacy": "0.1.2",
+        "mode": "sql",
+        "order": "legacy-last",
+        "runtime": "5.5.3"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": true,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "2fa3851d301a66c3d425850d4b33e93e5334e4185ef0bf2a13a32fa1565b2124",
+        "observed": "dcee2ba2dd6e9c5cfd0c38c047ab9ac41d36c27483c58d6cf7fc3dc1e0d8d42c",
+        "jvmLog": "98952c06b5193fda01090c13617527dd733e95f87704edeede70fe6468dcd938"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.3",
+        "category": "capture-collision",
+        "expected": "COLLISION",
+        "id": "5.5.3-0.1.3-legacy-first-current-capture",
+        "legacy": "0.1.3",
+        "mode": "current-capture",
+        "order": "legacy-first",
+        "runtime": "5.5.3"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-shardingsphere-5.5-0.1.3.jar",
+        "captureRegistryOrigin": "routecontract-shardingsphere-5.5-0.1.3.jar"
+      },
+      "retainedRawSha256": {
+        "command": "aa32579e141981573173064a6a7bc21aec408db5fbbad8e74cf5d9d9ff96823e",
+        "observed": "e950e40b1544dd99612af568d8a3cd0c2df2711975b5fd539c5cf92fb6696130",
+        "jvmLog": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.3",
+        "category": "capture-collision",
+        "expected": "COLLISION",
+        "id": "5.5.3-0.1.3-legacy-first-current-capture-result",
+        "legacy": "0.1.3",
+        "mode": "current-capture-result",
+        "order": "legacy-first",
+        "runtime": "5.5.3"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-shardingsphere-5.5-0.1.3.jar",
+        "captureRegistryOrigin": "routecontract-shardingsphere-5.5-0.1.3.jar"
+      },
+      "retainedRawSha256": {
+        "command": "c203c29217a816e1c7092447f9d04c0a7de16d0bb714abd223784b8b824b824d",
+        "observed": "effc25a75b481220dcb56edce96874dd036492dabc17ab231a11aebd5424d1cb",
+        "jvmLog": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.3",
+        "category": "sql-collision",
+        "expected": "COLLISION",
+        "id": "5.5.3-0.1.3-legacy-first-sql",
+        "legacy": "0.1.3",
+        "mode": "sql",
+        "order": "legacy-first",
+        "runtime": "5.5.3"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": true,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-shardingsphere-5.5-0.1.3.jar",
+        "captureRegistryOrigin": "routecontract-shardingsphere-5.5-0.1.3.jar"
+      },
+      "retainedRawSha256": {
+        "command": "58c40f4f8e4a329967a92f1a3d5d774df1679b628a492ae19ff9645b33457b4c",
+        "observed": "3e02ca7037b434d608ee2c0e8d47df431ecd7f6512dec9f4b5c5564e99cf13c8",
+        "jvmLog": "8f09a9d7e0583ad26ebabb37f13e228b405fe1c4179df6298b4d3804a623146f"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.3",
+        "category": "capture-collision",
+        "expected": "COLLISION",
+        "id": "5.5.3-0.1.3-legacy-last-current-capture",
+        "legacy": "0.1.3",
+        "mode": "current-capture",
+        "order": "legacy-last",
+        "runtime": "5.5.3"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "9425324833ad455c1cedf216c0eba8a9acc85b6b82958f8636813620e76cd1e1",
+        "observed": "f1f53e438daa46dd1efcc57ef881931dcb575989a183b5d0393e0ef2008e43ed",
+        "jvmLog": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.3",
+        "category": "capture-collision",
+        "expected": "COLLISION",
+        "id": "5.5.3-0.1.3-legacy-last-current-capture-result",
+        "legacy": "0.1.3",
+        "mode": "current-capture-result",
+        "order": "legacy-last",
+        "runtime": "5.5.3"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "8cc6e4c5f0a8a6b2910af9580956d0924f4149e28da81a0f40c3054dc308c2b2",
+        "observed": "c6d4e5167f758fbc70348e6e79fc80cac9c0a2317f3f8a51841d5e557f81add0",
+        "jvmLog": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.3",
+        "category": "sql-collision",
+        "expected": "COLLISION",
+        "id": "5.5.3-0.1.3-legacy-last-sql",
+        "legacy": "0.1.3",
+        "mode": "sql",
+        "order": "legacy-last",
+        "runtime": "5.5.3"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": true,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "4c0b381a72906c379de1e4992275b986e96cb48148f306131f7d81fe238292ed",
+        "observed": "1d549fdc8c5bf252c3af833fab42d43e4ffcec187648fa49c097a1292404d8a3",
+        "jvmLog": "5b80c1564bb939d05bfceb012b4fef16f2736957d928dc7a9145064f79825733"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.3",
+        "category": "capture-collision",
+        "expected": "COLLISION",
+        "id": "5.5.3-0.1.0-rc2-legacy-first-current-capture",
+        "legacy": "0.1.0-rc2",
+        "mode": "current-capture",
+        "order": "legacy-first",
+        "runtime": "5.5.3"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-shardingsphere-5.5-0.1.0-rc2.jar",
+        "captureRegistryOrigin": "routecontract-shardingsphere-5.5-0.1.0-rc2.jar"
+      },
+      "retainedRawSha256": {
+        "command": "724da199052b69d4d4a08d14d8ba8dfcb2b3706c45bfd89d99c0ca580433127f",
+        "observed": "fea3b66df9bc65b6565a796b360644ef2e3fa8655eaa93fb6af9f4d69b7d36e8",
+        "jvmLog": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.3",
+        "category": "capture-collision",
+        "expected": "COLLISION",
+        "id": "5.5.3-0.1.0-rc2-legacy-first-current-capture-result",
+        "legacy": "0.1.0-rc2",
+        "mode": "current-capture-result",
+        "order": "legacy-first",
+        "runtime": "5.5.3"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-shardingsphere-5.5-0.1.0-rc2.jar",
+        "captureRegistryOrigin": "routecontract-shardingsphere-5.5-0.1.0-rc2.jar"
+      },
+      "retainedRawSha256": {
+        "command": "6331757c26250114d1e767fc90bdf89a90ae514ce57789ac33a70dce67114a6a",
+        "observed": "a5c8279794cc3920dee880f5cf4efd95535e800e213c013bab533c9b00ad9d89",
+        "jvmLog": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.3",
+        "category": "sql-collision",
+        "expected": "COLLISION",
+        "id": "5.5.3-0.1.0-rc2-legacy-first-sql",
+        "legacy": "0.1.0-rc2",
+        "mode": "sql",
+        "order": "legacy-first",
+        "runtime": "5.5.3"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": true,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-shardingsphere-5.5-0.1.0-rc2.jar",
+        "captureRegistryOrigin": "routecontract-shardingsphere-5.5-0.1.0-rc2.jar"
+      },
+      "retainedRawSha256": {
+        "command": "07f2045e82ca79b2dcd5e2a73239e1fcb72d9b4f8b3d5634e292427fbf024df1",
+        "observed": "44f2aeed36a45d306ebbb4bb1e012f5f2062695c075898153a86a5f68e7ef6a5",
+        "jvmLog": "1b06382f8fa16cfc4d4d59cdaa42eadee1cd517a40a8511e66119d78f28c24ce"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.3",
+        "category": "capture-collision",
+        "expected": "COLLISION",
+        "id": "5.5.3-0.1.0-rc2-legacy-last-current-capture",
+        "legacy": "0.1.0-rc2",
+        "mode": "current-capture",
+        "order": "legacy-last",
+        "runtime": "5.5.3"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "a6d2b65d238f59e31c3b3d8daefd12526cb96b492c356af1916f493e8afcb8fa",
+        "observed": "0dd2bd92d156ff054c9908ecb57b93b24248fa4c4a99e0450d1f2f826b30bbe4",
+        "jvmLog": "e786d62a8ce340797a483ef0df85a399cf70609abca1563b4e298570b5d04e72"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.3",
+        "category": "capture-collision",
+        "expected": "COLLISION",
+        "id": "5.5.3-0.1.0-rc2-legacy-last-current-capture-result",
+        "legacy": "0.1.0-rc2",
+        "mode": "current-capture-result",
+        "order": "legacy-last",
+        "runtime": "5.5.3"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "d3f071766f056798e790db52da950034fdaf784a233c140cf7f824c9e29da77f",
+        "observed": "6d2a3d1d7c267c429140f7621d2ef6cea022e25f67b860f308c7e23de848124a",
+        "jvmLog": "3aecaed7467f32d9fd42a88d546aed928157c464a0017229c196330ff567d010"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.3",
+        "category": "sql-collision",
+        "expected": "COLLISION",
+        "id": "5.5.3-0.1.0-rc2-legacy-last-sql",
+        "legacy": "0.1.0-rc2",
+        "mode": "sql",
+        "order": "legacy-last",
+        "runtime": "5.5.3"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": true,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_LEGACY_ADAPTER_COLLISION"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "6366aa21911d0b08dc83772583f6e2e49f2d969a9b8e82d44c22c7f4b2d59607",
+        "observed": "af409b6fe638c79f781ab334def963e40c77ace4a7b1be53cfa8fd2d93205330",
+        "jvmLog": "c8e8e437a98229abd1b22c49326f6bfba60ee09d52253946ec76ff8bf7ac5b46"
+      }
+    },
+    {
+      "case": {
+        "adapter": null,
+        "category": "startup-rejection",
+        "expected": "RC_ADAPTER_NOT_FOUND",
+        "id": "5.5.3-missing-adapter-startup",
+        "legacy": null,
+        "mode": "startup",
+        "order": null,
+        "runtime": "5.5.3"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_ADAPTER_NOT_FOUND"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "2c160126afd3109cf2a67f5833226f6a6fab05f590d94a0adf133a080ebe9492",
+        "observed": "e20319b7ee62774e0c62869f70dff5fe307cac7ec4547c0777a05a4ac1515097",
+        "jvmLog": "ec351163eadaa5deb1b25b886bdb2c043d406303876bdde23f197c93a0e0843d"
+      }
+    },
+    {
+      "case": {
+        "adapter": "5.5.2",
+        "category": "startup-rejection",
+        "expected": "RC_UNSUPPORTED_SHARDINGSPHERE_RUNTIME",
+        "id": "5.5.3-wrong-adapter-startup",
+        "legacy": null,
+        "mode": "startup",
+        "order": null,
+        "runtime": "5.5.3"
+      },
+      "outcome": "PASS",
+      "exitCode": 0,
+      "launchInputsUnchanged": true,
+      "returned": false,
+      "actionEntries": 0,
+      "physicalBusinessExecutions": 0,
+      "datasourceConstructionEntered": false,
+      "businessRows": [],
+      "captureSnapshot": null,
+      "resultValue": null,
+      "verifiedRuntimeIdentity": null,
+      "linkageFailure": false,
+      "diagnosticCodes": [
+        "RC_UNSUPPORTED_SHARDINGSPHERE_RUNTIME"
+      ],
+      "classOrigins": {
+        "newEntryOrigin": "routecontract-core-0.2.0.jar",
+        "guardOrigin": "routecontract-core-0.2.0.jar",
+        "compatibilityEntryOrigin": "routecontract-core-0.2.0.jar",
+        "captureRegistryOrigin": "routecontract-core-0.2.0.jar"
+      },
+      "retainedRawSha256": {
+        "command": "2c065d7c231989fa4e3731beb672fbabb885faf4e3e7a8fb15a8ac86d2dd600c",
+        "observed": "d9f21cb87876d79fc782483c6e8389fbad1b770aed4111e6578077d500ac1adf",
+        "jvmLog": "ee61c84cbf4a635e8697959a05f237788ca8265ca17fcf7fc63f91874435eec8"
+      }
+    }
+  ],
+  "retainedLocalEvidenceSha256": {
+    "summary.json": "a52596e6b9800f41bbecb8d252f65e0cd3d272881e68a892426936f0df4de6f1",
+    "wrapper-record.json": "2b55eee76c907b9cb1d52c021cd7a615961a76163d9b05f53f50123edb88dad9",
+    "frozen-launch-inputs.json": "54d83b3df194352a4c187a19666b09446ae6edc49e9aa01a9c28eac69cb6a83c",
+    "runner.log": "95efcec1b54436b5ddc8ab50a209992a4d9bcc84dd6402c442b2c8fe76b25bcf",
+    "fixture-inputs.json": "42338c00ac9c547f8996671fc225fbc7f0362b41f8d367fc7b0aacaae6382812",
+    "case-plan.json": "01ff74738bf5b553223ff1c3afd2a241f2709091a327187717f9d19d7f21f48b",
+    "prepared-launch-inputs.json": "6762ab873e3c5130f00f2ac89c5a20a64fd348747fbb3ccd5c0cb6f381e9c27e",
+    "verified-input-inventory.json": "3963dc2ae208358dbf0211637718b9fb7baa1d3741f9c4ea25af7d59fef0e33d",
+    "independent-input-audit.json": "00060d774a685f73b3c8984bee7edb171ed03d276d162c48d0c817d2cc3e5e57",
+    "independent-raw-audit.json": "d96201ec6a91480b7b7c00d1effd27405993d90ef7333bbe80beff471d742772",
+    "subprocess-assertions.xml": "8d4933ddc0d96b8e6a4ca7944c88de1a7baf2309a18eec305cb0e77339509123"
+  },
+  "limits": [
+    "A29 verifies the changed application-entry contract. New callers use io.github.ym0506.routecontract.api.RouteContract; original A28 remains FAILED.",
+    "Legacy-first direct old-FQCN calls retain the documented diagnostic limit. Clean old-FQCN compatibility is a separate bounded control.",
+    "Driver counters cover only the fixed business PreparedStatement, excluding direct schema setup and datasource metadata SQL.",
+    "These are reviewed unsigned local candidate bytes plus four actual registry-pinned public legacy versions. No public 0.2 distribution, module-path support, universal compatibility, transaction commit or adoption claim.",
+    "Raw local paths, full causes, process IDs, SQL and connection details remain local. Class origins here use JAR filenames; exact paths and hashes remain bound by retained raw records."
+  ]
+}

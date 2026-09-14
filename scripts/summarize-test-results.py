@@ -2,9 +2,9 @@
 """Create the fixed, privacy-minimized RouteContract release test summary.
 
 The release workflow already fails when ``clean check`` fails.  This script
-adds a second, deliberately narrow gate: all and only the nine expected JUnit
-suites must be present, every expected test must have run, and every result
-count must be zero.  Only suite identities and aggregate counts are emitted;
+also requires the reviewed core, adapter and MySQL JUnit suites to be present,
+with every expected test run and zero failures, errors or skipped tests.
+Only suite identities and aggregate counts are emitted;
 JUnit timestamps, hostnames, durations, test names and captured output are not
 copied into the release evidence.
 """
@@ -25,15 +25,32 @@ INTEGER_RE = re.compile(r"0|[1-9][0-9]*")
 MAX_XML_BYTES = 4 * 1024 * 1024
 
 EXPECTED_SUITES = {
-    "io.github.ym0506.routecontract.RouteContractTest": 18,
+    "io.github.ym0506.routecontract.api.CurrentRouteContractTest": 15,
+    "io.github.ym0506.routecontract.internal.CurrentRuntimeGuardTest": 9,
+    "io.github.ym0506.routecontract.internal.MutableAttemptTest": 2,
+    "io.github.ym0506.routecontract.internal.RuntimeAdapterRegistryTest": 9,
+    "io.github.ym0506.routecontract.manifest.ManifestReviewReportTest": 13,
+    "io.github.ym0506.routecontract.manifest.ManifestRuntimeCompatibilityMatrixTest": 606,
+    "io.github.ym0506.routecontract.structure.CorePublicationStructureTest": 3,
+    "io.github.ym0506.routecontract.CurrentRouteContractCompatibilityTest": 4,
+    "io.github.ym0506.routecontract.RouteContractTest": 19,
+    "io.github.ym0506.routecontract.ShardingSphereRuntimeIdentityTest": 3,
+    "io.github.ym0506.routecontract.manifest.ObservedExecutionManifestTest": 22,
+    "io.github.ym0506.routecontract.shardingsphere553.internal.FreshJvmGuardFailureTest": 2,
+    "io.github.ym0506.routecontract.shardingsphere553.internal.ShardingSphere553PreflightTest": 10,
+    "io.github.ym0506.routecontract.structure.ArtifactIsolationTest": 6,
+    "io.github.ym0506.routecontract.shardingsphere552.internal.FreshJvmCompatibilityFailureTest": 4,
+    "io.github.ym0506.routecontract.shardingsphere552.internal.FreshJvmGuardFailureTest": 2,
+    "io.github.ym0506.routecontract.shardingsphere552.internal.FreshJvmMixedAnchorTest": 2,
+    "io.github.ym0506.routecontract.shardingsphere552.internal.RouteContract552HookContainmentTest": 3,
+    "io.github.ym0506.routecontract.shardingsphere552.internal.ShardingSphere552PreflightTest": 10,
+    "io.github.ym0506.routecontract.structure.ArtifactIsolation552Test": 10,
     "io.github.ym0506.routecontract.example.DataSourceProxyComparisonMySqlTest": 1,
     "io.github.ym0506.routecontract.example.FailureBoundaryMySqlTest": 1,
     "io.github.ym0506.routecontract.example.ObservedExecutionRegressionCorpusMySqlTest": 7,
     "io.github.ym0506.routecontract.example.OperationCorrelationMySqlTest": 5,
-    "io.github.ym0506.routecontract.internal.MutableAttemptTest": 2,
-    "io.github.ym0506.routecontract.internal.ShardingSphere553PreflightTest": 3,
-    "io.github.ym0506.routecontract.manifest.ManifestReviewReportTest": 10,
-    "io.github.ym0506.routecontract.manifest.ObservedExecutionManifestTest": 17,
+    "io.github.ym0506.routecontract.example552.Exact552OperationContractMySqlTest": 7,
+    "io.github.ym0506.routecontract.example552.Exact552ObservedExecutionRegressionCorpusMySqlTest": 7,
 }
 
 
@@ -109,10 +126,8 @@ def _read_suite(path: Path) -> tuple[str, dict[str, int]]:
     return suite, counts
 
 
-def build_summary(revision: str, results_dirs: list[Path]) -> str:
-    if REVISION_RE.fullmatch(revision) is None:
-        raise SummaryError("revision must be a lowercase 40-character Git commit SHA")
-
+def read_verified_results(results_dirs: list[Path]) -> dict[str, dict[str, int]]:
+    """Validate the exact release corpus without inventing revision provenance."""
     observed: dict[str, dict[str, int]] = {}
     for directory in results_dirs:
         if directory.is_symlink() or not directory.is_dir():
@@ -139,6 +154,14 @@ def build_summary(revision: str, results_dirs: list[Path]) -> str:
             )
         if any(counts[key] != 0 for key in ("failures", "errors", "skipped")):
             raise SummaryError(f"suite {suite} is not an all-passing, non-skipped result")
+
+    return observed
+
+
+def build_summary(revision: str, results_dirs: list[Path]) -> str:
+    if REVISION_RE.fullmatch(revision) is None:
+        raise SummaryError("revision must be a lowercase 40-character Git commit SHA")
+    observed = read_verified_results(results_dirs)
 
     lines = [
         f"format={SUMMARY_FORMAT}",

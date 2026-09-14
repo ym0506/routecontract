@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "status": "FAILED",
+  "scope": "Existing ADR A-01–A-08, A-10, A-18 and A-19 representative runtime boundaries only.",
+  "artifactSourceRevision": "4e066942f6e244345fe908970b81446f9e08f64e",
+  "reviewedLocalStagedReceiptSha256": "38b2269eca162f121fd3996c56df8b894ae2f43cedeb08fcc627032cf70eaa43",
+  "reviewedArtifacts": "Unsigned local RouteContract 0.2.0 core and two exact-version adapters; nine payloads.",
+  "runtimeScope": {
+    "java": "17.0.15",
+    "shardingSphereJdbc": [
+      "5.5.2",
+      "5.5.3"
+    ],
+    "mysql": "8.4.11"
+  },
+  "correctedExecution": {
+    "required": 28,
+    "executed": 28,
+    "passed": 24,
+    "failed": 4,
+    "distinctJvmProcesses": 28,
+    "orderedCaptureParity": true,
+    "outcomes": {
+      "PASS": 24,
+      "WRONG_DIAGNOSTIC": 4
+    },
+    "remainingFailures": [
+      {
+        "shardingSphereVersion": "5.5.2",
+        "adapterModulePathOrder": [
+          "5.5.2",
+          "5.5.3"
+        ],
+        "operation": "ordinary SQL",
+        "expectedDiagnostic": "RC_UNSUPPORTED_MODULE_PATH",
+        "observedDiagnostic": "RC_MULTIPLE_ROUTE_CONTRACT_ADAPTERS",
+        "actionEntries": 0,
+        "businessDriverDelegations": 0
+      },
+      {
+        "shardingSphereVersion": "5.5.2",
+        "adapterModulePathOrder": [
+          "5.5.3",
+          "5.5.2"
+        ],
+        "operation": "ordinary SQL",
+        "expectedDiagnostic": "RC_UNSUPPORTED_MODULE_PATH",
+        "observedDiagnostic": "RC_MULTIPLE_ROUTE_CONTRACT_ADAPTERS",
+        "actionEntries": 0,
+        "businessDriverDelegations": 0
+      },
+      {
+        "shardingSphereVersion": "5.5.3",
+        "adapterModulePathOrder": [
+          "5.5.2",
+          "5.5.3"
+        ],
+        "operation": "ordinary SQL",
+        "expectedDiagnostic": "RC_UNSUPPORTED_MODULE_PATH",
+        "observedDiagnostic": "RC_MULTIPLE_ROUTE_CONTRACT_ADAPTERS",
+        "actionEntries": 0,
+        "businessDriverDelegations": 0
+      },
+      {
+        "shardingSphereVersion": "5.5.3",
+        "adapterModulePathOrder": [
+          "5.5.3",
+          "5.5.2"
+        ],
+        "operation": "ordinary SQL",
+        "expectedDiagnostic": "RC_UNSUPPORTED_MODULE_PATH",
+        "observedDiagnostic": "RC_MULTIPLE_ROUTE_CONTRACT_ADAPTERS",
+        "actionEntries": 0,
+        "businessDriverDelegations": 0
+      }
+    ],
+    "failureBoundary": "Named dual-adapter hook provider construction rejects before physical business-driver delegation, but descriptor validation wins over the required unsupported-module diagnostic.",
+    "observedProvider": "ShardingSphere552HookConstructionGuard in all four failures; physical module-path order does not establish provider-discovery order.",
+    "singleAdapterNamedSql": "Both exact runtime cases emit the required RC_UNSUPPORTED_MODULE_PATH.",
+    "inputAudit": "Six executed source files, 27 source fingerprints and nine reviewed staged payloads unchanged; prepared and executed dependency graphs and compiled probe bytes match.",
+    "rawLogAudit": {
+      "linesThroughEof": 646,
+      "extraUncaughtOrShutdownErrors": 0,
+      "linkageErrors": 0
+    },
+    "sha256": {
+      "summary.json": "e2989d11372e3a2f6d20ee33c3052f479097aace8da2009ea7fff05357c7a8ec",
+      "independent-input-record-audit.json": "7e82b41118766bee0a295769efcf43c795bff8adb4329523b90d4566afb00b76",
+      "independent-raw-runtime-boundary-audit.json": "5ddadb9aa6845433485722256d09a45e0893385949803cf39b9d610f890d5a56"
+    }
+  },
+  "preservedFirstExecution": {
+    "status": "FAILED",
+    "executed": 28,
+    "passed": 22,
+    "failed": 6,
+    "failureClassification": "All six named ordinary-SQL cells failed in third-party startup before RouteContract guards because the named launcher omitted required java.instrument and jdk.unsupported JDK roots. These failures do not establish product diagnostic precedence.",
+    "fixtureCorrection": "Exactly those two JDK modules were added to named-launch roots; the 28-case plan and required diagnostics were unchanged.",
+    "rawLogAudit": {
+      "linesThroughEof": 658,
+      "extraUncaughtOrShutdownErrors": 0
+    },
+    "sha256": {
+      "independent-input-record-audit.json": "dc1834aa5d9ca9ef987907ad898a3656bcbbfff5cb2e44c06777e4a7a818385b",
+      "independent-raw-runtime-boundary-audit.json": "9a9b1204c6436a086d9231992af1525bf4d81ec6040a31a73a6db43da74845c2",
+      "summary.json": "eef95298efbc53a0226f8b062c0d76debdafe7854d3823fcbc5acc1f33020ae5"
+    }
+  },
+  "limits": [
+    "The corrected result is FAILED; it is separate from the first FAILED execution.",
+    "Original A-28 remains FAILED; completed A-29 evidence is unchanged.",
+    "No JPMS execution support, release readiness, publication, production adoption or new workload coverage is claimed.",
+    "A-09, A-11–A-13 and the full A-23 corpus and human review remain outside this gate.",
+    "A later production fix requires independently reviewed candidate artifacts and separate runtime evidence; this result cannot validate changed bytes."
+  ]
+}

@@ -25,8 +25,24 @@ JNA_EXPRESSION = "(Apache-2.0 OR LGPL-2.1-or-later) AND MIT"
 JTS_EXPRESSIONS = {
     "jts-core": "EPL-2.0 OR BSD-3-Clause",
 }
+H2_EXPRESSION = "MPL-2.0 OR EPL-1.0"
+H2_LICENSE_CHOICES = [
+    {"license": {"id": "MPL-2.0"}},
+    {
+        "license": {
+            "name": "EPL 1.0",
+            "url": "https://opensource.org/licenses/eclipse-1.0.php",
+        }
+    },
+]
+ANTLR_JAR_SHA256 = "da66be0c98acfb29bc708300d05f1a3269c40f9984a4cb9251cf2ba1898d1334"
 REQUIRED_EXAMPLE_COORDINATES = (
     ("org.apache.shardingsphere", "shardingsphere-jdbc", "5.5.3"),
+    ("org.apache.calcite", "calcite-core", "1.42.0"),
+    ("org.apache.calcite", "calcite-linq4j", "1.42.0"),
+)
+REQUIRED_552_EXAMPLE_COORDINATES = (
+    ("org.apache.shardingsphere", "shardingsphere-jdbc", "5.5.2"),
     ("org.apache.calcite", "calcite-core", "1.42.0"),
     ("org.apache.calcite", "calcite-linq4j", "1.42.0"),
 )
@@ -57,6 +73,16 @@ def append_xml_component(parent: ET.Element, component: dict[str, object]) -> No
     )
     for field in ("group", "name", "version"):
         ET.SubElement(element, qname(field)).text = str(component[field])
+    if "description" in component:
+        ET.SubElement(element, qname("description")).text = str(component["description"])
+    if "scope" in component:
+        ET.SubElement(element, qname("scope")).text = str(component["scope"])
+    if "hashes" in component:
+        hashes = ET.SubElement(element, qname("hashes"))
+        for item in component["hashes"]:
+            ET.SubElement(hashes, qname("hash"), {"alg": str(item["alg"])}).text = str(
+                item["content"]
+            )
     if "licenses" in component:
         licenses = ET.SubElement(element, qname("licenses"))
         for choice in component["licenses"]:
@@ -71,7 +97,19 @@ def append_xml_component(parent: ET.Element, component: dict[str, object]) -> No
                 ET.SubElement(license_element, qname(identifier)).text = str(
                     license_value[identifier]
                 )
+                if "url" in license_value:
+                    ET.SubElement(license_element, qname("url")).text = str(
+                        license_value["url"]
+                    )
     ET.SubElement(element, qname("purl")).text = str(component["purl"])
+    if "modified" in component:
+        ET.SubElement(element, qname("modified")).text = str(component["modified"]).lower()
+    if "properties" in component:
+        properties = ET.SubElement(element, qname("properties"))
+        for item in component["properties"]:
+            ET.SubElement(
+                properties, qname("property"), {"name": str(item["name"])}
+            ).text = str(item["value"])
 
 
 class FinalizeSbomTest(unittest.TestCase):
@@ -104,6 +142,18 @@ class FinalizeSbomTest(unittest.TestCase):
             "name": "routecontract-shardingsphere-5.5",
             "version": "0.1.0",
             "purl": library_purl,
+        }
+        core_purl = (
+            f"pkg:maven/{GROUP}/routecontract-core@0.1.0"
+            "?project_path=%3Aroutecontract-core"
+        )
+        self.core_component = {
+            "type": "library",
+            "bom-ref": core_purl,
+            "group": GROUP,
+            "name": "routecontract-core",
+            "version": "0.1.0",
+            "purl": core_purl,
         }
         self.components = [
             self.library_component,
@@ -168,6 +218,7 @@ class FinalizeSbomTest(unittest.TestCase):
                 "1.42.0",
                 [{"license": {"id": "Apache-2.0"}}],
             ),
+            self.core_component,
         ]
         self.write_sources()
 
@@ -207,10 +258,25 @@ class FinalizeSbomTest(unittest.TestCase):
             "dependencies": [
                 {
                     "ref": self.root_component["purl"],
-                    "dependsOn": [component["purl"] for component in self.components],
+                    "dependsOn": [
+                        component["purl"]
+                        for component in self.components
+                        if component["purl"] != self.core_component["purl"]
+                    ],
                 },
                 *[
-                    {"ref": component["purl"], "dependsOn": []}
+                    {
+                        "ref": component["purl"],
+                        "dependsOn": (
+                            [self.core_component["purl"]]
+                            if component["purl"] == self.library_component["purl"]
+                            and any(
+                                candidate["purl"] == self.core_component["purl"]
+                                for candidate in self.components
+                            )
+                            else []
+                        ),
+                    }
                     for component in self.components
                 ],
             ],
@@ -243,12 +309,27 @@ class FinalizeSbomTest(unittest.TestCase):
             dependencies, qname("dependency"), {"ref": str(self.root_component["purl"])}
         )
         for component in self.components:
-            ET.SubElement(
-                root_dependency, qname("dependency"), {"ref": str(component["purl"])}
-            )
-            ET.SubElement(
+            if component["purl"] != self.core_component["purl"]:
+                ET.SubElement(
+                    root_dependency,
+                    qname("dependency"),
+                    {"ref": str(component["purl"])},
+                )
+            dependency = ET.SubElement(
                 dependencies, qname("dependency"), {"ref": str(component["purl"])}
             )
+            if (
+                component["purl"] == self.library_component["purl"]
+                and any(
+                    candidate["purl"] == self.core_component["purl"]
+                    for candidate in self.components
+                )
+            ):
+                ET.SubElement(
+                    dependency,
+                    qname("dependency"),
+                    {"ref": str(self.core_component["purl"])},
+                )
         ET.ElementTree(root).write(
             self.source_xml, encoding="utf-8", xml_declaration=True
         )
@@ -271,6 +352,437 @@ class FinalizeSbomTest(unittest.TestCase):
             str(self.output_json),
             str(self.output_xml),
         )
+
+    def add_antlr_component(self) -> dict[str, object]:
+        component = maven_component(
+            "org.antlr", "antlr4-runtime", "4.10.1",
+            [{"license": {"id": "BSD-4-Clause"}}],
+        )
+        component["hashes"] = [{"alg": "SHA-256", "content": ANTLR_JAR_SHA256}]
+        component["scope"] = "required"
+        component["properties"] = [
+            {"name": "cdx:maven:package:test", "value": "false"}
+        ]
+        self.components.append(component)
+        return component
+
+    def test_normalizes_exact_antlr_preserving_runtime_and_test_profiles(self) -> None:
+        antlr = self.add_antlr_component()
+        qname = lambda name: f"{{{NAMESPACE}}}{name}"
+        for role, test_scope in (("adapter552", "false"), ("mysql552", "true")):
+            for identifier in ("BSD-4-Clause", "BSD-3-Clause"):
+                with self.subTest(role=role, identifier=identifier):
+                    antlr["properties"][0]["value"] = test_scope
+                    antlr["licenses"] = [{"license": {"id": identifier}}]
+                    pair = self.role_pair(role, "2026-08-14T00:00:00Z")
+                    result = self.run_role_pairs((pair,))
+                    self.assertEqual(0, result.returncode, result.stderr)
+                    document = json.loads(pair[2].read_text(encoding="utf-8"))
+                    component = next(
+                        item for item in document["components"] if item["purl"] == antlr["purl"]
+                    )
+                    expected = copy.deepcopy(antlr)
+                    expected["licenses"] = [{"license": {"id": "BSD-3-Clause"}}]
+                    self.assertEqual(expected, component)
+                    xml_component = next(
+                        item for item in ET.parse(pair[3]).getroot().findall(
+                            f"{qname('components')}/{qname('component')}"
+                        ) if item.get("bom-ref") == antlr["purl"]
+                    )
+                    expected_xml = ET.Element("fixture")
+                    append_xml_component(expected_xml, expected)
+                    self.assertEqual(
+                        ET.canonicalize(ET.tostring(expected_xml[0]), strip_text=True),
+                        ET.canonicalize(ET.tostring(xml_component), strip_text=True),
+                    )
+                    verification = self.run_finalizer(
+                        "--verify-pair", str(pair[2]), str(pair[3])
+                    )
+                    self.assertEqual(0, verification.returncode, verification.stderr)
+
+    def test_does_not_normalize_antlr_another_version(self) -> None:
+        antlr = self.add_antlr_component()
+        antlr.update(maven_component(
+            "org.antlr", "antlr4-runtime", "4.10.2",
+            [{"license": {"id": "BSD-4-Clause"}}],
+        ))
+        self.write_sources()
+        result = self.finalize()
+        self.assertEqual(0, result.returncode, result.stderr)
+        document = json.loads(self.output_json.read_text(encoding="utf-8"))
+        component = next(
+            item for item in document["components"] if item["purl"] == antlr["purl"]
+        )
+        self.assertEqual(antlr, component)
+        verification = self.run_finalizer(
+            "--verify-pair", str(self.output_json), str(self.output_xml)
+        )
+        self.assertEqual(0, verification.returncode, verification.stderr)
+
+    def test_preserves_actual_antlr_4132_record_alongside_4101_in_both_formats(self) -> None:
+        target = self.add_antlr_component()
+        existing = maven_component(
+            "org.antlr", "antlr4-runtime", "4.13.2",
+            [{"license": {
+                "id": "BSD-3-Clause", "url": "https://opensource.org/licenses/BSD-3-Clause"
+            }}],
+        )
+        # Exact component metadata from the retained aggregate producer output.
+        existing["description"] = "The ANTLR 4 Runtime"
+        existing["modified"] = False
+        existing["properties"] = [{"name": "cdx:maven:package:test", "value": "true"}]
+        existing["hashes"] = [
+            {"alg": algorithm, "content": content} for algorithm, content in (
+                ("MD5", "eecf1908f0cfff10f8bb82878b5ca401"),
+                ("SHA-1", "fc3db6d844df652a3d5db31c87fa12757f13691d"),
+                ("SHA-256", "dd3e8a13a2d669bf84fb8d834de35ce4875f27157698d206241ec8488aadcaf7"),
+                ("SHA-512", "1c3e47b6b5dc40ca13927a7ae2ed187f470b8f406cea325e73c7a18af8e07b9ada0484312dd611f225f030b5585924932c702fd9326c143a626e271682b2b95e"),
+                ("SHA3-256", "2d39db66ce6dc530c7796f75d646f4d8316586e2acd0756524c25b238eb71618"),
+                ("SHA3-512", "a4cdaec49dff4a6963a0db56712a837db7300de7145335b915ffc2234b0d53d6f9fd4b1d6e82c4350e22fee9390ca643cfbf7f51ff47a11bc44561b6686be32b"),
+                ("SHA-384", "f49c2395e16fe71fa35622bcca225c0910609ef09626207ce4522c73c760fd232489489ea88d54c88fc21b05a03031e0"),
+                ("SHA3-384", "322345326586e3f8954e80efa80b510228a7eb06f6d7283177f04809c15aad1722c700897c8c8f405955946b63808bc0"),
+            )
+        ]
+        self.components.append(existing)
+        pair = self.role_pair("aggregate", "2026-08-14T00:00:00Z")
+        result = self.run_role_pairs((pair,))
+        self.assertEqual(0, result.returncode, result.stderr)
+        document = json.loads(pair[2].read_text(encoding="utf-8"))
+        components = {item["purl"]: item for item in document["components"]}
+        self.assertEqual(existing, components[existing["purl"]])
+        self.assertEqual(
+            [{"license": {"id": "BSD-3-Clause"}}], components[target["purl"]]["licenses"]
+        )
+        qname = lambda name: f"{{{NAMESPACE}}}{name}"
+        xml_component = next(
+            item for item in ET.parse(pair[3]).getroot().findall(
+                f"{qname('components')}/{qname('component')}"
+            ) if item.get("bom-ref") == existing["purl"]
+        )
+        expected_xml = ET.Element("fixture")
+        append_xml_component(expected_xml, existing)
+        self.assertEqual(
+            ET.canonicalize(ET.tostring(expected_xml[0]), strip_text=True),
+            ET.canonicalize(ET.tostring(xml_component), strip_text=True),
+        )
+        verification = self.run_finalizer("--verify-pair", str(pair[2]), str(pair[3]))
+        self.assertEqual(0, verification.returncode, verification.stderr)
+
+    def test_rejects_contradictory_antlr_4101_identity_in_either_format(self) -> None:
+        antlr = self.add_antlr_component()
+        qname = lambda name: f"{{{NAMESPACE}}}{name}"
+        for format_name in ("json", "xml"):
+            for field, value in (("version", "4.13.2"), ("name", "different-runtime")):
+                with self.subTest(format=format_name, field=field):
+                    self.write_sources()
+                    if format_name == "json":
+                        document = json.loads(self.source_json.read_text(encoding="utf-8"))
+                        component = next(
+                            item for item in document["components"] if item["purl"] == antlr["purl"]
+                        )
+                        component[field] = value
+                        self.source_json.write_text(json.dumps(document) + "\n", encoding="utf-8")
+                    else:
+                        tree = ET.parse(self.source_xml)
+                        component = next(
+                            item for item in tree.getroot().findall(
+                                f"{qname('components')}/{qname('component')}"
+                            ) if item.get("bom-ref") == antlr["purl"]
+                        )
+                        component.find(qname(field)).text = value
+                        tree.write(self.source_xml, encoding="utf-8", xml_declaration=True)
+                    result = self.finalize()
+                    self.assertNotEqual(0, result.returncode)
+                    self.assertIn("identity", result.stderr)
+                    self.assertFalse(self.output_json.exists())
+                    self.assertFalse(self.output_xml.exists())
+
+    def test_rejects_antlr_without_the_exact_unambiguous_jar_sha256(self) -> None:
+        antlr = self.add_antlr_component()
+        for hashes in (
+            [],
+            [{"alg": "SHA-256", "content": "0" * 64}],
+            [
+                {"alg": "SHA-256", "content": ANTLR_JAR_SHA256},
+                {"alg": "SHA-256", "content": "0" * 64},
+            ],
+        ):
+            with self.subTest(hashes=hashes):
+                antlr["hashes"] = hashes
+                self.write_sources()
+                result = self.finalize()
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn("ANTLR JAR SHA-256 differs from the reviewed artifact", result.stderr)
+                self.assertFalse(self.output_json.exists())
+                self.assertFalse(self.output_xml.exists())
+
+    def test_rejects_unreviewed_antlr_license_records(self) -> None:
+        antlr = self.add_antlr_component()
+        for choices in (
+            None,
+            [{"license": {"id": "MIT"}}],
+            [{"license": {"id": "Unreviewed-License"}}],
+            [{"license": {"name": "The BSD License"}}],
+            [{"expression": "BSD-3-Clause OR MIT"}],
+            [{"license": {"id": "BSD-4-Clause", "url": "https://example.com/license"}}],
+        ):
+            with self.subTest(choices=choices):
+                if choices is None:
+                    antlr.pop("licenses", None)
+                else:
+                    antlr["licenses"] = copy.deepcopy(choices)
+                self.write_sources()
+                result = self.finalize()
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn("ANTLR license records differ from the reviewed input", result.stderr)
+                self.assertFalse(self.output_json.exists())
+                self.assertFalse(self.output_xml.exists())
+
+    def test_rejects_contradictory_antlr_xml_before_normalization(self) -> None:
+        antlr = self.add_antlr_component()
+        qname = lambda name: f"{{{NAMESPACE}}}{name}"
+        for field, child, value in (
+            ("hashes", "hash", "0" * 64),
+            ("licenses", "license/id", "MIT"),
+            ("properties", "property", "true"),
+        ):
+            with self.subTest(field=field):
+                self.write_sources()
+                tree = ET.parse(self.source_xml)
+                component = next(
+                    item for item in tree.getroot().findall(
+                        f"{qname('components')}/{qname('component')}"
+                    ) if item.get("bom-ref") == antlr["purl"]
+                )
+                path = "/".join(qname(part) for part in (field, *child.split("/")))
+                component.find(path).text = value
+                tree.write(self.source_xml, encoding="utf-8", xml_declaration=True)
+                result = self.finalize()
+                self.assertNotEqual(0, result.returncode)
+                if field != "properties":
+                    self.assertIn("ANTLR", result.stderr)
+                self.assertFalse(self.output_json.exists())
+                self.assertFalse(self.output_xml.exists())
+
+    def test_verifier_rejects_antlr_hash_and_license_tampering(self) -> None:
+        antlr = self.add_antlr_component()
+        antlr["licenses"] = [{"license": {"id": "BSD-3-Clause"}}]
+        qname = lambda name: f"{{{NAMESPACE}}}{name}"
+        for field in ("hashes", "licenses"):
+            with self.subTest(field=field):
+                self.write_sources()
+                result = self.finalize()
+                self.assertEqual(0, result.returncode, result.stderr)
+                document = json.loads(self.output_json.read_text(encoding="utf-8"))
+                component = next(
+                    item for item in document["components"] if item["purl"] == antlr["purl"]
+                )
+                tree = ET.parse(self.output_xml)
+                xml_component = next(
+                    item for item in tree.getroot().findall(
+                        f"{qname('components')}/{qname('component')}"
+                    ) if item.get("bom-ref") == antlr["purl"]
+                )
+                if field == "hashes":
+                    component["hashes"][0]["content"] = "0" * 64
+                    xml_component.find(f"{qname('hashes')}/{qname('hash')}").text = "0" * 64
+                else:
+                    component["licenses"] = [{"license": {"id": "BSD-4-Clause"}}]
+                    xml_component.find(
+                        f"{qname('licenses')}/{qname('license')}/{qname('id')}"
+                    ).text = "BSD-4-Clause"
+                self.output_json.write_text(json.dumps(document) + "\n", encoding="utf-8")
+                tree.write(self.output_xml, encoding="utf-8", xml_declaration=True)
+                verification = self.run_finalizer(
+                    "--verify-pair", str(self.output_json), str(self.output_xml)
+                )
+                self.assertNotEqual(0, verification.returncode)
+                self.assertIn("ANTLR", verification.stderr)
+
+    def test_does_not_rewrite_generic_bsd4_on_another_antlr_named_artifact(self) -> None:
+        antlr = self.add_antlr_component()
+        antlr.update(maven_component(
+            "com.example", "antlr4-runtime", "4.10.1",
+            [{"license": {"id": "BSD-4-Clause"}}],
+        ))
+        self.write_sources()
+        result = self.finalize()
+        self.assertEqual(0, result.returncode, result.stderr)
+        document = json.loads(self.output_json.read_text(encoding="utf-8"))
+        component = next(
+            item for item in document["components"] if item["purl"] == antlr["purl"]
+        )
+        self.assertEqual(antlr, component)
+
+    def add_h2_component(self) -> dict[str, object]:
+        component = maven_component(
+            "com.h2database", "h2", "2.2.224", copy.deepcopy(H2_LICENSE_CHOICES)
+        )
+        component["properties"] = [
+            {"name": "cdx:maven:package:test", "value": "true"}
+        ]
+        self.components.append(component)
+        return component
+
+    def test_normalizes_exact_h2_test_licenses_in_both_formats(self) -> None:
+        h2 = self.add_h2_component()
+        for choices in (
+            H2_LICENSE_CHOICES,
+            list(reversed(H2_LICENSE_CHOICES)),
+            [{"expression": H2_EXPRESSION}],
+        ):
+            with self.subTest(choices=choices):
+                h2["licenses"] = copy.deepcopy(choices)
+                self.write_sources()
+                result = self.finalize()
+                self.assertEqual(0, result.returncode, result.stderr)
+                document = json.loads(self.output_json.read_text(encoding="utf-8"))
+                finalized = next(
+                    item for item in document["components"] if item["purl"] == h2["purl"]
+                )
+                self.assertEqual([{"expression": H2_EXPRESSION}], finalized["licenses"])
+                self.assertEqual(h2["properties"], finalized["properties"])
+                qname = lambda name: f"{{{NAMESPACE}}}{name}"
+                component = next(
+                    item for item in ET.parse(self.output_xml).getroot().findall(
+                        f"{qname('components')}/{qname('component')}"
+                    ) if item.get("bom-ref") == h2["purl"]
+                )
+                licenses = component.find(qname("licenses"))
+                self.assertIsNotNone(licenses)
+                self.assertEqual(1, len(licenses))
+                self.assertEqual(qname("expression"), licenses[0].tag)
+                self.assertEqual(H2_EXPRESSION, licenses[0].text)
+                verification = self.run_finalizer(
+                    "--verify-pair", str(self.output_json), str(self.output_xml)
+                )
+                self.assertEqual(0, verification.returncode, verification.stderr)
+
+    def test_rejects_h2_license_override_for_another_version(self) -> None:
+        h2 = self.add_h2_component()
+        h2.update(maven_component(
+            "com.h2database", "h2", "2.2.220", copy.deepcopy(H2_LICENSE_CHOICES)
+        ))
+        self.write_sources()
+        result = self.finalize()
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("Reviewed Maven component identity differs", result.stderr)
+        self.assertFalse(self.output_json.exists())
+        self.assertFalse(self.output_xml.exists())
+
+    def test_rejects_h2_license_override_without_exact_test_scope(self) -> None:
+        h2 = self.add_h2_component()
+        for properties in (
+            [],
+            [{"name": "cdx:maven:package:test", "value": "false"}],
+            [{"name": "cdx:maven:package:test", "value": "TRUE"}],
+        ):
+            with self.subTest(properties=properties):
+                h2["properties"] = properties
+                self.write_sources()
+                result = self.finalize()
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn("H2 license override requires test-runtime scope", result.stderr)
+                self.assertFalse(self.output_json.exists())
+                self.assertFalse(self.output_xml.exists())
+
+    def test_rejects_unreviewed_h2_license_choices(self) -> None:
+        h2 = self.add_h2_component()
+        for choices in (
+            None,
+            [{"license": {"id": "MPL-2.0"}}],
+            [{"license": {"id": "EPL-1.0"}}],
+            [{"expression": "MPL-2.0 AND EPL-1.0"}],
+            [{"expression": "MPL-2.0 OR LicenseRef-Unreviewed"}],
+            [H2_LICENSE_CHOICES[0], {"license": {"name": "EPL 1.0"}}],
+            [H2_LICENSE_CHOICES[0], {
+                "license": {"name": "EPL 1.0", "url": "https://example.com/license"}
+            }],
+        ):
+            with self.subTest(choices=choices):
+                if choices is None:
+                    h2.pop("licenses", None)
+                else:
+                    h2["licenses"] = copy.deepcopy(choices)
+                self.write_sources()
+                result = self.finalize()
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn("H2 license choices differ from the reviewed input", result.stderr)
+                self.assertFalse(self.output_json.exists())
+                self.assertFalse(self.output_xml.exists())
+
+    def test_rejects_contradictory_h2_xml_before_normalization(self) -> None:
+        h2 = self.add_h2_component()
+        qname = lambda name: f"{{{NAMESPACE}}}{name}"
+        for field in ("licenses", "properties"):
+            with self.subTest(field=field):
+                self.write_sources()
+                tree = ET.parse(self.source_xml)
+                component = next(
+                    item for item in tree.getroot().findall(
+                        f"{qname('components')}/{qname('component')}"
+                    ) if item.get("bom-ref") == h2["purl"]
+                )
+                if field == "licenses":
+                    component.find(f"{qname('licenses')}/{qname('license')}/{qname('id')}").text = "MIT"
+                    expected = "H2 license choices differ from the reviewed input"
+                else:
+                    component.find(f"{qname('properties')}/{qname('property')}").text = "false"
+                    expected = "H2 license override requires test-runtime scope"
+                tree.write(self.source_xml, encoding="utf-8", xml_declaration=True)
+                result = self.finalize()
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn(expected, result.stderr)
+                self.assertFalse(self.output_json.exists())
+                self.assertFalse(self.output_xml.exists())
+
+    def test_verifier_rejects_h2_scope_and_license_tampering_in_both_formats(self) -> None:
+        h2 = self.add_h2_component()
+        h2["licenses"] = [{"expression": H2_EXPRESSION}]
+        qname = lambda name: f"{{{NAMESPACE}}}{name}"
+        for field in ("licenses", "properties"):
+            with self.subTest(field=field):
+                self.write_sources()
+                result = self.finalize()
+                self.assertEqual(0, result.returncode, result.stderr)
+                document = json.loads(self.output_json.read_text(encoding="utf-8"))
+                component = next(
+                    item for item in document["components"] if item["purl"] == h2["purl"]
+                )
+                tree = ET.parse(self.output_xml)
+                xml_component = next(
+                    item for item in tree.getroot().findall(
+                        f"{qname('components')}/{qname('component')}"
+                    ) if item.get("bom-ref") == h2["purl"]
+                )
+                if field == "licenses":
+                    expression = "MPL-2.0 AND EPL-1.0"
+                    component["licenses"] = [{"expression": expression}]
+                    xml_component.find(f"{qname('licenses')}/{qname('expression')}").text = expression
+                else:
+                    component["properties"][0]["value"] = "false"
+                    xml_component.find(f"{qname('properties')}/{qname('property')}").text = "false"
+                self.output_json.write_text(json.dumps(document) + "\n", encoding="utf-8")
+                tree.write(self.output_xml, encoding="utf-8", xml_declaration=True)
+                verification = self.run_finalizer(
+                    "--verify-pair", str(self.output_json), str(self.output_xml)
+                )
+                self.assertNotEqual(0, verification.returncode)
+                self.assertIn("H2", verification.stderr)
+
+    def test_does_not_normalize_h2_named_artifact_from_another_group(self) -> None:
+        component = maven_component(
+            "com.example", "h2", "2.2.224", copy.deepcopy(H2_LICENSE_CHOICES)
+        )
+        self.components.append(component)
+        self.write_sources()
+        result = self.finalize()
+        self.assertEqual(0, result.returncode, result.stderr)
+        document = json.loads(self.output_json.read_text(encoding="utf-8"))
+        finalized = next(
+            item for item in document["components"] if item["purl"] == component["purl"]
+        )
+        self.assertEqual(H2_LICENSE_CHOICES, finalized["licenses"])
 
     def test_normalizes_reviewed_test_artifact_licenses_in_both_formats(self) -> None:
         result = self.finalize()
@@ -335,117 +847,397 @@ class FinalizeSbomTest(unittest.TestCase):
             ),
         )
 
-    def test_accepts_distinct_valid_timestamps_across_three_roles(self) -> None:
+    def role_pair(
+        self, role: str, timestamp: str
+    ) -> tuple[Path, Path, Path, Path]:
         qname = lambda name: f"{{{NAMESPACE}}}{name}"
-        published_purl = str(self.library_component["purl"])
-        example_purl = str(self.root_component["purl"])
+        role_names = {
+            "aggregate": "routecontract",
+            "core": "routecontract-core",
+            "adapter553": "routecontract-shardingsphere-5.5",
+            "adapter552": "routecontract-shardingsphere-5.5.2",
+            "mysql553": "mysql-example",
+            "mysql552": "mysql-5.5.2-example",
+        }
+        if role not in role_names:
+            self.fail(f"unexpected role fixture: {role}")
 
-        def role_pair(
-            role: str, timestamp: str
-        ) -> tuple[Path, Path, Path, Path]:
-            self.write_sources()
-            document = json.loads(self.source_json.read_text(encoding="utf-8"))
-            tree = ET.parse(self.source_xml)
-            root = tree.getroot()
-            metadata = root.find(qname("metadata"))
-            components = root.find(qname("components"))
-            dependencies = root.find(qname("dependencies"))
-            self.assertIsNotNone(metadata)
-            self.assertIsNotNone(components)
-            self.assertIsNotNone(dependencies)
-            metadata_component = metadata.find(qname("component"))
-            self.assertIsNotNone(metadata_component)
-            root_dependency = list(dependencies)[0]
+        root_name = role_names[role]
 
-            def set_root(name: str, purl: str) -> None:
-                document["metadata"]["component"] = {
-                    "type": "library",
-                    "bom-ref": purl,
-                    "group": GROUP,
-                    "name": name,
-                    "version": "0.1.0",
-                    "purl": purl,
-                }
-                metadata_component.set("bom-ref", purl)
-                metadata_component.find(qname("group")).text = GROUP
-                metadata_component.find(qname("name")).text = name
-                metadata_component.find(qname("version")).text = "0.1.0"
-                metadata_component.find(qname("purl")).text = purl
-                root_dependency.set("ref", purl)
+        def first_party_purl(name: str) -> str:
+            project_path = "" if name == "routecontract" else name
+            return (
+                f"pkg:maven/{GROUP}/{name}@0.1.0"
+                f"?project_path=%3A{project_path}"
+            )
 
-            if role == "aggregate":
-                aggregate_purl = (
-                    f"pkg:maven/{GROUP}/routecontract@0.1.0?project_path=%3A"
-                )
-                set_root("routecontract", aggregate_purl)
-                example_component = dict(self.root_component)
-                document["components"].append(example_component)
-                document["dependencies"][0]["ref"] = aggregate_purl
-                document["dependencies"][0]["dependsOn"].append(example_purl)
-                document["dependencies"].append(
-                    {"ref": example_purl, "dependsOn": []}
-                )
-                append_xml_component(components, example_component)
-                ET.SubElement(
-                    root_dependency, qname("dependency"), {"ref": example_purl}
-                )
-                ET.SubElement(
-                    dependencies, qname("dependency"), {"ref": example_purl}
-                )
-            elif role == "published":
-                set_root("routecontract-shardingsphere-5.5", published_purl)
-                document["components"] = [
-                    component
-                    for component in document["components"]
-                    if component["purl"] != published_purl
-                ]
-                root_record = document["dependencies"][0]
-                root_record["ref"] = published_purl
-                root_record["dependsOn"] = [
-                    ref for ref in root_record["dependsOn"] if ref != published_purl
-                ]
-                document["dependencies"] = [
-                    root_record,
-                    *[
-                        entry
-                        for entry in document["dependencies"][1:]
-                        if entry["ref"] != published_purl
-                    ],
-                ]
-                for component in list(components):
-                    if component.findtext(qname("purl")) == published_purl:
-                        components.remove(component)
-                for target in list(root_dependency):
-                    if target.get("ref") == published_purl:
-                        root_dependency.remove(target)
-                for entry in list(dependencies)[1:]:
-                    if entry.get("ref") == published_purl:
-                        dependencies.remove(entry)
-            elif role != "example":
-                self.fail(f"unexpected role fixture: {role}")
+        first_party_components = {
+            name: {
+                "type": "library",
+                "bom-ref": first_party_purl(name),
+                "group": GROUP,
+                "name": name,
+                "version": "0.1.0",
+                "purl": first_party_purl(name),
+            }
+            for name in role_names.values()
+        }
+        first_party_children = {
+            "aggregate": (
+                "routecontract-core",
+                "routecontract-shardingsphere-5.5",
+                "routecontract-shardingsphere-5.5.2",
+                "mysql-example",
+                "mysql-5.5.2-example",
+            ),
+            "core": (),
+            "adapter553": ("routecontract-core",),
+            "adapter552": ("routecontract-core",),
+            "mysql553": (
+                "routecontract-core",
+                "routecontract-shardingsphere-5.5",
+            ),
+            "mysql552": (
+                "routecontract-core",
+                "routecontract-shardingsphere-5.5.2",
+            ),
+        }
+        first_party_edges = {
+            "aggregate": {
+                "routecontract": set(first_party_children["aggregate"]),
+                "routecontract-core": set(),
+                "routecontract-shardingsphere-5.5": {"routecontract-core"},
+                "routecontract-shardingsphere-5.5.2": {"routecontract-core"},
+                "mysql-example": {"routecontract-shardingsphere-5.5"},
+                "mysql-5.5.2-example": {
+                    "routecontract-shardingsphere-5.5.2"
+                },
+            },
+            "core": {"routecontract-core": set()},
+            "adapter553": {
+                "routecontract-shardingsphere-5.5": {"routecontract-core"},
+                "routecontract-core": set(),
+            },
+            "adapter552": {
+                "routecontract-shardingsphere-5.5.2": {"routecontract-core"},
+                "routecontract-core": set(),
+            },
+            "mysql553": {
+                "mysql-example": {"routecontract-shardingsphere-5.5"},
+                "routecontract-shardingsphere-5.5": {"routecontract-core"},
+                "routecontract-core": set(),
+            },
+            "mysql552": {
+                "mysql-5.5.2-example": {
+                    "routecontract-shardingsphere-5.5.2"
+                },
+                "routecontract-shardingsphere-5.5.2": {"routecontract-core"},
+                "routecontract-core": set(),
+            },
+        }
 
-            document["metadata"]["timestamp"] = timestamp
-            metadata.find(qname("timestamp")).text = timestamp
-            source_json = self.root / f"{role}-source.json"
-            source_xml = self.root / f"{role}-source.xml"
-            output_json = self.root / f"{role}-output.json"
-            output_xml = self.root / f"{role}-output.xml"
-            source_json.write_text(json.dumps(document) + "\n", encoding="utf-8")
-            tree.write(source_xml, encoding="utf-8", xml_declaration=True)
-            return source_json, source_xml, output_json, output_xml
-
-        pairs = (
-            role_pair("aggregate", "2026-08-14T00:00:00Z"),
-            role_pair("published", "2026-08-14T00:00:01Z"),
-            role_pair("example", "2026-08-14T00:00:02.123Z"),
+        # Keep reviewed/common dependencies identical, then add only the pinned
+        # ShardingSphere/Calcite versions implied by the MySQL profile(s).
+        pinned_groups = {"org.apache.shardingsphere", "org.apache.calcite"}
+        third_party_components = [
+            copy.deepcopy(component)
+            for component in self.components
+            if component.get("group") != GROUP
+            and component.get("group") not in pinned_groups
+        ]
+        coordinates: tuple[tuple[str, str, str], ...] = ()
+        if role in {"aggregate", "mysql553"}:
+            coordinates += REQUIRED_EXAMPLE_COORDINATES
+        if role in {"aggregate", "mysql552"}:
+            coordinates += REQUIRED_552_EXAMPLE_COORDINATES
+        third_party_components.extend(
+            maven_component(
+                group,
+                name,
+                version,
+                [{"license": {"id": "Apache-2.0"}}],
+            )
+            for group, name, version in dict.fromkeys(coordinates)
         )
+
+        root_component = first_party_components[root_name]
+        child_components = [
+            first_party_components[name] for name in first_party_children[role]
+        ]
+        all_components = [*child_components, *third_party_components]
+        dependency_records: list[dict[str, object]] = []
+        for name in (root_name, *first_party_children[role]):
+            targets = [
+                first_party_purl(target)
+                for target in sorted(first_party_edges[role][name])
+            ]
+            if name == root_name:
+                targets.extend(str(component["purl"]) for component in third_party_components)
+            dependency_records.append(
+                {"ref": first_party_purl(name), "dependsOn": targets}
+            )
+        dependency_records.extend(
+            {"ref": str(component["purl"]), "dependsOn": []}
+            for component in third_party_components
+        )
+
+        serial = "urn:uuid:00000000-0000-0000-0000-000000000001"
+        document = {
+            "bomFormat": "CycloneDX",
+            "specVersion": "1.6",
+            "serialNumber": serial,
+            "version": 1,
+            "metadata": {
+                "timestamp": timestamp,
+                "tools": {
+                    "components": [
+                        {
+                            "type": "application",
+                            "author": "CycloneDX",
+                            "name": "cyclonedx-gradle-plugin",
+                            "version": "3.4.0",
+                        }
+                    ]
+                },
+                "licenses": [
+                    {
+                        "license": {
+                            "id": "Apache-2.0",
+                            "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+                        }
+                    }
+                ],
+                "component": root_component,
+            },
+            "components": all_components,
+            "dependencies": dependency_records,
+        }
+
+        ET.register_namespace("", NAMESPACE)
+        xml_root = ET.Element(
+            qname("bom"), {"serialNumber": serial, "version": "1"}
+        )
+        metadata = ET.SubElement(xml_root, qname("metadata"))
+        ET.SubElement(metadata, qname("timestamp")).text = timestamp
+        tools = ET.SubElement(metadata, qname("tools"))
+        tool_components = ET.SubElement(tools, qname("components"))
+        tool = ET.SubElement(
+            tool_components, qname("component"), {"type": "application"}
+        )
+        ET.SubElement(tool, qname("author")).text = "CycloneDX"
+        ET.SubElement(tool, qname("name")).text = "cyclonedx-gradle-plugin"
+        ET.SubElement(tool, qname("version")).text = "3.4.0"
+        append_xml_component(metadata, root_component)
+        document_licenses = ET.SubElement(metadata, qname("licenses"))
+        document_license = ET.SubElement(document_licenses, qname("license"))
+        ET.SubElement(document_license, qname("id")).text = "Apache-2.0"
+        ET.SubElement(document_license, qname("url")).text = (
+            "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        )
+        components = ET.SubElement(xml_root, qname("components"))
+        for component in all_components:
+            append_xml_component(components, component)
+        dependencies = ET.SubElement(xml_root, qname("dependencies"))
+        for entry in dependency_records:
+            dependency = ET.SubElement(
+                dependencies, qname("dependency"), {"ref": str(entry["ref"])}
+            )
+            for target in entry["dependsOn"]:
+                ET.SubElement(
+                    dependency, qname("dependency"), {"ref": str(target)}
+                )
+        tree = ET.ElementTree(xml_root)
+
+        source_json = self.root / f"{role}-source.json"
+        source_xml = self.root / f"{role}-source.xml"
+        output_json = self.root / f"{role}-output.json"
+        output_xml = self.root / f"{role}-output.xml"
+        source_json.write_text(json.dumps(document) + "\n", encoding="utf-8")
+        tree.write(source_xml, encoding="utf-8", xml_declaration=True)
+        return source_json, source_xml, output_json, output_xml
+
+    def six_role_pairs(self) -> tuple[tuple[Path, Path, Path, Path], ...]:
+        return (
+            self.role_pair("aggregate", "2026-08-14T00:00:00Z"),
+            self.role_pair("core", "2026-08-14T00:00:00.500Z"),
+            self.role_pair("adapter553", "2026-08-14T00:00:01Z"),
+            self.role_pair("adapter552", "2026-08-14T00:00:01.500Z"),
+            self.role_pair("mysql553", "2026-08-14T00:00:02.123Z"),
+            self.role_pair("mysql552", "2026-08-14T00:00:03.456Z"),
+        )
+
+    def run_role_pairs(
+        self, pairs: tuple[tuple[Path, Path, Path, Path], ...]
+    ) -> subprocess.CompletedProcess[str]:
         arguments: list[str] = []
         for pair in pairs:
             arguments.extend(("--pair", *(str(path) for path in pair)))
+        return self.run_finalizer(*arguments)
 
-        result = self.run_finalizer(*arguments)
+    def test_accepts_distinct_valid_timestamps_across_six_roles(self) -> None:
+        pairs = self.six_role_pairs()
+        result = self.run_role_pairs(pairs)
 
         self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual(12, sum(path.exists() for pair in pairs for path in pair[2:]))
+
+    def test_aggregate_links_both_mysql_profiles_to_one_container_leaf(self) -> None:
+        pairs = self.six_role_pairs()
+        result = self.run_role_pairs(pairs)
+        self.assertEqual(0, result.returncode, result.stderr)
+
+        document = json.loads(pairs[0][2].read_text(encoding="utf-8"))
+        containers = [
+            component
+            for component in document["components"]
+            if component.get("type") == "container"
+            and component.get("name") == "mysql"
+        ]
+        self.assertEqual(1, len(containers))
+        container_purl = containers[0]["purl"]
+        graph = {
+            entry["ref"]: entry["dependsOn"] for entry in document["dependencies"]
+        }
+        for example_name in ("mysql-example", "mysql-5.5.2-example"):
+            self.assertIn(container_purl, graph[first_party_purl := (
+                f"pkg:maven/{GROUP}/{example_name}@0.1.0"
+                f"?project_path=%3A{example_name}"
+            )], first_party_purl)
+        self.assertEqual([], graph[container_purl])
+
+    def test_mysql552_rejects_the_previous_calcite_graph(self) -> None:
+        pair = self.role_pair("mysql552", "2026-08-14T00:00:03.456Z")
+        for path in pair[:2]:
+            path.write_text(path.read_text(encoding="utf-8").replace(
+                "1.42.0", "1.38.0"
+            ), encoding="utf-8")
+        result = self.run_role_pairs((pair,))
+        self.assertNotEqual(0, result.returncode, "old Calcite must not satisfy the repaired profile")
+        self.assertIn("calcite-core", result.stderr)
+        self.assertIn("Unexpected Maven component version", result.stderr)
+
+    def test_mysql552_profile_requires_all_pinned_coordinates(self) -> None:
+        qname = lambda name: f"{{{NAMESPACE}}}{name}"
+        for group, name, version in REQUIRED_552_EXAMPLE_COORDINATES:
+            with self.subTest(coordinate=f"{group}:{name}:{version}"):
+                source_json, source_xml, output_json, output_xml = self.role_pair(
+                    "mysql552", "2026-08-14T00:00:03.456Z"
+                )
+                target_purl = f"pkg:maven/{group}/{name}@{version}?type=jar"
+                document = json.loads(source_json.read_text(encoding="utf-8"))
+                document["components"] = [
+                    component
+                    for component in document["components"]
+                    if component["purl"] != target_purl
+                ]
+                for entry in document["dependencies"]:
+                    entry["dependsOn"] = [
+                        ref for ref in entry["dependsOn"] if ref != target_purl
+                    ]
+                document["dependencies"] = [
+                    entry
+                    for entry in document["dependencies"]
+                    if entry["ref"] != target_purl
+                ]
+                source_json.write_text(json.dumps(document) + "\n", encoding="utf-8")
+
+                tree = ET.parse(source_xml)
+                components = tree.getroot().find(qname("components"))
+                dependencies = tree.getroot().find(qname("dependencies"))
+                self.assertIsNotNone(components)
+                self.assertIsNotNone(dependencies)
+                for component in list(components):
+                    if component.findtext(qname("purl")) == target_purl:
+                        components.remove(component)
+                for entry in list(dependencies):
+                    if entry.get("ref") == target_purl:
+                        dependencies.remove(entry)
+                        continue
+                    for target in list(entry):
+                        if target.get("ref") == target_purl:
+                            entry.remove(target)
+                tree.write(source_xml, encoding="utf-8", xml_declaration=True)
+
+                result = self.run_finalizer(
+                    "--pair",
+                    str(source_json),
+                    str(source_xml),
+                    str(output_json),
+                    str(output_xml),
+                )
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn(
+                    "Example SBOM must contain exactly the pinned Maven versions",
+                    result.stderr,
+                )
+
+    def test_release_collection_rejects_cross_role_fingerprint_drift(self) -> None:
+        pairs = self.six_role_pairs()
+        aggregate_json, aggregate_xml, _, _ = pairs[0]
+        document = json.loads(aggregate_json.read_text(encoding="utf-8"))
+        core_json = next(
+            component
+            for component in document["components"]
+            if component["name"] == "routecontract-core"
+        )
+        core_json["description"] = "context-specific drift"
+        aggregate_json.write_text(json.dumps(document) + "\n", encoding="utf-8")
+
+        qname = lambda name: f"{{{NAMESPACE}}}{name}"
+        tree = ET.parse(aggregate_xml)
+        core_xml = next(
+            component
+            for component in tree.getroot().findall(
+                f"{qname('components')}/{qname('component')}"
+            )
+            if component.findtext(qname("name")) == "routecontract-core"
+        )
+        purl_index = list(core_xml).index(core_xml.find(qname("purl")))
+        description = ET.Element(qname("description"))
+        description.text = "context-specific drift"
+        core_xml.insert(purl_index, description)
+        tree.write(aggregate_xml, encoding="utf-8", xml_declaration=True)
+
+        result = self.run_role_pairs(pairs)
+
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn(
+            "first-party module records differ across roles: routecontract-core",
+            result.stderr,
+        )
+
+    def test_release_pair_rejects_wrong_first_party_dependency_ownership(self) -> None:
+        pairs = self.six_role_pairs()
+        example_json, example_xml, _, _ = pairs[-1]
+        core_purl = str(self.core_component["purl"])
+        document = json.loads(example_json.read_text(encoding="utf-8"))
+        document["dependencies"][0]["dependsOn"].append(core_purl)
+        example_json.write_text(json.dumps(document) + "\n", encoding="utf-8")
+
+        qname = lambda name: f"{{{NAMESPACE}}}{name}"
+        tree = ET.parse(example_xml)
+        dependencies = tree.getroot().find(qname("dependencies"))
+        self.assertIsNotNone(dependencies)
+        ET.SubElement(
+            list(dependencies)[0], qname("dependency"), {"ref": core_purl}
+        )
+        tree.write(example_xml, encoding="utf-8", xml_declaration=True)
+
+        result = self.run_role_pairs(pairs)
+
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("first-party dependency ownership differs", result.stderr)
+
+    def test_release_collection_requires_all_six_roles(self) -> None:
+        pairs = self.six_role_pairs()
+
+        result = self.run_role_pairs(pairs[:-1])
+
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn(
+            "exactly aggregate, core, adapter553, adapter552, mysql553, and mysql552 pairs",
+            result.stderr,
+        )
 
     @unittest.skipUnless(
         os.environ.get("ROUTECONTRACT_CYCLONEDX_CLI"),
@@ -551,7 +1343,7 @@ class FinalizeSbomTest(unittest.TestCase):
 
                 self.assertNotEqual(0, result.returncode)
                 self.assertIn(
-                    "Example SBOM must contain exactly one pinned Maven component",
+                    "Example SBOM must contain exactly the pinned Maven versions",
                     result.stderr,
                 )
         self.components = original
@@ -574,7 +1366,7 @@ class FinalizeSbomTest(unittest.TestCase):
                 result = self.finalize()
 
                 self.assertNotEqual(0, result.returncode)
-                self.assertIn("Reviewed Maven component identity differs", result.stderr)
+                self.assertIn("Unexpected Maven component version", result.stderr)
         self.components = original
 
     def test_rejects_percent_encoded_required_coordinate_alias_duplicates(self) -> None:

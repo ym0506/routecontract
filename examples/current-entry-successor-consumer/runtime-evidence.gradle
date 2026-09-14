@@ -1,0 +1,18 @@
+// Applied only to the independently copied staged consumer; never builds product sources.
+tasks.register('prepareCurrentEntryRuntimeClasspath') {
+    dependsOn 'testClasses', 'verifySelectedGraph'
+    doLast {
+        def artifacts = configurations.testRuntimeClasspath.resolvedConfiguration.resolvedArtifacts
+        def output = layout.buildDirectory.file('current-entry-runtime-classpath.json').get().asFile
+        output.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson([
+            classes: sourceSets.test.output.classesDirs.files.collect { it.canonicalPath }.sort(),
+            artifacts: artifacts.collect { artifact -> [
+                group: artifact.moduleVersion.id.group,
+                module: artifact.name,
+                version: artifact.moduleVersion.id.version,
+                path: artifact.file.canonicalPath,
+                sha256: java.security.MessageDigest.getInstance('SHA-256').digest(artifact.file.bytes).encodeHex().toString()
+            ] }.sort { a, b -> "${a.group}:${a.module}" <=> "${b.group}:${b.module}" }
+        ])) + '\n'
+    }
+}

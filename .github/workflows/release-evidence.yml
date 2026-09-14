@@ -11,7 +11,7 @@ jobs:
   build-release-evidence:
     name: Build release evidence
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
+    timeout-minutes: 60
 
     steps:
       - name: Check out source
@@ -74,6 +74,7 @@ jobs:
           GRADLE_USER_HOME="${quickstart_gradle_home}" ./scripts/quickstart-demo.sh
 
       - name: Require tag and project versions to match
+        id: release_family
         shell: bash
         run: |
           set -euo pipefail
@@ -84,6 +85,15 @@ jobs:
             exit 1
           fi
           test "v${project_version}" = "${GITHUB_REF_NAME}"
+          if [[ "${project_version}" =~ ^0\.1\. ]]; then
+            family='legacy'
+          elif [[ "${project_version}" =~ ^0\.2\.(0|[1-9][0-9]*)$ ]]; then
+            family='split'
+          else
+            echo 'No reviewed release preparation contract for this version' >&2
+            exit 1
+          fi
+          printf 'family=%s\nversion=%s\n' "${family}" "${project_version}" >> "${GITHUB_OUTPUT}"
 
       - name: Set up report-package Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -117,8 +127,12 @@ jobs:
         run: >-
           ./gradlew --no-daemon --no-build-cache clean check
           validateOfficialCycloneDxSbom
+          :routecontract-core:assemble
+          :routecontract-core:generatePomFileForMavenJavaPublication
           :routecontract-shardingsphere-5.5:assemble
           :routecontract-shardingsphere-5.5:generatePomFileForMavenJavaPublication
+          :routecontract-shardingsphere-5.5.2:assemble
+          :routecontract-shardingsphere-5.5.2:generatePomFileForMavenJavaPublication
           :routecontract-shardingsphere-5.5:generateMetadataFileForMavenJavaPublication
 
       - name: Assert verified SBOM metadata in JSON and XML
@@ -132,11 +146,20 @@ jobs:
             build/reports/verified-sbom/aggregate/bom.json \
             build/reports/verified-sbom/aggregate/bom.xml \
             --verify-pair \
+            build/reports/verified-sbom/routecontract-core/bom.json \
+            build/reports/verified-sbom/routecontract-core/bom.xml \
+            --verify-pair \
             build/reports/verified-sbom/routecontract-shardingsphere-5.5/bom.json \
             build/reports/verified-sbom/routecontract-shardingsphere-5.5/bom.xml \
             --verify-pair \
+            build/reports/verified-sbom/routecontract-shardingsphere-5.5.2/bom.json \
+            build/reports/verified-sbom/routecontract-shardingsphere-5.5.2/bom.xml \
+            --verify-pair \
             build/reports/verified-sbom/mysql-example/bom.json \
-            build/reports/verified-sbom/mysql-example/bom.xml
+            build/reports/verified-sbom/mysql-example/bom.xml \
+            --verify-pair \
+            build/reports/verified-sbom/mysql-5.5.2-example/bom.json \
+            build/reports/verified-sbom/mysql-5.5.2-example/bom.xml
 
       - name: Produce exact-revision sanitized supply-chain evidence
         shell: bash
@@ -153,11 +176,15 @@ jobs:
           mkdir -p build/release-public
           python3 scripts/summarize-test-results.py \
             --revision "${GITHUB_SHA}" \
+            --results-dir routecontract-core/build/test-results/test \
             --results-dir routecontract-shardingsphere-5.5/build/test-results/test \
+            --results-dir routecontract-shardingsphere-5.5.2/build/test-results/test \
             --results-dir examples/mysql/build/test-results/test \
+            --results-dir examples/mysql-5.5.2/build/test-results/test \
             --output build/release-public/test-summary.txt
 
-      - name: Stage exact public Release assets and checksums
+      - name: Stage legacy single-artifact Release subset and checksums
+        if: steps.release_family.outputs.family == 'legacy'
         shell: bash
         run: |
           set -euo pipefail
@@ -200,7 +227,8 @@ jobs:
           test "$(find "${public_dir}" -maxdepth 1 -type f | wc -l | tr -d ' ')" = '12'
           test "$(wc -l < "${public_dir}/SHA256SUMS" | tr -d ' ')" = '11'
 
-      - name: Verify exact Release assets in a standalone MySQL consumer
+      - name: Verify legacy single-artifact subset in a standalone MySQL consumer
+        if: steps.release_family.outputs.family == 'legacy'
         shell: bash
         run: |
           set -euo pipefail
@@ -214,6 +242,7 @@ jobs:
             build/release-evidence/standalone-consumer.txt
 
       - name: Retain the exact unsigned Central candidate payloads
+        if: steps.release_family.outputs.family == 'legacy'
         id: central_candidate
         shell: bash
         run: |
@@ -265,8 +294,35 @@ jobs:
           PY
           echo 'available=true' >> "${GITHUB_OUTPUT}"
 
+      - name: Collect and validate coordinated unsigned split preparation
+        if: steps.release_family.outputs.family == 'split'
+        id: split_candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          project_version='${{ steps.release_family.outputs.version }}'
+          staging_root="${RUNNER_TEMP}/routecontract-release-staging"
+          test ! -e "${staging_root}"
+          test ! -L "${staging_root}"
+          mkdir -m 700 "${staging_root}"
+          unsigned_repository="${staging_root}/repository"
+          test ! -e "${unsigned_repository}"
+          test ! -L "${unsigned_repository}"
+          ./gradlew --no-daemon --no-build-cache publishRouteContractCentralStaging \
+            -ProutecontractCentralSigning=false \
+            -ProutecontractCentralStagingDirectory="${unsigned_repository}"
+          python3 scripts/prepare-coordinated-release-evidence.py collect \
+            --repository "${unsigned_repository}" --source-root "$PWD" \
+            --version "${project_version}" --revision "${GITHUB_SHA}" \
+            --java-home "${JAVA_HOME}" --output "$PWD/build/central-candidate-evidence"
+          python3 scripts/prepare-coordinated-release-evidence.py verify \
+            --source-root "$PWD" --version "${project_version}" \
+            --revision "${GITHUB_SHA}" --java-home "${JAVA_HOME}" \
+            --output "$PWD/build/central-candidate-evidence"
+          echo 'available=true' >> "${GITHUB_OUTPUT}"
+
       - name: Upload unsigned Central candidate evidence
-        if: steps.central_candidate.outputs.available == 'true'
+        if: steps.central_candidate.outputs.available == 'true' || steps.split_candidate.outputs.available == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: routecontract-central-candidate-${{ github.sha }}
@@ -274,17 +330,107 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
+      - name: Install exact Apache Maven 3.9.14 for split consumers
+        if: steps.release_family.outputs.family == 'split'
+        shell: bash
+        timeout-minutes: 10
+        run: |
+          set -euo pipefail
+          maven_archive="${RUNNER_TEMP}/apache-maven-3.9.14-bin.tar.gz"
+          maven_home="${RUNNER_TEMP}/apache-maven-3.9.14"
+          maven_url="https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.14/apache-maven-3.9.14-bin.tar.gz"
+          expected_sha512="d50af8ab5e6005b46a07f0ce9d3719e67cfdf898da988a84871304cd59fb1af0fef2f99dea709e6e66f21f732f905979b5c2dce6b6860406f60a70e84d9cf0b8"
+
+          test ! -e "${maven_archive}"
+          test ! -L "${maven_archive}"
+          test ! -e "${maven_home}"
+          test ! -L "${maven_home}"
+          curl --disable --proto '=https' --tlsv1.2 --fail --location \
+            --silent --show-error --retry 3 --connect-timeout 15 --max-time 300 \
+            --remove-on-error \
+            --max-filesize 20971520 \
+            --output "${maven_archive}" \
+            "${maven_url}"
+          printf '%s  %s\n' "${expected_sha512}" "${maven_archive}" \
+            | sha512sum --check --strict
+          tar --extract --gzip --file "${maven_archive}" --directory "${RUNNER_TEMP}"
+          test -d "${maven_home}"
+          test ! -L "${maven_home}"
+          test -f "${maven_home}/bin/mvn"
+          test ! -L "${maven_home}/bin/mvn"
+          test -x "${maven_home}/bin/mvn"
+          maven_version="$("${maven_home}/bin/mvn" -version 2>&1)"
+          printf '%s\n' "${maven_version}" | grep -Fqx \
+            'Apache Maven 3.9.14 (996c630dbc656c76214ce58821dcc58be960875b)'
+          printf '%s\n' "${maven_version}" | grep -Eq '^Java version: 17\.'
+          printf 'MAVEN_HOME=%s\n' "${maven_home}" >> "${GITHUB_ENV}"
+          printf '%s\n' "${maven_home}/bin" >> "${GITHUB_PATH}"
+
+
+      - name: Verify retained split preparation through independent MySQL consumers
+        if: steps.release_family.outputs.family == 'split'
+        shell: bash
+        timeout-minutes: 30
+        env:
+          SSL_CERT_FILE: /etc/ssl/certs/ca-certificates.crt
+        run: |
+          set -euo pipefail
+          test -r "${SSL_CERT_FILE}"
+          prepared_repository="$PWD/build/central-candidate-evidence/repository"
+          python3 scripts/verify-staged-split-artifact-consumer.py \
+            --repository "${prepared_repository}" \
+            --evidence-directory "${RUNNER_TEMP}/routecontract-release-split-gradle"
+          python3 scripts/verify-staged-maven-artifact-consumer.py \
+            --repository "${prepared_repository}" --java-home "${JAVA_HOME}" \
+            --evidence-directory "${RUNNER_TEMP}/routecontract-release-split-maven"
+          python3 scripts/prepare-coordinated-release-evidence.py verify \
+            --source-root "$PWD" --version '${{ steps.release_family.outputs.version }}' \
+            --revision "${GITHUB_SHA}" --java-home "${JAVA_HOME}" \
+            --output "$PWD/build/central-candidate-evidence"
+
+      - name: Retain minimized split-consumer execution evidence
+        if: always() && steps.release_family.outputs.family == 'split' && steps.split_candidate.outputs.available == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: routecontract-release-split-consumers-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/routecontract-release-split-gradle/summary.json
+            ${{ runner.temp }}/routecontract-release-split-gradle/staged-receipt.json
+            ${{ runner.temp }}/routecontract-release-split-gradle/5.5.*/reports/**
+            ${{ runner.temp }}/routecontract-release-split-maven/summary.json
+            ${{ runner.temp }}/routecontract-release-split-maven/staged-receipt.json
+            ${{ runner.temp }}/routecontract-release-split-maven/5.5.*/summary.json
+            ${{ runner.temp }}/routecontract-release-split-maven/5.5.*/reports/**
+          if-no-files-found: error
+          retention-days: 90
+
       - name: Stage workflow-only environment evidence
+        if: steps.release_family.outputs.family == 'legacy'
         shell: bash
         run: |
           set -euo pipefail
           public_dir='build/release-public'
           evidence_dir='build/release-evidence'
           cp "${public_dir}"/* "${evidence_dir}/"
+          # These workflow-only copies complete the six-role/twelve-document SBOM
+          # evidence set. They do not make the legacy single-artifact Release
+          # consumer a valid 0.2 three-coordinate public-consumption gate.
+          cp build/reports/verified-sbom/routecontract-core/bom.json \
+            "${evidence_dir}/routecontract-core-cyclonedx.json"
+          cp build/reports/verified-sbom/routecontract-core/bom.xml \
+            "${evidence_dir}/routecontract-core-cyclonedx.xml"
+          cp build/reports/verified-sbom/routecontract-shardingsphere-5.5.2/bom.json \
+            "${evidence_dir}/routecontract-shardingsphere-5.5.2-cyclonedx.json"
+          cp build/reports/verified-sbom/routecontract-shardingsphere-5.5.2/bom.xml \
+            "${evidence_dir}/routecontract-shardingsphere-5.5.2-cyclonedx.xml"
           cp build/reports/verified-sbom/mysql-example/bom.json \
             "${evidence_dir}/routecontract-mysql-example-cyclonedx.json"
           cp build/reports/verified-sbom/mysql-example/bom.xml \
             "${evidence_dir}/routecontract-mysql-example-cyclonedx.xml"
+          cp build/reports/verified-sbom/mysql-5.5.2-example/bom.json \
+            "${evidence_dir}/routecontract-mysql-5.5.2-example-cyclonedx.json"
+          cp build/reports/verified-sbom/mysql-5.5.2-example/bom.xml \
+            "${evidence_dir}/routecontract-mysql-5.5.2-example-cyclonedx.xml"
           mysql_image_tag='mysql:8.4.11'
           expected_mysql_digest='sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb'
           resolved_mysql_image_ids="$(
@@ -319,12 +465,13 @@ jobs:
             | grep -Eq \
               "\"(mysql|docker\\.io/library/mysql)@${expected_mysql_digest}\""
           ! grep -Eq \
-            '  (environment|mysql-image|standalone-consumer)\.txt$|  routecontract-mysql-example-cyclonedx\.(json|xml)$' \
+            '  (environment|mysql-image|standalone-consumer)\.txt$|  routecontract-(core|shardingsphere-5\.5\.2|mysql-example|mysql-5\.5\.2-example)-cyclonedx\.(json|xml)$' \
             "${evidence_dir}/SHA256SUMS"
           test ! -e "${evidence_dir}/osv-raw.json"
-          test "$(find "${evidence_dir}" -maxdepth 1 -type f | wc -l | tr -d ' ')" = '17'
+          test "$(find "${evidence_dir}" -maxdepth 1 -type f | wc -l | tr -d ' ')" = '23'
 
       - name: Revalidate all staged CycloneDX release-evidence SBOMs
+        if: steps.release_family.outputs.family == 'legacy'
         shell: bash
         run: |
           set -euo pipefail
@@ -333,10 +480,16 @@ jobs:
           staged_sboms=(
             "${evidence_dir}/routecontract-aggregate-cyclonedx.json"
             "${evidence_dir}/routecontract-aggregate-cyclonedx.xml"
+            "${evidence_dir}/routecontract-core-cyclonedx.json"
+            "${evidence_dir}/routecontract-core-cyclonedx.xml"
             "${evidence_dir}/routecontract-shardingsphere-5.5-cyclonedx.json"
             "${evidence_dir}/routecontract-shardingsphere-5.5-cyclonedx.xml"
+            "${evidence_dir}/routecontract-shardingsphere-5.5.2-cyclonedx.json"
+            "${evidence_dir}/routecontract-shardingsphere-5.5.2-cyclonedx.xml"
             "${evidence_dir}/routecontract-mysql-example-cyclonedx.json"
             "${evidence_dir}/routecontract-mysql-example-cyclonedx.xml"
+            "${evidence_dir}/routecontract-mysql-5.5.2-example-cyclonedx.json"
+            "${evidence_dir}/routecontract-mysql-5.5.2-example-cyclonedx.xml"
           )
           staged_sbom_binding="$(sha256sum "${staged_sboms[@]}")"
           python3 scripts/finalize-sbom.py \
@@ -345,28 +498,57 @@ jobs:
             "${evidence_dir}/routecontract-aggregate-cyclonedx.json" \
             "${evidence_dir}/routecontract-aggregate-cyclonedx.xml" \
             --verify-pair \
+            "${evidence_dir}/routecontract-core-cyclonedx.json" \
+            "${evidence_dir}/routecontract-core-cyclonedx.xml" \
+            --verify-pair \
             "${evidence_dir}/routecontract-shardingsphere-5.5-cyclonedx.json" \
             "${evidence_dir}/routecontract-shardingsphere-5.5-cyclonedx.xml" \
             --verify-pair \
+            "${evidence_dir}/routecontract-shardingsphere-5.5.2-cyclonedx.json" \
+            "${evidence_dir}/routecontract-shardingsphere-5.5.2-cyclonedx.xml" \
+            --verify-pair \
             "${evidence_dir}/routecontract-mysql-example-cyclonedx.json" \
-            "${evidence_dir}/routecontract-mysql-example-cyclonedx.xml"
+            "${evidence_dir}/routecontract-mysql-example-cyclonedx.xml" \
+            --verify-pair \
+            "${evidence_dir}/routecontract-mysql-5.5.2-example-cyclonedx.json" \
+            "${evidence_dir}/routecontract-mysql-5.5.2-example-cyclonedx.xml"
           python3 scripts/validate-official-cyclonedx.py \
             --input-root "${evidence_dir}" \
             --pair aggregate \
             routecontract-aggregate-cyclonedx.json \
             routecontract-aggregate-cyclonedx.xml \
-            --pair published \
+            --pair core \
+            routecontract-core-cyclonedx.json \
+            routecontract-core-cyclonedx.xml \
+            --pair adapter553 \
             routecontract-shardingsphere-5.5-cyclonedx.json \
             routecontract-shardingsphere-5.5-cyclonedx.xml \
-            --pair example \
+            --pair adapter552 \
+            routecontract-shardingsphere-5.5.2-cyclonedx.json \
+            routecontract-shardingsphere-5.5.2-cyclonedx.xml \
+            --pair mysql553 \
             routecontract-mysql-example-cyclonedx.json \
-            routecontract-mysql-example-cyclonedx.xml
+            routecontract-mysql-example-cyclonedx.xml \
+            --pair mysql552 \
+            routecontract-mysql-5.5.2-example-cyclonedx.json \
+            routecontract-mysql-5.5.2-example-cyclonedx.xml
           test "$(sha256sum "${staged_sboms[@]}")" = "${staged_sbom_binding}"
 
       - name: Upload release evidence
+        if: steps.release_family.outputs.family == 'legacy'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: routecontract-release-evidence-${{ github.sha }}
           path: build/release-evidence/
           if-no-files-found: error
           retention-days: 90
+
+      - name: Keep 0.2 publication fail-closed until the public split-artifact gate exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          project_version="$(./gradlew --no-daemon -q properties | awk '/^version:/ { print $2; exit }')"
+          if [[ "${project_version}" == 0.2.* ]]; then
+            echo '0.2 publication is blocked: the legacy single-artifact Release consumer does not prove clean-cache, unauthenticated consumption of core + adapter553 + adapter552 with whole-group and negative-exclusivity checks.' >&2
+            exit 1
+          fi

@@ -1,0 +1,273 @@
+{
+  "recordedAt": "2026-09-08T06:36:37.120719+00:00",
+  "evidenceLabel": [
+    "verified - unit",
+    "verified - MySQL",
+    "verified - ShardingSphere-JDBC 5.5.3",
+    "verified - ShardingSphere-JDBC 5.5.2"
+  ],
+  "sourceBase": "6b4ca9816b9c8558088f43f90de2e974ee028cd9",
+  "sourceFilesSha256": {
+    "docs/current-entry-migration-acceptance.md": "ac24fb003c3bce85c8c3ab6788981e80c451f19c7468cc508633d7659fe16640",
+    "docs/evidence/current-entry-regression-2026-09-08.md": "aeb49a139cb8d70a37e97f427e9bded4cf89679ce4fd31a9ee8bb47889f24fce",
+    "docs/evidence/current-entry-regression-2026-09-08.json": "2701a8d22bdbeb9bcaf68312a7a78cae9f2a1c9e969d7a09527b2b1f38bebc6c",
+    "routecontract-core/src/main/java/io/github/ym0506/routecontract/RouteContract.java": "a87c69715c90d1aee15f70f3b6bea3c7ddaccc0a1ced3e9f7bec88e21ad1db1e",
+    "routecontract-core/src/main/java/io/github/ym0506/routecontract/api/RouteContract.java": "3b4f8037b70fd882d0a45d44752f92d7d4e65925cb6889da58ec70c4133ea264",
+    "routecontract-core/src/main/java/io/github/ym0506/routecontract/internal/CurrentRuntimeGuard.java": "4fc40f1991a12ea7993ed6c55f06a1f67fae80b5bc8dfc4f0468398a243e98e0",
+    "routecontract-core/src/test/java/io/github/ym0506/routecontract/api/CurrentRouteContractTest.java": "ced1176f1cd601b0191d22f6f97847faef3a393853238f9d4e5e0032bad6c33d",
+    "routecontract-core/src/test/java/io/github/ym0506/routecontract/internal/CurrentRuntimeGuardTest.java": "bc4bd8524894f81d42f43435c07005711ba6b94571436763323206383a2f909c",
+    "routecontract-shardingsphere-5.5/src/test/java/io/github/ym0506/routecontract/CurrentRouteContractCompatibilityTest.java": "c12947a5dcab27fa98859582c6156fb271ee081c5408ae9c00dedd07fe0d6141",
+    "scripts/verify-current-entry-regression.py": "f42b86c682e0f2b4f33cab685ac90a417764c3cc742f8626f87411db7ecf3e60",
+    "scripts/tests/test_verify_current_entry_regression.py": "1a4598f6b1051a0828c3f40b3589c379b66528a1ffe111d5e013f6b4c4ec6707",
+    "examples/current-entry-regression-consumer/src/main/java/io/github/ym0506/routecontract/consumer/CurrentEntryRegressionProbe.java": "de5df54ffbdd4ad1c5319e5cbc127447ce7f9563d0bfb04874d57f3a656a6b3f",
+    "docs/evidence/legacy-runtime-collision-2026-09-08.json": "58e96ff9cf16260679aeb026326fc815a25d948fffb2393e0dcf2f9a274fefcb",
+    "docs/evidence/legacy-runtime-collision-2026-09-08.md": "34733b79bc035fd4e6e759fb8fe111113ad1b8a06c3f8f79b6a56364bc8607ba",
+    "docs/legacy-runtime-collision-acceptance.md": "2c86e799af19e977ff203c1605a7d86027d05e4c16199a4b4131f037bea7f95a",
+    "docs/legacy-runtime-collision-feasibility.md": "dda4f64037222f30329334884a10e6c69baf387f2198bdaa94d9ab837d134535",
+    "examples/legacy-runtime-collision-consumer/runtime-evidence.gradle": "4139fcf11035d0809bec3808a20502f806d5032c649d8885f82de23fc2be14d5",
+    "examples/legacy-runtime-collision-consumer/src/test/java/io/github/ym0506/routecontract/consumer/LegacyRuntimeProbe.java": "bd4741eebdf4bfb16bb9430380f752c9e75787b8126db8e6701f33324c0aa602",
+    "scripts/tests/test_verify_legacy_runtime_collision.py": "eeb4e504f56c2a02c51503b2b98c818a9974526e62ea6cad5667e158e5b2a0cf",
+    "scripts/verify-legacy-runtime-collision.py": "3f6154457629fdb14ba56a4b092d60f1f0123b977deb3f64f7deb5892dd8f78c"
+  },
+  "java": "Homebrew OpenJDK 17.0.15",
+  "gradle": "8.14.4",
+  "mysql": "8.4.11",
+  "mysqlReference": "mysql:8.4.11@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb",
+  "command": "JAVA_HOME=/path/to/jdk-17 ./gradlew --no-daemon --console=plain --no-build-cache :routecontract-core:test :routecontract-shardingsphere-5.5:test :routecontract-shardingsphere-5.5.2:test :mysql-example:test :mysql-5.5.2-example:test",
+  "exitCode": 0,
+  "tests": 163,
+  "suites": [
+    {
+      "module": "routecontract-core",
+      "name": "io.github.ym0506.routecontract.api.CurrentRouteContractTest",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xmlSha256": "985f6e35d4ae02c288a475c009e72566d73dd80257cf4aea2b6accb943e87272"
+    },
+    {
+      "module": "routecontract-core",
+      "name": "io.github.ym0506.routecontract.internal.CurrentRuntimeGuardTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xmlSha256": "1113c4bad9aa3eae6f4b5ce7d261b9320ff252b581ae99661ddc7b341a0c920a"
+    },
+    {
+      "module": "routecontract-core",
+      "name": "io.github.ym0506.routecontract.internal.RuntimeAdapterRegistryTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xmlSha256": "cd4f414d85f2b65c03e560de62d135fe2febca59df05b9ab8ff29457a9a15016"
+    },
+    {
+      "module": "routecontract-core",
+      "name": "io.github.ym0506.routecontract.manifest.ManifestReviewReportTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xmlSha256": "95bdf05363e1cedf54aa6e67b88c411d8bb71d6ff9ba3fda1ae5f2f70a47c57b"
+    },
+    {
+      "module": "routecontract-core",
+      "name": "io.github.ym0506.routecontract.structure.CorePublicationStructureTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xmlSha256": "02105492c6783da3c96b1f1eb05c30977a1d52d6a3fd9b37048d75e035978943"
+    },
+    {
+      "module": "routecontract-shardingsphere-5.5",
+      "name": "io.github.ym0506.routecontract.CurrentRouteContractCompatibilityTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xmlSha256": "cc4ade8c6587b317a340e255f97976a60162afa2f2eb854c499700f3a578dd88"
+    },
+    {
+      "module": "routecontract-shardingsphere-5.5",
+      "name": "io.github.ym0506.routecontract.RouteContractTest",
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xmlSha256": "9a88e8adc9889b78b7ad589bfac2f47add21157cd3352308c56144e5f3b3588a"
+    },
+    {
+      "module": "routecontract-shardingsphere-5.5",
+      "name": "io.github.ym0506.routecontract.ShardingSphereRuntimeIdentityTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xmlSha256": "d117f17304ae87c8521fdac3ff8e7d38709db2fde891043ffcdc500f291712ca"
+    },
+    {
+      "module": "routecontract-shardingsphere-5.5",
+      "name": "io.github.ym0506.routecontract.manifest.ObservedExecutionManifestTest",
+      "tests": 22,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xmlSha256": "0f18251e8b2ec1456933f5f7eea8bd27eafcc98b1112211260d432355b93b971"
+    },
+    {
+      "module": "routecontract-shardingsphere-5.5",
+      "name": "io.github.ym0506.routecontract.shardingsphere553.internal.FreshJvmGuardFailureTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xmlSha256": "b4caa855afc828e7e1dcfa395a2f372d3b18c05ef2dbfaf685a01f033aca9f5a"
+    },
+    {
+      "module": "routecontract-shardingsphere-5.5",
+      "name": "io.github.ym0506.routecontract.shardingsphere553.internal.ShardingSphere553PreflightTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xmlSha256": "c7348ef31d6351f3a2c71732429b659fdb293fdf42d36820dcf4d89f353af0cf"
+    },
+    {
+      "module": "routecontract-shardingsphere-5.5",
+      "name": "io.github.ym0506.routecontract.structure.ArtifactIsolationTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xmlSha256": "f9f5b8976a20fb25052e124dd9752ed6ec87853cc6171da025ba777661554e94"
+    },
+    {
+      "module": "routecontract-shardingsphere-5.5.2",
+      "name": "io.github.ym0506.routecontract.shardingsphere552.internal.FreshJvmCompatibilityFailureTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xmlSha256": "67d292b0431a819515a996a01bb720b89b1e0d44ecd586a56ab33bfaefa3fb91"
+    },
+    {
+      "module": "routecontract-shardingsphere-5.5.2",
+      "name": "io.github.ym0506.routecontract.shardingsphere552.internal.FreshJvmGuardFailureTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xmlSha256": "89b1290808fed745c10f117b789109b6ebe9b3909a24e6824290ec1535223366"
+    },
+    {
+      "module": "routecontract-shardingsphere-5.5.2",
+      "name": "io.github.ym0506.routecontract.shardingsphere552.internal.RouteContract552HookContainmentTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xmlSha256": "afd79cd0afad8ce1e29856242577ab3f052b62c5c1a5b4ef6117cc49eb2ccc8e"
+    },
+    {
+      "module": "routecontract-shardingsphere-5.5.2",
+      "name": "io.github.ym0506.routecontract.shardingsphere552.internal.ShardingSphere552PreflightTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xmlSha256": "5badc01054d80fe3183b6c272fe23e355a99a4d942a8242a738933dc162ad573"
+    },
+    {
+      "module": "routecontract-shardingsphere-5.5.2",
+      "name": "io.github.ym0506.routecontract.structure.ArtifactIsolation552Test",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xmlSha256": "006993e2f9908dfa18e66883bea1ddf27556d061a0209971e107e97bcd262e32"
+    },
+    {
+      "module": "examples/mysql",
+      "name": "io.github.ym0506.routecontract.example.DataSourceProxyComparisonMySqlTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xmlSha256": "6617aa9cc5f3f596b614944cc8a9e13b9d75b6e6c2629de0a2b5312fa106b8a9"
+    },
+    {
+      "module": "examples/mysql",
+      "name": "io.github.ym0506.routecontract.example.FailureBoundaryMySqlTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xmlSha256": "77557060f2374bfcc8e189f96bc43567a28e31b4768263bcd7bf164d322714ee"
+    },
+    {
+      "module": "examples/mysql",
+      "name": "io.github.ym0506.routecontract.example.ObservedExecutionRegressionCorpusMySqlTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xmlSha256": "fe4d95c77062a2b2362d5586997fc00d5645ce46097e69c5b14b5b321398f60d"
+    },
+    {
+      "module": "examples/mysql",
+      "name": "io.github.ym0506.routecontract.example.OperationCorrelationMySqlTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xmlSha256": "15220525b36b2ef1b5327c29319f13e5f5408c46f8d9755e5d839142056faefb"
+    },
+    {
+      "module": "examples/mysql-5.5.2",
+      "name": "io.github.ym0506.routecontract.example552.Exact552ObservedExecutionRegressionCorpusMySqlTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xmlSha256": "d4f549a0288cee13f13308f87552a161e8793c694b586c99b0a6bca813dd7c3f"
+    },
+    {
+      "module": "examples/mysql-5.5.2",
+      "name": "io.github.ym0506.routecontract.example552.Exact552OperationContractMySqlTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xmlSha256": "afef81b7d95026a8ed4041b8fea3e93a602e970dae606ce3f137737922f263b1"
+    }
+  ],
+  "rawLogSha256": "cef8e8ea6a9a039cac32351a1ce2c90bf282d08370d0eaecd6c0e1678cae5cff",
+  "scope": "Integrated source and clean split graphs. Existing MySQL fixtures call the old compatibility facade, which delegates to the new entry. Original A28 remains FAILED; full successor staged-artifact gate and public0.2 release remain pending.",
+  "directCurrentApiFollowup": {
+    "recordedAt": "2026-09-08T06:45:00.720520+00:00",
+    "sourceBase": "6b4ca9816b9c8558088f43f90de2e974ee028cd9",
+    "sourceDelta": "Current 0.2 MySQL tests now invoke api.RouteContract directly. Original integrated core/adapter results reused unchanged; both real MySQL tasks reran.",
+    "command": "JAVA_HOME=/path/to/jdk-17 ./gradlew --no-daemon --console=plain --no-build-cache :mysql-example:test :mysql-5.5.2-example:test",
+    "exitCode": 0,
+    "rerunTests": 28,
+    "reusedCoreAdapterTests": 135,
+    "combinedTests": 163,
+    "newMySqlSourcesSha256": {
+      "examples/mysql/src/test/java/io/github/ym0506/routecontract/example/DataSourceProxyComparisonMySqlTest.java": "cc43f36c0f47fe54f58b6c117e23be6beccebbbccb3ab4a25b34a8fd5a1aa1ee",
+      "examples/mysql/src/test/java/io/github/ym0506/routecontract/example/FailureBoundaryMySqlTest.java": "f8cf16ade099bcc01f2b8bf0316735513adda7005f00529e760f2581b63f7e49",
+      "examples/mysql/src/test/java/io/github/ym0506/routecontract/example/ObservedExecutionRegressionCorpusMySqlTest.java": "d736a9d8f89347a67bcbf3247f73ac6aa3d50a6d793f347f64d37488821db03c",
+      "examples/mysql/src/test/java/io/github/ym0506/routecontract/example/OperationCorrelationMySqlTest.java": "1bf785e9cf27a7774d54ea567cb2ca9937298a2f88b16c085684715cf1ada504",
+      "examples/mysql-5.5.2/src/test/java/io/github/ym0506/routecontract/example552/Exact552ObservedExecutionRegressionCorpusMySqlTest.java": "b1dbaa924438f250e29b06b19685b284360b80790677566f7c5e8ef5712d925c",
+      "examples/mysql-5.5.2/src/test/java/io/github/ym0506/routecontract/example552/Exact552OperationContractMySqlTest.java": "b08d680f4a585191e7552d6b8f6fd3bf19286bbfc41ee02c7a4d9a538af2ba4e"
+    },
+    "rawLogSha256": "3b9b9f410a056f5d746044f3c1ac35aa1af3e6a15cc79d9999ce54bc37d9f41a",
+    "combinedLocalSummarySha256": "4495d1a83de0afc1ed921cbfb3548de929dd2b9d8f6edf06ad075e0d3258eb25",
+    "strictSummaryUnitTests": 8,
+    "rawArtifacts": "/private/tmp/routecontract-current-entry-direct-mysql-evidence-20260908",
+    "scope": "Local clean split source; new staged consumer imports are updated but have not been executed against final staged artifacts. No A29/publication/adoption claim."
+  }
+}

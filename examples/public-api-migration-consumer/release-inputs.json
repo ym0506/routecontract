@@ -1,0 +1,13 @@
+{
+  "formatVersion": 1,
+  "group": "io.github.ym0506.routecontract",
+  "module": "routecontract-shardingsphere-5.5",
+  "version": "0.1.2",
+  "tagObject": "6adacbe04d60b3af83d9067a14a878d26a6c90f5",
+  "releaseCommit": "fc4fdd16c21574afa1150654ce354cf8004b138b",
+  "artifacts": {
+    "routecontract-shardingsphere-5.5-0.1.2.jar": "d25cd2699629890db7195e871461b25861991fe20abd776d702c690a292b72fc",
+    "routecontract-shardingsphere-5.5-0.1.2.pom": "70b5d4161d1532e9f9cb699071790a7806d87658511d931477544fa06037b85d"
+  },
+  "baselineSha256": "a082ca797ebe40be5b8c9409893de7d9a861086d8d4b760cbc00e925b2436a60"
+}

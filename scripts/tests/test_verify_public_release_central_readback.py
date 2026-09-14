@@ -200,19 +200,19 @@ class SignedLocalInputReadbackTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        path = Path(__file__).with_name('test_prepare_central_upload_bundle.py')
+        path = Path(__file__).with_name('fixtures') / 'central_schema1.py'
         spec = importlib.util.spec_from_file_location('release_readback_signed_fixture', path)
         cls.fixtures = importlib.util.module_from_spec(spec)
         sys.modules[spec.name] = cls.fixtures
         spec.loader.exec_module(cls.fixtures)
-        cls.fixtures.CentralUploadBundleTest.setUpClass()
+        cls.fixtures.SchemaOneSignedFixture.setUpClass()
 
     @classmethod
     def tearDownClass(cls):
-        cls.fixtures.CentralUploadBundleTest.tearDownClass()
+        cls.fixtures.SchemaOneSignedFixture.tearDownClass()
 
     def setUp(self):
-        self.fixture = self.fixtures.CentralUploadBundleTest()
+        self.fixture = self.fixtures.SchemaOneSignedFixture()
         self.fixture.setUp()
         self.addCleanup(self.fixture.tearDown)
         self.built = self.fixture.build()
@@ -245,6 +245,24 @@ class SignedLocalInputReadbackTest(unittest.TestCase):
         self.assertFalse(summary['availabilityClaim'])
         self.assertFalse(summary['consumerExecutionVerified'])
         self.assertFalse(summary['networkPublication'])
+
+    def test_signed_schema_one_receipt_preserves_published_tool_binding(self):
+        receipt = json.loads(self.built.receipt_path.read_text())
+        self.assertEqual(1, receipt['schemaVersion'])
+        self.assertEqual({
+            'name': 'prepare-central-upload-bundle.py',
+            'sha256': '87f60774cbcdbf2eb75884621875487b4673c073de933f73670d405c8cbf4df3',
+        }, receipt['tool'])
+        snapshot = readback.verified_snapshot(**self.inputs())
+        self.assertEqual(hashlib.sha256(self.built.receipt_path.read_bytes()).hexdigest(),
+                         snapshot.receipt_sha256)
+
+    def test_schema_two_manifest_cannot_enter_the_schema_one_readback(self):
+        manifest = json.loads(self.fixture.manifest.read_text())
+        manifest['schemaVersion'] = 2
+        self.fixture.write_manifest(manifest)
+        with self.assertRaises(readback.bundle_tool.BundleError):
+            readback.verified_snapshot(**self.inputs())
 
     def test_corrupt_signature_is_rejected_by_real_signature_verifier(self):
         signature = next(self.fixture.repository.rglob('*.jar.asc'))

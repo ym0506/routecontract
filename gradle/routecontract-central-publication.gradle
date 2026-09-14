@@ -1,0 +1,575 @@
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+import java.nio.file.LinkOption
+import java.nio.file.attribute.BasicFileAttributes
+import java.util.Arrays
+import java.util.concurrent.TimeUnit
+import org.gradle.api.publish.PublishingExtension
+import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.plugins.signing.SigningExtension
+
+/*
+ * Shared, fail-closed Maven Central staging policy.
+ *
+ * Exact-version adapters are deliberately enumerated here. Every listed
+ * project is staged and finalized as one coordinated set.
+ */
+if (project != rootProject) {
+    throw new GradleException('routecontract-central-publication.gradle must be applied to the root project')
+}
+
+def centralPublicationProjectPaths = [
+        ':routecontract-core',
+        ':routecontract-shardingsphere-5.5',
+        ':routecontract-shardingsphere-5.5.2'
+]
+def centralRepositoryName = 'centralStaging'
+def centralRepositoryTaskName = 'CentralStaging'
+def centralPublicationName = 'mavenJava'
+def centralPublicationTaskName =
+        "publishMavenJavaPublicationTo${centralRepositoryTaskName}Repository"
+
+def centralStagingDirectory = providers.gradleProperty('routecontractCentralStagingDirectory')
+def centralSigningValue = providers.gradleProperty('routecontractCentralSigning').orNull
+if (centralSigningValue != null && !(centralSigningValue in ['true', 'false'])) {
+    throw new GradleException('routecontractCentralSigning must be exactly true or false')
+}
+if (centralStagingDirectory.isPresent() != (centralSigningValue != null)) {
+    throw new GradleException('Central staging directory and signing choice must be provided together')
+}
+
+def centralStagingEnabled = centralStagingDirectory.isPresent()
+def centralSigningEnabled = centralSigningValue == 'true'
+def centralStagingPath = null
+def centralWorkPath = null
+def centralParentIdentity = null
+def centralParentUnixIdentity = null
+def centralGpgOptionsPath = null
+def centralGpgOptionsIdentity = null
+def expectedGpgOptionsBytes = ('no-auto-key-retrieve\n' + 'digest-algo SHA384\n')
+        .getBytes(StandardCharsets.UTF_8)
+def atomicMoveTool = rootProject.layout.projectDirectory
+        .file('scripts/atomic-central-staging.py').asFile
+
+def snapshotDirectoryChain = { directoryPath ->
+    if (directoryPath == null || !directoryPath.isAbsolute()) {
+        throw new GradleException('Central staging parent must be absolute')
+    }
+    def identities = []
+    def cursor = directoryPath.root
+    def paths = [cursor]
+    directoryPath.each { component ->
+        cursor = cursor.resolve(component)
+        paths.add(cursor)
+    }
+    paths.each { candidate ->
+        if (Files.isSymbolicLink(candidate)
+                || !Files.isDirectory(candidate, LinkOption.NOFOLLOW_LINKS)) {
+            throw new GradleException(
+                    'Central staging parent chain must contain only existing non-symlink directories')
+        }
+        def attributes = Files.readAttributes(
+                candidate, BasicFileAttributes, LinkOption.NOFOLLOW_LINKS)
+        if (attributes.fileKey() == null) {
+            throw new GradleException(
+                    'Central staging parent chain must expose stable filesystem identities')
+        }
+        identities.add([path: candidate.toString(), fileKey: attributes.fileKey().toString()])
+    }
+    def realPath = directoryPath.toRealPath()
+    if (realPath != directoryPath) {
+        throw new GradleException(
+                'routecontractCentralStagingDirectory parent must use its canonical non-symlink path')
+    }
+    return identities
+}
+
+def assertPathAbsent = { candidatePath, message ->
+    if (Files.exists(candidatePath, LinkOption.NOFOLLOW_LINKS)
+            || Files.isSymbolicLink(candidatePath)) {
+        throw new GradleException(message)
+    }
+}
+
+if (centralStagingEnabled) {
+    def suppliedStagingPath = new File(centralStagingDirectory.get()).toPath()
+    centralStagingPath = suppliedStagingPath.normalize()
+    def stagingParent = centralStagingPath.parent
+    if (!suppliedStagingPath.isAbsolute()) {
+        throw new GradleException('routecontractCentralStagingDirectory must be an absolute local path')
+    }
+    if (suppliedStagingPath != centralStagingPath || stagingParent == null) {
+        throw new GradleException(
+                'routecontractCentralStagingDirectory must be an absolute normalized local path')
+    }
+    centralParentIdentity = snapshotDirectoryChain(stagingParent)
+    centralParentUnixIdentity = [
+            device: Files.getAttribute(
+                    stagingParent, 'unix:dev', LinkOption.NOFOLLOW_LINKS).toString(),
+            inode: Files.getAttribute(
+                    stagingParent, 'unix:ino', LinkOption.NOFOLLOW_LINKS).toString()
+    ]
+    def parentMode = Files.getAttribute(
+            stagingParent, 'unix:mode', LinkOption.NOFOLLOW_LINKS) as Number
+    if ((parentMode.longValue() & 077L) != 0L) {
+        throw new GradleException(
+                'Central staging parent permissions must exclude group and other access')
+    }
+    if (!Files.isRegularFile(atomicMoveTool.toPath(), LinkOption.NOFOLLOW_LINKS)
+            || Files.isSymbolicLink(atomicMoveTool.toPath())) {
+        throw new GradleException('Central staging atomic-move tool must be a real regular file')
+    }
+    def toolLinkCount = Files.getAttribute(
+            atomicMoveTool.toPath(), 'unix:nlink', LinkOption.NOFOLLOW_LINKS) as Number
+    if (toolLinkCount.longValue() != 1L) {
+        throw new GradleException('Central staging atomic-move tool must have exactly one hard link')
+    }
+    def stagingName = centralStagingPath.fileName
+    if (stagingName == null || stagingName.toString().isEmpty()) {
+        throw new GradleException('Central staging repository must have a final path component')
+    }
+    centralWorkPath = stagingParent.resolve(
+            ".${stagingName}.routecontract-work")
+    assertPathAbsent(
+            centralStagingPath,
+            'Central staging repository must be a new absent path')
+    assertPathAbsent(
+            centralWorkPath,
+            'HOLD: prior Central staging work path exists; do not retry or clean it automatically')
+}
+
+if (centralSigningEnabled) {
+    def selector = providers.gradleProperty('signing.gnupg.keyName').orNull
+    if (selector == null || !(selector ==~ /[0-9A-F]{40}!/)) {
+        throw new GradleException(
+                'signed Central staging requires signing.gnupg.keyName as FULL_UPPERCASE_PRIMARY_FINGERPRINT!')
+    }
+    def suppliedOptionsValue = providers.gradleProperty('signing.gnupg.optionsFile').orNull
+    if (suppliedOptionsValue == null) {
+        throw new GradleException(
+                'signed Central staging requires the exact signing.gnupg.optionsFile')
+    }
+    def suppliedOptionsPath = new File(suppliedOptionsValue).toPath()
+    centralGpgOptionsPath = suppliedOptionsPath.normalize()
+    if (!suppliedOptionsPath.isAbsolute()
+            || suppliedOptionsPath != centralGpgOptionsPath
+            || centralGpgOptionsPath.parent != centralStagingPath.parent) {
+        throw new GradleException(
+                'signed Central staging GPG options must be a normalized absolute file in the staging parent')
+    }
+    if (!Files.isRegularFile(centralGpgOptionsPath, LinkOption.NOFOLLOW_LINKS)
+            || Files.isSymbolicLink(centralGpgOptionsPath)
+            || centralGpgOptionsPath.toRealPath() != centralGpgOptionsPath) {
+        throw new GradleException(
+                'signed Central staging GPG options must be a canonical non-symlink regular file')
+    }
+    def optionsAttributes = Files.readAttributes(
+            centralGpgOptionsPath, BasicFileAttributes, LinkOption.NOFOLLOW_LINKS)
+    def optionsMode = Files.getAttribute(
+            centralGpgOptionsPath, 'unix:mode', LinkOption.NOFOLLOW_LINKS) as Number
+    def optionsLinkCount = Files.getAttribute(
+            centralGpgOptionsPath, 'unix:nlink', LinkOption.NOFOLLOW_LINKS) as Number
+    def optionsBytes = Files.readAllBytes(centralGpgOptionsPath)
+    if (optionsAttributes.fileKey() == null
+            || (optionsMode.longValue() & 0777L) != 0600L
+            || optionsLinkCount.longValue() != 1L
+            || !Arrays.equals(optionsBytes, expectedGpgOptionsBytes)) {
+        throw new GradleException(
+                'signed Central staging GPG options must be mode 0600, single-link and exact SHA384 policy bytes')
+    }
+    centralGpgOptionsIdentity = [
+            fileKey: optionsAttributes.fileKey().toString(),
+            device: Files.getAttribute(
+                    centralGpgOptionsPath, 'unix:dev', LinkOption.NOFOLLOW_LINKS).toString(),
+            inode: Files.getAttribute(
+                    centralGpgOptionsPath, 'unix:ino', LinkOption.NOFOLLOW_LINKS).toString()
+    ]
+}
+
+def assertGpgOptionsIdentity = { phase ->
+    if (!centralSigningEnabled) {
+        return
+    }
+    if (!Files.isRegularFile(centralGpgOptionsPath, LinkOption.NOFOLLOW_LINKS)
+            || Files.isSymbolicLink(centralGpgOptionsPath)) {
+        throw new GradleException(
+                "HOLD: Central staging GPG options disappeared or changed type ${phase}")
+    }
+    def attributes = Files.readAttributes(
+            centralGpgOptionsPath, BasicFileAttributes, LinkOption.NOFOLLOW_LINKS)
+    def mode = Files.getAttribute(
+            centralGpgOptionsPath, 'unix:mode', LinkOption.NOFOLLOW_LINKS) as Number
+    def linkCount = Files.getAttribute(
+            centralGpgOptionsPath, 'unix:nlink', LinkOption.NOFOLLOW_LINKS) as Number
+    def observedDevice = Files.getAttribute(
+            centralGpgOptionsPath, 'unix:dev', LinkOption.NOFOLLOW_LINKS).toString()
+    def observedInode = Files.getAttribute(
+            centralGpgOptionsPath, 'unix:ino', LinkOption.NOFOLLOW_LINKS).toString()
+    if (attributes.fileKey() == null
+            || attributes.fileKey().toString() != centralGpgOptionsIdentity.fileKey
+            || observedDevice != centralGpgOptionsIdentity.device
+            || observedInode != centralGpgOptionsIdentity.inode
+            || (mode.longValue() & 0777L) != 0600L
+            || linkCount.longValue() != 1L
+            || !Arrays.equals(Files.readAllBytes(centralGpgOptionsPath), expectedGpgOptionsBytes)) {
+        throw new GradleException(
+                "HOLD: Central staging GPG options identity or exact SHA384 policy changed ${phase}")
+    }
+}
+
+def assertCentralParentIdentity = { phase ->
+    def observedIdentity = snapshotDirectoryChain(centralStagingPath.parent)
+    if (observedIdentity != centralParentIdentity) {
+        throw new GradleException(
+                "HOLD: Central staging parent identity changed ${phase}; do not retry automatically")
+    }
+}
+
+def centralWorkIdentity = [fileKey: null, device: null, inode: null]
+
+def prepareCentralStaging = tasks.register('prepareRouteContractCentralStaging') {
+    group = 'publishing'
+    description = 'Create the absent private work sibling for coordinated Central staging.'
+    onlyIf { centralStagingEnabled }
+    doLast {
+        assertCentralParentIdentity('before publication')
+        assertPathAbsent(
+                centralStagingPath,
+                'HOLD: final Central staging path appeared before publication')
+        assertPathAbsent(
+                centralWorkPath,
+                'HOLD: Central staging work path appeared before publication')
+        Files.createDirectory(centralWorkPath)
+        if (!Files.isDirectory(centralWorkPath, LinkOption.NOFOLLOW_LINKS)
+                || Files.isSymbolicLink(centralWorkPath)) {
+            throw new GradleException(
+                    'HOLD: Central staging work path was not created as a real directory')
+        }
+        def attributes = Files.readAttributes(
+                centralWorkPath, BasicFileAttributes, LinkOption.NOFOLLOW_LINKS)
+        if (attributes.fileKey() == null) {
+            throw new GradleException(
+                    'HOLD: Central staging work path has no stable filesystem identity')
+        }
+        centralWorkIdentity.fileKey = attributes.fileKey().toString()
+        centralWorkIdentity.device = Files.getAttribute(
+                centralWorkPath, 'unix:dev', LinkOption.NOFOLLOW_LINKS).toString()
+        centralWorkIdentity.inode = Files.getAttribute(
+                centralWorkPath, 'unix:ino', LinkOption.NOFOLLOW_LINKS).toString()
+        assertCentralParentIdentity('after work-directory creation')
+    }
+}
+
+def coordinatedCentralPublish = tasks.register('publishRouteContractCentralStaging') {
+    group = 'publishing'
+    description = 'Stage, verify and atomically expose every RouteContract Maven publication together.'
+    doFirst {
+        if (!centralStagingEnabled) {
+            throw new GradleException(
+                    'publishRouteContractCentralStaging requires the Central staging directory and signing choice')
+        }
+    }
+}
+
+def verifyCentralPublication = tasks.register('verifyRouteContractCentralPublicationConfiguration') {
+    group = 'verification'
+    description = 'Verify coordinated Central repository and signing wiring without publishing artifacts.'
+    doFirst {
+        if (!centralStagingEnabled) {
+            throw new GradleException(
+                    'verification requires the Central staging directory and signing choice')
+        }
+    }
+}
+
+def centralProjects = centralPublicationProjectPaths.collect { targetPath ->
+    rootProject.project(targetPath)
+}
+
+centralProjects.each { targetProject ->
+    targetProject.pluginManager.withPlugin('maven-publish') {
+        def publishingExtension = targetProject.extensions.getByType(PublishingExtension)
+        if (centralStagingEnabled) {
+            publishingExtension.repositories.maven {
+                name = centralRepositoryName
+                url = rootProject.uri(centralWorkPath.toFile())
+            }
+        }
+
+        if (centralSigningEnabled) {
+            targetProject.pluginManager.apply('signing')
+            def signingExtension = targetProject.extensions.getByType(SigningExtension)
+            signingExtension.useGpgCmd()
+            publishingExtension.publications.withType(MavenPublication).configureEach { publication ->
+                if (publication.name == centralPublicationName) {
+                    signingExtension.sign(publication)
+                }
+            }
+        }
+    }
+}
+
+gradle.projectsEvaluated {
+    if (centralSigningEnabled) {
+        def stableVersion = (rootProject.version.toString()
+                =~ /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/)
+        def stableParts = stableVersion.matches()
+                ? [stableVersion.group(1), stableVersion.group(2), stableVersion.group(3)]
+                        .collect { new BigInteger(it) }
+                : null
+        if (stableParts == null || (stableParts[0] == 0
+                && (stableParts[1] == 0
+                || (stableParts[1] == 1 && stableParts[2] <= 2)))) {
+            throw new GradleException(
+                    'signed Central staging requires a stable SemVer strictly greater than 0.1.2')
+        }
+    }
+
+    def centralPublishTasks = []
+    centralProjects.each { targetProject ->
+        def publishingExtension = targetProject.extensions.findByType(PublishingExtension)
+        if (publishingExtension == null) {
+            throw new GradleException("${targetProject.path} must apply maven-publish")
+        }
+        def publicationNames = publishingExtension.publications.names as Set
+        if (publicationNames != ([centralPublicationName] as Set)) {
+            throw new GradleException(
+                    "${targetProject.path} must expose exactly the mavenJava publication")
+        }
+        def publication = publishingExtension.publications.getByName(centralPublicationName)
+        def expectedGroup = rootProject.group.toString()
+        def expectedArtifact = targetProject.name
+        def expectedVersion = rootProject.version.toString()
+        if (publication.groupId != expectedGroup
+                || publication.artifactId != expectedArtifact
+                || publication.version != expectedVersion) {
+            throw new GradleException(
+                    "${targetProject.path} Maven publication identity must be exactly "
+                            + "${expectedGroup}:${expectedArtifact}:${expectedVersion}")
+        }
+
+        if (centralStagingEnabled) {
+            def centralRepository = publishingExtension.repositories.findByName(centralRepositoryName)
+            if (centralRepository == null
+                    || centralRepository.url != rootProject.uri(centralWorkPath.toFile())) {
+                throw new GradleException(
+                        "${targetProject.path} must use the shared Central staging repository")
+            }
+
+            def publishTask = targetProject.tasks.named(centralPublicationTaskName).get()
+            publishTask.dependsOn(prepareCentralStaging)
+            if (centralSigningEnabled) {
+                def signTask = targetProject.tasks.named('signMavenJavaPublication').get()
+                signTask.doFirst {
+                    assertCentralParentIdentity('before signing')
+                    assertGpgOptionsIdentity('before signing')
+                }
+                publishTask.dependsOn(signTask)
+            }
+            centralPublishTasks.add(publishTask)
+        }
+    }
+
+    if (centralStagingEnabled) {
+        centralPublishTasks.eachWithIndex { publishTask, index ->
+            if (index > 0) {
+                publishTask.mustRunAfter(centralPublishTasks[index - 1])
+            }
+        }
+        prepareCentralStaging.configure {
+            dependsOn verifyCentralPublication
+        }
+        coordinatedCentralPublish.configure {
+            dependsOn centralPublishTasks
+            doLast {
+                assertGpgOptionsIdentity('before final verification')
+                assertCentralParentIdentity('before final verification')
+                assertPathAbsent(
+                        centralStagingPath,
+                        'HOLD: final Central staging path appeared before atomic publication')
+                if (!Files.isDirectory(centralWorkPath, LinkOption.NOFOLLOW_LINKS)
+                        || Files.isSymbolicLink(centralWorkPath)) {
+                    throw new GradleException(
+                            'HOLD: Central staging work path is missing or was replaced')
+                }
+                def observedWorkAttributes = Files.readAttributes(
+                        centralWorkPath, BasicFileAttributes, LinkOption.NOFOLLOW_LINKS)
+                if (centralWorkIdentity.fileKey == null
+                        || observedWorkAttributes.fileKey() == null
+                        || observedWorkAttributes.fileKey().toString()
+                                != centralWorkIdentity.fileKey) {
+                    throw new GradleException(
+                            'HOLD: Central staging work-directory identity changed')
+                }
+                def stagedPaths = Files.walk(centralWorkPath)
+                try {
+                    stagedPaths.forEach { stagedPath ->
+                        if (Files.isSymbolicLink(stagedPath)
+                                || (!Files.isDirectory(stagedPath, LinkOption.NOFOLLOW_LINKS)
+                                && !Files.isRegularFile(stagedPath, LinkOption.NOFOLLOW_LINKS))) {
+                            throw new GradleException(
+                                    'HOLD: Central staging work tree contains a symlink or special file')
+                        }
+                    }
+                } finally {
+                    stagedPaths.close()
+                }
+                centralProjects.each { targetProject ->
+                    def publication = targetProject.extensions.getByType(PublishingExtension)
+                            .publications.getByName(centralPublicationName)
+                    def groupPath = publication.groupId.replace('.', File.separator)
+                    def versionDirectory = centralWorkPath
+                            .resolve(groupPath)
+                            .resolve(publication.artifactId)
+                            .resolve(publication.version)
+                    def stem = "${publication.artifactId}-${publication.version}"
+                    def payloadNames = [
+                            "${stem}.pom",
+                            "${stem}.module",
+                            "${stem}.jar",
+                            "${stem}-sources.jar",
+                            "${stem}-javadoc.jar"
+                    ]
+                    payloadNames.each { payloadName ->
+                        def payloadPath = versionDirectory.resolve(payloadName)
+                        if (!Files.isRegularFile(payloadPath, LinkOption.NOFOLLOW_LINKS)
+                                || Files.isSymbolicLink(payloadPath)) {
+                            throw new GradleException(
+                                    "coordinated Central staging payload is missing: ${payloadName}")
+                        }
+                        def signaturePath = versionDirectory.resolve("${payloadName}.asc")
+                        def signatureExists = Files.isRegularFile(
+                                signaturePath, LinkOption.NOFOLLOW_LINKS)
+                                && !Files.isSymbolicLink(signaturePath)
+                        if (centralSigningEnabled != signatureExists) {
+                            throw new GradleException(
+                                    "coordinated Central staging signature state is wrong: ${payloadName}")
+                        }
+                    }
+                }
+                assertCentralParentIdentity('before atomic publication')
+                assertPathAbsent(
+                        centralStagingPath,
+                        'HOLD: final Central staging path appeared before atomic publication')
+                def moveCommand = [
+                        '/usr/bin/python3',
+                        '-I',
+                        atomicMoveTool.absolutePath,
+                        '--parent',
+                        centralStagingPath.parent.toString(),
+                        '--work-name',
+                        centralWorkPath.fileName.toString(),
+                        '--final-name',
+                        centralStagingPath.fileName.toString(),
+                        '--expected-parent-device',
+                        centralParentUnixIdentity.device,
+                        '--expected-parent-inode',
+                        centralParentUnixIdentity.inode,
+                        '--expected-work-device',
+                        centralWorkIdentity.device,
+                        '--expected-work-inode',
+                        centralWorkIdentity.inode
+                ]
+                def moveProcess = null
+                def moveOutput = ''
+                def moveExit = null
+                try {
+                    moveProcess = new ProcessBuilder(moveCommand)
+                            .redirectErrorStream(true)
+                            .start()
+                    def completed = moveProcess.waitFor(30L, TimeUnit.SECONDS)
+                    if (!completed) {
+                        moveProcess.destroyForcibly()
+                        throw new GradleException('descriptor-anchored atomic move timed out')
+                    }
+                    def outputBytes = moveProcess.inputStream.readNBytes(4097)
+                    if (outputBytes.length > 4096) {
+                        throw new GradleException('descriptor-anchored atomic move output exceeded limit')
+                    }
+                    moveOutput = new String(outputBytes, StandardCharsets.UTF_8).trim()
+                    moveExit = moveProcess.exitValue()
+                    if (moveExit != 0
+                            || moveOutput != 'ROUTECONTRACT_ATOMIC_CENTRAL_STAGING_OK') {
+                        throw new GradleException(
+                                "descriptor-anchored atomic move failed: exit=${moveExit}; ${moveOutput}")
+                    }
+                } catch (Exception moveFailure) {
+                    def finalPresent = Files.exists(
+                            centralStagingPath, LinkOption.NOFOLLOW_LINKS)
+                            || Files.isSymbolicLink(centralStagingPath)
+                    def workPresent = Files.exists(
+                            centralWorkPath, LinkOption.NOFOLLOW_LINKS)
+                            || Files.isSymbolicLink(centralWorkPath)
+                    throw new GradleException(
+                            'HOLD: atomic Central staging publication failed; '
+                                    + "finalPresent=${finalPresent}, workPresent=${workPresent}; "
+                                    + 'do not retry, rename or clean automatically',
+                            moveFailure)
+                }
+                assertCentralParentIdentity('after atomic publication')
+                if (Files.exists(centralWorkPath, LinkOption.NOFOLLOW_LINKS)
+                        || Files.isSymbolicLink(centralWorkPath)) {
+                    throw new GradleException(
+                            'HOLD: work path remained after atomic Central staging publication')
+                }
+                if (!Files.isDirectory(centralStagingPath, LinkOption.NOFOLLOW_LINKS)
+                        || Files.isSymbolicLink(centralStagingPath)) {
+                    throw new GradleException(
+                            'HOLD: final Central staging path is not a real directory')
+                }
+                def finalAttributes = Files.readAttributes(
+                        centralStagingPath, BasicFileAttributes, LinkOption.NOFOLLOW_LINKS)
+                if (finalAttributes.fileKey() == null
+                        || finalAttributes.fileKey().toString() != centralWorkIdentity.fileKey) {
+                    throw new GradleException(
+                            'HOLD: final Central staging directory identity does not match verified work')
+                }
+            }
+        }
+
+        verifyCentralPublication.configure {
+            doLast {
+                assertGpgOptionsIdentity('during configuration verification')
+                centralProjects.each { targetProject ->
+                    def publishingExtension = targetProject.extensions.getByType(PublishingExtension)
+                    def centralRepository = publishingExtension.repositories.getByName(centralRepositoryName)
+                    if (centralRepository.url != rootProject.uri(centralWorkPath.toFile())) {
+                        throw new GradleException(
+                                "${targetProject.path} Central staging URL changed after configuration")
+                    }
+                    def publishTask = targetProject.tasks.getByName(centralPublicationTaskName)
+                    def publishDependencies = publishTask.taskDependencies.getDependencies(publishTask)
+                    if (!publishDependencies.contains(prepareCentralStaging.get())) {
+                        throw new GradleException(
+                                "${targetProject.path} publication is not bound to the atomic staging preflight")
+                    }
+                    def signTask = targetProject.tasks.findByName('signMavenJavaPublication')
+                    if (centralSigningEnabled && signTask == null) {
+                        throw new GradleException(
+                                "${targetProject.path} signed publication task is missing")
+                    }
+                    if (centralSigningEnabled && !publishDependencies.contains(signTask)) {
+                        throw new GradleException(
+                                "${targetProject.path} publication is not bound to its signature task")
+                    }
+                }
+            }
+        }
+
+        def requiredPublishTaskPaths = centralPublishTasks.collect { it.path } as Set
+        def aggregatePublishTaskPath = coordinatedCentralPublish.get().path
+        gradle.taskGraph.whenReady { taskGraph ->
+            def scheduledPublishTaskPaths = requiredPublishTaskPaths.findAll { taskPath ->
+                taskGraph.hasTask(taskPath)
+            } as Set
+            def aggregateScheduled = taskGraph.hasTask(aggregatePublishTaskPath)
+            if ((!scheduledPublishTaskPaths.isEmpty() || aggregateScheduled)
+                    && (!aggregateScheduled
+                    || scheduledPublishTaskPaths != requiredPublishTaskPaths)) {
+                throw new GradleException(
+                        'Central staging publication is atomic across every RouteContract artifact; '
+                                + 'run :publishRouteContractCentralStaging instead of a per-project task')
+            }
+        }
+    }
+}

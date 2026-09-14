@@ -1185,10 +1185,35 @@ def require_javadoc_text_patterns(
         raise InstallError(f"Javadoc JAR has invalid {description}")
 
 
-def validate_javadoc_classifier_entry_inventory(archive: ZipFile) -> None:
+def validate_javadoc_classifier_entry_inventory(
+    archive: ZipFile, *, api_packages: set[str] | None = None
+) -> None:
     """Reject classifier entries outside the pinned doclet and API-doc boundary."""
+    directories = JAVADOC_ALLOWED_DIRECTORY_ENTRIES
+    api_html_pattern = JAVADOC_API_HTML_PATTERN
+    if api_packages is not None:
+        if not api_packages or any(
+            not isinstance(package, str)
+            or re.fullmatch(
+                r"io/github/ym0506/routecontract(?:/[A-Za-z_$][A-Za-z0-9_$]*)*",
+                package,
+            ) is None
+            for package in api_packages
+        ):
+            raise InstallError("Javadoc API packages must be explicit first-party source packages")
+        directories = {
+            name for name in directories
+            if not name.startswith("io/github/ym0506/routecontract/")
+        }
+        for package in api_packages:
+            parts = PurePosixPath(package).parts
+            directories.update("/".join(parts[:index]) + "/" for index in range(1, len(parts) + 1))
+        api_html_pattern = re.compile(
+            r"(?:" + "|".join(re.escape(package) for package in sorted(api_packages))
+            + r")/[A-Za-z0-9_$.-]+\.html"
+        )
     allowed_exact = (
-        JAVADOC_ALLOWED_DIRECTORY_ENTRIES
+        directories
         | JAVADOC_ALLOWED_ROOT_ENTRIES
         | JAVADOC_ALLOWED_META_INF_ENTRIES
         | JAVADOC_LEGAL_ENTRIES
@@ -1198,7 +1223,7 @@ def validate_javadoc_classifier_entry_inventory(archive: ZipFile) -> None:
         info.filename
         for info in archive.infolist()
         if info.filename not in allowed_exact
-        and JAVADOC_API_HTML_PATTERN.fullmatch(info.filename) is None
+        and api_html_pattern.fullmatch(info.filename) is None
     )
     if unexpected:
         raise InstallError(
@@ -1207,9 +1232,11 @@ def validate_javadoc_classifier_entry_inventory(archive: ZipFile) -> None:
         )
 
 
-def validate_javadoc_classifier_contents(archive: ZipFile) -> None:
+def validate_javadoc_classifier_contents(
+    archive: ZipFile, *, api_packages: set[str] | None = None
+) -> None:
     """Fail closed on the version-pinned standard-doclet shipped-file boundary."""
-    validate_javadoc_classifier_entry_inventory(archive)
+    validate_javadoc_classifier_entry_inventory(archive, api_packages=api_packages)
     require_javadoc_text_markers(
         archive,
         "legal/LICENSE",

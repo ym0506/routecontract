@@ -217,7 +217,7 @@ jobs:
           retention-days: 14
 
   java21-runtime:
-    name: Java 21 / core and MySQL runtime
+    name: Java 21 / core, both adapters and MySQL
     if: github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -250,7 +250,7 @@ jobs:
           dependency-graph: disabled
           validate-wrappers: true
 
-      - name: Run core and real MySQL tests on Java 21
+      - name: Run core, both adapters and real MySQL tests on Java 21
         run: |
           set -euo pipefail
           mkdir -p build
@@ -259,7 +259,9 @@ jobs:
             "-Porg.gradle.java.installations.paths=${ROUTECONTRACT_COMPILER_HOME},${JAVA_HOME}" \
             -Porg.gradle.java.installations.auto-detect=false \
             -Porg.gradle.java.installations.auto-download=false \
-            :routecontract-shardingsphere-5.5:test :mysql-example:test \
+            :routecontract-core:test \
+            :routecontract-shardingsphere-5.5:test :routecontract-shardingsphere-5.5.2:test \
+            :mysql-example:test :mysql-5.5.2-example:test \
             > build/java21-runtime.log 2>&1
 
       - name: Verify the actual runtime and minimize JUnit evidence
