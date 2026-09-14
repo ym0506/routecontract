@@ -102,7 +102,23 @@ as the capability leaf, where the historical graph used
 `org.gradle.api.GradleException`. Only these exact leaf types are accepted for
 that cause. Both module rejection sections, exact opposite providers, published
 capabilities and the two-element exception chain remain mandatory. This does
-not authorize another exception type for an intrinsic strict-version failure.
+not by itself authorize another exception type for an intrinsic strict-version failure.
+
+The next native invocation passed the first case, then exposed Gradle 9.7.1's
+intrinsic formats in the opposite declaration order. Executor dependency-path
+conflicts use the exact `ComponentSelectionException` type with the existing
+module, path and reason text. SPI constraint conflicts use the exact
+`org.gradle.internal.component.resolution.failure.exception.ConflictingConstraintsException`
+type and a compact header followed by exactly two version/adapter/`runtimeElements`
+lines. Accept that compact form only for SPI, binding both versions and providers
+to its receipt-pinned strict constraints. The compact native format does not
+print path/reason text: retain those facts from the published metadata separately,
+and do not claim that Gradle printed them. Bind the complete compact message to
+an actual native rejection section for that same SPI module, including when
+Gradle elides a second edge with an identical cause. Foreign types, providers,
+variants, versions, extra lines or an unbound native cause must still fail.
+Both earlier invocations keep their failed outcomes; another complete current
+execution is required after this correction.
 
 Apply only `java-base` to register the standard JVM attribute compatibility rules,
 so dependencies targeting Java 8 remain eligible under Java 17. Do not apply the

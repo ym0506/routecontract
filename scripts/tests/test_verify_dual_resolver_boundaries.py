@@ -513,6 +513,66 @@ def intrinsic_fixture():
 
 
 class GradleIntrinsicCollisionTest(unittest.TestCase):
+    def gradle_971_fixture(self):
+        case, output, graph, metadata = intrinsic_fixture()
+        root = "root project 'dual-resolver-boundary-consumer'"
+        output = output.replace('root project :', root)
+        graph = json.loads(json.dumps(graph).replace('root project :', root))
+        compact = ('Component is the target of multiple version constraints with conflicting requirements:\n'
+                   "5.5.2 - directly in 'io.github.ym0506.routecontract:routecontract-shardingsphere-5.5.2:0.2.0' (runtimeElements)\n"
+                   "5.5.3 - directly in 'io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.2.0' (runtimeElements)\n")
+        for node in graph['unresolved']:
+            leaf = node['failureMessages'][1]
+            leaf['exceptionType'] = 'org.gradle.internal.component.resolution.failure.exception.ComponentSelectionException'
+            if ':shardingsphere-infra-spi:' in node['requested']:
+                output = output.replace(leaf['message'], compact)
+                leaf.update(exceptionType='org.gradle.internal.component.resolution.failure.exception.ConflictingConstraintsException', message=compact)
+        return case, output, graph, metadata
+
+    def test_gradle_971_intrinsic_paths_and_compact_constraints(self):
+        case, output, graph, metadata = self.gradle_971_fixture()
+        proof = self.verify(case, output, graph, metadata)
+        self.assertEqual('NATIVE_CAPABILITY_AND_INTRINSIC_STRICT_REJECTED', proof['result'])
+        self.assertEqual(['path', 'compact-constraints', 'compact-constraints'],
+                         [item['nativeCauseFormat'] for item in proof['intrinsicStrictCollisions']])
+
+    def test_compact_constraints_require_exact_published_pair_and_native_owner(self):
+        case, output, graph, metadata = self.gradle_971_fixture()
+        spi = next(n for n in graph['unresolved'] if ':shardingsphere-infra-spi:' in n['requested'])
+        original = spi['failureMessages'][1]['message']
+        changes = [original.replace('5.5.2 -', '5.5.20 -'),
+                   original.replace('(runtimeElements)', '(apiElements)', 1),
+                   original.replace('routecontract-shardingsphere-5.5.2:', 'foreign-adapter:', 1),
+                   original + original.splitlines()[1] + '\n',
+                   '\n'.join(original.splitlines()[:-1]) + '\n',
+                   original + 'unrelated failure\n']
+        for leaf in changes:
+            invalid = copy.deepcopy(graph)
+            for node in invalid['unresolved']:
+                if ':shardingsphere-infra-spi:' in node['requested']:
+                    node['failureMessages'][1]['message'] = leaf
+            with self.subTest(leaf=leaf), self.assertRaises(MODULE.BoundaryError):
+                self.verify(case, output.replace(original, leaf), invalid, metadata)
+        with self.assertRaises(MODULE.BoundaryError):
+            self.verify(case, output.replace(original, ''), graph, metadata)
+        # A correctly spelled compact cause under the executor section cannot
+        # corroborate the structured SPI edge.
+        wrong_owner = output.replace(original, '') + '\nCould not resolve ' + SS_GROUP + ':shardingsphere-infra-executor:5.5.2.\n' + original
+        with self.assertRaises(MODULE.BoundaryError):
+            self.verify(case, wrong_owner, graph, metadata)
+
+    def test_compact_exception_type_is_specific_to_spi_constraints(self):
+        case, output, graph, metadata = self.gradle_971_fixture()
+        for wanted in ('shardingsphere-infra-spi', 'shardingsphere-infra-executor'):
+            invalid = copy.deepcopy(graph)
+            node = next(n for n in invalid['unresolved'] if ':' + wanted + ':' in n['requested'])
+            node['failureMessages'][1]['exceptionType'] = (
+                'org.gradle.internal.component.resolution.failure.exception.ComponentSelectionException'
+                if wanted.endswith('spi') else
+                'org.gradle.internal.component.resolution.failure.exception.ConflictingConstraintsException')
+            with self.subTest(module=wanted), self.assertRaises(MODULE.BoundaryError):
+                self.verify(case, output, invalid, metadata)
+
     def verify(self, case, output, graph, metadata):
         return MODULE.verify_gradle_dual(case, 1, output, graph,
             [f'{GROUP}:routecontract-shardingsphere-5.5:0.2.0'], published_constraints=metadata)

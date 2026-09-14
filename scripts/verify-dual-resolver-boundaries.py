@@ -177,11 +177,24 @@ def verify_intrinsic_strict(node, case, selected, metadata, root_identity):
     messages = node.get('failureMessages', [])
     if (len(messages) != 2 or messages[0] != {
             'exceptionType': 'org.gradle.internal.resolve.ModuleVersionResolveException', 'message': f'Could not resolve {own}.'}
-            or messages[1].get('exceptionType') != 'org.gradle.api.GradleException'
+            or messages[1].get('exceptionType') not in (
+                'org.gradle.api.GradleException',
+                'org.gradle.internal.component.resolution.failure.exception.ComponentSelectionException',
+                'org.gradle.internal.component.resolution.failure.exception.ConflictingConstraintsException')
             or not isinstance(messages[1].get('message'), str)):
         raise BoundaryError('An intrinsic collision must have only its actual two native exception causes')
     leaf = messages[1]['message']
     lines = [line.strip() for line in leaf.splitlines() if line.strip()]
+    proof = {'requested': own, 'from': node['from'], 'module': module_coordinate,
+             'nativeCauseSha256': hashlib.sha256(leaf.encode()).hexdigest(),
+             'publishedStrictRequirements': sorted(pins, key=lambda p: p['adapter'])}
+    if messages[1]['exceptionType'].endswith('.ConflictingConstraintsException'):
+        header = 'Component is the target of multiple version constraints with conflicting requirements:'
+        expected_lines = {f"{pin['version']} - directly in '{pin['adapter']}' (runtimeElements)" for pin in pins}
+        if (fields[1] != 'shardingsphere-infra-spi' or len(lines) != 3
+                or lines[0] != header or set(lines[1:]) != expected_lines):
+            raise BoundaryError('Compact SPI conflicts must name exactly both receipt-pinned strict constraint providers')
+        return dict(proof, nativeCauseFormat='compact-constraints')
     header = f"Cannot find a version of '{module_coordinate}' that satisfies the version constraints:"
     if not lines or lines[0] != header or any(marker in leaf for marker in UNRELATED if marker != 'Cannot find a version'):
         raise BoundaryError('The intrinsic strict cause names a foreign module or another failure')
@@ -219,9 +232,7 @@ def verify_intrinsic_strict(node, case, selected, metadata, root_identity):
                 raise BoundaryError('A contributing strict-failure path is not an actual requested ShardingSphere anchor path')
     if len(found) != 2 or set(found) != {pin['adapter'] for pin in pins}:
         raise BoundaryError('Each intrinsic collision must show exactly both published contradictory adapter paths')
-    return {'requested': own, 'from': node['from'], 'module': module_coordinate,
-            'nativeCauseSha256': hashlib.sha256(leaf.encode()).hexdigest(),
-            'publishedStrictRequirements': sorted(pins, key=lambda p: p['adapter'])}
+    return dict(proof, nativeCauseFormat='path')
 
 
 def verify_gradle_dual(case, exit_code, output, graph, published_capabilities, *, published_constraints=None):
@@ -264,12 +275,26 @@ def verify_gradle_dual(case, exit_code, output, graph, published_capabilities, *
         raise BoundaryError('Native Gradle unresolved selectors differ from the actual retained rejected graph')
     strict_headers = re.findall(r"Cannot find a version of '([^']+)' that satisfies the version constraints:", output)
     if (output.count('Cannot find a version') != len(strict_headers)
-            or set(strict_headers) != {item['module'] for item in intrinsic}):
+            or set(strict_headers) != {item['module'] for item in intrinsic if item['nativeCauseFormat'] == 'path'}):
         raise BoundaryError('Native output contains a missing or unbound strict-constraint failure section')
     normalized = normalize_native_cause(output)
-    for node in intrinsic_nodes:
-        if normalize_native_cause(node['failureMessages'][1]['message']) not in normalized:
+    native_edges = list(UNRESOLVED.finditer(normalized))
+    compact_sections = set()
+    for node, proof in zip(intrinsic_nodes, intrinsic):
+        cause = normalize_native_cause(node['failureMessages'][1]['message'])
+        if cause not in normalized:
             raise BoundaryError('Actual intrinsic exception text is not retained in native Gradle output')
+        if proof['nativeCauseFormat'] == 'compact-constraints':
+            matches = {i for i, edge in enumerate(native_edges)
+                       if edge.group(1).rsplit(':', 1)[0] == proof['module']
+                       and cause in normalized[edge.end():native_edges[i + 1].start()
+                                               if i + 1 < len(native_edges) else len(normalized)]}
+            if not matches:
+                raise BoundaryError('Compact constraint cause must belong to the same actual native SPI rejection section')
+            compact_sections.update(matches)
+    compact_header = 'Component is the target of multiple version constraints with conflicting requirements:'
+    if normalized.count(compact_header) != len(compact_sections):
+        raise BoundaryError('Native output contains an extra or unbound compact constraint cause')
     observed = set()
     for node in adapter_nodes:
         own = node['requested']
