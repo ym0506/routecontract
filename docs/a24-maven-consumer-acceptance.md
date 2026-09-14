@@ -1,5 +1,9 @@
 # A-24 Maven staged-byte matrix
 
+Latest candidate execution: [5800ed2 on 2026-09-14](evidence/a24-maven-5800ed2-2026-09-14.md).
+All four Maven cells passed (24 MySQL executions and 16 negative controls).
+This result does not qualify the separate Gradle component or a public release.
+
 This harness extends acceptance evidence for the unreleased 0.2 candidate. It does not
 publish artifacts or broaden released 0.1 compatibility. Each of Maven Java 17 and the
 bounded Maven Java 21 fixture runs exact ShardingSphere 5.5.2 and 5.5.3 separately.

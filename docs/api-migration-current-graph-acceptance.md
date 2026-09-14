@@ -7,7 +7,8 @@ integrated core publishes 3.1.6. Its shared fixture also selects the older
 FasterXML 2.18.9 BOM. That stale new-version lane cannot qualify the current
 candidate's dependency graph.
 
-Status: acceptance before correction and full execution.
+Status: corrected and fully executed. The [current result](evidence/public-api-migration-5800ed2-2026-09-14.md)
+records six passing MySQL executions and the original bounded migration probes.
 
 The unchanged fixture actually resolved successfully with Gradle 9.7.1
 (native exit 0), but its retained graph selected streaming 3.1.5 and
