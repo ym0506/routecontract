@@ -890,7 +890,7 @@ class SubmissionClaimTextTest(unittest.TestCase):
         self.assertLess(readme_ko.index("## 기존 도구와 함께 쓰는 방법"), readme_ko.index("## 코드·공개 증거 경계"))
         self.assertLess(readme_ko.index("## v0.1 지원 범위"), readme_ko.index("## 의존성·릴리스 호환성 상세"))
         self.assertIn(
-            "[검증 증거 매트릭스](../docs/evidence-matrix.md)", readme_ko
+            "[과거 대회 검증 목록](../docs/evidence-matrix.md)", readme_ko
         )
         self.assertIn(
             "datasource-proxy로도 비슷한 범위의 검사를 직접 만들 수 있습니다", readme_ko
@@ -924,7 +924,7 @@ class SubmissionClaimTextTest(unittest.TestCase):
             for block in re.findall(r"```groovy\n(.*?)```", readme, re.DOTALL):
                 self.assertNotIn("routecontract-shardingsphere-5.5:0.1.2", block)
         self.assertIn(
-            "[Verification evidence matrix](../docs/evidence-matrix.md)",
+            "[Historical contest evidence matrix](../docs/evidence-matrix.md)",
             readme_en,
         )
         self.assertIn("RouteContract v0.1 implemented surface", competitive)

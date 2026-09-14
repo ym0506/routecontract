@@ -661,7 +661,7 @@ A new adapter or reporter is considered only after a documented user need, a ver
 - [Architecture and trust boundaries](../docs/architecture.md)
 - [Competitive analysis](../docs/competitive-analysis.md)
 - [Empirical datasource-proxy comparison](../docs/empirical-comparison.md)
-- [Verification evidence matrix](../docs/evidence-matrix.md)
+- [Historical contest evidence matrix](../docs/evidence-matrix.md)
 - [Isolated same-checkout Maven-publication consumer](../examples/standalone-consumer/README.md)
 - [Isolated Maven 3.9.14 onboarding pilot](../examples/maven-pilot/README.md)
 - [SBOM generation and review](../docs/sbom.md)

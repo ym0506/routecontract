@@ -667,7 +667,7 @@ v0.1에서는 기밀 값을 SQL 원문에 직접 넣지 않고, 같은 조건에
 - [아키텍처와 신뢰 경계](../docs/architecture.md)
 - [경쟁 도구 분석](../docs/competitive-analysis.md)
 - [datasource-proxy 실증 비교](../docs/empirical-comparison.md)
-- [검증 증거 매트릭스](../docs/evidence-matrix.md)
+- [과거 대회 검증 목록](../docs/evidence-matrix.md)
 - [같은 소스의 Maven 배포물을 사용하는 격리 예제](../examples/standalone-consumer/README.md)
 - [격리된 Maven 3.9.14 도입 검증 예제](../examples/maven-pilot/README.md)
 - [SBOM 생성과 검토](../docs/sbom.md)

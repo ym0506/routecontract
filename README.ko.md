@@ -212,7 +212,7 @@ ShardingSphere-Proxy, 배치·리액티브 실행, 애플리케이션이 만든 
 | API와 정책 확인하기 | [상세 가이드](docs/reference-guide.ko.md) · [CI 리포트](docs/ci-review-report.md) |
 | 관측 원리와 한계 이해하기 | [설계 결정과 이유](docs/design-decisions.ko.md) · [아키텍처](docs/architecture.md) |
 | 실제 코드에서 얻은 결과 보기 | [애플리케이션 실험 세 가지](docs/application-evaluations.ko.md) · 유지관리자가 실행한 실험 |
-| 공개 배포 검증 확인하기 | [0.1.4 Central 검증](docs/evidence/release-0.1.4-central.md) · [전체 검증 목록](docs/evidence-matrix.md) |
+| 공개 배포 검증 확인하기 | [0.1.4 Central 검증](docs/evidence/release-0.1.4-central.md) · [검증 자료와 범위](docs/start-here.md#inspect-results-and-their-limits) |
 | 다른 도구와 비교하거나 기여하기 | [도구 비교](docs/competitive-analysis.md) · [기여 가이드](CONTRIBUTING.md) · [전체 문서](docs/start-here.md) |
 
 ### 데이터 처리
