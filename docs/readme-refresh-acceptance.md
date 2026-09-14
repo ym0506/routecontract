@@ -22,3 +22,11 @@ References: official [Testcontainers Java](https://github.com/testcontainers/tes
 - Explain count changes and unchanged-count destination changes. State that an observed difference requires interpretation; it does not establish production latency, a transaction commit or an upstream application's defect.
 - Keep support, data handling and independent-use status visible. No hiring, popularity, enterprise adoption or production-readiness claim is inferred from presentation quality.
 - Validation: existing documentation contract tests, both Python test roots where affected, local targets/anchors, unchanged runnable code blocks and rendered light/dark/narrow views. No new runtime claim or database rerun is required for a prose-only change.
+
+## Follow-through across public documentation
+
+- Review every tracked Markdown file for its audience, current versus historical status and local navigation. Record the reviewed scope outside the repository; do not imply that a link check proves every technical claim.
+- Historical installation and candidate records keep their original commands, versions, observations and approval state. Their entry points identify the current released guide without relabelling past evidence.
+- Korean prose distinguishes an update count from successful completion of an operation, and maintainer-run public-artifact tests from independent user validation. Translate ordinary prose while preserving API identifiers, direct quotes and provenance facts.
+- A contributor can propose a focused documentation fix without first opening a separate issue. Required checks match the changed behavior: prose changes need link/render/source checks; SPI behavior and packaging retain their real-MySQL and installation checks.
+- Preserve compatibility anchors, examples and evidence identities. Corrected descriptions must agree with the implementation and the release in which a change became available.

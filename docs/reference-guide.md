@@ -2,7 +2,7 @@
 
 Detailed reproduction and compatibility notes. For the current installation and short example, start with the [English README](../README.md).
 
-[한국어](../README.ko.md) | [English](../README.md) | [처음 오셨나요? / Start here](../docs/start-here.md) | [Roadmap](../docs/product-roadmap.md)
+[한국어](reference-guide.ko.md) | [English README](../README.md) | [처음 오셨나요? / Start here](../docs/start-here.md) | [Roadmap](../docs/product-roadmap.md)
 
 [![CI](https://github.com/ym0506/routecontract/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ym0506/routecontract/actions/workflows/ci.yml?query=branch%3Amain)
 
@@ -42,7 +42,7 @@ See [how to get help and record use](user-feedback.md).
 ## Install 0.1.4
 
 See the [public file verification and Gradle/Maven installation results](../docs/evidence/release-0.1.4-central.md)
-and the current [Java 17/21 runtime checks](java21-runtime-acceptance.md).
+and the [initial Java 17/21 support qualification](java21-runtime-acceptance.md).
 
 Add the test dependency to an existing **Java 17 or 21 / ShardingSphere-JDBC 5.5.3** project.
 Keep its ShardingSphere configuration, data-source setup and business-result assertions.
@@ -600,7 +600,7 @@ One capture retains at most 10,000 physical execution attempts. At the next atte
 For public **0.1.4**, use the [Central coordinate above](#install-014) and inspect your existing
 ShardingSphere runtime graph for exact 5.5.3. RouteContract does not embed ShardingSphere or
 align all of its modules for the consumer. The [public release evidence](evidence/release-0.1.4-central.md)
-and [Java 17/21 consumer checks](java21-runtime-acceptance.md) describe the tested lanes.
+and [initial Java 17/21 support qualification](java21-runtime-acceptance.md) describe their respective tested lanes.
 
 <details>
 <summary>Historical 0.1.2 dependency graph, local installation and Javadoc evidence</summary>

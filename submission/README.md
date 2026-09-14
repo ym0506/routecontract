@@ -4,6 +4,10 @@ This directory contains the Korean report content, its deterministic
 official-form builder, and the fail-closed final package gate for the 2026 OSS
 Developer Contest.
 
+These instructions serve the contest submission and its evidence rules. To use the current
+library, start with the [first-project guide](../docs/first-project.md); the submission package
+and report-builder environment are not required for installation or contribution.
+
 The official template is intentionally retained outside this repository.
 Create the version-pinned report-builder environment first (Python 3.10+):
 

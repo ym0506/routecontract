@@ -72,7 +72,7 @@ Maven은 `JAVA_HOME`으로 선택한 Java 17 또는 21로 예제를 컴파일하
 Gradle 기본값은 Java 17입니다. 설치된 Java 21을 쓰려면 이 문서의 **모든** Gradle 명령에
 `-ProutecontractJavaVersion=21`을 추가하거나, 셸 세션에 `ROUTECONTRACT_EXAMPLE_JAVA_VERSION=21`을
 설정하세요. 테스트는 실제 JVM, 예제 클래스 버전, Central 배포 JAR이 맞는지도 확인합니다.
-[런타임 검증과 한계](java21-runtime-acceptance.md)를 참고하세요.
+[Java 17·21 초기 지원 검증과 한계](java21-runtime-acceptance.md)를 참고하세요.
 
 기본 실행은 예제에 포함된 기준 파일과 비교합니다. 주문 반환값과 실행 계약 검사가
 통과하고, `build/routecontract/review.md`와 `review.json`에 `MATCH`가 나와야 합니다.
@@ -117,8 +117,8 @@ mvn -B test -Droutecontract.query=range
 ## 자신의 테스트와 CI로 옮기기
 
 실행 횟수부터 검사하려면 Java 테스트 코드에 기대값을 적으면 됩니다. **JSON 기준 파일은 선택 사항입니다.**
-[Central 테스트 의존성](../README.md#install-014)을 추가하고, 기존 ShardingSphere 설정을 유지한 채
-기존 저장소나 서비스의 동기식 호출 하나를 감쌉니다.
+[Central 테스트 의존성](../README.ko.md#install-014)을 추가하고, 기존 ShardingSphere 설정을 유지한 채
+기존 조회 객체나 서비스의 동기식 호출 하나를 감쌉니다.
 
 ```java
 var captured = RouteContract.captureResult("orders.find-paid", () -> orders.findPaidOrders("equality"));
@@ -220,7 +220,7 @@ mvn -B test -Droutecontract.baseline=baselines/first-review.approved.json
 1. 기존 호출과 반환값 검증을 유지합니다. 작업 ID, 데이터 소스의 민감하지 않은 별칭, 실행 예산을
    정합니다. 이번 실행 결과와 기준 파일의 경로를 분리하고, 첫 실행 결과는 담당자가 직접 검토합니다.
 2. 일반 테스트에서는 `ManifestReviewReport.compare`로 비교하고 리포트를 저장한 뒤
-   `ManifestAssertions.assertMatched`를 호출합니다. CI는 검토한 기준을 사용하는 check
+   `ManifestAssertions.assertMatched`를 호출합니다. CI는 검토한 기준을 사용하는 `check`
    모드로 실행합니다.
 
 [영문 가이드의 CI 예제](first-project.md#keep-the-result-beside-ci)를 사용해 결과를 작업 요약에

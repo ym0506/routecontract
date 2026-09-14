@@ -71,6 +71,14 @@ That command is same-checkout packaging evidence. It proves that the generated
 Maven publication can be consumed without a Gradle project dependency; it is
 not an external-user installation or adoption claim.
 
+## Historical v0.1.2 release assets
+
+The commands in this section run from the standalone example directory. From the repository root:
+
+```bash
+cd examples/standalone-consumer
+```
+
 After an annotated `v0.1.2` tag, a public immutable non-prerelease Release, a successful
 same-revision release-evidence run, and the exact asset set all exist, a fresh checkout can consume
 those assets without Maven Central hosting. A version string alone is not publication evidence.
@@ -97,8 +105,8 @@ checksum does not authenticate the publisher, so the input directory must
 come from the public GitHub Release for the exact tag. The activated RC2 remains historical
 prerelease evidence; it is not final `v0.1.0` validation or adoption.
 
-To run this consumer directly, point it at a Maven repository containing the
-same RouteContract group and version as the root build:
+To run this consumer directly with the v0.1.2 assets above, point it at the Maven
+repository where you installed those assets and select their exact group and version:
 
 ```bash
 ROUTECONTRACT_REPOSITORY=/absolute/path/to/maven-repository \

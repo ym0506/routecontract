@@ -1,5 +1,10 @@
 # Jackson 2 patch compatibility
 
+This page preserves the qualification performed before RouteContract 0.1.4. The change is now
+included in [0.1.4](evidence/release-0.1.4-central.md); use the [current installation guide](first-project.md)
+for a new integration. The criteria, dependency versions and results below describe that original
+qualification, including its unchanged public 0.1.3 consumer.
+
 This change qualifies Jackson **2.18.10** for the ShardingSphere-JDBC **5.5.3**
 example and test graphs. The previous selection was 2.18.9. This is the patch
 line identified by the [upstream 2.18.10 release notes](https://github.com/FasterXML/jackson/wiki/Jackson-Release-2.18.10),
@@ -68,15 +73,15 @@ two missing parent POM entries. Those exact files were corroborated before
 adding their hashes; both commands then passed without verification-writing
 flags. This is why metadata generation alone is not the acceptance check.
 
-Generated publication metadata still has only TTL 2.14.2 and Jackson streaming
-core 3.1.5 as runtime dependencies; it does not add Jackson 2. Historical release
-records and published JAR/POM bytes are unchanged.
+At the time of this qualification, generated publication metadata had only TTL 2.14.2
+and Jackson streaming core 3.1.5 as runtime dependencies; the Jackson 2 change added neither
+a new runtime dependency nor a change to previously published JAR/POM bytes.
 
-The CI first-project matrix also exercises public 0.1.3 with Maven and Gradle
-on Java 17/21, checking business-success, expected execution-change rejection
-and recovery. The Maven and Kotlin pilot jobs exercise the isolated graph and
-origin/failure checks. Inspect the pull request's completed results before
-merging; the local counts above do not substitute for those jobs.
+The CI first-project matrix for this qualification also exercised public 0.1.3 with Maven
+and Gradle on Java 17/21, checking business-success, expected execution-change rejection
+and recovery. The Maven and Kotlin pilot jobs exercised the isolated graph and
+origin/failure checks. Those CI results are separate from the local counts above;
+the maintained first-project workflow now checks public 0.1.4.
 
 These checks do not establish external adoption, performance improvements,
 arbitrary deserialization safety or additional ShardingSphere versions. The

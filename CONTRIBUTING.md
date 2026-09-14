@@ -1,5 +1,23 @@
 # Contributing
 
+Start with a small change that makes a test or its result easier to trust. Documentation
+corrections, confusing diagnostics and missing regression cases are useful contributions.
+You do not need to maintain a public application or reproduce the entire release process.
+
+## Choose a starting point
+
+| What you found | How to contribute | What to check |
+| --- | --- | --- |
+| An unclear explanation or broken link | Open a focused documentation PR; a separate issue is optional. | Check the linked target, examples and rendered page. Preserve recorded versions and results. |
+| A failed installation or confusing result | Use the [question and feedback form](https://github.com/ym0506/routecontract/issues/new?template=stable-feedback.yml). | Include the version, build tool, step reached and a short error code. A successful setup is not required. |
+| A reproducible behavior defect | Open a bug report or a focused fix with a small synthetic reproducer. | Keep the expected business result and the execution condition separate; show the failing and corrected cases. |
+| A new capability or supported environment | Discuss the problem and proposed scope in an issue first. | Explain the observation point, failure boundary and required compatibility checks. |
+
+For code changes, [design decisions](docs/design-decisions.md) links each invariant to its
+implementation and tests. [The roadmap](docs/product-roadmap.md) separates released behavior,
+candidate work and ideas. Keep private SQL, parameter values, connection details and full logs
+out of public reports.
+
 ## Development prerequisites
 
 - JDK 17 to compile the library; JDK 21 as well for the additional runtime check
@@ -19,10 +37,10 @@ is clean so wrapper changes do not fail CI's source-state checks before any buil
 
 ## Change workflow
 
-1. Open an issue that states the user-visible route regression or missing capability.
-2. Add or update a specification and a failing test.
+1. State the user-visible problem in the issue or PR. Discuss new behavior or wider support in an issue before implementation; a focused documentation correction does not need a separate issue.
+2. For behavior changes, add or update the specification and a failing test. For prose-only corrections, identify the source or recorded evidence that supports the text.
 3. Keep the implementation focused on one contract or invariant.
-4. Run unit and MySQL integration tests.
+4. Run the checks affected by the change. Behavior changes require unit tests, and changes through the ShardingSphere execution hook require real MySQL integration tests.
 5. Document exact versions, evidence and limitations in the pull request.
 
 ## Claims and privacy
@@ -30,6 +48,17 @@ is clean so wrapper changes do not fail CI's source-state checks before any buil
 Use the terminology in [docs/specification.md](docs/specification.md). Never include real credentials, production or sensitive parameter values, customer identifiers, or production topology in fixtures, logs, or issues. Synthetic, non-sensitive test values are allowed; RouteContract snapshots and manifests must not retain their raw values.
 
 ## Verification
+
+For library code, start with the module's unit tests:
+
+```bash
+./gradlew --no-daemon :routecontract-shardingsphere-5.5:test
+```
+
+This checks the library module without starting the separate MySQL example. It does not
+replace integration testing for execution-hook changes. For prose-only changes, check links,
+rendering and agreement with the referenced API or evidence; run affected documentation checks.
+If you change runnable examples, verify those examples in their documented environment.
 
 Run the complete unit, real-MySQL integration and SBOM checks on macOS arm64/x86_64 or
 Linux x86_64. These are the hosts supported by the checksum-pinned
@@ -73,12 +102,14 @@ Both commands require exact Apache Maven 3.9.14 and Docker. The Java 21 cell is 
 compatibility evidence only; it does not broaden the Java 17 external assisted-runner/starter
 contract or prove adoption.
 
-A change is not complete until it passes the appropriate real-MySQL test, not only an in-memory
-substitute.
+A change through the ShardingSphere execution hook is not complete until it passes the appropriate
+real-MySQL test, not only an in-memory substitute. Use the packaging checks above when changing
+dependencies or publication metadata.
 
 ## Future Maven Central changes
 
-The immutable `v0.1.2` GitHub Release is not a Maven Central publication.
+The current public release is **0.1.4**; see its [Central installation evidence](docs/evidence/release-0.1.4-central.md).
+The older immutable `v0.1.2` GitHub Release is not a Maven Central publication.
 Changes intended for a separately approved later stable version must follow the
 approval, signing, `USER_MANAGED` upload, human validation, explicit Publish
 and public-readback checklist in [RELEASING.md](RELEASING.md). Never put the

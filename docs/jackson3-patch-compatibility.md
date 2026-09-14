@@ -1,12 +1,14 @@
 # Jackson streaming-core patch qualification
 
-This page records local qualification. See the [pull request's CI results](https://github.com/ym0506/routecontract/pull/92/checks)
-for remote validation. This document does not announce a release or establish
-external adoption.
+This page preserves the qualification performed before RouteContract 0.1.4. The dependency
+change is now included in [0.1.4](evidence/release-0.1.4-central.md). See the
+[pull request's CI results](https://github.com/ym0506/routecontract/pull/92/checks) for the original
+remote validation. The criteria, input versions and results below retain that qualification's
+scope; they do not establish external adoption.
 
 ## Reason for the change
 
-Jackson streaming core 3.1.6 is a patch of the current 3.1.5 dependency.
+Jackson streaming core 3.1.6 replaced the previous 3.1.5 dependency.
 The [upstream release notes](https://github.com/FasterXML/jackson/wiki/Jackson-Release-3.1.6)
 include an asynchronous single-feed document-length guard, incremental
 Reader-based field-name limits, and a buffered filtering-context correction.
@@ -38,11 +40,11 @@ runtime dependency.
 
 ## Publication boundary
 
-The root source version remains 0.1.3 during this qualification. Any locally
-generated POM/JAR is confined to a temporary repository for same-checkout
-packaging checks. It is not the immutable Maven Central 0.1.3 publication,
-whose POM declares streaming core 3.1.5. No artifact is uploaded or replaced.
-Publishing this dependency change requires a new RouteContract release.
+The root source version remained 0.1.3 during this qualification. Locally
+generated POM/JAR files were confined to a temporary repository for same-checkout
+packaging checks. They were distinct from the immutable Maven Central 0.1.3 publication,
+whose POM declares streaming core 3.1.5. No artifact was uploaded or replaced during
+that qualification. The later 0.1.4 release published the dependency change separately.
 
 The standalone generated-publication fixture follows the current source's
 locked third-party graph. Running a public 0.1.3 JAR with that fixture would
@@ -119,7 +121,7 @@ Maven Central and matched against the generated SHA-256 entries. Existing
 verification entries, trust configuration and the 1.3 metadata schema were
 preserved. Only core and its BOM change in the selected dependency locks.
 
-Inspect the pull request's completed CI before merging. In particular, the
-independent public 0.1.3 first-project matrix is separate from the local
-candidate qualification above. These results do not establish additional
+The pull request's public 0.1.3 first-project matrix was separate from the local
+candidate qualification above. The maintained first-project workflow now checks
+public 0.1.4. These results do not establish additional
 ShardingSphere versions, arbitrary deserialization safety or external use.

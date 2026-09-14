@@ -2,15 +2,18 @@
 
 ## Developer problem
 
-A developer may catch a database exception and then inspect RouteContract's diagnostic
-snapshot. If a worker reports a failure while that snapshot is being assembled, the collector
+A developer may catch a database exception inside the captured action, let that action return,
+and then inspect RouteContract's diagnostic snapshot. If the exception escapes the action,
+`capture` and `captureResult` rethrow it and return no snapshot.
+If a worker reports a failure while a diagnostic snapshot is being assembled, the collector
 could instead throw `IllegalArgumentException` and lose the diagnostic result. This is an
 internal snapshot construction failure, not an incorrectly passing execution contract.
 
 The defect was reproduced against `MutableAttempt` from main
 `6f6da9742cc7c479d949dffdd58a0996183e77ca` on 2026-09-12. The published `0.1.3`
-implementation also has the two-field layout. The correction described here is **unreleased**;
-it does not change the immutable published artifact.
+implementation also has the two-field layout. The correction shipped in **0.1.4**;
+see the [release history](../CHANGELOG.md) and [public installation verification](evidence/release-0.1.4-central.md).
+The original 0.1.3 artifact remains unchanged. The experiments below retain their recorded revisions and environments.
 
 ## Cause and correction
 

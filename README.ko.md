@@ -51,9 +51,9 @@ RouteAssertions.assertThat(snapshot)
 ```
 
 `Order`는 반환값 타입, `orderRepository`는 자신의 테스트에서 사용하는 조회 객체입니다.
-지원하는 JDBC 실행 범위에서 작업 하나를 고르고, 예상 결과·데이터 소스 이름·실행 예산을
-테스트 데이터와 샤딩 설정에 맞춰 정하세요. 훅이 실행의 반환을 보고해도 트랜잭션 커밋까지
-확인한 것은 아닙니다.
+지원하는 JDBC 실행 범위에서 작업 하나를 고르고, 예상 결과·데이터 소스 이름·실행 예산(허용 상한)을
+테스트 데이터와 샤딩 설정에 맞춰 정하세요. ShardingSphere 훅이 물리 실행의 반환을 보고해도
+트랜잭션 커밋까지 확인한 것은 아닙니다.
 
 이 코드는 관측한 값을 Java 테스트에서 직접 검사합니다. JSON 기준 파일은 선택 사항입니다.
 [실행 가능한 예제](#quick-start)에서는 리포트를 쓰고, 이번 실행을 검토한 기준과 비교하는
@@ -89,7 +89,7 @@ RouteAssertions.assertThat(snapshot)
 [예제 실행](#quick-start) · [설치 없이 리포트 보기](docs/evidence/ci-review-report-example.md) ·
 [예제 쿼리 소스](examples/first-project/src/test/java/io/github/ym0506/routecontract/examples/firstproject/OrderRepository.java)
 
-**공개된 실제 버그의 재현:** [INSERT SELECT가 “1행 처리 성공”을 반환하면서 shadow DB에
+**공개된 실제 버그의 재현:** [INSERT SELECT가 처리된 행 수로 1을 반환하지만 shadow DB에
 쓰는 사례](experiments/shadow-insert-select/README.md)를 실제 MySQL·공개 5.5.3에서 확인했습니다.
 결과와 실행 횟수가 같아도 대상 DB 이름 검사가 필요한 이유를 보여 줍니다. 원래 보고자의
 기여를 명시했으며 정상 대조군과 계약 검사가 실패하는 명령을 함께 제공합니다.
@@ -190,7 +190,7 @@ mvn -B test -Droutecontract.query=range
 | Java | 17과 21; [런타임 검증](docs/evidence/release-0.1.4-central.md#public-consumer-verification) |
 | ShardingSphere | JDBC, **정확히 5.5.3** |
 | 실행 | 정상 반환하고 호출 스레드에 인터럽트가 없는 동기식·비배치 `PreparedStatement` 작업 |
-| DB 검증 환경 | MySQL 8.4.11 · [공개 Gradle·Maven 소비자 검증](docs/evidence/release-0.1.4-central.md) |
+| DB 검증 환경 | MySQL 8.4.11 · [공개 배포본을 사용한 Gradle·Maven 테스트](docs/evidence/release-0.1.4-central.md) |
 | 검사 | 수집 완전성, 훅의 처리 결과, 실행 시도·데이터 소스 예산, 실행 명세의 구조 차이 |
 | CI 출력 | Java 검증 API, 같은 입력에 같은 내용을 내는 Markdown·JSON 리포트, `ManifestReviewCli` |
 
@@ -201,8 +201,8 @@ ShardingSphere-Proxy, 배치·리액티브 실행, 애플리케이션이 만든 
 
 **프로젝트 상태:** v0.1.4는 Maven Central에 공개되어 있습니다.
 [코어와 어댑터를 분리하는 0.2](https://github.com/ym0506/routecontract/pull/62)는 개발 중이며 5.5.2 지원은
-미출시입니다. 공개 소비자 검증은 유지관리자가 실행한 결과이고, 독립적인 외부 통합·반복 사용은
-아직 확인되지 않았습니다.
+미출시입니다. 공개 배포본의 설치·실행 검증은 유지관리자가 진행했습니다. 독립적인 외부
+프로젝트 통합이나 반복 사용은 아직 확인되지 않았습니다.
 
 ## 문서
 

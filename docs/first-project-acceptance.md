@@ -2,6 +2,12 @@
 
 Status: implemented; local lifecycle verified below. This specification preceded the example.
 
+This page preserves the original 0.1.3 / Java 17 acceptance criteria and dated results.
+The maintained example now uses [0.1.4 on Java 17 or 21](first-project.md), following the
+separate [Java 21 support qualification](java21-runtime-acceptance.md). Commands below retain
+their original form; running them from current `main` uses that checkout's configured
+dependency and runtime, not the historical artifacts recorded here.
+
 ## User outcome
 
 A developer can run one standalone project with the released Central dependency, preserve an exact

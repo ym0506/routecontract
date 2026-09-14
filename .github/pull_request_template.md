@@ -6,8 +6,12 @@
 
 ## Evidence
 
+Check the items that apply and explain any that do not. For prose-only changes, link the
+source or evidence you checked and describe link/render verification. Behavior changes need
+unit evidence; changes through the execution hook also need real-MySQL evidence.
+
 - [ ] Specification or acceptance test changed before implementation where applicable.
-- [ ] Unit tests pass.
+- [ ] Affected unit tests pass, or the change is prose-only and the applicable documentation checks are recorded.
 - [ ] Real MySQL/ShardingSphere-JDBC 5.5.3 test passes where behavior crosses the SPI boundary.
 - [ ] Clean same-checkout generated-publication consumer still passes when packaging changes.
 - [ ] Exact command, versions, repetitions, and limitations are recorded.
@@ -24,7 +28,7 @@
 - AI-assisted scope and tools, or `none`:
 - Owner verification performed:
 - [ ] I recorded the exact AI-assisted scope, if any (for example research, design, code, tests, documentation, or commands), without presenting AI review as independent human review.
-- [ ] I personally traced the changed behavior through every relevant callback, correlation, snapshot, manifest, and verification path and can explain the submitted change without relying on generated prose.
+- [ ] I can explain the change. For behavior changes, I traced the affected callback, correlation, snapshot, manifest and verification paths; for documentation, I checked the stated behavior against its source or recorded evidence.
 - [ ] I personally ran or inspected the evidence listed above and linked its exact command, revision, environment, result, and limitations; generated output by itself is not treated as proof.
 - [ ] Owner-authored decisions and retrospectives describe my actual reasoning and do not contain AI-invented motives, actions, test results, or community feedback.
 

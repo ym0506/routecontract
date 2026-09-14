@@ -43,7 +43,7 @@ Java 검증 API와 선택적인 Markdown·JSON 비교 리포트를 안내합니�
 ## 설치
 
 [공개 파일 검증과 Gradle·Maven 설치 결과](../docs/evidence/release-0.1.4-central.md)와
-현재 [Java 17/21 런타임 검증](java21-runtime-acceptance.md)을 확인할 수 있습니다.
+[Java 17·21 초기 지원 검증](java21-runtime-acceptance.md)을 확인할 수 있습니다.
 
 기존 **Java 17 또는 21 · ShardingSphere-JDBC 5.5.3** 테스트에 의존성을 추가하세요.
 기존 ShardingSphere·데이터 소스 설정과 업무 결과 검사는 유지합니다.
@@ -559,9 +559,10 @@ Javadoc JAR와 POM만 지정한 Maven 구조에 복사합니다.
 
 ## v0.1 지원 범위
 
-현재 공개 **0.1.4**의 범위입니다. [이번 버전의 공개 소비자 검증](evidence/release-0.1.4-central.md#public-consumer-verification)과
+현재 공개 **0.1.4**의 범위입니다. [이번 공개 배포본을 사용한 Gradle·Maven 테스트](evidence/release-0.1.4-central.md#public-consumer-verification)와
 [Java 17/21 지원을 처음 추가한 검증 기록](java21-runtime-acceptance.md)을 참고하세요.
-예전 0.1.2 설치기와 외부 적용용 실행기에는 각각 문서화된 별도 제약이 적용됩니다.
+설치·실행 검증은 유지관리자가 진행한 결과입니다. 예전 0.1.2 설치기와 외부 적용용 실행기에는
+각각 문서화된 별도 제약이 적용됩니다.
 
 이 문제는 특정 ORM이나 저장소 API에 한정되지 않습니다. Apache ShardingSphere-JDBC는
 직접 JDBC로 연결하거나 MyBatis·JPA·Hibernate와 함께 사용할 수 있습니다. RouteContract의
@@ -604,7 +605,7 @@ Javadoc JAR와 POM만 지정한 Maven 구조에 복사합니다.
 현재 공개 **0.1.4**는 [위의 Central 좌표](#install-014)로 설치하고 기존 ShardingSphere 실행 모듈
 전체가 정확히 5.5.3인지 확인합니다. RouteContract가 ShardingSphere를 내장하거나 모든 모듈 버전을
 맞춰주지는 않습니다. [공개 배포 근거](evidence/release-0.1.4-central.md)와
-[Java 17/21 소비자 검증](java21-runtime-acceptance.md)에서 확인된 실행 환경을 볼 수 있습니다.
+[Java 17·21 초기 지원 검증](java21-runtime-acceptance.md)에서 당시 확인한 실행 환경을 볼 수 있습니다.
 
 <details>
 <summary>과거 0.1.2 의존성 그래프·로컬 설치·Javadoc 근거</summary>

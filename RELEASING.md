@@ -2,8 +2,13 @@
 
 This checklist produces reviewable release evidence; it does not publish to a
 package repository or create a GitHub Release automatically. Publication must
-remain a deliberate maintainer action until repository ownership, publication
-credentials and the v0.1 no-signature policy below have been reviewed.
+remain a deliberate maintainer action after repository ownership, publication
+credentials and the relevant artifact policy have been reviewed. The v0.1 GitHub
+Release asset set excludes signatures; the separate Maven Central upload bundle
+requires them, as described below.
+
+To install the library in a test project, use the [current installation guide](README.md#install-014).
+This checklist is for preparing and publishing releases.
 
 ## Prepare
 
