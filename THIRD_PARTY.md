@@ -17,10 +17,11 @@ published library's declared runtime profile.
 
 ## Library built from this source
 
-The table describes the current source's generated publication. The immutable
-public RouteContract 0.1.3 POM still declares Jackson streaming core 3.1.5.
-See [Jackson 3 patch qualification](docs/jackson3-patch-compatibility.md) for
-the candidate's verification status and publication boundary.
+The table describes the current source's generated publication. Public **0.1.4** includes
+Jackson streaming core 3.1.6; see the [published artifacts and installation verification](docs/evidence/release-0.1.4-central.md).
+The immutable public RouteContract 0.1.3 POM still declares Jackson streaming core 3.1.5.
+The earlier [Jackson 3 patch qualification](docs/jackson3-patch-compatibility.md) retains
+the revisions and tests used before 0.1.4 was published.
 
 | Component | Version | Gradle scope | License |
 |---|---:|---|---|

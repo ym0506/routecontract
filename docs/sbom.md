@@ -30,9 +30,10 @@ supply-chain gate. The Release gate rejects the original dependency paths for
 these test/example components; this profile/path statement is not a semantic
 provenance proof for renamed or transformed bytes.
 
-The immutable public RouteContract 0.1.3 POM declares streaming core 3.1.5.
-Current-source SBOMs describe the local candidate, not a replacement for that
-release's published POM or SBOM. See [Jackson 3 patch qualification](jackson3-patch-compatibility.md).
+The public [RouteContract 0.1.4 release](evidence/release-0.1.4-central.md) declares streaming
+core 3.1.6; the immutable 0.1.3 POM retains 3.1.5. Generated SBOMs describe the checkout
+that produced them. Each release's published POM and SBOM remain bound to that release,
+not replaced by a later checkout's output. See [Jackson 3 patch qualification](jackson3-patch-compatibility.md).
 
 ## Generate
 

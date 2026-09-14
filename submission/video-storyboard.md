@@ -1,5 +1,8 @@
 # RouteContract 3분 시연 영상 스토리보드
 
+이 문서는 2026년 8월 대회 제출용 촬영 계획입니다. 현재 버전의 사용법은
+[첫 프로젝트 가이드](../docs/first-project.ko.md)에서 확인하세요. 아래 촬영 조건과 버전은 당시 계획을 보존합니다.
+
 상태: 2분 53초 촬영안. 안정 `v0.1.0`과 제출 revision을 동결하고, 외부 결과는 증거
 cutoff의 실제 상태(`rc_only` 또는 `zero`)로 확정한 뒤 녹화한다. 별도 stable 전용
 form/protocol이 없으므로 final-stable-result 분기는 fail-closed다.

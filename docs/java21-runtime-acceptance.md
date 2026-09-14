@@ -1,8 +1,13 @@
 # Java 21 runtime acceptance for public 0.1.3
 
+This page preserves the initial Java 21 qualification for public 0.1.3. Current integrations
+use [0.1.4 on Java 17 or 21](first-project.md); its separate
+[four-cell installation record](evidence/release-0.1.4-central.md#public-consumer-verification)
+does not relabel the original results below.
+
 Status: local checks **verified - unit**, **verified - MySQL**, **verified - ShardingSphere-JDBC 5.5.3**
 on 2026-09-10. Acceptance criteria were written before implementation for [issue #84](https://github.com/ym0506/routecontract/issues/84).
-The complete CI matrix below is required before merging the support change.
+The complete CI matrix below was required before merging the support change.
 
 ## User-visible requirement
 
@@ -85,8 +90,14 @@ identities and outcomes while omitting framework stdout/stderr and connection de
 ## Maintained CI and reproduction
 
 [First project workflow](../.github/workflows/first-project.yml) runs these checks on each PR
-and main push. [Run history](https://github.com/ym0506/routecontract/actions/workflows/first-project.yml)
+and main push. It now uses public 0.1.4 and the
+[checked-in Gradle Wrapper](../gradle/wrapper/gradle-wrapper.properties), currently 9.7.1.
+[Run history](https://github.com/ym0506/routecontract/actions/workflows/first-project.yml)
 records the tested commit and individual job results; PR checks are the merge evidence.
+
+The following table preserves the original support matrix. Its Gradle 8.14.4 configuration
+belongs to that qualification, while commands run from a current checkout use its wrapper
+and configured public dependency.
 
 | Cell | Runtime configuration | Artifact |
 | --- | --- | --- |

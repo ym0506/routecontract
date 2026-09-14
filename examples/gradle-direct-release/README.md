@@ -89,10 +89,12 @@ database operation, candidate baseline, external integration, or user.
 
 ## Apply one representative operation in your project
 
-Follow the current [first-integration guide](../../docs/first-integration.md) in a public or private
-repository you are authorized to modify. Keep the business assertion, capture a separate candidate,
-have the target's authorized owner or maintainer review and approve the baseline, and run the
-candidate check locally or in the team's CI. Publishing code or CI is not required for use.
+For a new installation, follow the current [first-project guide](../../docs/first-project.md) in a public or private
+repository you are authorized to modify. Keep the business assertion and add reviewed Java execution
+assertions, or use an approved baseline for JSON comparison. For the latter, capture a separate candidate,
+have the target's authorized owner or maintainer review the baseline, and compare locally or in the team's CI.
+The [historical v0.1.2 integration guide](../../docs/first-integration.md) retains that older installation path.
+Publishing code or CI is not required for use.
 [Record the use stage separately from assistance, verification and publication permission](../../docs/user-feedback.md#recording-use-and-evidence).
 
 ### Historical public upstream integration evidence standard

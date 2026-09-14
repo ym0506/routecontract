@@ -1,5 +1,9 @@
 # Award-oriented development plan: August 11-27, 2026
 
+Historical plan for the August contest deadline. It preserves the priorities and assumptions
+from that period. For current product work, see the [roadmap](product-roadmap.md);
+for a new installation, use the [first-project guide](first-project.md).
+
 This is an execution plan for one student developer with substantial available time. It cannot guarantee an award. Its purpose is to maximize the amount of reviewer-verifiable evidence before the submission deadline while preventing a technically interesting but unfinished prototype.
 
 The [official contest schedule](https://www.oss.kr/pages/2) and organizer orientation require the result report, source and a demonstration video of up to three minutes by August 27. The later [official submission guide](https://osscontest.kr/notice/39) sets the exact cutoff at **2026-08-27 18:00**; the package gate models this Korean contest cutoff as KST (+09:00). Internal feature freeze is one day earlier.

@@ -7,7 +7,7 @@ are by **thswlsqls**. The original report targets master; this experiment does n
 test that PR or claim discovery of the bug.
 
 An affected-row assertion passes while the write goes to the wrong database.
-Both operations below execute once, so an execution-count budget alone also
+All three cases below execute once, so an execution-count budget alone also
 passes. An explicit expected data-source name detects the difference.
 
 | Operation | Affected rows | Observed attempts | Hook-reported data source | Primary target rows | Shadow target rows |

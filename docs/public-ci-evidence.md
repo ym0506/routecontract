@@ -67,10 +67,10 @@ python3 "$evidence_dir/summarize-test-results-54f1c927.py" \
   --output "$evidence_dir/test-summary.txt"
 ```
 
-The summarizer is intentionally read from the same historical revision. The current source tree's
-planned stable `0.1.0` contract has two additional manifest-storage regression tests and therefore
-expects 52 rather than 50; using its summarizer on the historical XML would correctly reject the
-suite mismatch. This source-tree statement does not claim that a stable tag or Release exists.
+The summarizer is intentionally read from the same historical revision. At that time, the
+planned stable `0.1.0` source contract had two additional manifest-storage regression tests and
+expected 52 rather than 50; using that summarizer on these historical XML files would correctly
+reject the suite mismatch. That source-tree statement was not evidence of a stable tag or Release.
 
 ## Claim boundary
 

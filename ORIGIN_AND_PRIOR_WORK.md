@@ -1,54 +1,54 @@
 # Origin and prior work
 
 이 문서는 프로젝트 소유자가 확인한 기원·선행 작업·계정 관계의 경계 선언입니다.
-독립 검증, 외부 기여, Apache ShardingSphere의 채택이나 endorsement를 뜻하지 않습니다.
+독립 검증, 외부 기여, Apache ShardingSphere의 채택이나 지지를 뜻하지 않습니다.
 
 ## 프로젝트 기원
 
-RouteContract의 문제의식은 개인 포트폴리오 프로젝트 ShardLens에서 샤딩된 callback 경로의 회귀를 어떻게 막을지 설계하는 과정에서 나왔습니다.
+RouteContract의 문제의식은 개인 포트폴리오 프로젝트 ShardLens에서 샤딩된 콜백 경로의 회귀를 어떻게 막을지 설계하는 과정에서 나왔습니다.
 
-ShardLens는 결제 provider 응답 유실, 멱등성, webhook, reconciliation과 샤딩 이후 신뢰성을 다루는 애플리케이션 실험 프로젝트입니다. RouteContract는 그중 라우팅 회귀 검증 문제만 독립적인 오픈소스 테스트 도구로 일반화합니다.
+ShardLens는 결제 서비스의 응답 유실, 멱등성, 웹훅, 처리 내역 대조(reconciliation)와 샤딩 이후 신뢰성을 다루는 애플리케이션 실험 프로젝트입니다. RouteContract는 그중 라우팅 회귀 검증 문제만 독립적인 오픈소스 테스트 도구로 일반화합니다.
 
 ## 출품 전 존재한 작업
 
-- ShardLens 문서에 Route Guard의 개념과 예시 manifest가 설계 수준으로 존재했습니다.
-- 관련 Apache ShardingSphere 커널 수정 [PR #39112](https://github.com/apache/shardingsphere/pull/39112)는 GitHub 사용자 `Develop-KIM`이 열었고 2026-07-29에 병합되지 않은 채 닫혔습니다. 공개 review는 이 문제가 단일 route-engine 분기보다 넓은 계층 간 의미 계약을 필요로 한다고 지적했습니다. `Develop-KIM`은 프로젝트 소유자의 계정이 아니므로, 이 문서는 해당 PR을 소유자의 기여로 주장하지 않습니다.
-- 독립 RouteContract 저장소, 배포 패키지, operation-scoped collector, JUnit API, manifest diff, 검증 corpus는 존재하지 않았습니다.
+- ShardLens 문서에 Route Guard의 개념과 예시 실행 명세(manifest)가 설계 수준으로 존재했습니다.
+- 관련 Apache ShardingSphere 커널 수정 [PR #39112](https://github.com/apache/shardingsphere/pull/39112)는 GitHub 사용자 `Develop-KIM`이 열었고 2026-07-29에 병합되지 않은 채 닫혔습니다. 공개 리뷰에서는 한 라우팅 엔진의 분기를 넘어 여러 계층이 동작의 의미를 일관되게 지켜야 하는 문제라고 지적했습니다. `Develop-KIM`은 프로젝트 소유자의 계정이 아니므로, 이 문서는 해당 PR을 소유자의 기여로 주장하지 않습니다.
+- 독립 RouteContract 저장소, 배포 패키지, 작업 단위 실행 수집기, JUnit API, 실행 명세 비교, 검증 사례 모음은 존재하지 않았습니다.
 
 ## ShardLens와 RouteContract의 경계
 
 | 구분 | 출품 전 ShardLens | 이 저장소의 RouteContract |
 |---|---|---|
-| 목적과 사용자 | 결제 provider, 멱등성, webhook, reconciliation과 샤딩 이후 신뢰성을 함께 다루는 포트폴리오 애플리케이션 | ShardingSphere-JDBC 5.5.3 사용자가 테스트에서 라우팅 회귀를 검토하도록 돕는 독립 라이브러리 |
-| 당시 상태 | Route Guard와 versioned manifest의 설계 및 예시만 존재; 실행 collector·검증 라이브러리는 미구현 | `SQLExecutionHook` adapter, operation capture, assertion, manifest codec/verifier와 MySQL corpus를 새로 구현 |
-| 증거 의미 | 의도한 `routeClass`, target shard 수, actual SQL 수를 표현하는 애플리케이션 설계 | hook이 보고한 data-source 이름과 물리 JDBC 실행 시도, rewritten-SQL fingerprint 및 callback outcome을 관측 |
-| 자동 판정 범위 | ShardLens 도메인에서 원하는 정책을 표현하는 설계 | complete route plan, target shard 수, physical table 수 또는 commit 성공을 자동 추론하지 않음 |
-| 코드 경계 | ShardLens 애플리케이션 소스 | ShardLens 애플리케이션 소스를 복사하지 않은 별도 패키지와 별도 검증 corpus |
+| 목적과 사용자 | 결제 서비스, 멱등성, 웹훅, 처리 내역 대조와 샤딩 이후 신뢰성을 함께 다루는 포트폴리오 애플리케이션 | ShardingSphere-JDBC 5.5.3 사용자가 테스트에서 라우팅 회귀를 검토하도록 돕는 독립 라이브러리 |
+| 당시 상태 | Route Guard와 버전을 관리하는 실행 명세의 설계·예시만 존재; 실행 수집기·검증 라이브러리는 미구현 | `SQLExecutionHook` 어댑터, 작업별 실행 수집·검사, 실행 명세의 직렬화·역직렬화와 검증기, MySQL 사례 모음을 새로 구현 |
+| 증거 의미 | 의도한 `routeClass`, 대상 샤드 수, 실제 SQL 수를 표현하는 애플리케이션 설계 | 훅이 보고한 데이터 소스 이름과 물리 JDBC 실행 시도, 재작성된 SQL의 해시값과 콜백 결과를 관측 |
+| 자동 판정 범위 | ShardLens 도메인에서 원하는 정책을 표현하는 설계 | 전체 라우팅 계획, 대상 샤드 수, 물리 테이블 수 또는 커밋 성공을 자동 추론하지 않음 |
+| 코드 경계 | ShardLens 애플리케이션 소스 | ShardLens 애플리케이션 소스를 복사하지 않은 별도 패키지와 별도 검증 사례 모음 |
 
 따라서 정확한 기원 설명은 “ShardLens와 무관한 신규 아이디어”가 아니라, **ShardLens에서 문서로만 설계했던 라우팅 회귀 문제를 애플리케이션에 종속되지 않는 좁은 테스트 라이브러리로 새로 구현했다**입니다. 반대로 ShardLens의 설계 자체까지 RouteContract에서 처음 발명했다고 주장하지 않습니다.
 
 ## 이 저장소에서 새로 개발하는 범위
 
-- ShardingSphere 5.5.3 `SQLExecutionHook` adapter
-- trunk/worker 실행을 하나의 application operation으로 묶는 capture lifecycle
-- parameter 원문을 저장하지 않는 `SQLExecutionHook`-reported physical JDBC execution-attempt model
-- hook이 보고한 data-source 이름 및 관측 실행 시도 예산
-- canonical manifest record/verify
-- stable RCM code를 동반한 structural manifest/attempt diff와 CI 실패 리포트
-- 실제 MySQL regression corpus
+- ShardingSphere 5.5.3 `SQLExecutionHook` 어댑터
+- 호출 스레드와 작업 스레드(trunk/worker)의 실행을 애플리케이션 작업 하나로 묶는 수집 생명주기
+- 파라미터 원문을 저장하지 않는 `SQLExecutionHook` 보고 기반의 물리 JDBC 실행 시도 모델
+- 훅이 보고한 데이터 소스 이름 및 관측 실행 시도의 허용 상한
+- 실행 명세를 일정한 형식으로 기록하고 검증하는 기능
+- 정해진 RCM 진단 코드를 사용하는 실행 명세·실행 시도의 구조 비교와 CI 실패 리포트
+- 실제 MySQL 회귀 테스트 사례 모음
 - 독립 설치 예제, CI, 릴리스, 라이선스 및 기여 문서
 
 ## 공개 개발 이력 원칙
 
 독립 RouteContract 구현과 검증은 2026-08-11 로컬 작업으로 시작했습니다. 첫 공개는 그
-시점까지의 작업을 하나의 정직한 bootstrap import로 남기며, 이미 끝난 코드를 과거
-Issue·PR처럼 나누거나 날짜를 소급하지 않습니다. 공개 이후의 CI 안정화, 릴리스, 외부
-설치 피드백과 수정은 실제 Issue → branch → PR → self-review → merge 이력으로 남깁니다.
+시점까지의 작업을 당시 내용을 그대로 담은 한 번의 초기 소스 등록으로 남기며, 이미 끝난 코드를 과거
+이슈·PR처럼 나누거나 날짜를 소급하지 않습니다. 공개 이후의 CI 안정화, 릴리스, 외부
+설치 피드백과 수정은 실제 이슈 → 브랜치 → PR → 작성자 검토 → 병합 이력으로 남깁니다.
 
 RouteContract의 공개 저장소 계정 `ym0506`은 프로젝트 소유자의 계정입니다.
 `Develop-KIM`은 소유자의 계정이 아니므로 PR #39112는 문제 조사에 참고한 외부 이력으로만
-기술하고, 개인 기여·커뮤니티 활동·upstream 환류 점수의 근거로 사용하지 않습니다.
+기술하고, 개인 기여·커뮤니티 활동·원 프로젝트로의 기여 점수의 근거로 사용하지 않습니다.
 
 ## 코드 재사용 원칙
 
-ShardLens의 애플리케이션 코드는 이 저장소로 복사하지 않습니다. 외부 프로젝트 코드는 공식 dependency와 공개 SPI를 통해 사용하며, 소스 복사가 필요한 경우 해당 파일의 저작권·라이선스와 변경 내용을 별도로 표시합니다.
+ShardLens의 애플리케이션 코드는 이 저장소로 복사하지 않습니다. 외부 프로젝트 코드는 공식 의존성과 공개 SPI로 사용하며, 소스 복사가 필요한 경우 해당 파일의 저작권·라이선스와 변경 내용을 별도로 표시합니다.

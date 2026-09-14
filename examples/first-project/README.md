@@ -22,11 +22,13 @@ reports you need and run `mvn -B clean` first to remove classes compiled by the 
 Gradle defaults to Java 17;
 add `-ProutecontractJavaVersion=21` to each command for an installed Java 21 toolchain,
 or set `ROUTECONTRACT_EXAMPLE_JAVA_VERSION=21` for the session. The test verifies the
-actual runtime and unchanged public JAR; see [runtime evidence](../../docs/java21-runtime-acceptance.md).
+actual runtime and unchanged public JAR; see [0.1.4 installation evidence](../../docs/evidence/release-0.1.4-central.md#public-consumer-verification).
 
 The example has its own build settings. Neither command builds RouteContract from the repository
 sources. If you copy this directory to another repository, use that repository's Gradle wrapper
-or an installed Gradle 8.14.4; Maven needs no parent project.
+or the Gradle version used by the [maintained wrapper](../../gradle/wrapper/gradle-wrapper.properties),
+currently 9.7.1. Maven needs no parent project. Gradle 8.14.4 belongs to the
+[initial 0.1.3 qualification](../../docs/java21-runtime-acceptance.md).
 
 The test preserves the exact expected business row and checks against a reviewed synthetic
 baseline. Expect **MATCH** in `build/routecontract/review.md` and `review.json`.
