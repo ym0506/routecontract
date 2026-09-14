@@ -1,0 +1,101 @@
+{
+  "formatVersion": 1,
+  "status": "PASS",
+  "evidenceLabels": [
+    "verified - MySQL",
+    "verified - ShardingSphere-JDBC 5.5.3"
+  ],
+  "producerRevision": "5800ed2960aefbf63c01d2ebaf2265278d662494",
+  "consumerRevision": "b0978635af7ffcf4ad60b713e07a92661bd83c5d",
+  "candidateReceiptSha256": "9a4d745ff11508a8ab08dd8bced6a7893d8f6e6ff5baab34b3445aea652ba49c",
+  "sourceBinding": {
+    "productionPublicationInputsIdentical": true,
+    "fixtureInputsUnchanged": true,
+    "fixtureInputCount": 20
+  },
+  "environment": {
+    "java": "Temurin 17.0.20.1+1",
+    "gradle": "9.7.1",
+    "platform": "macOS arm64",
+    "mysqlImage": "mysql:8.4.11@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb"
+  },
+  "nativeExitCode": 0,
+  "beforeControl": {
+    "nativeExitCode": 0,
+    "result": "Stale dependency graph resolved successfully; qualification gap, no reproduced native resolution failure"
+  },
+  "guardControl": {
+    "exitCode": 1,
+    "expectedRejection": true,
+    "markerLines": [
+      "> RC_MIGRATION_DEPENDENCY_GRAPH_MISMATCH: testCompileClasspath com.fasterxml.jackson.core:jackson-core expected=2.18.10 selected=[2.18.9]"
+    ]
+  },
+  "jacksonGraphs": {
+    "0.1.2": [
+      "com.fasterxml.jackson.core:jackson-annotations:2.21",
+      "com.fasterxml.jackson.core:jackson-core:2.18.9",
+      "com.fasterxml.jackson.core:jackson-databind:2.18.9",
+      "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.18.9",
+      "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.9",
+      "tools.jackson.core:jackson-core:3.1.5"
+    ],
+    "0.2.0": [
+      "com.fasterxml.jackson.core:jackson-annotations:2.21",
+      "com.fasterxml.jackson.core:jackson-core:2.18.10",
+      "com.fasterxml.jackson.core:jackson-databind:2.18.10",
+      "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.18.10",
+      "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.10",
+      "tools.jackson.core:jackson-core:3.1.6"
+    ]
+  },
+  "mysqlJunit": {
+    "0.1.2": {
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "0.2.0": {
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "probes": {
+    "publicTypes": 26,
+    "preservedMemberDescriptors": 167,
+    "oldBytecodeClasses": 4,
+    "schema1CodecBytesEqual": true,
+    "sourceConstantRejections": 2,
+    "enumNewValuesRejectedByOldBytecode": 2,
+    "enumBinaryAndSourceChangesObserved": true,
+    "unchangedMySqlSourceRecompiled": true,
+    "explicitIdentitySourcePassed": true,
+    "moduleCaptureRejectedBeforeAction": true
+  },
+  "oldMySqlBytecodeClasses": 3,
+  "retainedAudit": {
+    "status": "PASS",
+    "readOnlyAudit": true,
+    "nativeRerun": false,
+    "mysqlTests": 6,
+    "oldClassesChecked": 7,
+    "publicTypes": 26,
+    "preservedMemberDescriptors": 167,
+    "fixtureInputsChecked": 20,
+    "retainedFiles": 73,
+    "publicConsumption": false,
+    "completeBehavioralCompatibility": false
+  },
+  "rawSummarySha256": "86821cb23e22444894cb415128bce214dc8f1b6e24047542af7d35fe3e57a0c3",
+  "rawAuditSha256": "d1a20733f613c55d85d17cf5c5dbddcf880b4ebb9027919357ddd85cae286711",
+  "boundaries": {
+    "publicConsumption": false,
+    "completeBehavioralCompatibility": false,
+    "humanBaselineApprovalEstablishedByThisRun": false,
+    "fullReleaseReady": false,
+    "originalA28": "FAILED"
+  }
+}

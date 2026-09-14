@@ -1,0 +1,109 @@
+{
+  "formatVersion": 1,
+  "status": "PASS",
+  "evidenceLabels": [
+    "verified - MySQL",
+    "verified - ShardingSphere-JDBC 5.5.2",
+    "verified - ShardingSphere-JDBC 5.5.3"
+  ],
+  "producerRevision": "5800ed2960aefbf63c01d2ebaf2265278d662494",
+  "consumerRevision": "efcfbb4ca30ad8dd1531f97c654068c36bb8410a",
+  "candidateReceiptSha256": "9a4d745ff11508a8ab08dd8bced6a7893d8f6e6ff5baab34b3445aea652ba49c",
+  "nativeExitCode": 0,
+  "environment": {
+    "java17": "Temurin 17.0.20.1+1",
+    "java21": "Homebrew OpenJDK 21.0.11",
+    "maven": "3.9.14",
+    "platform": "macOS arm64"
+  },
+  "cells": [
+    {
+      "java": 17,
+      "runtime": "5.5.2",
+      "mysqlTests": 6,
+      "negativeControls": 4
+    },
+    {
+      "java": 17,
+      "runtime": "5.5.3",
+      "mysqlTests": 6,
+      "negativeControls": 4
+    },
+    {
+      "java": 21,
+      "runtime": "5.5.2",
+      "mysqlTests": 6,
+      "negativeControls": 4
+    },
+    {
+      "java": 21,
+      "runtime": "5.5.3",
+      "mysqlTests": 6,
+      "negativeControls": 4
+    }
+  ],
+  "retainedAudit": {
+    "status": "PASS",
+    "readOnlyAudit": true,
+    "nativeRerun": false,
+    "mysqlTests": 24,
+    "negativeControls": 16,
+    "negativeEvidenceHashesChecked": 128,
+    "classfileCopiesChecked": 40,
+    "firstPartyPayloadCopiesChecked": 32,
+    "fixtureInputsChecked": 14,
+    "candidateReceiptArtifactsChecked": 9,
+    "cells": [
+      {
+        "java": 17,
+        "runtime": "5.5.2",
+        "mysqlTests": 6,
+        "negativeControls": 4
+      },
+      {
+        "java": 17,
+        "runtime": "5.5.3",
+        "mysqlTests": 6,
+        "negativeControls": 4
+      },
+      {
+        "java": 21,
+        "runtime": "5.5.2",
+        "mysqlTests": 6,
+        "negativeControls": 4
+      },
+      {
+        "java": 21,
+        "runtime": "5.5.3",
+        "mysqlTests": 6,
+        "negativeControls": 4
+      }
+    ],
+    "summarySha256": "47652e5652b2873d70a070947262ef51eb957a57368fe302bd56c5eda36ad5d7",
+    "completeMavenA24Matrix": true,
+    "fullA24Complete": false,
+    "publicConsumption": false
+  },
+  "finalInputsUnchanged": true,
+  "negativeCases": [
+    "checksum",
+    "wrong-origin",
+    "wrong-runtime",
+    "wrong-non-anchor"
+  ],
+  "offlineControls": {
+    "kernelExternalNetworkDenied": true,
+    "loopbackAndLocalDockerAllowed": true,
+    "primeRepositoryStoppedAndConnectionRefused": true,
+    "perCellFrozenCacheUnchanged": true,
+    "localContainerImagesUnchanged": true
+  },
+  "classfileMajors": {
+    "java17Consumer": 61,
+    "java21Consumer": 65
+  },
+  "completeMavenA24Matrix": true,
+  "fullA24Complete": false,
+  "publicConsumption": false,
+  "humanBaselineApprovalEstablishedByThisRun": false
+}

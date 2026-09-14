@@ -35,7 +35,7 @@ repositories {
 dependencyLocking { lockAllConfigurations(); lockMode = LockMode.STRICT }
 dependencies {
     testImplementation("${routeGroup}:${adapter}:${routeVersion}")
-    testImplementation platform('com.fasterxml.jackson:jackson-bom:2.18.9')
+    testImplementation platform("com.fasterxml.jackson:jackson-bom:${routeVersion == '0.2.0' ? '2.18.10' : '2.18.9'}")
     testImplementation("org.apache.shardingsphere:shardingsphere-jdbc:${exactRuntime}") {
         exclude group: 'org.locationtech.jts.io', module: 'jts-io-common'
     }
@@ -124,6 +124,28 @@ def graph = tasks.register('verifyMigrationGraph') {
         compileFirstParty.each { artifact ->
             if (artifact.moduleVersion.id.version != routeVersion || sha256(artifact.file) != expectedHashes[artifact.name]) {
                 throw new GradleException('Compile classpath first-party bytes disagree with supplied artifacts')
+            }
+        }
+        if (routeVersion == '0.2.0') {
+            // Qualify the candidate graph even when an older strict lock still resolves successfully.
+            def fasterXmlModules = [
+                'com.fasterxml.jackson.core:jackson-core',
+                'com.fasterxml.jackson.core:jackson-databind',
+                'com.fasterxml.jackson.datatype:jackson-datatype-jdk8',
+                'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+            ]
+            [compile, runtime].each { configuration ->
+                def qualified = fasterXmlModules.collectEntries { [(it): '2.18.10'] }
+                if (configuration == runtime) { qualified['tools.jackson.core:jackson-core'] = '3.1.6' }
+                def actual = configuration.resolvedConfiguration.resolvedArtifacts
+                qualified.each { module, version ->
+                    def versions = actual.findAll {
+                        "${it.moduleVersion.id.group}:${it.name}" == module
+                    }.collect { it.moduleVersion.id.version }
+                    if (versions != [version]) {
+                        throw new GradleException("RC_MIGRATION_DEPENDENCY_GRAPH_MISMATCH: ${configuration.name} ${module} expected=${version} selected=${versions}")
+                    }
+                }
             }
         }
         def output = layout.buildDirectory.file('migration-graph.json').get().asFile
