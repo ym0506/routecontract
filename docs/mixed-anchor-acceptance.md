@@ -1,13 +1,20 @@
 # A-09 manual mixed-anchor acceptance
 
-Status: the complete manual 14-case matrix is verified on newly reviewed `86a0be5` staging;
+Current candidate: the same **14/14 manual cases passed** on `5800ed2`,
+Java 17.0.20.1+1 and Gradle 9.7.1. See the [current runtime evidence](evidence/current-runtime-and-installation-5800ed2-2026-09-14.md).
+This result keeps the finite manual boundary and does not infer arbitrary
+non-anchor compatibility or public support.
+
+Historical 86a0be5 status: the complete manual 14-case matrix is verified on `86a0be5` staging;
 the original `4e06694` execution remains FAILED. Whole-group resolver evidence remains separate. This gate retains the ADR's exact
 `RC_MIXED_SHARDINGSPHERE_RUNTIME` requirement; an unavailable class is retained in the cell, and a different stable
 marker is a failed mixed cell, not an excuse to omit that cell. Whole-group resolver
 rejection is separate A-24 evidence, and this runner does not prove arbitrary manual
 non-anchor compatibility, SQL behavior, or a public release.
 
-## Verified candidate result
+<a id="verified-candidate-result"></a>
+
+## Retained 86a0be5 candidate result
 
 The [2026-09-08 result](evidence/mixed-anchor-final-candidate-2026-09-08.md) and its
 [minimized receipt](evidence/mixed-anchor-final-candidate-2026-09-08.json) retain all 14 final observations.

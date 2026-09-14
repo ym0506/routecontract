@@ -1,8 +1,13 @@
 # Remaining staged runtime boundary acceptance
 
-Status: **VERIFIED — 28 of 28 planned cases passed** against the reviewed
+Current candidate: **28/28 passed** on producer `5800ed2`, Java 17.0.20.1+1
+and Gradle 9.7.1. See the [current runtime evidence](evidence/current-runtime-and-installation-5800ed2-2026-09-14.md).
+The finite cases below are unchanged. Their current input and result hashes are
+separate from the retained runs described below.
+
+Historical 86a0be5 status: **VERIFIED — 28 of 28 planned cases passed** against the reviewed
 `86a0be5` artifacts. The finite plan below was established before implementation
-and remains unchanged. See the [current executed evidence](evidence/runtime-boundary-86a0be5-2026-09-08.md)
+and remains unchanged. See the [historical executed evidence](evidence/runtime-boundary-86a0be5-2026-09-08.md)
 and [public record](evidence/runtime-boundary-86a0be5-2026-09-08.json).
 The earlier `4e06694` executions remain FAILED and are preserved in the
 [historical evidence](evidence/runtime-boundary-4e06694-2026-09-08.md).

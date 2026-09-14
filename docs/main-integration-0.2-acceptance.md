@@ -54,10 +54,14 @@ claim that the two build tools produce identical transitive graphs.
 These are **verified - unit**, **verified - MySQL** and exact-version
 **verified - ShardingSphere-JDBC 5.5.2 / 5.5.3** observations. The native logs,
 JUnit files and `java21-runtime-summary.json` are retained in the maintainer's
-`02-main-integration-20260914` evidence directory. The complete historical
-28-test packaged corpus rerun and CI qualification remain pending; the smaller
-fresh consumer suites do not replace that corpus, and earlier candidate evidence
-does not qualify these new artifact bytes. Maven evidence retains its verifier
+`02-main-integration-20260914` evidence directory. Subsequent qualification of
+CI producer `5800ed2` completed all 12 PR #102 checks and the
+[existing 28-test packaged corpus](evidence/packaged-corpus-5800ed2-2026-09-14.md).
+That corpus has its own standalone consumers and unchanged expected observations;
+the smaller installation suites do not substitute for it. The
+[current runtime and installation evidence](evidence/current-runtime-and-installation-5800ed2-2026-09-14.md)
+records additional scoped checks on those same candidate bytes. Human baseline
+review and public 0.2 publication remain separate. Maven evidence retains its verifier
 summary and resolved graph; the Gradle consumer evidence also retains raw JUnit.
 
 Reproduce the Java 17 run with a selected Java 17 `JAVA_HOME`:

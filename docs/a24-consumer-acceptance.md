@@ -1,6 +1,12 @@
 # Staged consumer acceptance across build tools
 
-Status: the existing Gradle A-24 matrix is complete on final staged source
+Current candidate: the [integrated 5800ed2 record](evidence/current-runtime-and-installation-5800ed2-2026-09-14.md#gradle-installation-observations)
+qualifies all 28 Gradle 9.7.1 cases with the explicit frozen-input replay.
+[Current Maven evidence](evidence/a24-maven-5800ed2-2026-09-14.md) covers Java 17/21
+on the same nine-payload receipt. Earlier failed and incomplete attempts retain
+their actual outcomes. Human review and publication remain separate gates.
+
+Historical result: the existing Gradle A-24 matrix is complete on staged source
 `86a0be5d2e444f3b73925122fa448d9d1a324edd` for Groovy/Kotlin,
 Java 17 and exact ShardingSphere-JDBC 5.5.2/5.5.3. All 28 cases passed in one
 complete execution and received a final independent retained-evidence audit;
@@ -30,7 +36,8 @@ Existing local and CI module metadata receipts are not interchangeable.
 The receipt SHA-256 must be supplied separately from the receipt file, and all
 production inputs must match the declared source revision. The finite Gradle plan
 is exactly Groovy/Kotlin × 5.5.2/5.5.3 × seven cases = 28 executions on Java 17 and
-the checked-in Gradle 8.14.4 wrapper. There is no extra JDK cross-product.
+the checked-in Gradle 9.7.1 wrapper (8.14.4 in the historical 86a0be5 run).
+There is no extra JDK cross-product.
 
 For every profile/runtime pair, retain these distinct executions:
 

@@ -1,9 +1,11 @@
 # Remaining A-15 / A-17 resolver and runtime boundaries
 
-Current candidate: the first 5800ed2 invocation stopped when the verifier could
-not recognize Gradle 9.7.1's native root display name and capability leaf type.
-The exact retained graph now reparses with the correction below; this is a
-diagnostic, not a new native execution or a completed current ten-case gate.
+Current candidate: the [5800ed2 execution record](evidence/dual-resolver-current-5800ed2-2026-09-14.md)
+retains three Gradle passes and an unresolved fourth identity after correcting
+Gradle 9.7.1's diagnostic formats. The last graph omits both required adapter
+paths from its intrinsic failure. Its result remains FAILED; the complete
+current ten-case gate is not qualified. Historical results below do not fill
+that gap.
 
 Historical result: all ten distinct existing identities are verified against the reviewed
 `86a0be5` candidate: four retained Gradle cases, four retained Maven dual-adapter
