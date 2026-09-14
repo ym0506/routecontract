@@ -248,6 +248,48 @@ class GradleDualCauseTest(unittest.TestCase):
             with self.subTest(code=code, output=text), self.assertRaises(MODULE.BoundaryError):
                 self.verify(case, text, graph, code)
 
+    def test_gradle_971_named_root_keeps_the_actual_direct_request_identity(self):
+        # Actual current native failure: the owner display name changed, not
+        # the five requested coordinates, their order or the capability cause.
+        root = "root project 'dual-resolver-boundary-consumer'"
+        for case in self.cases():
+            output, graph = gradle_fixture(case, self.capabilities[0])
+            for edge in graph['rootDependencies'] + graph['unresolved']:
+                edge['from'] = root
+            with self.subTest(case=case['id']):
+                proof = self.verify(case, output, graph)
+                self.assertEqual('NATIVE_CAPABILITY_REJECTED', proof['result'])
+                self.assertEqual(root, proof['actualRootProject'])
+
+    def test_foreign_or_mixed_root_display_names_cannot_pass(self):
+        case = self.cases()[0]
+        output, graph = gradle_fixture(case, self.capabilities[0])
+        for owner in ("root project 'other-consumer'", "project ':child'", 'root project :child'):
+            invalid = copy.deepcopy(graph)
+            for edge in invalid['rootDependencies'] + invalid['unresolved']:
+                edge['from'] = owner
+            with self.subTest(owner=owner), self.assertRaises(MODULE.BoundaryError):
+                self.verify(case, output, invalid)
+        for collection in ('rootDependencies', 'unresolved'):
+            invalid = copy.deepcopy(graph)
+            invalid[collection][0]['from'] = "root project 'dual-resolver-boundary-consumer'"
+            with self.subTest(collection=collection), self.assertRaises(MODULE.BoundaryError):
+                self.verify(case, output, invalid)
+
+    def test_component_selection_leaf_preserves_exact_capability_cause_checks(self):
+        case = self.cases()[0]
+        output, graph = gradle_fixture(case, self.capabilities[0])
+        leaf = 'org.gradle.internal.component.resolution.failure.exception.ComponentSelectionException'
+        for node in graph['unresolved']:
+            node['failureMessages'][1]['exceptionType'] = leaf
+        self.assertEqual('NATIVE_CAPABILITY_REJECTED', self.verify(case, output, graph)['result'])
+        for foreign in ('java.lang.RuntimeException', leaf + 'Extra',
+                        'org.gradle.internal.resolve.ArtifactResolveException'):
+            invalid = copy.deepcopy(graph)
+            invalid['unresolved'][0]['failureMessages'][1]['exceptionType'] = foreign
+            with self.subTest(foreign=foreign), self.assertRaises(MODULE.BoundaryError):
+                self.verify(case, output, invalid)
+
     def test_report_must_bind_the_case_and_actual_direct_anchor_destinations(self):
         case = self.cases()[0]
         output, graph = gradle_fixture(case, self.capabilities[0])
@@ -471,6 +513,66 @@ def intrinsic_fixture():
 
 
 class GradleIntrinsicCollisionTest(unittest.TestCase):
+    def gradle_971_fixture(self):
+        case, output, graph, metadata = intrinsic_fixture()
+        root = "root project 'dual-resolver-boundary-consumer'"
+        output = output.replace('root project :', root)
+        graph = json.loads(json.dumps(graph).replace('root project :', root))
+        compact = ('Component is the target of multiple version constraints with conflicting requirements:\n'
+                   "5.5.2 - directly in 'io.github.ym0506.routecontract:routecontract-shardingsphere-5.5.2:0.2.0' (runtimeElements)\n"
+                   "5.5.3 - directly in 'io.github.ym0506.routecontract:routecontract-shardingsphere-5.5:0.2.0' (runtimeElements)\n")
+        for node in graph['unresolved']:
+            leaf = node['failureMessages'][1]
+            leaf['exceptionType'] = 'org.gradle.internal.component.resolution.failure.exception.ComponentSelectionException'
+            if ':shardingsphere-infra-spi:' in node['requested']:
+                output = output.replace(leaf['message'], compact)
+                leaf.update(exceptionType='org.gradle.internal.component.resolution.failure.exception.ConflictingConstraintsException', message=compact)
+        return case, output, graph, metadata
+
+    def test_gradle_971_intrinsic_paths_and_compact_constraints(self):
+        case, output, graph, metadata = self.gradle_971_fixture()
+        proof = self.verify(case, output, graph, metadata)
+        self.assertEqual('NATIVE_CAPABILITY_AND_INTRINSIC_STRICT_REJECTED', proof['result'])
+        self.assertEqual(['path', 'compact-constraints', 'compact-constraints'],
+                         [item['nativeCauseFormat'] for item in proof['intrinsicStrictCollisions']])
+
+    def test_compact_constraints_require_exact_published_pair_and_native_owner(self):
+        case, output, graph, metadata = self.gradle_971_fixture()
+        spi = next(n for n in graph['unresolved'] if ':shardingsphere-infra-spi:' in n['requested'])
+        original = spi['failureMessages'][1]['message']
+        changes = [original.replace('5.5.2 -', '5.5.20 -'),
+                   original.replace('(runtimeElements)', '(apiElements)', 1),
+                   original.replace('routecontract-shardingsphere-5.5.2:', 'foreign-adapter:', 1),
+                   original + original.splitlines()[1] + '\n',
+                   '\n'.join(original.splitlines()[:-1]) + '\n',
+                   original + 'unrelated failure\n']
+        for leaf in changes:
+            invalid = copy.deepcopy(graph)
+            for node in invalid['unresolved']:
+                if ':shardingsphere-infra-spi:' in node['requested']:
+                    node['failureMessages'][1]['message'] = leaf
+            with self.subTest(leaf=leaf), self.assertRaises(MODULE.BoundaryError):
+                self.verify(case, output.replace(original, leaf), invalid, metadata)
+        with self.assertRaises(MODULE.BoundaryError):
+            self.verify(case, output.replace(original, ''), graph, metadata)
+        # A correctly spelled compact cause under the executor section cannot
+        # corroborate the structured SPI edge.
+        wrong_owner = output.replace(original, '') + '\nCould not resolve ' + SS_GROUP + ':shardingsphere-infra-executor:5.5.2.\n' + original
+        with self.assertRaises(MODULE.BoundaryError):
+            self.verify(case, wrong_owner, graph, metadata)
+
+    def test_compact_exception_type_is_specific_to_spi_constraints(self):
+        case, output, graph, metadata = self.gradle_971_fixture()
+        for wanted in ('shardingsphere-infra-spi', 'shardingsphere-infra-executor'):
+            invalid = copy.deepcopy(graph)
+            node = next(n for n in invalid['unresolved'] if ':' + wanted + ':' in n['requested'])
+            node['failureMessages'][1]['exceptionType'] = (
+                'org.gradle.internal.component.resolution.failure.exception.ComponentSelectionException'
+                if wanted.endswith('spi') else
+                'org.gradle.internal.component.resolution.failure.exception.ConflictingConstraintsException')
+            with self.subTest(module=wanted), self.assertRaises(MODULE.BoundaryError):
+                self.verify(case, output, invalid, metadata)
+
     def verify(self, case, output, graph, metadata):
         return MODULE.verify_gradle_dual(case, 1, output, graph,
             [f'{GROUP}:routecontract-shardingsphere-5.5:0.2.0'], published_constraints=metadata)
@@ -554,6 +656,22 @@ class GradleIntrinsicCollisionTest(unittest.TestCase):
             else: edges[-1]['selected']='other:foreign:1'
             with self.subTest(mutation=mutation), self.assertRaises(MODULE.BoundaryError):
                 self.verify(case, output, invalid, metadata)
+
+    def test_named_root_is_bound_through_every_intrinsic_path(self):
+        case, output, graph, metadata = intrinsic_fixture()
+        root = "root project 'dual-resolver-boundary-consumer'"
+        output = output.replace('root project :', root)
+        graph = json.loads(json.dumps(graph).replace('root project :', root))
+        proof = self.verify(case, output, graph, metadata)
+        self.assertEqual(root, proof['actualRootProject'])
+        self.assertEqual(3, len(proof['intrinsicStrictCollisions']))
+        invalid = copy.deepcopy(graph)
+        node = next(n for n in invalid['unresolved'] if n['requested'].startswith(SS_GROUP + ':'))
+        original = node['failureMessages'][1]['message']
+        node['failureMessages'][1]['message'] = original.replace(root, 'root project :', 1)
+        changed_output = output.replace(original, node['failureMessages'][1]['message'])
+        with self.assertRaises(MODULE.BoundaryError):
+            self.verify(case, changed_output, invalid, metadata)
 
     def test_retained_java_base_runtime_variant_paths_keep_all_exact_cause_restrictions(self):
         # Recorded native graph SHA256: 7bcbefb518c2d43f1ddd237884644b6275b176156dc2bbef9e62382fb584dbd6

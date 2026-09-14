@@ -2,7 +2,12 @@
 
 This suite implements the existing [A-22 requirement](versioned-shardingsphere-adapters.md)
 at the decoded manifest and report boundary. It does not capture a JDBC operation or establish
-new adapter/runtime support. The public v0.1.3 release is unchanged.
+new adapter/runtime support. It does not change the public v0.1 release line.
+
+For producer `5800ed2`, the [current artifact/unit audit](evidence/current-runtime-and-installation-5800ed2-2026-09-14.md#artifact-content-and-retained-manifest-unit-evidence)
+binds the retained 606-case result to the exact compiled production classes in
+the staged core JAR. Those tests were not executed again as packaged consumers.
+The source-level matrix and older execution details below retain their own dates.
 
 ## Decoded identity pairs
 
@@ -55,7 +60,8 @@ files unchanged. These are input errors, not `INCOMPATIBLE` reports.
 
 ## Reproduction and evidence boundary
 
-Use Java 17 and the checked-in Gradle 8.14.4 wrapper:
+Use Java 17 and the checked-in wrapper (Gradle 9.7.1 in the current source;
+the historical execution below used 8.14.4):
 
 ```sh
 ./gradlew --no-daemon :routecontract-core:test \

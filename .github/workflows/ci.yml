@@ -799,6 +799,7 @@ jobs:
           path: |
             ${{ runner.temp }}/routecontract-staged-split-consumers/summary.json
             ${{ runner.temp }}/routecontract-staged-split-consumers/staged-receipt.json
+            ${{ runner.temp }}/routecontract-staged-split-consumers/5.5.*/gradle-failure.json
             ${{ runner.temp }}/routecontract-staged-split-consumers/5.5.*/junit/*.xml
             ${{ runner.temp }}/routecontract-staged-split-consumers/5.5.*/reports/**
           if-no-files-found: warn

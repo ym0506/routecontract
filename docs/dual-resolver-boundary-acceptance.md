@@ -1,6 +1,13 @@
 # Remaining A-15 / A-17 resolver and runtime boundaries
 
-Status: all ten distinct existing identities are verified against the reviewed
+Current candidate: the [5800ed2 execution record](evidence/dual-resolver-current-5800ed2-2026-09-14.md)
+retains three Gradle passes and an unresolved fourth identity after correcting
+Gradle 9.7.1's diagnostic formats. The last graph omits both required adapter
+paths from its intrinsic failure. Its result remains FAILED; the complete
+current ten-case gate is not qualified. Historical results below do not fill
+that gap.
+
+Historical result: all ten distinct existing identities are verified against the reviewed
 `86a0be5` candidate: four retained Gradle cases, four retained Maven dual-adapter
 cases and two final current-API runtime guards from three separately bound
 executions. Both guards compiled current-API Java 17 probes, verified the complete
@@ -19,7 +26,7 @@ The finite plan contains exactly ten Java 17 cases:
 
 | Tool | Selected adapter runtime | Case | Count |
 | --- | --- | --- | ---: |
-| Gradle 8.14.4, Groovy | 5.5.2 and 5.5.3 | Both ordinary adapter declaration orders | 4 |
+| Gradle 9.7.1, Groovy (historical run: 8.14.4) | 5.5.2 and 5.5.3 | Both ordinary adapter declaration orders | 4 |
 | Maven 3.9.14 | 5.5.2 and 5.5.3 | Both ordinary adapter declaration orders | 4 |
 | Maven 3.9.14, external Java process | 5.5.2 and 5.5.3 | One adapter with all three coherent opposite-runtime anchors, without Enforcer | 2 |
 
@@ -73,6 +80,47 @@ edges, foreign versions/modules, extra causes, missing paths and unbound reasons
 Retain these intrinsic failures explicitly. A partially rejected graph is not a
 coherent or executable ShardingSphere runtime; normal runtime-coherence evidence
 remains in the separate existing A-24 checks.
+
+### Root identity across the recorded Gradle versions
+
+Gradle 9.7.1's first current-candidate native case rejects both adapters with
+the expected capability conflict, but identifies their owner as
+`root project 'dual-resolver-boundary-consumer'`. The older 8.14.4 record uses
+`root project :`. Its five request coordinates and declaration order are unchanged.
+The original current-candidate invocation remains failed because the verifier
+incorrectly required only the older display name.
+
+The corrected verifier must accept exactly those two display names for the
+fixed fixture and bind all five direct requests, both unresolved adapter edges
+and any intrinsic root/path evidence to one consistent identity per graph.
+Foreign root names, included/subproject identities, mixed display names, extra
+requests, reordered declarations and unrelated native failures remain rejected.
+Keep actual display names in the retained graph and returned evidence; do not
+rewrite Gradle output or weaken capability and strict-constraint checks.
+
+The same retained Gradle 9.7.1 graph uses
+`org.gradle.internal.component.resolution.failure.exception.ComponentSelectionException`
+as the capability leaf, where the historical graph used
+`org.gradle.api.GradleException`. Only these exact leaf types are accepted for
+that cause. Both module rejection sections, exact opposite providers, published
+capabilities and the two-element exception chain remain mandatory. This does
+not by itself authorize another exception type for an intrinsic strict-version failure.
+
+The next native invocation passed the first case, then exposed Gradle 9.7.1's
+intrinsic formats in the opposite declaration order. Executor dependency-path
+conflicts use the exact `ComponentSelectionException` type with the existing
+module, path and reason text. SPI constraint conflicts use the exact
+`org.gradle.internal.component.resolution.failure.exception.ConflictingConstraintsException`
+type and a compact header followed by exactly two version/adapter/`runtimeElements`
+lines. Accept that compact form only for SPI, binding both versions and providers
+to its receipt-pinned strict constraints. The compact native format does not
+print path/reason text: retain those facts from the published metadata separately,
+and do not claim that Gradle printed them. Bind the complete compact message to
+an actual native rejection section for that same SPI module, including when
+Gradle elides a second edge with an identical cause. Foreign types, providers,
+variants, versions, extra lines or an unbound native cause must still fail.
+Both earlier invocations keep their failed outcomes; another complete current
+execution is required after this correction.
 
 Apply only `java-base` to register the standard JVM attribute compatibility rules,
 so dependencies targeting Java 8 remain eligible under Java 17. Do not apply the

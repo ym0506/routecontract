@@ -1,13 +1,20 @@
 # Existing runtime lifecycle acceptance: A-11, A-12 and A-13
 
-Status: candidate `86a0be5` is accepted within the existing six A-11/A-12/A-13 cells after
+Current candidate: **6/6 existing A-11/A-12/A-13 cases passed** on `5800ed2`,
+Java 17.0.20.1+1 and Gradle 9.7.1. The [current evidence](evidence/current-runtime-and-installation-5800ed2-2026-09-14.md)
+records both MySQL controls, four pre-action rejections, terminated-log review
+and unchanged input bindings. The historical source identities below are preserved.
+
+Historical 86a0be5 status: candidate `86a0be5` is accepted within the existing six A-11/A-12/A-13 cells after
 independent review of full terminated JVM logs and final input bindings. See the
 [new candidate evidence](evidence/runtime-lifecycle-final-86a0be5-2026-09-08.md). The
 [corrected 4e execution](evidence/runtime-lifecycle-final-candidate-2026-09-08.md) remains
 separately accepted for its original bytes; its first-run predecessor remains NOT_ACCEPTED.
 No acceptance scope was added.
 
-## Frozen execution inputs
+<a id="frozen-execution-inputs"></a>
+
+## Historical 86a0be5 frozen execution inputs
 
 - Production source: `86a0be5d2e444f3b73925122fa448d9d1a324edd`.
 - Local coordinated 0.2.0 staging: one neutral core and exact 5.5.2/5.5.3 adapters.

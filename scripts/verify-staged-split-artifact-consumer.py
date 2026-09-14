@@ -16,6 +16,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+import time
 import xml.etree.ElementTree as ET
 
 GROUP = 'io.github.ym0506.routecontract'
@@ -26,6 +27,24 @@ LANES = {'5.5.2': MODULES[2], '5.5.3': MODULES[1]}
 NAMESPACE = 'https://schema.gradle.org/dependency-verification'
 JUNIT_NAME = 'TEST-io.github.ym0506.routecontract.consumer.StagedArtifactMySqlTest.xml'
 TIMEOUT_SECONDS = 1200
+STAGED_RUN_TIMEOUT_SECONDS = 13 * 60
+# These are observed text signals, not conclusions about the cause of a failure.
+# Keep both labels and matched strings fixed; never serialize captured log text.
+FAILURE_SIGNALS = {
+    'UNKNOWN_HOST': (b'java.net.UnknownHostException',),
+    'CONNECTION_REFUSED': (b'Connection refused',),
+    'SOCKET_TIMEOUT': (b'java.net.SocketTimeoutException',),
+    'TLS_HANDSHAKE': (b'javax.net.ssl.SSLHandshakeException',),
+    'HTTP_502': (b'Received status code 502', b'HTTP response code: 502'),
+    'HTTP_503': (b'Received status code 503', b'HTTP response code: 503'),
+    'HTTP_504': (b'Received status code 504', b'HTTP response code: 504'),
+    'GRADLE_WRAPPER_FRAME': (b'org.gradle.wrapper.',),
+    'DEPENDENCY_VERIFICATION': (b'Dependency verification failed',),
+    'JAVA_OUT_OF_MEMORY': (b'java.lang.OutOfMemoryError',),
+    'DISK_FULL': (b'No space left on device',),
+    'COMPILATION_FAILED': (b'Compilation failed; see the compiler output',),
+    'TESTS_FAILED': (b'There were failing tests',),
+}
 
 
 class VerificationError(RuntimeError):
@@ -114,11 +133,47 @@ def clean_environment(gradle_home: Path) -> dict[str, str]:
     return environment
 
 
-def run(command: list[str], cwd: Path, environment: dict[str, str], log: Path) -> str:
-    with log.open('w', encoding='utf-8') as output:
-        result = subprocess.run(command, cwd=cwd, env=environment, stdin=subprocess.DEVNULL,
-                                stdout=output, stderr=subprocess.STDOUT, timeout=TIMEOUT_SECONDS)
+def failure_diagnostic(log: Path, returncode: int | None, *, timed_out: bool) -> dict:
+    digest = hashlib.sha256()
+    byte_count = 0
+    observed = set()
+    overlap = max(len(pattern) for patterns in FAILURE_SIGNALS.values() for pattern in patterns) - 1
+    tail = b''
+    with log.open('rb') as source:
+        while block := source.read(64 * 1024):
+            digest.update(block)
+            byte_count += len(block)
+            window = tail + block
+            observed.update(label for label, patterns in FAILURE_SIGNALS.items()
+                            if any(pattern in window for pattern in patterns))
+            tail = window[-overlap:]
+    return {'formatVersion': 1, 'outcome': 'TIMED_OUT' if timed_out else 'FAILED',
+            'nativeExitCode': returncode, 'timedOut': timed_out,
+            'logByteCount': byte_count, 'logSha256': digest.hexdigest(),
+            'observedSignals': sorted(observed) or ['UNKNOWN']}
+
+
+def retain_failure_diagnostic(log: Path, returncode: int | None, *, timed_out: bool) -> None:
+    try:
+        serialized = json.dumps(failure_diagnostic(log, returncode, timed_out=timed_out), sort_keys=True)
+        print(f'STAGED_SPLIT_CONSUMER_FAILURE_DIAGNOSTIC {serialized}', flush=True)
+        log.with_name(f'{log.stem}-failure.json').write_text(serialized + '\n', encoding='utf-8')
+    except OSError:
+        # Diagnostic I/O must not replace the original process failure or timeout.
+        print('STAGED_SPLIT_CONSUMER_DIAGNOSTIC_UNAVAILABLE', file=sys.stderr, flush=True)
+
+
+def run(command: list[str], cwd: Path, environment: dict[str, str], log: Path,
+        *, timeout_seconds: float = TIMEOUT_SECONDS) -> str:
+    try:
+        with log.open('w', encoding='utf-8') as output:
+            result = subprocess.run(command, cwd=cwd, env=environment, stdin=subprocess.DEVNULL,
+                                    stdout=output, stderr=subprocess.STDOUT, timeout=timeout_seconds)
+    except subprocess.TimeoutExpired:
+        retain_failure_diagnostic(log, None, timed_out=True)
+        raise
     if result.returncode != 0:
+        retain_failure_diagnostic(log, result.returncode, timed_out=False)
         raise VerificationError(f'Consumer command failed with exit {result.returncode}; inspect {log}')
     return log.read_text(encoding='utf-8', errors='replace')
 
@@ -150,7 +205,7 @@ def copy_consumer(root: Path, destination: Path, runtime: str, receipt: dict) ->
 
 
 def verify_lane(root: Path, temporary: Path, evidence: Path, repository: Path,
-                runtime: str, adapter: str, receipt: dict) -> dict:
+                runtime: str, adapter: str, receipt: dict, *, deadline: float | None = None) -> dict:
     consumer = temporary / f'consumer-{runtime}'
     cache = temporary / f'gradle-home-{runtime}'
     copy_consumer(root, consumer, runtime, receipt)
@@ -169,7 +224,9 @@ def verify_lane(root: Path, temporary: Path, evidence: Path, repository: Path,
     verify_receipt(repository, receipt)
     print(f'Checking staged {runtime} consumer with a fresh dependency cache...', flush=True)
     try:
-        output = run([*arguments, 'clean', 'check'], consumer, environment, lane_evidence / 'gradle.log')
+        remaining = TIMEOUT_SECONDS if deadline is None else min(TIMEOUT_SECONDS, max(0, deadline - time.monotonic()))
+        output = run([*arguments, 'clean', 'check'], consumer, environment, lane_evidence / 'gradle.log',
+                     timeout_seconds=remaining)
     finally:
         retain_lane_evidence(consumer, lane_evidence)
     markers = [f'ROUTECONTRACT_STAGED_GRAPH_VERIFIED version={runtime} artifacts=2 ',
@@ -201,9 +258,10 @@ def main(argv: list[str] | None = None) -> int:
     receipt = repository_receipt(repository)
     evidence.mkdir(parents=True)
     (evidence / 'staged-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+    deadline = time.monotonic() + STAGED_RUN_TIMEOUT_SECONDS
     with tempfile.TemporaryDirectory(prefix='routecontract-staged-consumer-') as temporary:
         temporary_root = Path(temporary).resolve()
-        lanes = [verify_lane(root, temporary_root, evidence, repository, runtime, adapter, receipt)
+        lanes = [verify_lane(root, temporary_root, evidence, repository, runtime, adapter, receipt, deadline=deadline)
                  for runtime, adapter in LANES.items()]
     summary = {'formatVersion': 1, 'routeContractVersion': VERSION,
                'publicRepositoryConsumptionVerified': False, 'lanes': lanes,
