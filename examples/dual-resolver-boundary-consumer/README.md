@@ -1,10 +1,11 @@
 # Dual-resolver and opposite-runtime boundary fixtures
 
-Status: **planned; preparation only**. These fixtures implement the finite ten-case
+These fixtures implement the existing finite ten-case
 plan in [`docs/dual-resolver-boundary-acceptance.md`](../../docs/dual-resolver-boundary-acceptance.md).
-They require the newly reviewed 0.2.0 candidate containing the A-09 guard correction.
+Each execution must use its explicitly pinned 0.2.0 candidate and input manifest.
 Preparing or compiling synthetic fixture inputs is not evidence that a staged
-resolver or runtime case passed.
+resolver or runtime case passed; consult the linked acceptance record for each
+candidate's executed scope and any retained failed attempts.
 
 There are four Gradle dual-adapter cases, four Maven dual-adapter cases and two
 Maven-resolved external Java guard cases. Java is exactly 17. These minimal
@@ -47,7 +48,7 @@ component counts.
 
 ## Gradle native conflict
 
-Use pinned Gradle 8.14.4 with actual Java 17, trusted IPv4 settings, an independent
+Use the current pinned Gradle 9.7.1 with actual Java 17, trusted IPv4 settings, an independent
 private user home, strict receipt-backed verification metadata and a fresh
 dependency cache. Supply the controlled URL through
 `-ProutecontractRepositoryUrl=http://127.0.0.1:<port>/`. The build rejects all other

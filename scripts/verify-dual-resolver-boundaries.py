@@ -137,12 +137,14 @@ def verify_root_requests(case, graph, selected, unresolved):
     expected = [coordinate(module) for module in case['order']] + [
         f'{SS}:{module}:{case["runtime"]}' for module in anchors(case['runtime'])]
     edges = graph.get('rootDependencies', [])
+    root_identity = edges[0].get('from') if edges else None
     if (len(edges) != 5 or [e.get('requested') for e in edges] != expected
-            or any(e.get('from') != 'root project :' or e.get('constraint') is not False for e in edges)):
+            or root_identity not in ('root project :', "root project 'dual-resolver-boundary-consumer'")
+            or any(e.get('from') != root_identity or e.get('constraint') is not False for e in edges)):
         raise BoundaryError('Actual five ordinary direct requests and their declaration order must match the fixture')
     for edge in edges:
         requested = edge['requested']
-        root_failure = [e for e in unresolved if e.get('from') == 'root project :' and e.get('requested') == requested]
+        root_failure = [e for e in unresolved if e.get('from') == root_identity and e.get('requested') == requested]
         if edge.get('resolved') is True:
             if (requested.startswith(GROUP + ':') or root_failure
                     or edge.get('selected') != requested or requested not in selected):
@@ -152,15 +154,15 @@ def verify_root_requests(case, graph, selected, unresolved):
                 raise BoundaryError('Every unresolved direct request must have exactly one matching actual root edge')
         else:
             raise BoundaryError('Root edge resolution state must be an actual JSON Boolean')
-    return expected
+    return expected, root_identity
 
 
-def verify_intrinsic_strict(node, case, selected, metadata):
+def verify_intrinsic_strict(node, case, selected, metadata, root_identity):
     own = node['requested']
     fields = own.split(':')
     modules = ('shardingsphere-infra-executor', 'shardingsphere-infra-spi')
     if (len(fields) != 3 or fields[0] != SS or fields[1] not in modules or fields[2] not in ADAPTERS
-            or node['attempted'] != own or (node['from'] != 'root project :'
+            or node['attempted'] != own or (node['from'] != root_identity
                 and (node['from'] not in selected or not node['from'].startswith(SS + ':')))):
         raise BoundaryError('Only actual executor/SPI edges at exact5.5.2/5.5.3 may have intrinsic strict collisions')
     module_coordinate = ':'.join(fields[:2])
@@ -189,16 +191,19 @@ def verify_intrinsic_strict(node, case, selected, metadata):
         if path is None:
             raise BoundaryError('An unrecognized line appears inside the intrinsic strict failure')
         kind, description, reason = path.groups()
-        segments = [re.fullmatch(r"'([^']+)'(?: \(([^)]+)\))?", segment) for segment in description.split(' --> ')]
-        if (len(segments) < 2 or any(segment is None for segment in segments)
-                or segments[0].groups() != ('root project :', 'dualAdapterRuntime')):
+        path_segments = description.split(' --> ')
+        if (len(path_segments) < 2
+                or path_segments[0] != f"'{root_identity}' (dualAdapterRuntime)"):
             raise BoundaryError('Intrinsic failure paths must start at the actual consumer configuration')
-        coordinates = [segment.group(1) for segment in segments]
-        variants = [segment.group(2) for segment in segments]
+        segments = [re.fullmatch(r"'([^']+)'(?: \(([^)]+)\))?", segment) for segment in path_segments[1:]]
+        if any(segment is None for segment in segments):
+            raise BoundaryError('Intrinsic failure paths must contain exact quoted module coordinates')
+        coordinates = [root_identity, *[segment.group(1) for segment in segments]]
+        variants = ['dualAdapterRuntime', *[segment.group(2) for segment in segments]]
         strict = re.fullmatch(re.escape(module_coordinate) + r':\{strictly (5[.]5[.][23])\}', coordinates[-1])
         if strict:
             matching = [pin for pin in pins if pin['adapter'] == coordinates[1] and pin['version'] == strict.group(1)]
-            if (len(segments) != 3 or variants != ['dualAdapterRuntime', 'runtimeElements', None]
+            if (len(path_segments) != 3 or variants != ['dualAdapterRuntime', 'runtimeElements', None]
                     or len(matching) != 1 or kind != matching[0]['kind'] or reason != matching[0]['reason']):
                 raise BoundaryError('The strict adapter path, kind, version or reason differs from reviewed module metadata')
             found.append(matching[0]['adapter'])
@@ -246,13 +251,14 @@ def verify_gradle_dual(case, exit_code, output, graph, published_capabilities, *
             or any(c.startswith(SS + ':') and not re.fullmatch(re.escape(SS) + r':shardingsphere-[a-z0-9.-]+:5[.]5[.][23]', c) for c in selected)
             or any(c.startswith(GROUP + ':') and c != coordinate('routecontract-core') for c in selected)):
         raise BoundaryError('The retained partial graph contains a foreign version, duplicate or conflicting first-party selection')
-    root_requests = verify_root_requests(case, graph, selected, unresolved)
+    root_requests, root_identity = verify_root_requests(case, graph, selected, unresolved)
     adapter_nodes = [n for n in unresolved if n.get('requested', '').startswith(GROUP + ':')]
     if (len(adapter_nodes) != 2 or {n.get('requested') for n in adapter_nodes} != set(expected)
-            or any(n.get('from') != 'root project :' for n in adapter_nodes)):
+            or any(n.get('from') != root_identity for n in adapter_nodes)):
         raise BoundaryError('The actual first-party unresolved selectors must be exactly both direct adapters')
     intrinsic_nodes = [n for n in unresolved if n not in adapter_nodes]
-    intrinsic = [verify_intrinsic_strict(node, case, selected, published_constraints or {}) for node in intrinsic_nodes]
+    intrinsic = [verify_intrinsic_strict(node, case, selected, published_constraints or {}, root_identity)
+                 for node in intrinsic_nodes]
     native_unresolved = set(UNRESOLVED.findall(output))
     if not set(expected) <= native_unresolved or not native_unresolved <= {n['requested'] for n in unresolved}:
         raise BoundaryError('Native Gradle unresolved selectors differ from the actual retained rejected graph')
@@ -271,7 +277,9 @@ def verify_gradle_dual(case, exit_code, output, graph, published_capabilities, *
         messages = node.get('failureMessages', [])
         if (len(messages) != 2 or messages[0] != {
                 'exceptionType': 'org.gradle.internal.resolve.ModuleVersionResolveException', 'message': f'Could not resolve {own}.'}
-                or messages[1].get('exceptionType') != 'org.gradle.api.GradleException'
+                or messages[1].get('exceptionType') not in (
+                    'org.gradle.api.GradleException',
+                    'org.gradle.internal.component.resolution.failure.exception.ComponentSelectionException')
                 or not isinstance(messages[1].get('message'), str)):
             raise BoundaryError('An unrelated native exception appears in the capability cause chain')
         causal = messages[1]['message']
@@ -301,7 +309,8 @@ def verify_gradle_dual(case, exit_code, output, graph, published_capabilities, *
             'capabilities': sorted(observed), 'declaredAdapters': expected,
             'capabilityUnresolvedSelectors': sorted(expected),
             'unresolvedSelectors': sorted({node['requested'] for node in unresolved}),
-            'actualRootRequests': root_requests, 'intrinsicStrictCollisions': intrinsic,
+            'actualRootRequests': root_requests, 'actualRootProject': root_identity,
+            'intrinsicStrictCollisions': intrinsic,
             'coherentResolvedRuntimeClaimed': False}
 
 

@@ -248,6 +248,48 @@ class GradleDualCauseTest(unittest.TestCase):
             with self.subTest(code=code, output=text), self.assertRaises(MODULE.BoundaryError):
                 self.verify(case, text, graph, code)
 
+    def test_gradle_971_named_root_keeps_the_actual_direct_request_identity(self):
+        # Actual current native failure: the owner display name changed, not
+        # the five requested coordinates, their order or the capability cause.
+        root = "root project 'dual-resolver-boundary-consumer'"
+        for case in self.cases():
+            output, graph = gradle_fixture(case, self.capabilities[0])
+            for edge in graph['rootDependencies'] + graph['unresolved']:
+                edge['from'] = root
+            with self.subTest(case=case['id']):
+                proof = self.verify(case, output, graph)
+                self.assertEqual('NATIVE_CAPABILITY_REJECTED', proof['result'])
+                self.assertEqual(root, proof['actualRootProject'])
+
+    def test_foreign_or_mixed_root_display_names_cannot_pass(self):
+        case = self.cases()[0]
+        output, graph = gradle_fixture(case, self.capabilities[0])
+        for owner in ("root project 'other-consumer'", "project ':child'", 'root project :child'):
+            invalid = copy.deepcopy(graph)
+            for edge in invalid['rootDependencies'] + invalid['unresolved']:
+                edge['from'] = owner
+            with self.subTest(owner=owner), self.assertRaises(MODULE.BoundaryError):
+                self.verify(case, output, invalid)
+        for collection in ('rootDependencies', 'unresolved'):
+            invalid = copy.deepcopy(graph)
+            invalid[collection][0]['from'] = "root project 'dual-resolver-boundary-consumer'"
+            with self.subTest(collection=collection), self.assertRaises(MODULE.BoundaryError):
+                self.verify(case, output, invalid)
+
+    def test_component_selection_leaf_preserves_exact_capability_cause_checks(self):
+        case = self.cases()[0]
+        output, graph = gradle_fixture(case, self.capabilities[0])
+        leaf = 'org.gradle.internal.component.resolution.failure.exception.ComponentSelectionException'
+        for node in graph['unresolved']:
+            node['failureMessages'][1]['exceptionType'] = leaf
+        self.assertEqual('NATIVE_CAPABILITY_REJECTED', self.verify(case, output, graph)['result'])
+        for foreign in ('java.lang.RuntimeException', leaf + 'Extra',
+                        'org.gradle.internal.resolve.ArtifactResolveException'):
+            invalid = copy.deepcopy(graph)
+            invalid['unresolved'][0]['failureMessages'][1]['exceptionType'] = foreign
+            with self.subTest(foreign=foreign), self.assertRaises(MODULE.BoundaryError):
+                self.verify(case, output, invalid)
+
     def test_report_must_bind_the_case_and_actual_direct_anchor_destinations(self):
         case = self.cases()[0]
         output, graph = gradle_fixture(case, self.capabilities[0])
@@ -554,6 +596,22 @@ class GradleIntrinsicCollisionTest(unittest.TestCase):
             else: edges[-1]['selected']='other:foreign:1'
             with self.subTest(mutation=mutation), self.assertRaises(MODULE.BoundaryError):
                 self.verify(case, output, invalid, metadata)
+
+    def test_named_root_is_bound_through_every_intrinsic_path(self):
+        case, output, graph, metadata = intrinsic_fixture()
+        root = "root project 'dual-resolver-boundary-consumer'"
+        output = output.replace('root project :', root)
+        graph = json.loads(json.dumps(graph).replace('root project :', root))
+        proof = self.verify(case, output, graph, metadata)
+        self.assertEqual(root, proof['actualRootProject'])
+        self.assertEqual(3, len(proof['intrinsicStrictCollisions']))
+        invalid = copy.deepcopy(graph)
+        node = next(n for n in invalid['unresolved'] if n['requested'].startswith(SS_GROUP + ':'))
+        original = node['failureMessages'][1]['message']
+        node['failureMessages'][1]['message'] = original.replace(root, 'root project :', 1)
+        changed_output = output.replace(original, node['failureMessages'][1]['message'])
+        with self.assertRaises(MODULE.BoundaryError):
+            self.verify(case, changed_output, invalid, metadata)
 
     def test_retained_java_base_runtime_variant_paths_keep_all_exact_cause_restrictions(self):
         # Recorded native graph SHA256: 7bcbefb518c2d43f1ddd237884644b6275b176156dc2bbef9e62382fb584dbd6

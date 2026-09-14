@@ -1,6 +1,11 @@
 # Remaining A-15 / A-17 resolver and runtime boundaries
 
-Status: all ten distinct existing identities are verified against the reviewed
+Current candidate: the first 5800ed2 invocation stopped when the verifier could
+not recognize Gradle 9.7.1's native root display name and capability leaf type.
+The exact retained graph now reparses with the correction below; this is a
+diagnostic, not a new native execution or a completed current ten-case gate.
+
+Historical result: all ten distinct existing identities are verified against the reviewed
 `86a0be5` candidate: four retained Gradle cases, four retained Maven dual-adapter
 cases and two final current-API runtime guards from three separately bound
 executions. Both guards compiled current-API Java 17 probes, verified the complete
@@ -19,7 +24,7 @@ The finite plan contains exactly ten Java 17 cases:
 
 | Tool | Selected adapter runtime | Case | Count |
 | --- | --- | --- | ---: |
-| Gradle 8.14.4, Groovy | 5.5.2 and 5.5.3 | Both ordinary adapter declaration orders | 4 |
+| Gradle 9.7.1, Groovy (historical run: 8.14.4) | 5.5.2 and 5.5.3 | Both ordinary adapter declaration orders | 4 |
 | Maven 3.9.14 | 5.5.2 and 5.5.3 | Both ordinary adapter declaration orders | 4 |
 | Maven 3.9.14, external Java process | 5.5.2 and 5.5.3 | One adapter with all three coherent opposite-runtime anchors, without Enforcer | 2 |
 
@@ -73,6 +78,31 @@ edges, foreign versions/modules, extra causes, missing paths and unbound reasons
 Retain these intrinsic failures explicitly. A partially rejected graph is not a
 coherent or executable ShardingSphere runtime; normal runtime-coherence evidence
 remains in the separate existing A-24 checks.
+
+### Root identity across the recorded Gradle versions
+
+Gradle 9.7.1's first current-candidate native case rejects both adapters with
+the expected capability conflict, but identifies their owner as
+`root project 'dual-resolver-boundary-consumer'`. The older 8.14.4 record uses
+`root project :`. Its five request coordinates and declaration order are unchanged.
+The original current-candidate invocation remains failed because the verifier
+incorrectly required only the older display name.
+
+The corrected verifier must accept exactly those two display names for the
+fixed fixture and bind all five direct requests, both unresolved adapter edges
+and any intrinsic root/path evidence to one consistent identity per graph.
+Foreign root names, included/subproject identities, mixed display names, extra
+requests, reordered declarations and unrelated native failures remain rejected.
+Keep actual display names in the retained graph and returned evidence; do not
+rewrite Gradle output or weaken capability and strict-constraint checks.
+
+The same retained Gradle 9.7.1 graph uses
+`org.gradle.internal.component.resolution.failure.exception.ComponentSelectionException`
+as the capability leaf, where the historical graph used
+`org.gradle.api.GradleException`. Only these exact leaf types are accepted for
+that cause. Both module rejection sections, exact opposite providers, published
+capabilities and the two-element exception chain remain mandatory. This does
+not authorize another exception type for an intrinsic strict-version failure.
 
 Apply only `java-base` to register the standard JVM attribute compatibility rules,
 so dependencies targeting Java 8 remain eligible under Java 17. Do not apply the
