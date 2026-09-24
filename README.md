@@ -12,6 +12,10 @@
   <a href="#usage">Usage</a> · <a href="#see-it-work">Example</a> · <a href="#install-014">Install</a> · <a href="#documentation">Documentation</a> · <a href="README.ko.md">한국어</a>
 </p>
 
+> **Status (2026-09):** maintenance mode. v0.1.4 is the supported release and only bug fixes are
+> planned; the 0.2 adapter split is paused. See [Supported scope](#supported-scope) for what it
+> checks and what it does not.
+
 **Your test can return the right order while querying an extra database.**
 
 After you change a query or sharding rule, an order lookup can still return the expected order
@@ -200,8 +204,9 @@ coverage are outside this release's scope. Operations with no observed SQL, call
 or caller interruption cannot establish a passing contract. See the
 [full capture boundary](docs/reference-guide.md#v01-support-boundary).
 
-**Project status:** v0.1.4 is published on Maven Central. The
-[0.2 core/adapter split](https://github.com/ym0506/routecontract/pull/62) is in development;
+**Project status:** maintenance mode (bug fixes only). v0.1.4 is published on Maven Central
+and remains the supported release. The
+[0.2 core/adapter split](https://github.com/ym0506/routecontract/pull/62) is paused;
 5.5.2 support is unreleased. Published consumer checks are maintainer-run evidence.
 Independent integration and repeat use have not yet been verified.
 

@@ -1,8 +1,8 @@
 # Award-oriented development plan: August 11-27, 2026
 
 Historical plan for the August contest deadline. It preserves the priorities and assumptions
-from that period. For current product work, see the [roadmap](product-roadmap.md);
-for a new installation, use the [first-project guide](first-project.md).
+from that period. For current product work, see the [roadmap](../../product-roadmap.md);
+for a new installation, use the [first-project guide](../../first-project.md).
 
 This is an execution plan for one student developer with substantial available time. It cannot guarantee an award. Its purpose is to maximize the amount of reviewer-verifiable evidence before the submission deadline while preventing a technically interesting but unfinished prototype.
 
@@ -120,7 +120,7 @@ End each day with a 20-minute audit:
 2. Record command, exit code, environment, revision and raw-result path for every new claim.
 3. Rerun the narrow changed test and the relevant MySQL control.
 4. Search artifacts for credentials, raw parameters, private notes and machine-specific paths.
-5. Update [the evidence matrix](evidence-matrix.md); do not promote a row without its exit criteria.
+5. Update [the evidence matrix](../../evidence-matrix.md); do not promote a row without its exit criteria.
 6. Write tomorrow's first failing test or smallest unblocker.
 
 ## Report and video allocation
