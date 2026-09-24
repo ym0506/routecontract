@@ -1,7 +1,10 @@
 # RouteContract product roadmap
 
 Planning snapshot updated: 2026-09-14. Items below are not release or delivery promises.
-The August contest schedule in [development-plan.md](development-plan.md) is historical;
+
+**Status (2026-09-24):** maintenance mode. v0.1.4 remains the supported release and only bug
+fixes are planned; the 0.2 adapter work in order 4 and the later items are paused.
+The August contest schedule in [development-plan.md](archive/2026-contest/development-plan.md) is historical;
 this document describes subsequent product work. Released scope remains in the README.
 
 ## Product direction
