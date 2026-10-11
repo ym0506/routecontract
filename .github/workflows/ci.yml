@@ -470,7 +470,7 @@ jobs:
           } > build/ci-evidence/environment.txt 2>&1
 
       - name: Upload aggregate SBOM
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: routecontract-sbom-${{ github.sha }}
           path: |
@@ -489,7 +489,7 @@ jobs:
 
       - name: Upload test and environment evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: routecontract-test-evidence-${{ github.sha }}
           path: |
@@ -505,7 +505,7 @@ jobs:
 
       - name: Upload installed consumer evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: routecontract-installed-consumer-evidence-${{ github.sha }}
           path: |
@@ -617,7 +617,7 @@ jobs:
 
       - name: Upload Java 21 Maven/MySQL evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: routecontract-maven-java21-evidence-${{ github.sha }}
           path: |
@@ -765,7 +765,7 @@ jobs:
 
       - name: Upload Gradle Kotlin pilot evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: routecontract-gradle-kotlin-evidence-${{ github.sha }}
           path: ${{ runner.temp }}/routecontract-gradle-kotlin-evidence/
@@ -917,7 +917,7 @@ jobs:
 
       - name: Upload Gradle 9.5.1 build-shape evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: routecontract-gradle95-build-shape-${{ github.sha }}
           path: ${{ runner.temp }}/routecontract-gradle95-evidence/
