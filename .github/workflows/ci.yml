@@ -64,7 +64,7 @@ jobs:
           GRADLE_USER_HOME="${quickstart_gradle_home}" ./scripts/quickstart-demo.sh
 
       - name: Set up report-package Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12.14'
           architecture: x64
@@ -542,7 +542,7 @@ jobs:
             | sed -n 's/^[[:space:]]*java.specification.version = //p')" = '21'
 
       - name: Set up exact Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12.14'
           architecture: x64
@@ -662,7 +662,7 @@ jobs:
             '4fd0541eb01b08f79a280484ec11569d87cebdf2b90a5e5b4bff695732d049ea'
 
       - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12.14'
           architecture: x64
@@ -820,7 +820,7 @@ jobs:
             | sed -n 's/^[[:space:]]*java.specification.version = //p')" = '17'
 
       - name: Set up exact Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12.14'
           architecture: x64
