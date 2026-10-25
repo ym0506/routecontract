@@ -65,7 +65,7 @@ dependencies {
     testRuntimeOnly 'org.apache.shardingsphere:shardingsphere-parser-sql-engine-mysql:5.5.3'
     testRuntimeOnly 'org.apache.shardingsphere:shardingsphere-authority-simple:5.5.3'
     testRuntimeOnly 'com.zaxxer:HikariCP:6.2.1'
-    testRuntimeOnly('com.mysql:mysql-connector-j:26.7.0') {
+    testRuntimeOnly('com.mysql:mysql-connector-j:26.10.0') {
         exclude group: 'com.google.protobuf', module: 'protobuf-java'
     }
 
