@@ -5,6 +5,10 @@ This program deliberately has no HTTP client, credential input, signing mode,
 or publication mode.  It accepts only an already signed Gradle Maven staging
 repository, an independently reviewed payload manifest, and a public-key-only
 GnuPG home.
+
+Each run handles exactly one Maven coordinate.  The reviewed manifest selects
+the artifact from a closed allowlist; every staging path, expected identity and
+output name is derived from that one selection.
 """
 
 from __future__ import annotations
@@ -29,7 +33,12 @@ import zipfile
 SCHEMA_VERSION = 1
 GROUP_ID = "io.github.ym0506.routecontract"
 GROUP_PATH = PurePosixPath("io/github/ym0506/routecontract")
-ARTIFACT_ID = "routecontract-shardingsphere-5.5"
+# Published library artifacts, each released as its own coordinate, staging
+# repository, upload bundle and receipt.  Nothing outside this list is accepted.
+ARTIFACT_IDS = (
+    "routecontract-shardingsphere-5.5",
+    "routecontract-shardingsphere-5.4.1-5.5.2",
+)
 CHECKSUMS = ("md5", "sha1", "sha256", "sha512")
 CHECKSUM_LENGTHS = {"md5": 32, "sha1": 40, "sha256": 64, "sha512": 128}
 ZIP_DATE_TIME = (1980, 1, 1, 0, 0, 0)
@@ -58,6 +67,7 @@ class BundleError(RuntimeError):
 
 
 class PreparedStaging(NamedTuple):
+    artifact_id: str
     version: str
     coordinate: dict[str, str]
     coordinate_path: str
@@ -75,6 +85,7 @@ class VerifiedBundleResult(NamedTuple):
     receipt_path: Path
     bundle_sha256: str
     receipt_sha256: str
+    artifact_id: str
 
 
 def _sha256(payload: bytes) -> str:
@@ -291,7 +302,12 @@ def _read_stable_regular(path: Path, label: str, maximum: int) -> bytes:
     return payload
 
 
-def _manifest(path: Path) -> tuple[dict[str, object], bytes, str, list[str]]:
+def _bundle_names(artifact_id: str, version: str) -> tuple[str, str]:
+    base = f"{artifact_id}-{version}-central-upload"
+    return f"{base}.zip", f"{base}-receipt.json"
+
+
+def _manifest(path: Path) -> tuple[dict[str, object], bytes, str, str, list[str]]:
     payload = _read_stable_regular(path, "reviewed payload manifest", MAX_MANIFEST_BYTES)
     value = _expect_object(
         _load_json(payload, "reviewed payload manifest", require_canonical=True),
@@ -305,7 +321,12 @@ def _manifest(path: Path) -> tuple[dict[str, object], bytes, str, list[str]]:
         "reviewed payload manifest coordinate",
         {"groupId", "artifactId", "version"},
     )
-    if coordinate["groupId"] != GROUP_ID or coordinate["artifactId"] != ARTIFACT_ID:
+    artifact_id = coordinate["artifactId"]
+    if (
+        coordinate["groupId"] != GROUP_ID
+        or type(artifact_id) is not str
+        or artifact_id not in ARTIFACT_IDS
+    ):
         raise BundleError("reviewed payload manifest has the wrong Maven coordinate")
     version = coordinate["version"]
     if not isinstance(version, str) or len(version) > 64:
@@ -316,7 +337,7 @@ def _manifest(path: Path) -> tuple[dict[str, object], bytes, str, list[str]]:
     if tuple(int(part) for part in match.groups()) <= (0, 1, 2):
         raise BundleError("reviewed payload manifest version must be greater than 0.1.2")
 
-    base = f"{ARTIFACT_ID}-{version}"
+    base = f"{artifact_id}-{version}"
     names = sorted(
         (
             f"{base}.jar",
@@ -350,14 +371,14 @@ def _manifest(path: Path) -> tuple[dict[str, object], bytes, str, list[str]]:
         raise BundleError(
             "reviewed payload manifest payloads must be the exact lexicographic allowlist"
         )
-    return value, payload, version, names
+    return value, payload, artifact_id, version, names
 
 
 def _expected_inventory(
-    version: str, payload_names: list[str]
+    artifact_id: str, version: str, payload_names: list[str]
 ) -> tuple[set[str], set[str], set[str]]:
-    coordinate_path = GROUP_PATH / ARTIFACT_ID / version
-    artifact_path = GROUP_PATH / ARTIFACT_ID
+    coordinate_path = GROUP_PATH / artifact_id / version
+    artifact_path = GROUP_PATH / artifact_id
     files: set[str] = set()
     optional_files: set[str] = set()
     for name in payload_names:
@@ -372,7 +393,9 @@ def _expected_inventory(
     for algorithm in CHECKSUMS:
         files.add(str(artifact_path / f"maven-metadata.xml.{algorithm}"))
 
-    parts = [*GROUP_PATH.parts, ARTIFACT_ID, version]
+    # Exactly one artifact directory is allowed, so a staging repository that
+    # also holds another coordinate (even another allowlisted one) fails closed.
+    parts = [*GROUP_PATH.parts, artifact_id, version]
     directories: set[str] = set()
     for length in range(1, len(parts) + 1):
         directories.add(str(PurePosixPath(*parts[:length])))
@@ -588,9 +611,11 @@ def _verify_checksum(contents: dict[str, bytes], source: str, sidecar: str, algo
         raise BundleError(f"checksum mismatch for staged file: {source}")
 
 
-def _verify_xml_coordinates(contents: dict[str, bytes], version: str) -> None:
-    coordinate_path = GROUP_PATH / ARTIFACT_ID / version
-    base = f"{ARTIFACT_ID}-{version}"
+def _verify_xml_coordinates(
+    contents: dict[str, bytes], artifact_id: str, version: str
+) -> None:
+    coordinate_path = GROUP_PATH / artifact_id / version
+    base = f"{artifact_id}-{version}"
     pom_name = str(coordinate_path / f"{base}.pom")
     pom = contents[pom_name]
     if b"<!DOCTYPE" in pom.upper() or b"<!ENTITY" in pom.upper():
@@ -604,7 +629,7 @@ def _verify_xml_coordinates(contents: dict[str, bytes], version: str) -> None:
         raise BundleError("staged POM has the wrong Maven namespace")
     expected = {
         "groupId": GROUP_ID,
-        "artifactId": ARTIFACT_ID,
+        "artifactId": artifact_id,
         "version": version,
     }
     for name, wanted in expected.items():
@@ -612,7 +637,7 @@ def _verify_xml_coordinates(contents: dict[str, bytes], version: str) -> None:
         if len(nodes) != 1 or nodes[0].text != wanted:
             raise BundleError(f"staged POM {name} does not match the coordinate")
 
-    metadata_name = str(GROUP_PATH / ARTIFACT_ID / "maven-metadata.xml")
+    metadata_name = str(GROUP_PATH / artifact_id / "maven-metadata.xml")
     metadata = contents[metadata_name]
     if b"<!DOCTYPE" in metadata.upper() or b"<!ENTITY" in metadata.upper():
         raise BundleError("staged Maven metadata must not contain a document type or entity")
@@ -624,7 +649,7 @@ def _verify_xml_coordinates(contents: dict[str, bytes], version: str) -> None:
         raise BundleError("staged Maven metadata has the wrong root element")
     checks = {
         "groupId": GROUP_ID,
-        "artifactId": ARTIFACT_ID,
+        "artifactId": artifact_id,
         "versioning/latest": version,
         "versioning/release": version,
     }
@@ -637,16 +662,18 @@ def _verify_xml_coordinates(contents: dict[str, bytes], version: str) -> None:
         raise BundleError("staged Maven metadata must contain only the reviewed version")
 
 
-def _verify_module_metadata(contents: dict[str, bytes], version: str) -> None:
-    coordinate_path = GROUP_PATH / ARTIFACT_ID / version
-    name = str(coordinate_path / f"{ARTIFACT_ID}-{version}.module")
+def _verify_module_metadata(
+    contents: dict[str, bytes], artifact_id: str, version: str
+) -> None:
+    coordinate_path = GROUP_PATH / artifact_id / version
+    name = str(coordinate_path / f"{artifact_id}-{version}.module")
     value = _load_json(contents[name], "staged Gradle Module Metadata", require_canonical=False)
     if not isinstance(value, dict):
         raise BundleError("staged Gradle Module Metadata must be a JSON object")
     component = value.get("component")
     if not isinstance(component, dict):
         raise BundleError("staged Gradle Module Metadata lacks a component object")
-    expected = {"group": GROUP_ID, "module": ARTIFACT_ID, "version": version}
+    expected = {"group": GROUP_ID, "module": artifact_id, "version": version}
     for key, wanted in expected.items():
         if component.get(key) != wanted:
             raise BundleError(
@@ -889,11 +916,11 @@ def _prepare_staging(
     _canonical_existing_path(repository, "staging repository", directory=True)
     if _UPPER_FINGERPRINT.fullmatch(expected_primary_fingerprint) is None:
         raise BundleError("expected primary fingerprint must be 40 uppercase hex characters")
-    manifest_value, manifest_bytes, version, payload_names = _manifest(
+    manifest_value, manifest_bytes, artifact_id, version, payload_names = _manifest(
         reviewed_manifest_path
     )
     expected_files, optional_files, expected_directories = _expected_inventory(
-        version, payload_names
+        artifact_id, version, payload_names
     )
     contents = _read_repository(
         repository, expected_files, optional_files, expected_directories
@@ -902,7 +929,7 @@ def _prepare_staging(
         public_gpg_home, expected_primary_fingerprint
     )
 
-    coordinate_path = GROUP_PATH / ARTIFACT_ID / version
+    coordinate_path = GROUP_PATH / artifact_id / version
     reviewed_records = manifest_value["payloads"]
     assert isinstance(reviewed_records, list)
     for record_value in reviewed_records:
@@ -921,12 +948,12 @@ def _prepare_staging(
             signature_checksum = f"{signature_path}.{algorithm}"
             if signature_checksum in contents:
                 _verify_checksum(contents, signature_path, signature_checksum, algorithm)
-    metadata_path = str(GROUP_PATH / ARTIFACT_ID / "maven-metadata.xml")
+    metadata_path = str(GROUP_PATH / artifact_id / "maven-metadata.xml")
     for algorithm in CHECKSUMS:
         _verify_checksum(contents, metadata_path, f"{metadata_path}.{algorithm}", algorithm)
 
-    _verify_xml_coordinates(contents, version)
-    _verify_module_metadata(contents, version)
+    _verify_xml_coordinates(contents, artifact_id, version)
+    _verify_module_metadata(contents, artifact_id, version)
     with tempfile.TemporaryDirectory(
         prefix="rc-central-key-", dir="/tmp"
     ) as temporary_public_home:
@@ -989,10 +1016,11 @@ def _prepare_staging(
     ):
         raise BundleError("internal staging partition must account for every file and 30 upload entries")
     return PreparedStaging(
+        artifact_id=artifact_id,
         version=version,
         coordinate={
             "groupId": GROUP_ID,
-            "artifactId": ARTIFACT_ID,
+            "artifactId": artifact_id,
             "version": version,
         },
         coordinate_path=str(coordinate_path),
@@ -1419,8 +1447,7 @@ def build_bundle(
         public_gpg_home,
         expected_primary_fingerprint,
     )
-    bundle_name = f"{ARTIFACT_ID}-{prepared.version}-central-upload.zip"
-    receipt_name = f"{ARTIFACT_ID}-{prepared.version}-central-upload-receipt.json"
+    bundle_name, receipt_name = _bundle_names(prepared.artifact_id, prepared.version)
     bundle = _zip_bytes(prepared.upload_entries)
     receipt_value = _receipt(
         prepared, bundle_name, bundle, expected_primary_fingerprint
@@ -1436,6 +1463,7 @@ def build_bundle(
         receipt_path=receipt_path,
         bundle_sha256=_sha256(bundle),
         receipt_sha256=_sha256(receipt),
+        artifact_id=prepared.artifact_id,
     )
 
 
@@ -1508,12 +1536,11 @@ def verify_bundle(
         raise BundleError("bundle SHA-256 mismatch against the receipt")
     if bundle_record.get("byteCount") != len(bundle):
         raise BundleError("bundle byte count mismatch against the receipt")
-    expected_name = f"{ARTIFACT_ID}-{prepared.version}-central-upload.zip"
+    expected_name, expected_receipt_name = _bundle_names(
+        prepared.artifact_id, prepared.version
+    )
     if bundle_path.name != expected_name or bundle_record.get("name") != expected_name:
         raise BundleError("bundle filename mismatch")
-    expected_receipt_name = (
-        f"{ARTIFACT_ID}-{prepared.version}-central-upload-receipt.json"
-    )
     if receipt_path.name != expected_receipt_name:
         raise BundleError("bundle receipt filename mismatch")
     _verify_zip(bundle, prepared)
@@ -1528,6 +1555,7 @@ def verify_bundle(
         receipt_path=receipt_path,
         bundle_sha256=_sha256(bundle),
         receipt_sha256=_sha256(receipt_bytes),
+        artifact_id=prepared.artifact_id,
     )
 
 
@@ -1580,7 +1608,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"routecontract Central bundle error: {error}", file=sys.stderr)
         return 2
     print(
-        f"{marker} coordinate={GROUP_ID}:{ARTIFACT_ID}:{result.version} entries=30 "
+        f"{marker} coordinate={GROUP_ID}:{result.artifact_id}:{result.version} entries=30 "
         f"bundleSha256={result.bundle_sha256} "
         f"receiptSha256={result.receipt_sha256} VERIFIED"
     )

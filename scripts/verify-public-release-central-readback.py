@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Compare anonymous Central downloads with a verified single-artifact 0.1 bundle.
 
+Each run reads back exactly the one artifact that the verified bundle names.
 This performs no publication, credential handling or public consumer execution.
 """
 from __future__ import annotations
@@ -53,6 +54,7 @@ class VerifiedSnapshot(NamedTuple):
     fingerprint: str
     bundle_bytes: bytes
     entries: tuple[dict, ...]
+    artifact_id: str
 
 
 def verified_snapshot(*, repository: Path, bundle: Path, receipt: Path,
@@ -69,10 +71,13 @@ def verified_snapshot(*, repository: Path, bundle: Path, receipt: Path,
     if hashlib.sha256(archive_bytes).hexdigest() != result.bundle_sha256 or hashlib.sha256(receipt_bytes).hexdigest() != result.receipt_sha256:
         raise ReadbackError('LOCAL_INPUT_CHANGED')
     value = json.loads(receipt_bytes)
+    artifact_id = artifacts.published_module(result.artifact_id)
+    if value['coordinate']['artifactId'] != artifact_id:
+        raise ReadbackError('LOCAL_INPUT_CHANGED')
     return VerifiedSnapshot(artifacts.stable_version(result.version), result.bundle_sha256,
                             result.receipt_sha256, value['reviewedPayloadManifest']['sha256'],
                             expected_primary_fingerprint, archive_bytes,
-                            tuple(value['bundle']['entries']))
+                            tuple(value['bundle']['entries']), artifact_id)
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -162,15 +167,15 @@ def _write_json(directory: Path, name: str, value: dict) -> None:
 
 def _consumer_receipt(snapshot: VerifiedSnapshot) -> dict:
     by_path = {item['path']: item for item in snapshot.entries}
+    module = artifacts.published_module(snapshot.artifact_id)
     records = []
-    for module in artifacts.MODULES:
-        for extension in artifacts.EXTENSIONS:
-            name = f'{module}-{snapshot.version}.{extension}'
-            path = (artifacts.GROUP_PATH / module / snapshot.version / name).as_posix()
-            record = by_path[path]
-            records.append({'module': module, 'name': name, 'relativePath': path, 'sha256': record['sha256']})
+    for extension in artifacts.EXTENSIONS:
+        name = f'{module}-{snapshot.version}.{extension}'
+        path = (artifacts.GROUP_PATH / module / snapshot.version / name).as_posix()
+        record = by_path[path]
+        records.append({'module': module, 'name': name, 'relativePath': path, 'sha256': record['sha256']})
     return artifacts.validate_consumer_receipt({
-        'formatVersion': 1, 'routeContractVersion': snapshot.version, 'artifacts': records})
+        'formatVersion': 1, 'routeContractVersion': snapshot.version, 'artifacts': records}, module)
 
 
 def readback(snapshot: VerifiedSnapshot, evidence: Path, *, opener=None) -> int:

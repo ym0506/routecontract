@@ -416,6 +416,116 @@ jobs:
             --public-gpg-home "${public_gnupg_home}" \
             --expected-primary-fingerprint "${fingerprint}"
 
+          # The 5.4.1-5.5.2 artifact is its own coordinate: a separate staging
+          # repository, reviewed manifest, bundle and receipt, same test key.
+          second_artifact_id='routecontract-shardingsphere-5.4.1-5.5.2'
+          second_publish_task=":${second_artifact_id}:publishMavenJavaPublicationToCentralStagingRepository"
+          second_bundle_repository="${smoke_root}/bundle-repository-5.4.1-5.5.2"
+          (
+            cd "${source_root}"
+            ./gradlew --no-daemon --no-build-cache --no-configuration-cache \
+              "${second_publish_task}" \
+              -ProutecontractCentralStagingDirectory="${second_bundle_repository}" \
+              -ProutecontractCentralSigning=true \
+              -Psigning.gnupg.executable=gpg \
+              -Psigning.gnupg.homeDir="${gnupg_home}" \
+              -Psigning.gnupg.optionsFile="${gnupg_options}" \
+              -Psigning.gnupg.keyName="${fingerprint}!"
+          )
+          second_group_directory="${second_bundle_repository}/io/github/ym0506/routecontract"
+          test "$(find "${second_group_directory}" -mindepth 1 -maxdepth 1 -print)" = \
+            "${second_group_directory}/${second_artifact_id}"
+          second_bundle_coordinate="io/github/ym0506/routecontract/${second_artifact_id}/${bundle_version}"
+          second_bundle_version_directory="${second_bundle_repository}/${second_bundle_coordinate}"
+          second_bundle_artifact="${second_artifact_id}-${bundle_version}"
+          second_bundle_artifacts=(
+            "${second_bundle_artifact}.jar" "${second_bundle_artifact}-sources.jar"
+            "${second_bundle_artifact}-javadoc.jar" "${second_bundle_artifact}.pom"
+            "${second_bundle_artifact}.module"
+          )
+
+          # This manifest is a synthetic CI fixture, not release approval evidence.
+          second_smoke_manifest="${smoke_root}/reviewed-payloads-5.4.1-5.5.2.json"
+          python3 - "${second_bundle_version_directory}" "${second_smoke_manifest}" \
+            "${bundle_version}" "${second_artifact_id}" \
+            "${second_bundle_artifacts[@]}" <<'PY'
+          import hashlib
+          import json
+          import sys
+          from pathlib import Path
+
+          version_directory = Path(sys.argv[1])
+          manifest = Path(sys.argv[2])
+          version = sys.argv[3]
+          artifact_id = sys.argv[4]
+          names = sorted(sys.argv[5:])
+          payloads = []
+          for name in names:
+              payload = (version_directory / name).read_bytes()
+              payloads.append(
+                  {
+                      "name": name,
+                      "size": len(payload),
+                      "sha256": hashlib.sha256(payload).hexdigest(),
+                  }
+              )
+          value = {
+              "schemaVersion": 1,
+              "coordinate": {
+                  "groupId": "io.github.ym0506.routecontract",
+                  "artifactId": artifact_id,
+                  "version": version,
+              },
+              "payloads": payloads,
+          }
+          manifest.write_text(
+              json.dumps(value, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+          second_bundle_output="${smoke_root}/bundle-output-5.4.1-5.5.2"
+          second_bundle="${second_bundle_output}/${second_bundle_artifact}-central-upload.zip"
+          second_receipt="${second_bundle_output}/${second_bundle_artifact}-central-upload-receipt.json"
+          second_marker="coordinate=io.github.ym0506.routecontract:${second_artifact_id}:${bundle_version} entries=30 "
+          second_build_result="$(
+            python3 -I "${source_root}/scripts/prepare-central-upload-bundle.py" build \
+              --repository "${second_bundle_repository}" \
+              --reviewed-payload-manifest "${second_smoke_manifest}" \
+              --public-gpg-home "${public_gnupg_home}" \
+              --expected-primary-fingerprint "${fingerprint}" \
+              --output-directory "${second_bundle_output}"
+          )"
+          printf '%s\n' "${second_build_result}"
+          printf '%s\n' "${second_build_result}" |
+            grep -Fq "ROUTECONTRACT_CENTRAL_BUNDLE_BUILT ${second_marker}"
+          second_verify_result="$(
+            python3 -I "${source_root}/scripts/prepare-central-upload-bundle.py" verify \
+              --repository "${second_bundle_repository}" \
+              --bundle "${second_bundle}" \
+              --receipt "${second_receipt}" \
+              --reviewed-payload-manifest "${second_smoke_manifest}" \
+              --public-gpg-home "${public_gnupg_home}" \
+              --expected-primary-fingerprint "${fingerprint}"
+          )"
+          printf '%s\n' "${second_verify_result}"
+          printf '%s\n' "${second_verify_result}" |
+            grep -Fq "ROUTECONTRACT_CENTRAL_BUNDLE_VERIFIED ${second_marker}"
+
+          # A manifest for one artifact must not accept the other's staging repository.
+          cross_output="${smoke_root}/bundle-output-cross-artifact"
+          if python3 -I "${source_root}/scripts/prepare-central-upload-bundle.py" build \
+            --repository "${second_bundle_repository}" \
+            --reviewed-payload-manifest "${smoke_manifest}" \
+            --public-gpg-home "${public_gnupg_home}" \
+            --expected-primary-fingerprint "${fingerprint}" \
+            --output-directory "${cross_output}" > "${smoke_root}/cross-artifact.log" 2>&1; then
+            echo "bundle tool accepted another artifact's staging repository" >&2
+            exit 1
+          fi
+          grep -Fq 'staging inventory mismatch' "${smoke_root}/cross-artifact.log"
+          test ! -e "${cross_output}"
+
       - name: Verify same-checkout Maven publication consumer
         run: ./scripts/verify-standalone-consumer.sh
 
