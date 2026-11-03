@@ -43,8 +43,15 @@ sourceSets {
 }
 
 dependencies {
-    compileOnly platform("com.fasterxml.jackson:jackson-bom:${shardingSphereJacksonVersion}")
-    compileOnly "org.apache.shardingsphere:shardingsphere-infra-executor:${shardingSphere541To552ApiVersion}"
+    // Compile only against the three ShardingSphere modules whose types appear in this artifact's
+    // own sources (SQLExecutionHook, ConnectionProperties, ShardingSphereServiceLoader). Their
+    // transitive closure is never linked by RouteContract and would otherwise enter the
+    // published module's SBOM; the user's ShardingSphere runtime supplies the real graph.
+    for (module in ['infra-executor', 'infra-database-core', 'infra-spi']) {
+        compileOnly("org.apache.shardingsphere:shardingsphere-${module}:${shardingSphere541To552ApiVersion}") {
+            transitive = false
+        }
+    }
     implementation "com.alibaba:transmittable-thread-local:${transmittableThreadLocalVersion}"
     implementation "tools.jackson.core:jackson-core:${jacksonVersion}"
 

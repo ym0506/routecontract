@@ -2418,6 +2418,34 @@ empty=
                 self.assertIn("reviewedAt must not be later than expires", result.stderr)
         self.policy_document = original_policy
 
+    def add_aggregate_project(self, name: str) -> None:
+        project = copy.deepcopy(self.sbom_document["components"][1])
+        purl = project["purl"].replace("/mysql-example@", f"/{name}@").replace(
+            "project_path=%3Amysql-example", f"project_path=%3A{name}"
+        )
+        project.update({"name": name, "purl": purl, "bom-ref": purl})
+        self.sbom_document["components"].append(project)
+        self.sbom_document["dependencies"][0]["dependsOn"].append(purl)
+        self.sbom_document["dependencies"].append({"ref": purl, "dependsOn": []})
+
+    def test_accepts_unreleased_project_components_in_the_aggregate(self) -> None:
+        for name in ("routecontract-shardingsphere-5.4.1-5.5.2", "mysql-5.4.1-5.5.2-example"):
+            self.add_aggregate_project(name)
+        self.write_fixture()
+
+        result = self.prepare_inventory()
+
+        self.assertEqual(0, result.returncode, result.stderr)
+
+    def test_rejects_an_unknown_first_party_project_in_the_aggregate(self) -> None:
+        self.add_aggregate_project("routecontract-other")
+        self.write_fixture()
+
+        result = self.prepare_inventory()
+
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("exactly the published and example project components", result.stderr)
+
     def test_rejects_published_role_containing_example_project(self) -> None:
         example_project = copy.deepcopy(self.sbom_document["components"][1])
         self.published_sbom_document["components"].append(example_project)

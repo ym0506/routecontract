@@ -9,7 +9,8 @@ RouteContract follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) a
 
 - `routecontract-shardingsphere-5.4.1-5.5.2`: the same library built against the `SQLExecutionHook`
   API of ShardingSphere-JDBC 5.4.1, 5.5.0, 5.5.1 and 5.5.2. Its preflight accepts exactly those
-  versions and names `routecontract-shardingsphere-5.5` for 5.5.3. Not yet published.
+  versions and names `routecontract-shardingsphere-5.5` for 5.5.3. It compiles against only the
+  three ShardingSphere modules its sources use. Not yet published.
 - `examples/mysql-5.4.1-5.5.2` runs the shared operation-correlation and failure-boundary MySQL
   tests once on each of the four versions.
 
@@ -30,6 +31,9 @@ RouteContract follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) a
   a per-artifact `RuntimePreflight`; the 5.5 artifact's behavior is unchanged.
 - Library packaging, Central staging and signing rules moved to `gradle/routecontract-library.gradle`
   so both artifacts use them; the 5.5 POM is unchanged.
+- The SBOM finalizer and the supply-chain policy check accept the two unreleased projects' own
+  components in the aggregate SBOM and reject any other first-party project. The unreleased
+  artifact's BOM covers only its runtime graph until it becomes a published role.
 
 ## [0.1.4] - 2026-09-13
 

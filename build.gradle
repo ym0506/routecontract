@@ -102,8 +102,10 @@ project(':routecontract-shardingsphere-5.5') {
 }
 
 project(':routecontract-shardingsphere-5.4.1-5.5.2') {
+    // Until this artifact becomes a reviewed published SBOM role, its BOM covers only the runtime
+    // graph it shares with the 5.5 artifact, so it adds no third-party component to the aggregate.
     tasks.named('cyclonedxDirectBom') {
-        includeConfigs = ['compileClasspath', 'runtimeClasspath']
+        includeConfigs = ['runtimeClasspath']
         skipConfigs = ['(?i).*test.*']
         licenseChoice = apacheLicenseChoice()
     }
