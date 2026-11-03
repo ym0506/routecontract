@@ -2,8 +2,9 @@
 
 Planning snapshot updated: 2026-09-14. Items below are not release or delivery promises.
 
-**Status (2026-09-24):** maintenance mode. v0.1.4 remains the supported release and only bug
-fixes are planned; the 0.2 adapter work in order 4 and the later items are paused.
+**Status (2026-11-03):** maintained. v0.1.4 remains the supported release. The next planned
+change is support for ShardingSphere 5.5.4 after it is released; the 0.2 adapter work in order 4
+and the later items remain paused.
 The August contest schedule in [development-plan.md](archive/2026-contest/development-plan.md) is historical;
 this document describes subsequent product work. Released scope remains in the README.
 
