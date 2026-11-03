@@ -6,8 +6,9 @@ gradlew text eol=lf
 # Executable integration/consumer Java sources, not prose documentation.
 examples/**/*.java -linguist-documentation
 
-# Contest-only report/package documentation and its maintainer tooling.
-
 # Repository automation and verification helpers; exclude them from the product language classification.
 scripts/*.py -linguist-detectable
 scripts/**/*.py -linguist-detectable
+scripts/*.sh -linguist-detectable
+scripts/**/*.sh -linguist-detectable
+docs/**/*.sh -linguist-detectable
