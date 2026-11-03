@@ -65,6 +65,12 @@ PUBLISHED_SCM_VALUES = (
     PUBLISHED_PROJECT_URL,
 )
 EXAMPLE_ROOT_NAME = "mysql-example"
+# Projects built and tested here that are not yet published roles. The aggregate SBOM may list
+# their own project components; they must contribute no third-party component of their own.
+UNRELEASED_PROJECT_NAMES = frozenset({
+    "routecontract-shardingsphere-5.4.1-5.5.2",
+    "mysql-5.4.1-5.5.2-example",
+})
 MYSQL_CONTAINER_NAME = "mysql"
 MYSQL_CONTAINER_VERSION = "8.4.11"
 MYSQL_CONTAINER_DIGEST = (
@@ -2020,6 +2026,28 @@ def _sbom_root_identity(
     return resolved, version
 
 
+def _unreleased_aggregate_roots(aggregate_sbom: dict[str, Any]) -> set[str]:
+    """Return aggregate project components of unreleased projects after checking their identity."""
+    _, aggregate_version = _sbom_root_identity(
+        aggregate_sbom, AGGREGATE_ROOT_NAME, "aggregate SBOM"
+    )
+    result: set[str] = set()
+    for purl, component in _maven_inventory(aggregate_sbom).items():
+        _, group, name, version, qualifiers = _parse_maven_purl(purl)
+        if group != FIRST_PARTY_GROUP or name not in UNRELEASED_PROJECT_NAMES:
+            continue
+        if version != aggregate_version or qualifiers != {"project_path": f":{name}"}:
+            raise PolicyError(f"aggregate SBOM has an unexpected unreleased project identity: {name}")
+        if _component_properties(
+            component, f"aggregate unreleased project component {name}"
+        ) != [{"name": "cdx:maven:package:test", "value": "false"}]:
+            raise PolicyError(
+                f"aggregate unreleased project component has an unexpected role property: {name}"
+            )
+        result.add(purl)
+    return result
+
+
 def _validate_sbom_roles(
     aggregate_sbom: dict[str, Any],
     published_sbom: dict[str, Any],
@@ -2054,7 +2082,8 @@ def _validate_sbom_roles(
         for purl, component in example_components.items()
         if _parse_maven_purl(purl)[1] == FIRST_PARTY_GROUP
     }
-    if set(aggregate_first_party) != {published_root, example_root}:
+    unreleased_roots = _unreleased_aggregate_roots(aggregate_sbom)
+    if set(aggregate_first_party) - unreleased_roots != {published_root, example_root}:
         raise PolicyError(
             "aggregate SBOM must contain exactly the published and example project components"
         )
@@ -2675,7 +2704,7 @@ def _validate_resolved_profile_partition(
     example_root, _ = _sbom_root_identity(
         example_sbom, EXAMPLE_ROOT_NAME, "example SBOM"
     )
-    project_roots = {published_root, example_root}
+    project_roots = {published_root, example_root} | _unreleased_aggregate_roots(aggregate_sbom)
     if (
         published_root != expected_published_root
         or example_root != expected_example_root
