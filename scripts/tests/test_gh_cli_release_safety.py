@@ -123,7 +123,7 @@ class GithubCliReleaseSafetyTest(unittest.TestCase):
             self.assertNotIn("synthetic-sensitive", str(caught.exception))
 
     def test_release_procedure_requires_gate_before_verification(self) -> None:
-        releasing = (REPOSITORY_ROOT / "RELEASING.md").read_text(encoding="utf-8")
+        releasing = (REPOSITORY_ROOT / "docs" / "RELEASING.md").read_text(encoding="utf-8")
         gate = "python3 scripts/gh_cli_release_safety.py"
         verify = "`gh release verify`"
         self.assertEqual(1, releasing.count(gate))

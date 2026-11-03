@@ -15,4 +15,4 @@ approval.
 
 The maintainer may merge after CI and self-review while the public history has one maintainer
 account. As the community grows, maintainership will be based on sustained review-quality
-contributions rather than commit count. Security disclosures follow [SECURITY.md](SECURITY.md).
+contributions rather than commit count. Security disclosures follow [SECURITY.md](../SECURITY.md).

@@ -417,10 +417,10 @@ datasource-proxy로도 비슷한 범위의 검사를 직접 만들 수 있습니
 | 배포 라이브러리 | `routecontract-shardingsphere-5.5/src/main` | 배포 JAR에 들어가는 사용자 API와 5.5.3 SPI 제공자입니다. |
 | 공개 검증·예제 | `routecontract-shardingsphere-5.5/src/test`, `examples/` | 단위 테스트, 실제 MySQL 테스트, 별도 소비자 예제입니다. 배포 JAR에는 포함되지 않습니다. |
 | 혼합 자동화 | `scripts/`, `.github/workflows/`, `security/`, `gradle/` | `scripts/`에는 사용자용 시작·릴리스 파일 설치 도구와 유지관리자용 릴리스·공급망·시연 검증 도구가 함께 있습니다. 모두 사용자 실행 API에 해당하는 것은 아닙니다. |
-| 검증·제출 보조 | `submission/`, `scripts/video-demo-session.sh`, `docs/evidence-matrix.md` | 검증 근거를 추적하고 결과와 재현 자료를 묶는 보조 파일입니다. 배포 제품에는 포함되지 않습니다. |
+| 검증 보조 | `scripts/`, `docs/evidence-matrix.md` | 검증 근거를 추적하고 재현하는 스크립트입니다. 2026 대회 제출용 패키징 도구는 제출 뒤 삭제했고 `contest-tooling-archive` 태그에 남아 있습니다. 배포 제품에는 포함되지 않습니다. |
 
 이 소스는 안정판 대상 프로젝트 버전 `0.1.4`와 대응하는 태그 이름 `v0.1.4`를 선언합니다.
-소스에 버전이 적혀 있다고 공개 배포까지 검증된 것은 아닙니다. [릴리스 절차](../RELEASING.md)에
+소스에 버전이 적혀 있다고 공개 배포까지 검증된 것은 아닙니다. [릴리스 절차](RELEASING.md)에
 따라 주석 태그(annotated tag), 공개된 불변 정식 릴리스, 배포 검증 실행이 같은 리비전을
 가리키는지 확인하고 게시 후 검증도 통과해야 합니다. 이 배포 검증은 외부 사용자의 실행
 결과를 대신하지 않습니다.
@@ -672,7 +672,7 @@ v0.1에서는 기밀 값을 SQL 원문에 직접 넣지 않고, 같은 조건에
 - [같은 소스의 Maven 배포물을 사용하는 격리 예제](../examples/standalone-consumer/README.md)
 - [격리된 Maven 3.9.14 도입 검증 예제](../examples/maven-pilot/README.md)
 - [SBOM 생성과 검토](../docs/sbom.md)
-- [출처·선행 작업 경계 공개](../ORIGIN_AND_PRIOR_WORK.md)
+- [출처·선행 작업 경계 공개](ORIGIN_AND_PRIOR_WORK.md)
 - [AI 보조 사용 공개](../AI_ASSISTANCE.md)
 - [기여 가이드](../CONTRIBUTING.md)
 

@@ -85,33 +85,15 @@ jobs:
           fi
           test "v${project_version}" = "${GITHUB_REF_NAME}"
 
-      - name: Set up report-package Python
+      - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12.14'
           architecture: x64
           check-latest: false
 
-      - name: Install checksum-locked report-package test dependencies
-        shell: bash
-        run: |
-          set -euo pipefail
-          python -c 'import platform, sys; sys.exit(0 if (sys.version_info[:3] == (3, 12, 14) and platform.python_implementation() == "CPython" and platform.machine() == "x86_64") else 1)'
-          report_venv="${RUNNER_TEMP}/routecontract-report-test-venv"
-          test ! -e "${report_venv}"
-          python -m venv "${report_venv}"
-          "${report_venv}/bin/python" -m pip install \
-            --isolated --disable-pip-version-check --no-input \
-            --index-url https://pypi.org/simple \
-            --only-binary=:all: --no-deps --require-hashes \
-            --requirement submission/report-package-ci-requirements.txt
-
-      - name: Test fail-closed contest packaging rules
-        run: |
-          "${RUNNER_TEMP}/routecontract-report-test-venv/bin/python" \
-            -m unittest discover -s submission/tools/tests -v
-          "${RUNNER_TEMP}/routecontract-report-test-venv/bin/python" \
-            -m unittest discover -s scripts/tests -v
+      - name: Test repository scripts
+        run: python -m unittest discover -s scripts/tests -v
 
       - name: Test and build evidence
         run: >-

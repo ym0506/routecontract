@@ -71,7 +71,7 @@ Run the complete checks from the same checkout with:
 ./gradlew --no-daemon --no-build-cache --no-configuration-cache --rerun-tasks \
   -ProutecontractTestJavaVersion=21 \
   :routecontract-shardingsphere-5.5:test :mysql-example:test
-python3 -m unittest discover -s submission/tools/tests -p test_summarize_test_results.py -v
+python3 -m unittest discover -s scripts/tests -p test_summarize_test_results.py -v
 ```
 
 Both JDKs must be visible to Gradle; see [contributor requirements](../CONTRIBUTING.md).

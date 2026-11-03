@@ -121,8 +121,8 @@ reports and run `mvn -B -f examples/first-project/pom.xml clean`; Maven incremen
 can otherwise reuse the previous class version:
 
 ```bash
-ROUTECONTRACT_EXAMPLE_JAVA_VERSION=21 python3 submission/tools/verify_first_project_direct_assertions.py Maven
-ROUTECONTRACT_EXAMPLE_JAVA_VERSION=21 python3 submission/tools/verify_first_project_direct_assertions.py Gradle
+ROUTECONTRACT_EXAMPLE_JAVA_VERSION=21 python3 scripts/verify_first_project_direct_assertions.py Maven
+ROUTECONTRACT_EXAMPLE_JAVA_VERSION=21 python3 scripts/verify_first_project_direct_assertions.py Gradle
 ```
 
 For native core/MySQL verification, install JDKs 17 and 21, set `JAVA_HOME` to Java 21 and
@@ -136,7 +136,7 @@ mkdir -p build
   -Porg.gradle.java.installations.auto-detect=false \
   -Porg.gradle.java.installations.auto-download=false \
   :routecontract-shardingsphere-5.5:test :mysql-example:test > build/java21-runtime.log 2>&1
-python3 submission/tools/summarize_java_runtime.py \
+python3 scripts/summarize_java_runtime.py \
   build/java21-runtime.log "$JAVA_HOME" build/java21-runtime-summary.json
 ```
 

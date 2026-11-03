@@ -1906,7 +1906,7 @@ class ActivationDocumentationContractTest(unittest.TestCase):
         rc2_form_path = form_root / "independent-rc2-install.yml"
         rc1_issue_form = rc1_form_path.read_text(encoding="utf-8")
         rc2_issue_form = rc2_form_path.read_text(encoding="utf-8")
-        releasing = (REPOSITORY_ROOT / "RELEASING.md").read_text(encoding="utf-8")
+        releasing = (REPOSITORY_ROOT / "docs" / "RELEASING.md").read_text(encoding="utf-8")
         for required in (
             "scripts/validate-rc-activation-record.py",
             "ROUTECONTRACT_RC_ACTIVATION_VERIFIED",

@@ -10,7 +10,7 @@ import sys
 import xml.etree.ElementTree as ET
 
 
-EXAMPLE = Path(__file__).resolve().parents[2] / "examples" / "first-project"
+EXAMPLE = Path(__file__).resolve().parents[1] / "examples" / "first-project"
 TEST_NAME = "paidOrdersKeepTheirBusinessResultAndExecutionContract"
 CLASS_NAME = "io.github.ym0506.routecontract.examples.firstproject.OrderContractTest"
 VIOLATION = "io.github.ym0506.routecontract.RouteContractViolationException"

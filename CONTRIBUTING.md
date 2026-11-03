@@ -112,7 +112,7 @@ The current public release is **0.1.4**; see its [Central installation evidence]
 The older immutable `v0.1.2` GitHub Release is not a Maven Central publication.
 Changes intended for a separately approved later stable version must follow the
 approval, signing, `USER_MANAGED` upload, human validation, explicit Publish
-and public-readback checklist in [RELEASING.md](RELEASING.md). Never put the
+and public-readback checklist in [RELEASING.md](docs/RELEASING.md). Never put the
 protected release private key, its passphrase or a Central credential in the
 repository or CI. An ephemeral throwaway CI key may test signing configuration
 only; never upload or artifact it or treat it as release evidence.

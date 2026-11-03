@@ -186,7 +186,7 @@ jobs:
 
       - name: Verify direct Java assertions without manifest changes
         id: direct
-        run: python3 ../../submission/tools/verify_first_project_direct_assertions.py "$BUILD_TOOL"
+        run: python3 ../../scripts/verify_first_project_direct_assertions.py "$BUILD_TOOL"
 
       - name: Show the demonstration summary
         if: always()
@@ -199,7 +199,7 @@ jobs:
         run: |
           mkdir -p build/lifecycle-evidence
           status=0
-          python3 ../../submission/tools/summarize_first_project.py \
+          python3 ../../scripts/summarize_first_project.py \
             build/lifecycle-evidence > build/lifecycle-evidence/summary.md || status=$?
           cat build/lifecycle-evidence/summary.md >> "$GITHUB_STEP_SUMMARY"
           exit "$status"
@@ -265,7 +265,7 @@ jobs:
       - name: Verify the actual runtime and minimize JUnit evidence
         if: always()
         run: |
-          python3 submission/tools/summarize_java_runtime.py \
+          python3 scripts/summarize_java_runtime.py \
             build/java21-runtime.log "$JAVA_HOME" build/java21-runtime-summary.json
 
       - name: Keep Java 21 runtime evidence

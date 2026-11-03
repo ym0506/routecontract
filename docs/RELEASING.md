@@ -7,7 +7,7 @@ credentials and the relevant artifact policy have been reviewed. The v0.1 GitHub
 Release asset set excludes signatures; the separate Maven Central upload bundle
 requires them, as described below.
 
-To install the library in a test project, use the [current installation guide](README.md#install-014).
+To install the library in a test project, use the [current installation guide](../README.md#install-014).
 This checklist is for preparing and publishing releases.
 
 ## Prepare
@@ -86,7 +86,7 @@ workflow. The workflow:
 - runs unit and real MySQL integration tests without reusing cached task results;
 - generates `test-summary.txt` from the resulting JUnit XML and fails unless
   the suite set and passing, non-skipped test counts match the
-  [current summary allowlist](scripts/summarize-test-results.py);
+  [current summary allowlist](../scripts/summarize-test-results.py);
   the standalone consumer runs separately and is not included in those counts. The
   fixed summary records the Git revision and per-suite counts but deliberately
   omits test names, timings, hostnames, paths, ports, SQL and captured output;
@@ -266,11 +266,11 @@ implemented and verified.
 The immutable GitHub Releases `v0.1.0` and `v0.1.2` remain unchanged and are
 not published to Maven Central.
 
-[0.1.4 is published](docs/release-0.1.4-candidate.md) on GitHub and Maven Central,
+[0.1.4 is published](release-0.1.4-candidate.md) on GitHub and Maven Central,
 using the existing single artifact and exact ShardingSphere-JDBC 5.5.3 support.
-Its [Central evidence](docs/evidence/release-0.1.4-central.md) includes the completed
+Its [Central evidence](evidence/release-0.1.4-central.md) includes the completed
 prepublication candidate comparison and anonymous public consumer checks. Historical
-[0.1.3 evidence](docs/evidence/release-0.1.3-central.md), including its recorded exception,
+[0.1.3 evidence](evidence/release-0.1.3-central.md), including its recorded exception,
 remains unchanged. The separate 0.2 core/adapter split and 5.5.2 adapter remain unreleased.
 
 For a future publication, select a new, unpublished stable version strictly greater than
@@ -576,9 +576,9 @@ authentication and compare them byte-for-byte with the reviewed staged
 payload. A Portal success response alone is not public-availability evidence.
 
 For the single-artifact stable `0.1.x` line from `0.1.3` onwards, run the
-[public byte readback](docs/public-release-central-verification.md) against the
+[public byte readback](public-release-central-verification.md) against the
 reviewed signed bundle. It verifies all 30 public files and only then emits
-`consumer-receipt.json`. Run both [independent public consumers](docs/public-release-consumers.md)
+`consumer-receipt.json`. Run both [independent public consumers](public-release-consumers.md)
 from the clean reviewed source checkout using that receipt:
 
 ```bash

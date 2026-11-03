@@ -2,7 +2,7 @@ import unittest
 from pathlib import Path
 
 
-REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 VIDEO_URL = "https://www.youtube.com/watch?v=pcgvNNxd1mM"
 
 

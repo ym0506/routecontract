@@ -727,7 +727,7 @@ class MavenPilotContractTest(unittest.TestCase):
             "      - name: Install exact Apache Maven 3.9.14"
         )
         install_end = self.ci_workflow.index(
-            "      - name: Install checksum-locked report-package test dependencies",
+            "      - name: Test repository scripts",
             install_start,
         )
         install = self.ci_workflow[install_start:install_end]

@@ -59,7 +59,7 @@ part of this patch.
    consumption of 0.1.4 on Java 17/21. Only then switch current installation instructions and
    report the patch as publicly available.
 
-Exact procedures and historical evidence boundaries remain in [RELEASING.md](../RELEASING.md).
+Exact procedures and historical evidence boundaries remain in [RELEASING.md](RELEASING.md).
 The checklist above records the acceptance requirements; completed checks are linked from the
 release evidence. Maintainer-run validation and publication do not establish independent external
 adoption or production results. The historical 0.1.3 files and its recorded exception remain unchanged.
