@@ -42,7 +42,7 @@ public final class CaptureRegistry {
      */
     public static CaptureScope open(final String operationId) {
         validateOperationId(operationId);
-        ShardingSphere553Preflight.verify();
+        RuntimePreflight.verify();
         if (CURRENT_CAPTURE.get() != null) {
             throw new IllegalStateException("Nested RouteContract captures are not supported");
         }

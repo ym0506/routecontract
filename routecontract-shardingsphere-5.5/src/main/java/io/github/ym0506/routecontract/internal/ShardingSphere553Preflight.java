@@ -36,7 +36,9 @@ final class ShardingSphere553Preflight {
             String renderedVersion = detectedVersion == null ? "<unavailable>" : detectedVersion;
             throw new IllegalStateException(
                     "RouteContract supports exactly Apache ShardingSphere " + SUPPORTED_VERSION
-                            + "; " + component + " reported " + renderedVersion);
+                            + "; " + component + " reported " + renderedVersion
+                            + ". For 5.4.1, 5.5.0, 5.5.1 or 5.5.2 use "
+                            + "io.github.ym0506.routecontract:routecontract-shardingsphere-5.4.1-5.5.2");
         }
     }
 

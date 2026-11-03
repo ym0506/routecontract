@@ -147,6 +147,12 @@ EXPECTED_FIRST_PARTY_CHILDREN = {
     PUBLISHED_ROOT_NAME: set(),
     MYSQL_EXAMPLE_NAME: {PUBLISHED_ROOT_NAME},
 }
+# Projects that are built and tested here but are not yet part of the reviewed release pairs.
+# The aggregate may list them as first-party children; release-pair verification ignores them.
+UNRELEASED_AGGREGATE_CHILDREN = frozenset({
+    "routecontract-shardingsphere-5.4.1-5.5.2",
+    "mysql-5.4.1-5.5.2-example",
+})
 
 
 LicenseRecord = tuple[str, str, str]
@@ -1507,7 +1513,13 @@ def _validate_role_and_graph(
         ):
             raise SbomError(f"{label} has an unexpected first-party component: {name}")
         first_party_children[name] = record
-    if set(first_party_children) != EXPECTED_FIRST_PARTY_CHILDREN[str(root_name)]:
+    expected_children = EXPECTED_FIRST_PARTY_CHILDREN[str(root_name)]
+    allowed_children = (
+        expected_children | UNRELEASED_AGGREGATE_CHILDREN
+        if root_name == AGGREGATE_ROOT_NAME
+        else expected_children
+    )
+    if not expected_children <= set(first_party_children) <= allowed_children:
         raise SbomError(
             f"{label} first-party role coverage differs: "
             f"{set(first_party_children)} != {EXPECTED_FIRST_PARTY_CHILDREN[str(root_name)]}"

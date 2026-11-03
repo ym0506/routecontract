@@ -7,7 +7,8 @@ public enum CaptureStatus {
 
     /**
      * At least one observed callback reported an execution failure. This snapshot is diagnostic
-     * only: ShardingSphere 5.5.3 may leave other submitted workers unjoined on a failure path.
+     * only: the supported ShardingSphere-JDBC runtime may leave other submitted workers unjoined on a
+     * failure path.
      */
     REPORTED_EXECUTION_FAILURE,
 

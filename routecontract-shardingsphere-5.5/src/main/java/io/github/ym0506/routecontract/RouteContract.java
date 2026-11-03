@@ -9,7 +9,8 @@ import java.util.Objects;
  * Entry point for operation-scoped observed physical JDBC execution captures.
  *
  * <p>The action must execute synchronously inside the call. RouteContract observes
- * ShardingSphere-JDBC 5.5.3 {@code SQLExecutionHook} callbacks; it does not expose a complete route
+ * ShardingSphere-JDBC {@code SQLExecutionHook} callbacks in the exact versions this artifact supports;
+ * it does not expose a complete route
  * plan and does not infer transaction commit or business success from callback return.</p>
  */
 public final class RouteContract {

@@ -5,7 +5,13 @@ RouteContract follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) a
 
 ## [Unreleased]
 
-No additional unreleased runtime changes.
+### Added
+
+- `routecontract-shardingsphere-5.4.1-5.5.2`: the same library built against the `SQLExecutionHook`
+  API of ShardingSphere-JDBC 5.4.1, 5.5.0, 5.5.1 and 5.5.2. Its preflight accepts exactly those
+  versions and names `routecontract-shardingsphere-5.5` for 5.5.3. Not yet published.
+- `examples/mysql-5.4.1-5.5.2` runs the shared operation-correlation and failure-boundary MySQL
+  tests once on each of the four versions.
 
 ### Removed
 
@@ -20,6 +26,10 @@ No additional unreleased runtime changes.
 - Run `scripts/tests` with the workflow's Python instead of the contest-only locked environment.
   The removed contest gate compared exact workflow text, so some action updates (for example
   `actions/setup-python`) failed it without any code change.
+- The 5.5 artifact's version error now names the 5.4.1-5.5.2 artifact. Shared capture code calls
+  a per-artifact `RuntimePreflight`; the 5.5 artifact's behavior is unchanged.
+- Library packaging, Central staging and signing rules moved to `gradle/routecontract-library.gradle`
+  so both artifacts use them; the 5.5 POM is unchanged.
 
 ## [0.1.4] - 2026-09-13
 

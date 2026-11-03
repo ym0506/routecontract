@@ -1,0 +1,70 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'signing'
+}
+
+description = 'Operation-scoped contracts over physical JDBC execution attempts reported by Apache ShardingSphere-JDBC 5.4.1, 5.5.0, 5.5.1 and 5.5.2 SQLExecutionHook'
+ext.routecontractPomName = 'RouteContract for Apache ShardingSphere-JDBC 5.4.1 to 5.5.2'
+
+// The capture, assertion and manifest code is shared with routecontract-shardingsphere-5.5.
+// Only the files that link the SQLExecutionHook API or name the supported versions are
+// artifact-specific; this project supplies its own copies in src/main/java.
+def sharedLibrary = project(':routecontract-shardingsphere-5.5')
+def artifactSpecificSources = [
+        'io/github/ym0506/routecontract/internal/RouteContractSqlExecutionHook.java',
+        'io/github/ym0506/routecontract/internal/RuntimePreflight.java',
+        'io/github/ym0506/routecontract/internal/ShardingSphere553Preflight.java']
+def artifactSpecificTests = [
+        'io/github/ym0506/routecontract/internal/ShardingSphere553PreflightTest.java']
+
+def syncSharedMainSources = tasks.register('syncSharedMainSources', Sync) {
+    from(sharedLibrary.file('src/main/java')) {
+        exclude artifactSpecificSources
+    }
+    into layout.buildDirectory.dir('generated/sources/shared/main/java')
+}
+
+def syncSharedTestSources = tasks.register('syncSharedTestSources', Sync) {
+    from(sharedLibrary.file('src/test/java')) {
+        exclude artifactSpecificTests
+    }
+    into layout.buildDirectory.dir('generated/sources/shared/test/java')
+}
+
+sourceSets {
+    main {
+        java.srcDir(syncSharedMainSources)
+        resources.srcDir(sharedLibrary.file('src/main/resources'))
+    }
+    test {
+        java.srcDir(syncSharedTestSources)
+    }
+}
+
+dependencies {
+    compileOnly platform("com.fasterxml.jackson:jackson-bom:${shardingSphereJacksonVersion}")
+    compileOnly "org.apache.shardingsphere:shardingsphere-infra-executor:${shardingSphere541To552ApiVersion}"
+    implementation "com.alibaba:transmittable-thread-local:${transmittableThreadLocalVersion}"
+    implementation "tools.jackson.core:jackson-core:${jacksonVersion}"
+
+    testImplementation platform("com.fasterxml.jackson:jackson-bom:${shardingSphereJacksonVersion}")
+    testImplementation "org.apache.shardingsphere:shardingsphere-infra-executor:${shardingSphere541To552ApiVersion}"
+    testImplementation platform("org.junit:junit-bom:${junitVersion}")
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+    useJUnitPlatform {
+        excludeTags 'manifest-ci-failure-demo'
+    }
+}
+
+jar {
+    manifest {
+        attributes('Automatic-Module-Name': 'io.github.ym0506.routecontract.shardingsphere541to552')
+    }
+}
+
+apply from: rootProject.file('gradle/routecontract-library.gradle')

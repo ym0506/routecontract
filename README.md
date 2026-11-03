@@ -30,6 +30,9 @@ JUnit/Maven/Gradle test run fails in CI as well.
 
 **Supported environment:** Java 17 or 21 · ShardingSphere-JDBC **5.5.3** · synchronous, non-batch `PreparedStatement` tests.
 
+**On ShardingSphere-JDBC 5.4.1, 5.5.0, 5.5.1 or 5.5.2?** A separate artifact is built and tested
+on `main` but is not on Maven Central yet. See [Other ShardingSphere versions](#other-shardingsphere-versions).
+
 <a id="smallest-usage-example"></a>
 <a id="가장-작은-사용-예"></a>
 
@@ -134,6 +137,38 @@ Keep your existing ShardingSphere and data-source configuration. Every ShardingS
 in the test runtime must be **exactly 5.5.3**; RouteContract does not supply ShardingSphere or
 align its dependency graph. No repository clone or local installer is needed for this dependency.
 
+<a id="other-shardingsphere-versions"></a>
+
+### Other ShardingSphere versions (not yet released)
+
+ShardingSphere 5.5.3 moved a class that `SQLExecutionHook` uses, so one JAR cannot link to both
+5.5.3 and earlier releases. `routecontract-shardingsphere-5.4.1-5.5.2` is the same library built
+against the earlier hook API, for **5.4.1, 5.5.0, 5.5.1 and 5.5.2**. Its preflight accepts exactly
+those versions and names `routecontract-shardingsphere-5.5` when it finds 5.5.3; the 5.5 artifact
+does the reverse.
+
+It is not on Maven Central yet. To try it now, publish it to your local Maven repository from a
+clone of this repository, then add `mavenLocal()` and a test dependency on
+`io.github.ym0506.routecontract:routecontract-shardingsphere-5.4.1-5.5.2` at the project version
+on `main`:
+
+```bash
+./gradlew :routecontract-shardingsphere-5.4.1-5.5.2:publishToMavenLocal
+```
+
+Two dependency problems belong to those ShardingSphere releases, not to RouteContract, and public
+projects work around them the same way:
+
+- 5.5.0 declares the unpublished `shardingsphere-test-util` in compile scope. Exclude
+  `org.apache.shardingsphere:shardingsphere-test-util`.
+- With Gradle, 5.4.1 resolves `org.yaml:snakeyaml` 2.0 through Calcite and fails in
+  `Representer()`. Pin `org.yaml:snakeyaml:1.33`, the version 5.4.1 manages.
+
+`./gradlew :mysql-5.4.1-5.5.2-example:check` runs the shared operation-correlation and
+failure-boundary MySQL tests (6 tests, including 20 concurrent single/fan-out pairs) once on each
+of the four versions with MySQL 8.4.11 (`verified - MySQL`). The regression corpus and the
+datasource-proxy comparison run on 5.5.3 only.
+
 <a id="quick-start"></a>
 
 ## Try an example
@@ -205,9 +240,11 @@ or caller interruption cannot establish a passing contract. See the
 [full capture boundary](docs/reference-guide.md#v01-support-boundary).
 
 **Project status:** maintained. v0.1.4 is published on Maven Central and remains the supported
-release; support for ShardingSphere 5.5.4 is planned after it is released. The
-[0.2 core/adapter split](https://github.com/ym0506/routecontract/pull/62) is paused;
-5.5.2 support is unreleased. Published consumer checks are maintainer-run evidence.
+release; support for ShardingSphere 5.5.4 is planned after it is released. Support for 5.4.1,
+5.5.0, 5.5.1 and 5.5.2 is on `main` as a [separate artifact](#other-shardingsphere-versions) and
+ships in the next release; the larger
+[0.2 core/adapter split](https://github.com/ym0506/routecontract/pull/62) was closed.
+Published consumer checks are maintainer-run evidence.
 Independent integration and repeat use have not yet been verified.
 
 ## Documentation
