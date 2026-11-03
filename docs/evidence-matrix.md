@@ -160,7 +160,7 @@ Missing report, source or video is an exclusion risk according to the supplied o
 
 The report uses descriptive Korean labels instead of inserting audit IDs into every paragraph. The table below is the explicit crosswalk; a matching E-ID only identifies the evidence package and does not promote a `pending` or `verified-local` row. The report's `공개 증거 gate` is an owner-supplied visible prose slot, not a structured evidence object. Final packaging separately requires the exact repository, CI, Release and video URLs to be present in the DOCX and binds revision/tag/run/Release facts through the package manifest's structured public-evidence record.
 
-`개발 장비`, `개발 보조 AI`, `선행 작업 경계` and `개발 소감` are identity/disclosure/provenance/owner-voice blocks governed by closed static/private content plus participant-attestation gates rather than E-ID measured-evidence claims. `ORIGIN_AND_PRIOR_WORK.md` is a participant provenance declaration, not independent proof that the ShardLens design was unimplemented or that no application code was copied.
+`개발 장비`, `개발 보조 AI`, `선행 작업 경계` and `개발 소감` are identity/disclosure/provenance/owner-voice blocks governed by closed static/private content plus participant-attestation gates rather than E-ID measured-evidence claims. `docs/ORIGIN_AND_PRIOR_WORK.md` is a participant provenance declaration, not independent proof that the ShardLens design was unimplemented or that no application code was copied.
 
 | Reader-facing report block | Evidence IDs | Evidence boundary carried into the report |
 |---|---|---|

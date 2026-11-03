@@ -37,7 +37,7 @@ an authenticity proof for arbitrary self-submitted JSON or an adoption claim.
 ## Local verification
 
 - `verified - unit`: Python 3 on macOS/aarch64,
-  `python3 -m unittest discover -s submission/tools/tests -p test_first_project_summary.py -v`.
+  `python3 -m unittest discover -s scripts/tests -p test_first_project_summary.py -v`.
 - Before the fix: 10 tests ran and 7 assertions/subcases failed, including a Java
   21 mislabel and success exits after missing/failed direct evidence. These are
   synthetic summary inputs, not failed database executions.

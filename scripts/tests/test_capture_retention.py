@@ -3,7 +3,7 @@ from pathlib import Path
 import unittest
 
 SPEC = importlib.util.spec_from_file_location(
-    'capture_retention', Path(__file__).resolve().parents[3] / 'examples/observer-cost/retention/run.py')
+    'capture_retention', Path(__file__).resolve().parents[2] / 'examples/observer-cost/retention/run.py')
 RETENTION = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(RETENTION)
 

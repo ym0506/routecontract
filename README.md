@@ -217,6 +217,7 @@ Independent integration and repeat use have not yet been verified.
 | Run the example or adapt an existing test | [First project](docs/first-project.md) · [한국어](docs/first-project.ko.md) |
 | Understand an execution-check failure | [Report guide](docs/ci-review-report.md) · [Example report](docs/evidence/ci-review-report-example.md) |
 | Review the design and implementation | [Design decisions and code](docs/design-decisions.md) · [API reference](docs/reference-guide.md) |
+| Read the library code | [Main source](routecontract-shardingsphere-5.5/src/main/java/io/github/ym0506/routecontract) · [Tests](routecontract-shardingsphere-5.5/src/test) |
 | Judge whether it fits my problem | [Tool comparison](docs/competitive-analysis.md) · [Application experiments](docs/application-evaluations.md) |
 | Inspect released behavior and limitations | [0.1.4 consumer verification](docs/evidence/release-0.1.4-central.md) · [All evidence and guides](docs/start-here.md) |
 | Contribute a fix or discuss a missing check | [Contributing](CONTRIBUTING.md) · [Roadmap](docs/product-roadmap.md) |
@@ -241,7 +242,7 @@ with a minimal synthetic fixture. See [how we record use and feedback](docs/user
 ## License
 
 [Apache License 2.0](LICENSE). [Third-party notices](THIRD_PARTY.md) ·
-[Prior-work disclosure](ORIGIN_AND_PRIOR_WORK.md) · [AI-assistance disclosure](AI_ASSISTANCE.md).
+[Prior-work disclosure](docs/ORIGIN_AND_PRIOR_WORK.md) · [AI-assistance disclosure](AI_ASSISTANCE.md).
 
 RouteContract is an independent project, not affiliated with or endorsed by the Apache Software
 Foundation. Apache and Apache ShardingSphere are trademarks of the Apache Software Foundation.

@@ -426,13 +426,13 @@ Code map (representative boundaries; a directory is not assumed to have only one
 | Shipped library | `routecontract-shardingsphere-5.5/src/main` | Consumer API and 5.5.3 SPI provider included in the Release JAR. |
 | Public verification and examples | `routecontract-shardingsphere-5.5/src/test`, `examples/` | Unit, real-MySQL, and standalone-consumer fixtures; not included in the library JAR. |
 | Mixed automation | `scripts/`, `.github/workflows/`, `security/`, `gradle/` | `scripts/` contains user-facing Quick Start and Release-asset installation tools plus maintainer release, supply-chain, and demonstration-verification tools. None is a consumer runtime API. |
-| Verification/submission support | `submission/`, `scripts/video-demo-session.sh`, `docs/evidence-matrix.md` | Evidence tracking, result-report, and reproducible packaging material; not part of the shipped product. |
+| Verification support | `scripts/`, `docs/evidence-matrix.md` | Evidence tracking and reproducible verification scripts; not part of the shipped product. The 2026 contest packaging tools were removed after submission and remain at tag `contest-tooling-archive`. |
 
 This source declares release-target project version `0.1.4`, with corresponding tag name `v0.1.4`.
 A version string or checkout does not prove that an annotated tag, public immutable
 non-prerelease Release, same-revision release-evidence run, or external-user result exists.
 Use public assets only after verifying tag/Release/evidence-run revision identity and every
-postpublication check in the [release procedure](../RELEASING.md).
+postpublication check in the [release procedure](RELEASING.md).
 
 <details>
 <summary>Exact evidence boundary for historical RC and public-CI records</summary>
@@ -665,7 +665,7 @@ A new adapter or reporter is considered only after a documented user need, a ver
 - [Isolated same-checkout Maven-publication consumer](../examples/standalone-consumer/README.md)
 - [Isolated Maven 3.9.14 onboarding pilot](../examples/maven-pilot/README.md)
 - [SBOM generation and review](../docs/sbom.md)
-- [Provenance and prior-work boundary disclosure](../ORIGIN_AND_PRIOR_WORK.md)
+- [Provenance and prior-work boundary disclosure](ORIGIN_AND_PRIOR_WORK.md)
 - [AI-assistance disclosure](../AI_ASSISTANCE.md)
 - [Contribution guide](../CONTRIBUTING.md)
 

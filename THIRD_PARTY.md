@@ -221,20 +221,6 @@ Release. The exact-tag workflow retains only the sanitized, checksummed
 `supply-chain-evidence.json`; raw scanner output and the database archive are
 not uploaded.
 
-## Contest report builder tooling
-
-These packages generate and validate the organizer DOCX report. They are not
-part of RouteContract's published JAR or product runtime. The exact install
-closure is pinned in `submission/report-builder-requirements.txt`.
-
-| Component | Version | Purpose | License |
-|---|---:|---|---|
-| python-docx | 1.2.0 | Retained DOCX template, table and image editing | MIT |
-| Pillow | 12.3.0 | PNG format and 1200×675 evidence-asset validation | MIT-CMU |
-| lxml | 6.1.1 | OOXML core-property parsing and deterministic sanitization | BSD-3-Clause |
-| typing_extensions | 4.16.0 | Runtime compatibility dependency required by python-docx | PSF-2.0 |
-| certifi | 2026.7.22 | Pinned Mozilla CA bundle for final public-evidence HTTPS verification | MPL-2.0 |
-
 License identifiers and names above were checked against the projects' Maven
 metadata or upstream license files. For the final tag, repeat all of these
 manual checks from the tagged clean tree:

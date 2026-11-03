@@ -7,19 +7,11 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 
-SCRIPT = Path(__file__).resolve().parents[3] / "scripts" / "summarize-test-results.py"
+SCRIPT = Path(__file__).resolve().parents[1] / "summarize-test-results.py"
 SPEC = importlib.util.spec_from_file_location("summarize_test_results", SCRIPT)
 assert SPEC is not None and SPEC.loader is not None
 summarize_test_results = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(summarize_test_results)
-
-PACKAGE_SCRIPT = Path(__file__).resolve().parents[1] / "package_submission.py"
-PACKAGE_SPEC = importlib.util.spec_from_file_location(
-    "package_submission_for_summary_test", PACKAGE_SCRIPT
-)
-assert PACKAGE_SPEC is not None and PACKAGE_SPEC.loader is not None
-package_submission = importlib.util.module_from_spec(PACKAGE_SPEC)
-PACKAGE_SPEC.loader.exec_module(package_submission)
 
 # Keep the acceptance fixture independent of the summarizer's allowlist so a
 # newly added release suite cannot disappear from both the input and expectation.
@@ -122,13 +114,6 @@ class SummarizeTestResultsTest(unittest.TestCase):
             self.assertNotIn("timestamp", first)
             suite_lines = [line for line in first.splitlines() if line.startswith("suite=")]
             self.assertEqual(sorted(suite_lines), suite_lines)
-
-    def test_keeps_historical_contest_summary_unchanged(self) -> None:
-        historical = package_submission.expected_release_test_summary(self.revision)
-
-        self.assertIn("suite_count=7\n", historical)
-        self.assertIn("test_count=52\n", historical)
-        self.assertNotIn("ManifestReviewReportTest", historical)
 
     def test_rejects_unexpected_suites_including_standalone_consumer(self) -> None:
         for suite in (

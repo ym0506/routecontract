@@ -7,6 +7,20 @@ RouteContract follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) a
 
 No additional unreleased runtime changes.
 
+### Removed
+
+- Remove the 2026 OSS Developer Contest packaging tools (`submission/`): the report builder,
+  package gate and their tests. The submitted state stays at tag `contest-tooling-archive`.
+  Runtime code and published artifacts are unchanged.
+
+### Changed
+
+- Move the first-project verification scripts from `submission/tools/` to `scripts/`, and move
+  `RELEASING.md`, `ORIGIN_AND_PRIOR_WORK.md` and `GOVERNANCE.md` to `docs/`.
+- Run `scripts/tests` with the workflow's Python instead of the contest-only locked environment.
+  The removed contest gate compared exact workflow text, so some action updates (for example
+  `actions/setup-python`) failed it without any code change.
+
 ## [0.1.4] - 2026-09-13
 
 Published as an immutable [GitHub release](https://github.com/ym0506/routecontract/releases/tag/v0.1.4).

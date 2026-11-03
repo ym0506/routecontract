@@ -215,6 +215,7 @@ ShardingSphere-Proxy, 배치·리액티브 실행, 애플리케이션이 만든 
 | 내 테스트에 적용하기 | [첫 프로젝트 가이드](docs/first-project.ko.md) |
 | API와 정책 확인하기 | [상세 가이드](docs/reference-guide.ko.md) · [CI 리포트](docs/ci-review-report.md) |
 | 관측 원리와 한계 이해하기 | [설계 결정과 이유](docs/design-decisions.ko.md) · [아키텍처](docs/architecture.md) |
+| 라이브러리 코드 읽기 | [본체 소스](routecontract-shardingsphere-5.5/src/main/java/io/github/ym0506/routecontract) · [테스트](routecontract-shardingsphere-5.5/src/test) |
 | 실제 코드에서 얻은 결과 보기 | [애플리케이션 실험 세 가지](docs/application-evaluations.ko.md) · 유지관리자가 실행한 실험 |
 | 공개 배포 검증 확인하기 | [0.1.4 Central 검증](docs/evidence/release-0.1.4-central.md) · [검증 자료와 범위](docs/start-here.md#inspect-results-and-their-limits) |
 | 다른 도구와 비교하거나 기여하기 | [도구 비교](docs/competitive-analysis.md) · [기여 가이드](CONTRIBUTING.md) · [전체 문서](docs/start-here.md) |
@@ -238,7 +239,7 @@ ShardingSphere-JDBC를 사용한다면 [사용 버전과 SQL·설정 변경을 �
 ## 라이선스
 
 [Apache License 2.0](LICENSE). [서드파티 고지](THIRD_PARTY.md) ·
-[선행 작업 공개](ORIGIN_AND_PRIOR_WORK.md) · [AI 사용 공개](AI_ASSISTANCE.md).
+[선행 작업 공개](docs/ORIGIN_AND_PRIOR_WORK.md) · [AI 사용 공개](AI_ASSISTANCE.md).
 
 RouteContract는 Apache Software Foundation의 공식 프로젝트가 아니며 제휴·보증 관계가 없습니다.
 Apache와 Apache ShardingSphere는 Apache Software Foundation의 상표입니다.

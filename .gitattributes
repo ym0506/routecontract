@@ -7,7 +7,6 @@ gradlew text eol=lf
 examples/**/*.java -linguist-documentation
 
 # Contest-only report/package documentation and its maintainer tooling.
-submission/** linguist-documentation
 
 # Repository automation and verification helpers; exclude them from the product language classification.
 scripts/*.py -linguist-detectable

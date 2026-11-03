@@ -83,6 +83,6 @@ for a new installation.
 
 - [Historical v0.1.2 Quick Start](reference-guide.md#quick-start), [local installer](install-local.md) and [integration tooling](first-integration.md).
 - [Historical contest evidence matrix](evidence-matrix.md) and [August development plan](archive/2026-contest/development-plan.md).
-- [Release history](../CHANGELOG.md) and [release procedure](../RELEASING.md).
+- [Release history](../CHANGELOG.md) and [release procedure](RELEASING.md).
 
 </details>
