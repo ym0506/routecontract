@@ -28,7 +28,9 @@ This checklist is for preparing and publishing releases.
    ```bash
    ./gradlew --no-daemon --no-build-cache clean check validateOfficialCycloneDxSbom \
      :routecontract-shardingsphere-5.5:assemble \
-     :routecontract-shardingsphere-5.5:generatePomFileForMavenJavaPublication
+     :routecontract-shardingsphere-5.5:generatePomFileForMavenJavaPublication \
+     :routecontract-shardingsphere-5.4.1-5.5.2:assemble \
+     :routecontract-shardingsphere-5.4.1-5.5.2:generatePomFileForMavenJavaPublication
    ```
 
    The opt-in built-asset/MySQL acceptance test is release evidence rather than a generic
@@ -98,6 +100,20 @@ workflow. The workflow:
   revision with `reviewed`, `signed` and `published` all false. Review this
   artifact together with the successful whole run; it does not change the
   twelve GitHub Release assets or the existing 17-file evidence artifact;
+- from `0.1.5`, also retains the same five payloads and `candidate-payloads.json`
+  for `routecontract-shardingsphere-5.4.1-5.5.2` as a separate
+  `routecontract-central-candidate-routecontract-shardingsphere-5.4.1-5.5.2-COMMIT`
+  artifact, together with its own `test-summary.txt` (the library suites plus the
+  shared MySQL suites from each of the four runtime tasks). That artifact ships
+  only through Maven Central, so the GitHub Release assets stay those of the 5.5
+  artifact;
+- requires `routecontract-shardingsphere-5.4.1-5.5.2` to publish exactly the
+  5.5 artifact's runtime graph: identical POM dependencies, Gradle Module
+  Metadata variant dependencies and locked `runtimeClasspath`
+  ([`verify-shared-runtime-graph.py`](../scripts/verify-shared-runtime-graph.py)).
+  The SBOM, policy and OSV evidence below are produced for the 5.5 artifact and
+  cover the second artifact only through this identity. Its compile-only
+  ShardingSphere 5.5.2 API JARs are not published;
 - generates direct and aggregate CycloneDX JSON/XML SBOMs and fails unless
   every first-party component declares Apache-2.0, Connector/J includes its
   Universal FOSS Exception and MySQL example BOMs contain the digest-pinned,
@@ -267,11 +283,16 @@ The immutable GitHub Releases `v0.1.0` and `v0.1.2` remain unchanged and are
 not published to Maven Central.
 
 [0.1.4 is published](release-0.1.4-candidate.md) on GitHub and Maven Central,
-using the existing single artifact and exact ShardingSphere-JDBC 5.5.3 support.
+using the single artifact `routecontract-shardingsphere-5.5` and exact ShardingSphere-JDBC 5.5.3 support.
 Its [Central evidence](evidence/release-0.1.4-central.md) includes the completed
 prepublication candidate comparison and anonymous public consumer checks. Historical
 [0.1.3 evidence](evidence/release-0.1.3-central.md), including its recorded exception,
-remains unchanged. The separate 0.2 core/adapter split and 5.5.2 adapter remain unreleased.
+remains unchanged. The 0.2 core/adapter split was closed. The [0.1.5 candidate](release-0.1.5-candidate.md)
+adds a second artifact, `routecontract-shardingsphere-5.4.1-5.5.2`. Each artifact is its own
+coordinate: run signing and local staging, the upload bundle, the Portal deployment, public
+readback and both public consumers once per artifact, with separate staging, bundle and
+evidence directories. Never stage both artifacts into one staging repository; the bundle tool
+rejects it.
 
 For a future publication, select a new, unpublished stable version strictly greater than
 `0.1.4` through a separate release approval. Preserve all existing tags and published
@@ -331,12 +352,14 @@ That key and its signatures are test data, are never uploaded or retained as
 artifacts, and are not release evidence.
 
 From a fresh detached checkout of the reviewed tag, use a new private staging
-parent and the checked-in Wrapper:
+parent and the checked-in Wrapper. Set `release_module` to the one artifact being
+staged, `routecontract-shardingsphere-5.5` or `routecontract-shardingsphere-5.4.1-5.5.2`:
 
 ```bash
 (
 set -e
 release_version=REPLACE_WITH_SEPARATELY_APPROVED_LATER_STABLE_VERSION
+release_module=REPLACE_WITH_ONE_PUBLISHED_ARTIFACT_ID
 staging_parent=/absolute/path/to/new-private-central-staging
 reviewed_primary_fingerprint=REPLACE_WITH_40_UPPERCASE_HEX
 test ! -e "${staging_parent}"
@@ -348,7 +371,7 @@ printf '%s\n' \
 chmod 600 "${gpg_options}"
 GNUPGHOME=/absolute/path/to/protected-gnupg-home ./gradlew \
   --no-daemon --no-build-cache --no-configuration-cache \
-  :routecontract-shardingsphere-5.5:publishMavenJavaPublicationToCentralStagingRepository \
+  ":${release_module}:publishMavenJavaPublicationToCentralStagingRepository" \
   -ProutecontractCentralStagingDirectory="${staging_parent}/repository" \
   -ProutecontractCentralSigning=true \
   -Psigning.gnupg.executable=gpg \
@@ -363,7 +386,10 @@ This is an alternative to rebuilding the payloads in the command above. Start
 with another fresh detached checkout if that command has already run.
 
 For the final candidate, use the five payloads retained by the exact tagged
-Linux/Temurin release-evidence run. A local JDK can generate different Javadoc
+Linux/Temurin release-evidence run for that artifact (the
+`routecontract-central-candidate-COMMIT` artifact for the 5.5 module, or the
+`routecontract-central-candidate-routecontract-shardingsphere-5.4.1-5.5.2-COMMIT`
+artifact). A local JDK can generate different Javadoc
 bytes. In a fresh detached checkout of that same tag, first verify the downloaded
 Actions artifact digest and each payload's name, size and SHA-256 against the
 reviewed five-payload manifest. Copy those exact bytes into the publication's
@@ -372,7 +398,7 @@ expected output locations:
 ```bash
 release_version=REPLACE_WITH_REVIEWED_TAG_VERSION
 reviewed_payload_directory=/absolute/path/to/reviewed-five-payloads
-release_module=routecontract-shardingsphere-5.5
+release_module=REPLACE_WITH_ONE_PUBLISHED_ARTIFACT_ID
 release_base="${release_module}-${release_version}"
 test ! -e "${release_module}/build"
 mkdir -p "${release_module}/build/libs" \
@@ -391,17 +417,19 @@ Recheck all five seeded files against the same reviewed manifest before
 signing. Add these exclusions to the signed local-staging command above:
 
 ```bash
-  -x :routecontract-shardingsphere-5.5:jar \
-  -x :routecontract-shardingsphere-5.5:sourcesJar \
-  -x :routecontract-shardingsphere-5.5:javadocJar \
-  -x :routecontract-shardingsphere-5.5:generatePomFileForMavenJavaPublication \
-  -x :routecontract-shardingsphere-5.5:generateMetadataFileForMavenJavaPublication
+  -x ":${release_module}:jar" \
+  -x ":${release_module}:sourcesJar" \
+  -x ":${release_module}:javadocJar" \
+  -x ":${release_module}:generatePomFileForMavenJavaPublication" \
+  -x ":${release_module}:generateMetadataFileForMavenJavaPublication"
 ```
 
 First add `--dry-run` and require exactly `signMavenJavaPublication` followed by
 `publishMavenJavaPublicationToCentralStagingRepository`. Then run the identical
 command without `--dry-run`, while the staging repository is still absent.
-Do not add `clean`, `assemble` or `check` to this signing invocation. Use `-x`;
+Do not add `clean`, `assemble` or `check` to this signing invocation. For
+`routecontract-shardingsphere-5.4.1-5.5.2`, the dry run must also show no
+`syncSharedMainSources` or compilation task. Use `-x`;
 setting a generator's `enabled` flag to false can omit its publication artifact.
 
 After staging, compare each seeded and staged payload's size and SHA-256 with
@@ -470,8 +498,9 @@ public-only temporary GnuPG home and uses that snapshot for every signature
 check, so signature verification does not reopen the caller's keyring.
 
 The reviewed payload manifest is a strict canonical JSON document with schema
-version `1`, the exact `io.github.ym0506.routecontract` group,
-`routecontract-shardingsphere-5.5` artifact, one stable SemVer strictly greater
+version `1`, the exact `io.github.ym0506.routecontract` group, one artifact from
+the closed list `routecontract-shardingsphere-5.5` and
+`routecontract-shardingsphere-5.4.1-5.5.2`, one stable SemVer strictly greater
 than `0.1.2`, and exactly five lexicographically ordered payload records. This parser
 threshold also permits verification of the historical `0.1.3` bundle; a new publication
 must use the unpublished version selected under the approval requirements above.
@@ -527,8 +556,8 @@ python3 -I scripts/prepare-central-upload-bundle.py build \
 
 python3 -I scripts/prepare-central-upload-bundle.py verify \
   --repository /absolute/path/to/new-private-central-staging/repository \
-  --bundle /absolute/path/to/new-private-central-bundle/routecontract-shardingsphere-5.5-VERSION-central-upload.zip \
-  --receipt /absolute/path/to/new-private-central-bundle/routecontract-shardingsphere-5.5-VERSION-central-upload-receipt.json \
+  --bundle /absolute/path/to/new-private-central-bundle/ARTIFACT-VERSION-central-upload.zip \
+  --receipt /absolute/path/to/new-private-central-bundle/ARTIFACT-VERSION-central-upload-receipt.json \
   --reviewed-payload-manifest /absolute/path/to/reviewed-payloads.json \
   --public-gpg-home /absolute/path/to/fresh-public-only-gnupg-home \
   --expected-primary-fingerprint REPLACE_WITH_40_UPPERCASE_HEX
@@ -544,9 +573,10 @@ construct a later attestation.
 
 ### Portal upload, validation and publication
 
-1. Create one exact upload bundle containing only the reviewed Maven version
-   payload, each payload's detached signature and required payload checksum
-   sidecars. Record its SHA-256 and filename allowlist in a private receipt that
+1. Create one exact upload bundle per artifact containing only that artifact's
+   reviewed Maven version payload, each payload's detached signature and
+   required payload checksum sidecars. Each bundle becomes its own deployment
+   and goes through the steps below on its own. Record its SHA-256 and filename allowlist in a private receipt that
    contains no credential.
 2. Upload once as `USER_MANAGED`, never automatic publication. Record an
    upload-intent entry before the request and then the returned deployment ID
@@ -575,10 +605,10 @@ metadata, main/sources/Javadoc JARs and other published version files without
 authentication and compare them byte-for-byte with the reviewed staged
 payload. A Portal success response alone is not public-availability evidence.
 
-For the single-artifact stable `0.1.x` line from `0.1.3` onwards, run the
-[public byte readback](public-release-central-verification.md) against the
-reviewed signed bundle. It verifies all 30 public files and only then emits
-`consumer-receipt.json`. Run both [independent public consumers](public-release-consumers.md)
+For each artifact of the stable `0.1.x` line from `0.1.3` onwards, run the
+[public byte readback](public-release-central-verification.md) against that
+artifact's reviewed signed bundle. It verifies all 30 public files of that one
+coordinate and only then emits `consumer-receipt.json` for it. Run both [independent public consumers](public-release-consumers.md)
 from the clean reviewed source checkout using that receipt:
 
 ```bash

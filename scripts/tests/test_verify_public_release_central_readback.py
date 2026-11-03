@@ -18,25 +18,28 @@ sys.modules[SPEC.name] = readback
 SPEC.loader.exec_module(readback)
 
 
-def synthetic_snapshot():
+FIVE_FIVE = 'routecontract-shardingsphere-5.5'
+FIVE_FOUR_ONE = 'routecontract-shardingsphere-5.4.1-5.5.2'
+
+
+def synthetic_snapshot(module=FIVE_FIVE):
     entries = []
     data = io.BytesIO()
     with zipfile.ZipFile(data, 'w') as archive:
-        for module in readback.artifacts.MODULES:
-            for extension in ('jar', 'pom', 'module', 'sources.jar', 'javadoc.jar'):
-                suffix = '-' + extension if extension in ('sources.jar', 'javadoc.jar') else '.' + extension
-                name = f'{module}-0.1.3{suffix}'
-                path = f'{readback.artifacts.GROUP_PATH}/{module}/0.1.3/{name}'
-                for sidecar in ('', '.asc', '.md5', '.sha1', '.sha256', '.sha512'):
-                    content = ('synthetic unit fixture: ' + path + sidecar).encode()
-                    record = {'path': path + sidecar, 'size': len(content),
-                              'sha256': hashlib.sha256(content).hexdigest(),
-                              'kind': 'payload' if not sidecar else 'signature' if sidecar == '.asc' else 'payloadChecksum'}
-                    entries.append(record)
-                    archive.writestr(record['path'], content)
+        for extension in ('jar', 'pom', 'module', 'sources.jar', 'javadoc.jar'):
+            suffix = '-' + extension if extension in ('sources.jar', 'javadoc.jar') else '.' + extension
+            name = f'{module}-0.1.3{suffix}'
+            path = f'{readback.artifacts.GROUP_PATH}/{module}/0.1.3/{name}'
+            for sidecar in ('', '.asc', '.md5', '.sha1', '.sha256', '.sha512'):
+                content = ('synthetic unit fixture: ' + path + sidecar).encode()
+                record = {'path': path + sidecar, 'size': len(content),
+                          'sha256': hashlib.sha256(content).hexdigest(),
+                          'kind': 'payload' if not sidecar else 'signature' if sidecar == '.asc' else 'payloadChecksum'}
+                entries.append(record)
+                archive.writestr(record['path'], content)
     archive_bytes = data.getvalue()
     return readback.VerifiedSnapshot('0.1.3', hashlib.sha256(archive_bytes).hexdigest(),
-                                    'b'*64, 'c'*64, 'D'*40, archive_bytes, tuple(entries))
+                                    'b'*64, 'c'*64, 'D'*40, archive_bytes, tuple(entries), module)
 
 
 class Response(io.BytesIO):
@@ -67,15 +70,15 @@ class FakeCentral:
 
 
 class PublicReadbackTest(unittest.TestCase):
-    def execute(self, failure=None):
-        snapshot = synthetic_snapshot()
+    def execute(self, failure=None, module=FIVE_FIVE):
+        snapshot = synthetic_snapshot(module)
         transport = FakeCentral(snapshot, failure)
         with tempfile.TemporaryDirectory() as directory:
             evidence = Path(directory).resolve() / 'evidence'
             code = readback.readback(snapshot, evidence, opener=transport)
             summary = json.loads((evidence / 'public-readback.json').read_text())
             consumer = evidence / 'consumer-receipt.json'
-            value = readback.artifacts.load_consumer_receipt(consumer) if consumer.exists() else None
+            value = readback.artifacts.load_consumer_receipt(consumer, module) if consumer.exists() else None
         return code, summary, value, transport.requests
 
     def test_synthetic_exact_30_files_create_three_payload_receipt(self):
@@ -93,6 +96,43 @@ class PublicReadbackTest(unittest.TestCase):
             self.assertIsNone(request.data)
             self.assertEqual({'Accept-encoding': 'identity', 'User-agent': 'RouteContract-public-readback/1'}, dict(request.header_items()))
             self.assertLessEqual(timeout, readback.REQUEST_TIMEOUT_SECONDS)
+
+    def test_synthetic_541_to_552_readback_names_only_that_artifact(self):
+        code, summary, consumer, requests = self.execute(module=FIVE_FOUR_ONE)
+        self.assertEqual(0, code)
+        self.assertEqual(30, summary['verifiedEntryCount'])
+        self.assertTrue(summary['publicReadbackVerified'])
+        prefix = f'{readback.artifacts.CENTRAL_ROOT}{readback.artifacts.GROUP_PATH}/{FIVE_FOUR_ONE}/0.1.3/'
+        self.assertEqual(30, len(requests))
+        self.assertTrue(all(request.full_url.startswith(prefix) for request, _ in requests))
+        self.assertEqual(
+            [f'{FIVE_FOUR_ONE}-0.1.3.{extension}' for extension in ('jar', 'pom', 'module')],
+            [item['name'] for item in consumer['artifacts']])
+        self.assertEqual({FIVE_FOUR_ONE}, {item['module'] for item in consumer['artifacts']})
+
+    def test_consumer_receipt_format_is_unchanged_for_the_original_artifact(self):
+        snapshot = synthetic_snapshot()
+        with tempfile.TemporaryDirectory() as directory:
+            evidence = Path(directory).resolve() / 'evidence'
+            self.assertEqual(0, readback.readback(snapshot, evidence, opener=FakeCentral(snapshot)))
+            written = json.loads((evidence / 'consumer-receipt.json').read_text())
+        by_path = {record['path']: record['sha256'] for record in snapshot.entries}
+        expected = []
+        for extension in ('jar', 'pom', 'module'):
+            name = f'{FIVE_FIVE}-0.1.3.{extension}'
+            path = f'io/github/ym0506/routecontract/{FIVE_FIVE}/0.1.3/{name}'
+            expected.append({'module': FIVE_FIVE, 'name': name, 'relativePath': path, 'sha256': by_path[path]})
+        self.assertEqual({'formatVersion': 1, 'routeContractVersion': '0.1.3', 'artifacts': expected}, written)
+
+    def test_snapshot_naming_an_unlisted_artifact_writes_no_consumer_receipt(self):
+        snapshot = synthetic_snapshot()._replace(artifact_id='routecontract-core')
+        with tempfile.TemporaryDirectory() as directory:
+            evidence = Path(directory).resolve() / 'evidence'
+            self.assertEqual(2, readback.readback(snapshot, evidence, opener=FakeCentral(snapshot)))
+            summary = json.loads((evidence / 'public-readback.json').read_text())
+            self.assertFalse((evidence / 'consumer-receipt.json').exists())
+        self.assertEqual('LOCAL_EVIDENCE_ERROR', summary['failureCode'])
+        self.assertFalse(summary['publicReadbackVerified'])
 
     def test_missing_file_retains_partial_failure_without_consumer_receipt(self):
         def missing(content, url):
@@ -227,6 +267,7 @@ class SignedLocalInputReadbackTest(unittest.TestCase):
         with patch.object(readback.bundle_tool, 'verify_bundle', wraps=readback.bundle_tool.verify_bundle) as verifier:
             snapshot = readback.verified_snapshot(**self.inputs())
         verifier.assert_called_once()
+        self.assertEqual(FIVE_FIVE, snapshot.artifact_id)
         self.assertEqual('0.1.3', snapshot.version)
         self.assertEqual(30, len(snapshot.entries))
         self.assertEqual(5, sum(record['kind'] == 'signature' for record in snapshot.entries))
@@ -245,6 +286,34 @@ class SignedLocalInputReadbackTest(unittest.TestCase):
         self.assertFalse(summary['availabilityClaim'])
         self.assertFalse(summary['consumerExecutionVerified'])
         self.assertFalse(summary['networkPublication'])
+
+    def test_genuine_signed_541_to_552_bundle_reads_back_its_own_coordinate(self):
+        self.fixture.use_artifact(self.fixtures.SECOND_ARTIFACT_ID)
+        built = self.fixture.build(self.fixture.root / 'second-artifact-output')
+        inputs = {**self.inputs(), 'bundle': built.bundle_path, 'receipt': built.receipt_path}
+        snapshot = readback.verified_snapshot(**inputs)
+        self.assertEqual(FIVE_FOUR_ONE, snapshot.artifact_id)
+        self.assertEqual('0.1.3', snapshot.version)
+        self.assertEqual(30, len(snapshot.entries))
+        prefix = f'{readback.artifacts.GROUP_PATH}/{FIVE_FOUR_ONE}/0.1.3/'
+        self.assertTrue(all(record['path'].startswith(prefix) for record in snapshot.entries))
+        evidence = self.fixture.root / 'second-artifact-evidence'
+        transport = FakeCentral(snapshot)
+        self.assertEqual(0, readback.readback(snapshot, evidence, opener=transport))
+        self.assertEqual(30, len(transport.requests))
+        consumer = readback.artifacts.load_consumer_receipt(evidence / 'consumer-receipt.json', FIVE_FOUR_ONE)
+        self.assertEqual(3, len(consumer['artifacts']))
+        for record in consumer['artifacts']:
+            self.assertEqual(FIVE_FOUR_ONE, record['module'])
+            local_bytes = (self.fixture.repository / record['relativePath']).read_bytes()
+            self.assertEqual(hashlib.sha256(local_bytes).hexdigest(), record['sha256'])
+        with self.assertRaises(readback.artifacts.ReceiptError):
+            readback.artifacts.load_consumer_receipt(evidence / 'consumer-receipt.json')
+
+    def test_bundle_for_one_artifact_is_rejected_against_the_other_staging(self):
+        self.fixture.use_artifact(self.fixtures.SECOND_ARTIFACT_ID)
+        with self.assertRaisesRegex(readback.bundle_tool.BundleError, 'bundle filename mismatch'):
+            readback.verified_snapshot(**self.inputs())
 
     def test_corrupt_signature_is_rejected_by_real_signature_verifier(self):
         signature = next(self.fixture.repository.rglob('*.jar.asc'))

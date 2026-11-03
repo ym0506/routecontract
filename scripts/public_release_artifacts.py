@@ -1,5 +1,7 @@
 """Closed reviewed-byte receipt shared by the public single-artifact 0.1 release checks.
 
+Each receipt names exactly one published artifact. Callers that do not name an
+artifact get the original routecontract-shardingsphere-5.5 contract.
 Loading this document verifies its shape, not publication or publisher identity.
 The expected hashes must come from the maintainer's reviewed release evidence.
 """
@@ -14,7 +16,9 @@ import stat
 CENTRAL_ROOT = 'https://repo.maven.apache.org/maven2/'
 GROUP = 'io.github.ym0506.routecontract'
 GROUP_PATH = PurePosixPath('io/github/ym0506/routecontract')
-MODULES = ('routecontract-shardingsphere-5.5',)
+# Closed allowlist of published artifacts; one receipt covers exactly one of them.
+MODULES = ('routecontract-shardingsphere-5.5', 'routecontract-shardingsphere-5.4.1-5.5.2')
+DEFAULT_MODULE = MODULES[0]
 EXTENSIONS = ('jar', 'pom', 'module')
 MAX_RECEIPT_BYTES = 32 * 1024
 
@@ -31,7 +35,14 @@ def stable_version(value: object) -> str:
     return value
 
 
-def validate_consumer_receipt(document: object) -> dict:
+def published_module(value: object) -> str:
+    if not isinstance(value, str) or value not in MODULES:
+        raise ReceiptError('Expected one published RouteContract artifact')
+    return value
+
+
+def validate_consumer_receipt(document: object, module: str = DEFAULT_MODULE) -> dict:
+    module = published_module(module)
     if not isinstance(document, dict) or set(document) != {'formatVersion', 'routeContractVersion', 'artifacts'}:
         raise ReceiptError('Consumer receipt header does not match format 1')
     if type(document['formatVersion']) is not int or document['formatVersion'] != 1:
@@ -41,11 +52,10 @@ def validate_consumer_receipt(document: object) -> dict:
     if not isinstance(artifacts, list) or len(artifacts) != 3:
         raise ReceiptError('Consumer receipt must contain exactly three payloads')
     expected = {}
-    for module in MODULES:
-        for extension in EXTENSIONS:
-            name = f'{module}-{version}.{extension}'
-            relative = (GROUP_PATH / module / version / name).as_posix()
-            expected[relative] = (module, name)
+    for extension in EXTENSIONS:
+        name = f'{module}-{version}.{extension}'
+        relative = (GROUP_PATH / module / version / name).as_posix()
+        expected[relative] = (module, name)
     found = {}
     for item in artifacts:
         if not isinstance(item, dict) or set(item) != {'module', 'name', 'relativePath', 'sha256'}:
@@ -77,8 +87,9 @@ def _reject_constant(value: str) -> None:
     raise ReceiptError('Consumer receipt contains a non-finite JSON value')
 
 
-def load_consumer_receipt(path: Path) -> dict:
+def load_consumer_receipt(path: Path, module: str = DEFAULT_MODULE) -> dict:
     """Read one bounded regular file, rejecting symlink leaves and ambiguous JSON."""
+    module = published_module(module)
     descriptor = None
     try:
         descriptor = os.open(path, os.O_RDONLY | os.O_NONBLOCK | os.O_NOFOLLOW)
@@ -94,7 +105,7 @@ def load_consumer_receipt(path: Path) -> dict:
             raise ReceiptError('Consumer receipt changed while being read')
         document = json.loads(payload.decode('utf-8'), object_pairs_hook=_unique_object,
                               parse_constant=_reject_constant)
-        return validate_consumer_receipt(document)
+        return validate_consumer_receipt(document, module)
     except ReceiptError:
         raise
     except (OSError, UnicodeError, ValueError, RecursionError) as error:

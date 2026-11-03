@@ -11,6 +11,7 @@
     <junit.version>5.14.3</junit.version>
     <shardingsphere.version>5.5.3</shardingsphere.version>
     <routecontract.adapterArtifactId>routecontract-shardingsphere-5.5</routecontract.adapterArtifactId>
+    <routecontract.otherAdapterArtifactId>routecontract-shardingsphere-5.4.1-5.5.2</routecontract.otherAdapterArtifactId>
     <routecontract.databaseAnchor>shardingsphere-database-connector-core</routecontract.databaseAnchor>
     <routecontract.modeRepository>memory</routecontract.modeRepository>
     <routecontract.parserPrefix>engine-</routecontract.parserPrefix>
@@ -227,6 +228,7 @@
                     <exclude>org.apache.shardingsphere:*:(${shardingsphere.version},)</exclude>
                     <exclude>io.github.ym0506.routecontract:routecontract-core</exclude>
                     <exclude>io.github.ym0506.routecontract:routecontract-shardingsphere-5.5.2</exclude>
+                    <exclude>io.github.ym0506.routecontract:${routecontract.otherAdapterArtifactId}</exclude>
                   </excludes>
                 </bannedDependencies>
               </rules>
@@ -257,6 +259,8 @@
           <systemPropertyVariables>
             <api.version>1.44</api.version>
             <routecontract.version>${routecontract.version}</routecontract.version>
+            <routecontract.artifact>${routecontract.adapterArtifactId}</routecontract.artifact>
+            <routecontract.expectedRuntime>${shardingsphere.version}</routecontract.expectedRuntime>
             <routecontract.sha256.routecontract-shardingsphere-5.5>${routecontract.sha256.routecontract-shardingsphere-5.5}</routecontract.sha256.routecontract-shardingsphere-5.5>
             <routecontract.evidenceDirectory>${routecontract.evidenceDirectory}</routecontract.evidenceDirectory>
           </systemPropertyVariables>
@@ -271,4 +275,54 @@
       </plugin>
     </plugins>
   </build>
+  <profiles>
+    <profile>
+      <!-- routecontract-shardingsphere-5.4.1-5.5.2 on exact ShardingSphere-JDBC 5.5.2. The public
+           consumer wrapper passes -Pruntime-5.5.2 only for that artifact's reviewed receipt. 5.5.2
+           needs neither 5.5.0's shardingsphere-test-util exclusion nor 5.4.1's snakeyaml pin. -->
+      <id>runtime-5.5.2</id>
+      <properties>
+        <shardingsphere.version>5.5.2</shardingsphere.version>
+        <routecontract.adapterArtifactId>routecontract-shardingsphere-5.4.1-5.5.2</routecontract.adapterArtifactId>
+        <routecontract.otherAdapterArtifactId>routecontract-shardingsphere-5.5</routecontract.otherAdapterArtifactId>
+        <routecontract.databaseAnchor>shardingsphere-infra-database-core</routecontract.databaseAnchor>
+        <routecontract.modeRepository>jdbc</routecontract.modeRepository>
+        <routecontract.parserPrefix />
+      </properties>
+      <dependencyManagement>
+        <dependencies>
+          <!-- ShardingSphere 5.5.2 requests Calcite 1.38.0, which requests aggdesigner-algorithm 6.0;
+               the 5.5.3 alignment above does not apply to this runtime. -->
+          <dependency>
+            <groupId>org.apache.calcite</groupId>
+            <artifactId>calcite-core</artifactId>
+            <version>1.38.0</version>
+          </dependency>
+          <dependency>
+            <groupId>org.apache.calcite</groupId>
+            <artifactId>calcite-linq4j</artifactId>
+            <version>1.38.0</version>
+          </dependency>
+          <dependency>
+            <groupId>net.hydromatic</groupId>
+            <artifactId>aggdesigner-algorithm</artifactId>
+            <version>6.0</version>
+          </dependency>
+        </dependencies>
+      </dependencyManagement>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <systemPropertyVariables>
+                <routecontract.sha256.routecontract-shardingsphere-5.4.1-5.5.2>${routecontract.sha256.routecontract-shardingsphere-5.4.1-5.5.2}</routecontract.sha256.routecontract-shardingsphere-5.4.1-5.5.2>
+              </systemPropertyVariables>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

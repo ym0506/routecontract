@@ -1,7 +1,9 @@
 # Public Central verification for the single-artifact 0.1 release
 
 This post-publication check supports only stable `0.1.x` releases from `0.1.3`
-onwards, using `io.github.ym0506.routecontract:routecontract-shardingsphere-5.5`.
+onwards, using `io.github.ym0506.routecontract:routecontract-shardingsphere-5.5`. From 0.1.5 it
+also accepts `routecontract-shardingsphere-5.4.1-5.5.2`; each run reads back the one artifact
+that the verified bundle names and writes a consumer receipt for that artifact only.
 It does not accept the separate 0.2 core/adapters. Preparing or testing these
 commands does not establish publication. Public installation of the candidate
 remains **unverified** until the real checks complete.

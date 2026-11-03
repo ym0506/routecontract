@@ -2,9 +2,9 @@
 """Create the fixed, privacy-minimized RouteContract release test summary.
 
 The release workflow already fails when ``clean check`` fails.  This script
-adds a second, deliberately narrow gate: all and only the nine expected JUnit
-suites must be present, every expected test must have run, and every result
-count must be zero.  Only suite identities and aggregate counts are emitted;
+adds a second, deliberately narrow gate: all and only the expected JUnit
+suites of one published artifact must be present (nine for the 5.5 artifact),
+every expected test must have run, and every result count must be zero.  Only suite identities and aggregate counts are emitted;
 JUnit timestamps, hostnames, durations, test names and captured output are not
 copied into the release evidence.
 """
@@ -35,6 +35,26 @@ EXPECTED_SUITES = {
     "io.github.ym0506.routecontract.manifest.ManifestReviewReportTest": 10,
     "io.github.ym0506.routecontract.manifest.ObservedExecutionManifestTest": 17,
 }
+DEFAULT_PROFILE = "routecontract-shardingsphere-5.5"
+# The 5.4.1-5.5.2 artifact runs the same suite classes in several Gradle test tasks, so its
+# suites are keyed by the result directory name (the task name) as well as the suite class.
+_RUNTIME_TASKS = ("testShardingSphere541", "testShardingSphere550", "testShardingSphere551",
+                  "testShardingSphere552")
+PROFILES = {
+    DEFAULT_PROFILE: EXPECTED_SUITES,
+    "routecontract-shardingsphere-5.4.1-5.5.2": {
+        "test/io.github.ym0506.routecontract.RouteContractTest": 18,
+        "test/io.github.ym0506.routecontract.internal.MutableAttemptTest": 2,
+        "test/io.github.ym0506.routecontract.internal.ShardingSphere541To552PreflightTest": 5,
+        "test/io.github.ym0506.routecontract.manifest.ManifestReviewReportTest": 10,
+        "test/io.github.ym0506.routecontract.manifest.ObservedExecutionManifestTest": 17,
+        **{
+            f"{task}/io.github.ym0506.routecontract.example.{suite}": tests
+            for task in _RUNTIME_TASKS
+            for suite, tests in (("FailureBoundaryMySqlTest", 1), ("OperationCorrelationMySqlTest", 5))
+        },
+    },
+}
 
 
 class SummaryError(ValueError):
@@ -52,6 +72,12 @@ def parse_args() -> argparse.Namespace:
         help="JUnit XML directory; repeat for each Gradle test task",
     )
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--profile",
+        choices=sorted(PROFILES),
+        default=DEFAULT_PROFILE,
+        help="published artifact whose expected suites are required",
+    )
     return parser.parse_args()
 
 
@@ -66,7 +92,7 @@ def _required_count(root: ET.Element, key: str, suite: str) -> int:
     return int(raw)
 
 
-def _read_suite(path: Path) -> tuple[str, dict[str, int]]:
+def _read_suite(path: Path, allowed_suites: set[str]) -> tuple[str, dict[str, int]]:
     if path.is_symlink() or not path.is_file():
         raise SummaryError("JUnit input must be a regular non-symlink file")
     if path.stat().st_size > MAX_XML_BYTES:
@@ -81,7 +107,7 @@ def _read_suite(path: Path) -> tuple[str, dict[str, int]]:
     if _local_name(root.tag) != "testsuite":
         raise SummaryError("JUnit XML root must be testsuite")
     suite = root.get("name")
-    if suite not in EXPECTED_SUITES:
+    if suite not in allowed_suites:
         raise SummaryError(f"unexpected JUnit suite: {suite!r}")
     if path.name != f"TEST-{suite}.xml":
         raise SummaryError(f"JUnit filename does not match suite {suite}")
@@ -109,28 +135,36 @@ def _read_suite(path: Path) -> tuple[str, dict[str, int]]:
     return suite, counts
 
 
-def build_summary(revision: str, results_dirs: list[Path]) -> str:
+def build_summary(
+    revision: str, results_dirs: list[Path], profile: str = DEFAULT_PROFILE
+) -> str:
     if REVISION_RE.fullmatch(revision) is None:
         raise SummaryError("revision must be a lowercase 40-character Git commit SHA")
+    if profile not in PROFILES:
+        raise SummaryError(f"unknown summary profile: {profile!r}")
+    expected_suites = PROFILES[profile]
+    keyed_by_task = profile != DEFAULT_PROFILE
+    allowed_suites = {key.rpartition("/")[2] for key in expected_suites}
 
     observed: dict[str, dict[str, int]] = {}
     for directory in results_dirs:
         if directory.is_symlink() or not directory.is_dir():
             raise SummaryError("each JUnit results path must be a non-symlink directory")
         for path in sorted(directory.glob("TEST-*.xml")):
-            suite, counts = _read_suite(path)
-            if suite in observed:
-                raise SummaryError(f"duplicate JUnit suite: {suite}")
-            observed[suite] = counts
+            suite, counts = _read_suite(path, allowed_suites)
+            key = f"{directory.name}/{suite}" if keyed_by_task else suite
+            if key in observed:
+                raise SummaryError(f"duplicate JUnit suite: {key}")
+            observed[key] = counts
 
-    if set(observed) != set(EXPECTED_SUITES):
-        missing = sorted(set(EXPECTED_SUITES) - set(observed))
-        unexpected = sorted(set(observed) - set(EXPECTED_SUITES))
+    if set(observed) != set(expected_suites):
+        missing = sorted(set(expected_suites) - set(observed))
+        unexpected = sorted(set(observed) - set(expected_suites))
         raise SummaryError(
             f"JUnit suite set mismatch; missing={missing}, unexpected={unexpected}"
         )
 
-    for suite, expected_tests in EXPECTED_SUITES.items():
+    for suite, expected_tests in expected_suites.items():
         counts = observed[suite]
         if counts["tests"] != expected_tests:
             raise SummaryError(
@@ -142,6 +176,7 @@ def build_summary(revision: str, results_dirs: list[Path]) -> str:
 
     lines = [
         f"format={SUMMARY_FORMAT}",
+        *([f"artifact={profile}"] if keyed_by_task else []),
         f"revision={revision}",
         f"suite_count={len(observed)}",
         f"test_count={sum(counts['tests'] for counts in observed.values())}",
@@ -184,7 +219,7 @@ def write_summary(output: Path, content: str) -> None:
 def main() -> int:
     args = parse_args()
     try:
-        content = build_summary(args.revision, args.results_dir)
+        content = build_summary(args.revision, args.results_dir, args.profile)
         write_summary(args.output, content)
     except (OSError, SummaryError) as error:
         raise SystemExit(f"test summary generation failed: {error}") from error

@@ -15,6 +15,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+from typing import NamedTuple
 import unittest
 from unittest import mock
 import xml.etree.ElementTree as ET
@@ -26,8 +27,17 @@ PREPARER = REPOSITORY_ROOT / "scripts" / "prepare-central-upload-bundle.py"
 GROUP_ID = "io.github.ym0506.routecontract"
 GROUP_PATH = Path("io/github/ym0506/routecontract")
 ARTIFACT_ID = "routecontract-shardingsphere-5.5"
+SECOND_ARTIFACT_ID = "routecontract-shardingsphere-5.4.1-5.5.2"
+ARTIFACT_IDS = (ARTIFACT_ID, SECOND_ARTIFACT_ID)
 VERSION = "0.1.3"
 CHECKSUMS = ("md5", "sha1", "sha256", "sha512")
+
+
+class SignedFixture(NamedTuple):
+    repository: Path
+    version_directory: Path
+    payloads: dict[str, bytes]
+    manifest_value: dict
 
 
 def load_preparer():
@@ -136,23 +146,34 @@ class CentralUploadBundleTest(unittest.TestCase):
             input=public_key,
         )
 
-        cls.fixture_repository = cls.class_root / "fixture-repository"
-        cls.fixture_version = (
-            cls.fixture_repository / GROUP_PATH / ARTIFACT_ID / VERSION
-        )
-        cls.fixture_version.mkdir(parents=True)
-        base = f"{ARTIFACT_ID}-{VERSION}"
-        cls.payloads = {
-            f"{base}-javadoc.jar": b"fixture-javadoc-jar\n",
-            f"{base}-sources.jar": b"fixture-sources-jar\n",
-            f"{base}.jar": b"fixture-main-jar\n",
+        cls.fixtures = {
+            artifact_id: cls.create_signed_fixture(
+                cls.class_root / f"fixture-repository-{artifact_id}", artifact_id
+            )
+            for artifact_id in ARTIFACT_IDS
+        }
+        default = cls.fixtures[ARTIFACT_ID]
+        cls.fixture_repository = default.repository
+        cls.fixture_version = default.version_directory
+        cls.payloads = default.payloads
+        cls.manifest_value = default.manifest_value
+
+    @classmethod
+    def create_signed_fixture(cls, repository: Path, artifact_id: str) -> SignedFixture:
+        version_directory = repository / GROUP_PATH / artifact_id / VERSION
+        version_directory.mkdir(parents=True)
+        base = f"{artifact_id}-{VERSION}"
+        payloads = {
+            f"{base}-javadoc.jar": f"fixture-javadoc-jar {artifact_id}\n".encode("ascii"),
+            f"{base}-sources.jar": f"fixture-sources-jar {artifact_id}\n".encode("ascii"),
+            f"{base}.jar": f"fixture-main-jar {artifact_id}\n".encode("ascii"),
             f"{base}.module": (
                 json.dumps(
                     {
                         "formatVersion": "1.1",
                         "component": {
                             "group": GROUP_ID,
-                            "module": ARTIFACT_ID,
+                            "module": artifact_id,
                             "version": VERSION,
                         },
                         "createdBy": {"gradle": {"version": "8.14.4"}},
@@ -168,15 +189,15 @@ class CentralUploadBundleTest(unittest.TestCase):
                 '<project xmlns="http://maven.apache.org/POM/4.0.0">\n'
                 "  <modelVersion>4.0.0</modelVersion>\n"
                 f"  <groupId>{GROUP_ID}</groupId>\n"
-                f"  <artifactId>{ARTIFACT_ID}</artifactId>\n"
+                f"  <artifactId>{artifact_id}</artifactId>\n"
                 f"  <version>{VERSION}</version>\n"
                 "</project>\n"
             ).encode("utf-8"),
         }
-        for name, data in cls.payloads.items():
-            payload = cls.fixture_version / name
+        for name, data in payloads.items():
+            payload = version_directory / name
             payload.write_bytes(data)
-            signature = cls.fixture_version / f"{name}.asc"
+            signature = version_directory / f"{name}.asc"
             run_checked(
                 [
                     "gpg",
@@ -210,7 +231,7 @@ class CentralUploadBundleTest(unittest.TestCase):
             '<?xml version="1.0" encoding="UTF-8"?>\n'
             "<metadata>\n"
             f"  <groupId>{GROUP_ID}</groupId>\n"
-            f"  <artifactId>{ARTIFACT_ID}</artifactId>\n"
+            f"  <artifactId>{artifact_id}</artifactId>\n"
             "  <versioning>\n"
             f"    <latest>{VERSION}</latest>\n"
             f"    <release>{VERSION}</release>\n"
@@ -219,18 +240,18 @@ class CentralUploadBundleTest(unittest.TestCase):
             "  </versioning>\n"
             "</metadata>\n"
         ).encode("utf-8")
-        metadata_path = cls.fixture_version.parent / "maven-metadata.xml"
+        metadata_path = version_directory.parent / "maven-metadata.xml"
         metadata_path.write_bytes(metadata)
         for algorithm in CHECKSUMS:
             (metadata_path.parent / f"{metadata_path.name}.{algorithm}").write_text(
                 digest(metadata, algorithm), encoding="ascii"
             )
 
-        cls.manifest_value = {
+        manifest_value = {
             "schemaVersion": 1,
             "coordinate": {
                 "groupId": GROUP_ID,
-                "artifactId": ARTIFACT_ID,
+                "artifactId": artifact_id,
                 "version": VERSION,
             },
             "payloads": [
@@ -239,9 +260,10 @@ class CentralUploadBundleTest(unittest.TestCase):
                     "size": len(data),
                     "sha256": hashlib.sha256(data).hexdigest(),
                 }
-                for name, data in sorted(cls.payloads.items())
+                for name, data in sorted(payloads.items())
             ],
         }
+        return SignedFixture(repository, version_directory, payloads, manifest_value)
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -264,6 +286,13 @@ class CentralUploadBundleTest(unittest.TestCase):
         self.manifest.write_text(
             json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8"
         )
+
+    def use_artifact(self, artifact_id: str) -> None:
+        """Replace the staging copy and manifest with another artifact's fixture."""
+        fixture = self.fixtures[artifact_id]
+        shutil.rmtree(self.repository)
+        shutil.copytree(fixture.repository, self.repository)
+        self.write_manifest(fixture.manifest_value)
 
     def build(self, output: Path | None = None):
         return self.module.build_bundle(
@@ -332,6 +361,217 @@ class CentralUploadBundleTest(unittest.TestCase):
         receipt_text = first.receipt_path.read_text(encoding="utf-8")
         self.assertNotIn(str(self.root), receipt_text)
         self.assertNotIn(str(self.public_home), receipt_text)
+
+    def test_allowlist_names_exactly_the_two_published_artifacts(self) -> None:
+        self.assertEqual(ARTIFACT_IDS, self.module.ARTIFACT_IDS)
+        self.assertFalse(hasattr(self.module, "ARTIFACT_ID"))
+
+    def test_builds_and_verifies_bundle_for_the_541_to_552_artifact(self) -> None:
+        self.use_artifact(SECOND_ARTIFACT_ID)
+        first = self.build()
+        verified = self.verify(first.bundle_path, first.receipt_path)
+        second = self.build(self.root / "second-output")
+
+        coordinate_path = GROUP_PATH / SECOND_ARTIFACT_ID / VERSION
+        for result in (first, verified, second):
+            self.assertEqual(SECOND_ARTIFACT_ID, result.artifact_id)
+            self.assertEqual(VERSION, result.version)
+        self.assertEqual(first.bundle_path.read_bytes(), second.bundle_path.read_bytes())
+        self.assertEqual(first.receipt_path.read_bytes(), second.receipt_path.read_bytes())
+        bundle_name = f"{SECOND_ARTIFACT_ID}-{VERSION}-central-upload.zip"
+        receipt_name = f"{SECOND_ARTIFACT_ID}-{VERSION}-central-upload-receipt.json"
+        self.assertEqual(
+            {bundle_name, receipt_name},
+            {path.name for path in self.output.iterdir()},
+        )
+        self.assertEqual(self.output / bundle_name, first.bundle_path)
+        self.assertEqual(self.output / receipt_name, first.receipt_path)
+
+        expected_entries = sorted(
+            str(coordinate_path / f"{name}{suffix}")
+            for name in self.fixtures[SECOND_ARTIFACT_ID].payloads
+            for suffix in ("", ".asc", *(f".{algorithm}" for algorithm in CHECKSUMS))
+        )
+        with zipfile.ZipFile(first.bundle_path) as archive:
+            self.assertEqual(
+                expected_entries, [info.filename for info in archive.infolist()]
+            )
+            self.assertEqual(30, len(archive.infolist()))
+            for info in archive.infolist():
+                self.assertEqual(
+                    (self.repository / info.filename).read_bytes(), archive.read(info)
+                )
+
+        receipt = json.loads(first.receipt_path.read_text(encoding="utf-8"))
+        self.assertEqual(
+            {
+                "groupId": GROUP_ID,
+                "artifactId": SECOND_ARTIFACT_ID,
+                "version": VERSION,
+                "path": str(coordinate_path),
+            },
+            receipt["coordinate"],
+        )
+        self.assertEqual(bundle_name, receipt["bundle"]["name"])
+        self.assertEqual(30, receipt["bundle"]["entryCount"])
+        self.assertEqual(
+            {"payload": 5, "signature": 5, "payloadChecksum": 20},
+            {
+                kind: sum(entry["kind"] == kind for entry in receipt["bundle"]["entries"])
+                for kind in ("payload", "signature", "payloadChecksum")
+            },
+        )
+        self.assertEqual(25, len(receipt["excludedStagingEntries"]))
+        for entry in receipt["excludedStagingEntries"]:
+            self.assertTrue(
+                entry["path"].startswith(f"{GROUP_PATH / SECOND_ARTIFACT_ID}/")
+            )
+        self.assertEqual(
+            hashlib.sha256(self.manifest.read_bytes()).hexdigest(),
+            receipt["reviewedPayloadManifest"]["sha256"],
+        )
+
+        cli_output = self.root / "cli-output"
+        build = subprocess.run(
+            [
+                sys.executable,
+                "-I",
+                str(PREPARER),
+                "build",
+                "--repository",
+                str(self.repository),
+                "--reviewed-payload-manifest",
+                str(self.manifest),
+                "--public-gpg-home",
+                str(self.public_home),
+                "--expected-primary-fingerprint",
+                self.fingerprint,
+                "--output-directory",
+                str(cli_output),
+            ],
+            cwd=REPOSITORY_ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        self.assertEqual(0, build.returncode, build.stderr)
+        self.assertRegex(
+            build.stdout,
+            r"^ROUTECONTRACT_CENTRAL_BUNDLE_BUILT "
+            r"coordinate=io\.github\.ym0506\.routecontract:"
+            r"routecontract-shardingsphere-5\.4\.1-5\.5\.2:0\.1\.3 entries=30 "
+            r"bundleSha256=[0-9a-f]{64} receiptSha256=[0-9a-f]{64} VERIFIED\n$",
+        )
+        self.assertIn(f"bundleSha256={first.bundle_sha256} ", build.stdout)
+        verify = subprocess.run(
+            [
+                sys.executable,
+                "-I",
+                str(PREPARER),
+                "verify",
+                "--repository",
+                str(self.repository),
+                "--bundle",
+                str(cli_output / bundle_name),
+                "--receipt",
+                str(cli_output / receipt_name),
+                "--reviewed-payload-manifest",
+                str(self.manifest),
+                "--public-gpg-home",
+                str(self.public_home),
+                "--expected-primary-fingerprint",
+                self.fingerprint,
+            ],
+            cwd=REPOSITORY_ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        self.assertEqual(0, verify.returncode, verify.stderr)
+        self.assertRegex(
+            verify.stdout,
+            r"^ROUTECONTRACT_CENTRAL_BUNDLE_VERIFIED "
+            r"coordinate=io\.github\.ym0506\.routecontract:"
+            r"routecontract-shardingsphere-5\.4\.1-5\.5\.2:0\.1\.3 entries=30 ",
+        )
+
+    def test_rejects_manifest_artifact_outside_the_allowlist(self) -> None:
+        for artifact_id in (
+            "routecontract-shardingsphere-5.4",
+            "routecontract-shardingsphere-5.5.3",
+            "routecontract-shardingsphere-5.4.1-5.5.3",
+            "routecontract-core",
+            "ROUTECONTRACT-SHARDINGSPHERE-5.5",
+            "routecontract-shardingsphere-5.5 ",
+            "../routecontract-shardingsphere-5.5",
+            "routecontract-shardingsphere-5.5/../routecontract-shardingsphere-5.4.1-5.5.2",
+            "",
+            None,
+            ["routecontract-shardingsphere-5.5"],
+            {"routecontract-shardingsphere-5.5": True},
+        ):
+            with self.subTest(artifact_id=artifact_id):
+                value = json.loads(json.dumps(self.manifest_value))
+                value["coordinate"]["artifactId"] = artifact_id
+                if isinstance(artifact_id, str):
+                    # Keep the records consistent with the named artifact so
+                    # that only the allowlist can reject the manifest.
+                    for record in value["payloads"]:
+                        record["name"] = record["name"].replace(
+                            ARTIFACT_ID, artifact_id, 1
+                        )
+                    value["payloads"].sort(key=lambda record: record["name"])
+                self.write_manifest(value)
+                with self.assertRaisesRegex(RuntimeError, "wrong Maven coordinate"):
+                    self.build()
+                self.assertFalse(self.output.exists())
+
+    def test_rejects_manifest_and_staging_that_name_different_artifacts(self) -> None:
+        cases = (
+            (ARTIFACT_ID, (SECOND_ARTIFACT_ID,)),
+            (SECOND_ARTIFACT_ID, (ARTIFACT_ID,)),
+            (ARTIFACT_ID, ARTIFACT_IDS),
+            (SECOND_ARTIFACT_ID, ARTIFACT_IDS),
+        )
+        for manifest_artifact, staged_artifacts in cases:
+            with self.subTest(manifest=manifest_artifact, staged=staged_artifacts):
+                shutil.rmtree(self.repository)
+                for staged in staged_artifacts:
+                    shutil.copytree(
+                        self.fixtures[staged].repository,
+                        self.repository,
+                        dirs_exist_ok=True,
+                    )
+                self.write_manifest(self.fixtures[manifest_artifact].manifest_value)
+                with self.assertRaisesRegex(RuntimeError, "staging inventory mismatch"):
+                    self.build()
+                self.assertFalse(self.output.exists())
+
+        # A manifest that names one artifact but lists the other one's payloads.
+        self.use_artifact(SECOND_ARTIFACT_ID)
+        value = json.loads(json.dumps(self.fixtures[SECOND_ARTIFACT_ID].manifest_value))
+        value["payloads"] = json.loads(json.dumps(self.manifest_value["payloads"]))
+        self.write_manifest(value)
+        with self.assertRaisesRegex(RuntimeError, "exact lexicographic allowlist"):
+            self.build()
+        self.assertFalse(self.output.exists())
+
+    def test_rejects_bundle_and_receipt_built_for_the_other_artifact(self) -> None:
+        built = self.build()
+        self.use_artifact(SECOND_ARTIFACT_ID)
+        with self.assertRaisesRegex(RuntimeError, "bundle filename mismatch"):
+            self.verify(built.bundle_path, built.receipt_path)
+
+        renamed = self.root / "renamed-output"
+        renamed.mkdir()
+        bundle = renamed / f"{SECOND_ARTIFACT_ID}-{VERSION}-central-upload.zip"
+        receipt = renamed / f"{SECOND_ARTIFACT_ID}-{VERSION}-central-upload-receipt.json"
+        shutil.copyfile(built.bundle_path, bundle)
+        shutil.copyfile(built.receipt_path, receipt)
+        with self.assertRaisesRegex(RuntimeError, "bundle filename mismatch"):
+            self.verify(bundle, receipt)
 
     def remove_signature_checksums(self) -> None:
         version_path = self.repository / GROUP_PATH / ARTIFACT_ID / VERSION

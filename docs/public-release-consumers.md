@@ -3,6 +3,16 @@
 Current stable distribution: [0.1.4 public readback and fresh-cache consumers](evidence/release-0.1.4-central.md).
 The dated 0.1.3 records below remain historical results.
 
+From 0.1.5, run both consumers once per published artifact, each with the
+`consumer-receipt.json` that the public readback wrote for that artifact. The receipt selects
+the profile: `routecontract-shardingsphere-5.5` runs on exact ShardingSphere-JDBC 5.5.3, as
+described below, and `routecontract-shardingsphere-5.4.1-5.5.2` runs on exact 5.5.2 (the Gradle
+fixture's `runtime-5.5.2/` build, lock and verification metadata, and the Maven fixture's
+`runtime-5.5.2` profile). The optional `--artifact NAME` makes a run fail before creating any
+evidence unless the receipt names that artifact. The 5.5.2 profile uses the Calcite 1.38.0
+that ShardingSphere 5.5.2 requests, not the 5.5.3 profile's 1.42.0 alignment. Outputs for the
+5.5 artifact are unchanged.
+
 
 Status: post-publication verification commands for the single-module, exact ShardingSphere-JDBC 5.5.3 release.
 See the [0.1.3 Central record](evidence/release-0.1.3-central.md) for that release's publication and consumer evidence. The preparation, local-control and missing-version sections below retain
