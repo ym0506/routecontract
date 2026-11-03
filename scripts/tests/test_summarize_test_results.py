@@ -28,6 +28,23 @@ CURRENT_RELEASE_SUITES = {
 }
 
 
+ARTIFACT_541_PROFILE = "routecontract-shardingsphere-5.4.1-5.5.2"
+ARTIFACT_541_LIBRARY_SUITES = {
+    "io.github.ym0506.routecontract.RouteContractTest": 18,
+    "io.github.ym0506.routecontract.internal.MutableAttemptTest": 2,
+    "io.github.ym0506.routecontract.internal.ShardingSphere541To552PreflightTest": 5,
+    "io.github.ym0506.routecontract.manifest.ManifestReviewReportTest": 10,
+    "io.github.ym0506.routecontract.manifest.ObservedExecutionManifestTest": 17,
+}
+ARTIFACT_541_RUNTIME_TASKS = (
+    "testShardingSphere541", "testShardingSphere550", "testShardingSphere551", "testShardingSphere552"
+)
+ARTIFACT_541_RUNTIME_SUITES = {
+    "io.github.ym0506.routecontract.example.FailureBoundaryMySqlTest": 1,
+    "io.github.ym0506.routecontract.example.OperationCorrelationMySqlTest": 5,
+}
+
+
 class SummarizeTestResultsTest(unittest.TestCase):
     revision = "1" * 40
 
@@ -189,6 +206,53 @@ class SummarizeTestResultsTest(unittest.TestCase):
             ):
                 summarize_test_results.build_summary("main", directories)
 
+
+    def artifact_541_results(self, root: Path) -> list[Path]:
+        library = root / "test"
+        library.mkdir()
+        for suite, tests in ARTIFACT_541_LIBRARY_SUITES.items():
+            self.write_suite(library, suite, tests)
+        directories = [library]
+        for task in ARTIFACT_541_RUNTIME_TASKS:
+            directory = root / task
+            directory.mkdir()
+            for suite, tests in ARTIFACT_541_RUNTIME_SUITES.items():
+                self.write_suite(directory, suite, tests)
+            directories.append(directory)
+        return directories
+
+    def test_541_profile_keys_repeated_suites_by_task(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            directories = self.artifact_541_results(Path(temporary))
+            content = summarize_test_results.build_summary(
+                self.revision, directories, ARTIFACT_541_PROFILE
+            )
+        self.assertIn(f"artifact={ARTIFACT_541_PROFILE}\n", content)
+        self.assertIn("suite_count=13\n", content)
+        self.assertIn("test_count=76\n", content)
+        self.assertIn(
+            "suite=testShardingSphere541/io.github.ym0506.routecontract.example."
+            "OperationCorrelationMySqlTest|tests=5|", content
+        )
+
+    def test_541_profile_requires_every_runtime_task(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            directories = self.artifact_541_results(Path(temporary))
+            with self.assertRaisesRegex(summarize_test_results.SummaryError, "missing="):
+                summarize_test_results.build_summary(
+                    self.revision, directories[:-1], ARTIFACT_541_PROFILE
+                )
+
+    def test_541_profile_rejects_the_553_preflight_suite(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            directories = self.artifact_541_results(Path(temporary))
+            self.write_suite(
+                directories[0], "io.github.ym0506.routecontract.internal.ShardingSphere553PreflightTest", 3
+            )
+            with self.assertRaisesRegex(summarize_test_results.SummaryError, "unexpected JUnit suite"):
+                summarize_test_results.build_summary(
+                    self.revision, directories, ARTIFACT_541_PROFILE
+                )
 
 if __name__ == "__main__":
     unittest.main()
