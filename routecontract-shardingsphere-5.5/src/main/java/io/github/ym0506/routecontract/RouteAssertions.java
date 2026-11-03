@@ -112,8 +112,8 @@ public final class RouteAssertions {
 
     /**
      * Requires a normally returned, non-interrupted capture with only callback-returned attempts.
-     * Failure snapshots are diagnostic-only because ShardingSphere 5.5.3 can return from a failed
-     * parallel execution before every submitted worker has joined.
+     * Failure snapshots are diagnostic-only because the supported ShardingSphere-JDBC runtime can
+     * return from a failed parallel execution before every submitted worker has joined.
      *
      * @return this assertion object
      * @throws RouteContractViolationException when the capture is not contract-eligible

@@ -1,6 +1,3 @@
-import java.nio.file.Files
-import java.nio.file.LinkOption
-
 plugins {
     id 'java-library'
     id 'maven-publish'
@@ -8,51 +5,7 @@ plugins {
 }
 
 description = 'Operation-scoped contracts over physical JDBC execution attempts reported by Apache ShardingSphere-JDBC 5.5.3 SQLExecutionHook'
-
-def centralStagingDirectory = providers.gradleProperty('routecontractCentralStagingDirectory')
-def centralSigningValue = providers.gradleProperty('routecontractCentralSigning').orNull
-if (centralSigningValue != null && !(centralSigningValue in ['true', 'false'])) {
-    throw new GradleException('routecontractCentralSigning must be exactly true or false')
-}
-if (centralStagingDirectory.isPresent() != (centralSigningValue != null)) {
-    throw new GradleException('Central staging directory and signing choice must be provided together')
-}
-
-def centralSigningEnabled = centralSigningValue == 'true'
-def centralStagingPath = null
-if (centralStagingDirectory.isPresent()) {
-    centralStagingPath = new File(centralStagingDirectory.get()).toPath()
-    def stagingParent = centralStagingPath.parent
-    if (!centralStagingPath.isAbsolute()) {
-        throw new GradleException('routecontractCentralStagingDirectory must be an absolute local path')
-    }
-    if (stagingParent == null
-            || !Files.isDirectory(stagingParent, LinkOption.NOFOLLOW_LINKS)
-            || Files.isSymbolicLink(stagingParent)) {
-        throw new GradleException('Central staging parent must be an existing non-symlink directory')
-    }
-    if (Files.exists(centralStagingPath, LinkOption.NOFOLLOW_LINKS)
-            || Files.isSymbolicLink(centralStagingPath)) {
-        throw new GradleException('Central staging repository must be a new absent path')
-    }
-}
-
-if (centralSigningEnabled) {
-    def stableVersion = (project.version.toString() =~ /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/)
-    def stableParts = stableVersion.matches()
-            ? [stableVersion.group(1), stableVersion.group(2), stableVersion.group(3)]
-                    .collect { new BigInteger(it) }
-            : null
-    if (stableParts == null || (stableParts[0] == 0
-            && (stableParts[1] == 0 || (stableParts[1] == 1 && stableParts[2] < 1)))) {
-        throw new GradleException('signed Central staging requires a stable SemVer of at least 0.1.1')
-    }
-
-    def selector = providers.gradleProperty('signing.gnupg.keyName').orNull
-    if (selector == null || !(selector ==~ /[0-9A-F]{40}!/)) {
-        throw new GradleException('signed Central staging requires signing.gnupg.keyName as FULL_UPPERCASE_PRIMARY_FINGERPRINT!')
-    }
-}
+ext.routecontractPomName = 'RouteContract for Apache ShardingSphere-JDBC 5.5.3'
 
 dependencies {
     // ShardingSphere 5.5.3 brings the legacy com.fasterxml.jackson 2.x line.
@@ -116,59 +69,4 @@ jar {
     }
 }
 
-tasks.withType(Jar).configureEach {
-    from(rootProject.file('LICENSE')) {
-        into 'META-INF'
-    }
-    from(rootProject.file('NOTICE')) {
-        into 'META-INF'
-    }
-}
-
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            from components.java
-            pom {
-                name = 'RouteContract for Apache ShardingSphere-JDBC 5.5.3'
-                description = project.description
-                url = 'https://github.com/ym0506/routecontract'
-                licenses {
-                    license {
-                        name = 'The Apache License, Version 2.0'
-                        url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
-                        distribution = 'repo'
-                    }
-                }
-                scm {
-                    connection = 'scm:git:https://github.com/ym0506/routecontract.git'
-                    developerConnection = 'scm:git:ssh://git@github.com/ym0506/routecontract.git'
-                    url = 'https://github.com/ym0506/routecontract'
-                }
-                developers {
-                    developer {
-                        id = 'ym0506'
-                        name = 'ym0506'
-                        email = 'atat9828@naver.com'
-                        url = 'https://github.com/ym0506'
-                    }
-                }
-            }
-        }
-    }
-    if (centralStagingDirectory.isPresent()) {
-        repositories {
-            maven {
-                name = 'centralStaging'
-                url = uri(centralStagingPath.toFile())
-            }
-        }
-    }
-}
-
-if (centralSigningEnabled) {
-    signing {
-        useGpgCmd()
-        sign publishing.publications.mavenJava
-    }
-}
+apply from: rootProject.file('gradle/routecontract-library.gradle')

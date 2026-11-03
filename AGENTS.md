@@ -2,7 +2,9 @@
 
 ## Purpose
 
-RouteContract records physical JDBC execution attempts reported by Apache ShardingSphere-JDBC 5.5.3 `SQLExecutionHook` during a named application operation, then verifies explicit budgets and an approved manifest in CI.
+RouteContract records physical JDBC execution attempts reported by Apache ShardingSphere-JDBC `SQLExecutionHook` during a named application operation, then verifies explicit budgets and an approved manifest in CI.
+
+Each artifact supports exact ShardingSphere versions: `routecontract-shardingsphere-5.5` supports 5.5.3, and `routecontract-shardingsphere-5.4.1-5.5.2` supports 5.4.1, 5.5.0, 5.5.1 and 5.5.2. Shared code lives in `routecontract-shardingsphere-5.5/src`; only the hook, its preflight and `RuntimePreflight` are per artifact.
 
 ## Claim boundary
 
@@ -32,6 +34,7 @@ Tests passing alone is not completion. A claim also needs a reproducible command
 - `verified - H2`
 - `verified - MySQL`
 - `verified - ShardingSphere-JDBC 5.5.3`
+- `verified - ShardingSphere-JDBC <exact version>` for each version in the 5.4.1-5.5.2 artifact
 - `reasoned hypothesis`
 - `unverified`
 - `planned`
@@ -49,5 +52,5 @@ H2 evidence never proves MySQL behavior.
 - arbitrary application async propagation
 - SQL Federation coverage
 - automatic topology discovery
-- multiple ShardingSphere versions
+- ShardingSphere versions without their own MySQL verification task; add a version only with a per-version task such as those in `examples/mysql-5.4.1-5.5.2`
 - dashboard, Java Agent, Spring Boot starter or AI features

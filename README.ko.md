@@ -29,6 +29,9 @@ RouteContract는 기존 ShardingSphere-JDBC 통합 테스트에 DB 실행 검사
 
 **공개 0.1.4:** Java 17·21, ShardingSphere-JDBC **5.5.3**, 동기식·비배치 `PreparedStatement` 테스트를 지원합니다.
 
+**ShardingSphere-JDBC 5.4.1, 5.5.0, 5.5.1, 5.5.2를 쓰나요?** 별도 artifact를 `main`에서 빌드하고
+테스트했지만 아직 Maven Central에는 없습니다. [다른 ShardingSphere 버전](#other-shardingsphere-versions)을 보세요.
+
 <a id="가장-작은-사용-예"></a>
 
 ## 사용 예
@@ -134,6 +137,36 @@ dependencies {
 모두 **정확히 5.5.3**이어야 합니다. RouteContract가 ShardingSphere를 설치하거나 전체 의존성
 버전을 맞춰주지는 않습니다. 저장소를 복제하거나 별도의 로컬 설치기를 실행할 필요는 없습니다.
 
+<a id="other-shardingsphere-versions"></a>
+
+### 다른 ShardingSphere 버전 (미출시)
+
+ShardingSphere 5.5.3에서 `SQLExecutionHook`이 쓰는 클래스의 위치가 바뀌어서, JAR 하나로 5.5.3과
+그 이전 버전에 함께 연결할 수 없습니다. `routecontract-shardingsphere-5.4.1-5.5.2`는 같은 라이브러리를
+이전 훅 API로 빌드한 것으로, **5.4.1, 5.5.0, 5.5.1, 5.5.2**를 지원합니다. 사전 확인(preflight)은
+이 네 버전만 받아들이고, 5.5.3을 발견하면 `routecontract-shardingsphere-5.5`를 쓰라고 알려 줍니다.
+5.5 artifact는 반대 방향으로 안내합니다.
+
+아직 Maven Central에는 없습니다. 지금 써 보려면 이 저장소를 복제해 로컬 Maven 저장소에 올린 뒤,
+`mavenLocal()`과 `io.github.ym0506.routecontract:routecontract-shardingsphere-5.4.1-5.5.2`(`main`의
+프로젝트 버전)를 테스트 의존성으로 추가하세요.
+
+```bash
+./gradlew :routecontract-shardingsphere-5.4.1-5.5.2:publishToMavenLocal
+```
+
+다음 두 문제는 RouteContract가 아니라 해당 ShardingSphere 릴리스의 의존성 문제이고, 공개 프로젝트들도
+같은 방법으로 피합니다.
+
+- 5.5.0은 공개되지 않은 `shardingsphere-test-util`을 compile 범위로 선언합니다.
+  `org.apache.shardingsphere:shardingsphere-test-util`을 제외하세요.
+- Gradle에서 5.4.1은 Calcite를 거쳐 `org.yaml:snakeyaml` 2.0을 고르고 `Representer()`에서 실패합니다.
+  5.4.1이 관리하는 버전인 `org.yaml:snakeyaml:1.33`으로 고정하세요.
+
+`./gradlew :mysql-5.4.1-5.5.2-example:check`는 공용 작업 연관(operation-correlation)·실패 경계
+MySQL 테스트 6개(동시 단일·분산 실행 20쌍 포함)를 네 버전에서 각각 한 번씩 MySQL 8.4.11로 실행합니다
+(`verified - MySQL`). 회귀 코퍼스와 datasource-proxy 비교는 5.5.3에서만 실행합니다.
+
 <a id="quick-start"></a>
 
 ## 예제 실행
@@ -204,8 +237,9 @@ ShardingSphere-Proxy, 배치·리액티브 실행, 애플리케이션이 만든 
 [수집 범위와 한계](docs/reference-guide.ko.md#v01-지원-범위)를 확인하세요.
 
 **프로젝트 상태:** 계속 관리하고 있습니다. v0.1.4는 Maven Central에 공개되어 있고 계속 지원하며,
-ShardingSphere 5.5.4가 나오면 지원할 계획입니다. [코어와 어댑터를 분리하는 0.2](https://github.com/ym0506/routecontract/pull/62)는 중단했으며
-5.5.2 지원은 미출시입니다. 공개 배포본의 설치·실행 검증은 유지관리자가 진행했습니다. 독립적인 외부
+ShardingSphere 5.5.4가 나오면 지원할 계획입니다. 5.4.1, 5.5.0, 5.5.1, 5.5.2 지원은 `main`에
+[별도 artifact](#other-shardingsphere-versions)로 들어가 있고 다음 릴리스에 포함됩니다. 더 큰 작업이던
+[코어와 어댑터를 분리하는 0.2](https://github.com/ym0506/routecontract/pull/62)는 닫았습니다. 공개 배포본의 설치·실행 검증은 유지관리자가 진행했습니다. 독립적인 외부
 프로젝트 통합이나 반복 사용은 아직 확인되지 않았습니다.
 
 ## 문서

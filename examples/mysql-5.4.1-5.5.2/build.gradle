@@ -1,0 +1,101 @@
+plugins {
+    id 'java'
+}
+
+description = 'MySQL Testcontainers checks for RouteContract on ShardingSphere-JDBC 5.4.1, 5.5.0, 5.5.1 and 5.5.2'
+
+// Reuse the version-independent MySQL tests from examples/mysql and run each one against every
+// exact ShardingSphere runtime that routecontract-shardingsphere-5.4.1-5.5.2 claims to support.
+def sharedExample = project(':mysql-example')
+def sharedTests = [
+        'io/github/ym0506/routecontract/example/FailureBoundaryMySqlTest.java',
+        'io/github/ym0506/routecontract/example/OperationCorrelationMySqlTest.java']
+
+def syncSharedTests = tasks.register('syncSharedTests', Sync) {
+    from(sharedExample.file('src/test/java')) {
+        include sharedTests
+    }
+    into layout.buildDirectory.dir('generated/sources/shared/test/java')
+}
+
+sourceSets.test.java.srcDir(syncSharedTests)
+
+// 5.4.1 publishes the driver as shardingsphere-jdbc-core; 5.5.0 renamed it to shardingsphere-jdbc.
+def shardingSphereRuntimes = [
+        '5.4.1': 'org.apache.shardingsphere:shardingsphere-jdbc-core:5.4.1',
+        '5.5.0': 'org.apache.shardingsphere:shardingsphere-jdbc:5.5.0',
+        '5.5.1': 'org.apache.shardingsphere:shardingsphere-jdbc:5.5.1',
+        '5.5.2': 'org.apache.shardingsphere:shardingsphere-jdbc:5.5.2']
+
+configurations {
+    mysqlTestCommon {
+        canBeConsumed = false
+        canBeResolved = false
+    }
+    testImplementation.extendsFrom mysqlTestCommon
+}
+
+dependencies {
+    mysqlTestCommon project(':routecontract-shardingsphere-5.4.1-5.5.2')
+    mysqlTestCommon platform("org.junit:junit-bom:${junitVersion}")
+    mysqlTestCommon 'org.junit.jupiter:junit-jupiter'
+    mysqlTestCommon 'org.junit.platform:junit-platform-launcher'
+    mysqlTestCommon "org.testcontainers:junit-jupiter:${testcontainersVersion}"
+    mysqlTestCommon "org.testcontainers:mysql:${testcontainersVersion}"
+    mysqlTestCommon "com.zaxxer:HikariCP:${hikariVersion}"
+    mysqlTestCommon("com.mysql:mysql-connector-j:${mysqlConnectorVersion}") {
+        exclude group: 'com.google.protobuf', module: 'protobuf-java'
+    }
+    mysqlTestCommon "org.slf4j:slf4j-simple:${slf4jVersion}"
+    mysqlTestCommon("org.apache.commons:commons-compress:${commonsCompressVersion}") {
+        because 'Testcontainers 1.21.4 requests a version with published denial-of-service advisories'
+    }
+
+    // Tests compile against the newest runtime in this range; each test task below runs the
+    // same classes on one exact runtime.
+    testImplementation(shardingSphereRuntimes['5.5.2']) {
+        exclude group: 'org.locationtech.jts.io', module: 'jts-io-common'
+    }
+}
+
+def runtimeTestTasks = shardingSphereRuntimes.collect { runtimeVersion, coordinate ->
+    def suffix = runtimeVersion.replace('.', '')
+    def runtime = configurations.create("shardingSphere${suffix}TestRuntime") {
+        canBeConsumed = false
+        canBeResolved = true
+        extendsFrom configurations.mysqlTestCommon
+    }
+    dependencies.add(runtime.name, coordinate) {
+        exclude group: 'org.locationtech.jts.io', module: 'jts-io-common'
+        // 5.5.0 declares this unpublished test module in compile scope; TencentBlueKing/bk-ci
+        // excludes it the same way.
+        exclude group: 'org.apache.shardingsphere', module: 'shardingsphere-test-util'
+    }
+    if (runtimeVersion == '5.4.1') {
+        dependencies.constraints.add(runtime.name, 'org.yaml:snakeyaml:1.33') {
+            version { strictly '1.33' }
+            because 'ShardingSphere 5.4.1 manages snakeyaml 1.33; Gradle would otherwise pick 2.0 from Calcite and fail on Representer()'
+        }
+    }
+    tasks.register("testShardingSphere${suffix}", Test) {
+        group = 'verification'
+        description = "Runs the shared MySQL tests on Apache ShardingSphere-JDBC ${runtimeVersion}"
+        testClassesDirs = sourceSets.test.output.classesDirs
+        classpath = sourceSets.test.output + runtime
+        maxParallelForks = 1
+        systemProperty 'api.version', '1.44'
+        systemProperty 'routecontract.repositoryRoot', rootProject.projectDir.absolutePath
+        testLogging {
+            showStandardStreams = true
+        }
+    }
+}
+
+// The default test task would repeat the 5.5.2 run; check runs one task per exact runtime instead.
+tasks.named('test') {
+    enabled = false
+}
+
+tasks.named('check') {
+    dependsOn runtimeTestTasks
+}
