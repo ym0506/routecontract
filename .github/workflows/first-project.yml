@@ -48,7 +48,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Java ${{ matrix.java }}
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: ${{ matrix.java == '21' && '21.0.12+8.0.LTS' || '17.0.20+101' }}
@@ -56,7 +56,7 @@ jobs:
 
       - name: Set up Gradle
         if: matrix.build == 'Gradle'
-        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
         with:
           dependency-graph: disabled
           validate-wrappers: true
@@ -206,7 +206,7 @@ jobs:
 
       - name: Keep example results
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: first-project-${{ matrix.build }}${{ matrix.java == '21' && '-java21' || '' }}
           path: |
@@ -228,7 +228,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up the Java 17 library compiler
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: '17.0.20+101'
@@ -238,14 +238,14 @@ jobs:
         run: printf 'ROUTECONTRACT_COMPILER_HOME=%s\n' "$JAVA_HOME" >> "$GITHUB_ENV"
 
       - name: Set up the Java 21 test runtime
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: '21.0.12+8.0.LTS'
           verify-signature: true
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
         with:
           dependency-graph: disabled
           validate-wrappers: true
@@ -270,7 +270,7 @@ jobs:
 
       - name: Keep Java 21 runtime evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: java21-core-mysql-runtime
           path: |
