@@ -23,20 +23,22 @@ MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
 GROUP = 'io.github.ym0506.routecontract'
 ARTIFACT = 'routecontract-shardingsphere-5.5'
+EARLIER = 'routecontract-shardingsphere-5.4.1-5.5.2'
 LEGACY = ROOT / 'examples/standalone-consumer'
 FIXTURE = ROOT / 'examples/public-gradle-release-consumer'
+EARLIER_FIXTURE = FIXTURE / 'runtime-5.5.2'
 NAMESPACE = {'v': 'https://schema.gradle.org/dependency-verification'}
 TEST_NAMES = ('selectedRuntimeApiOriginsAndAutoDiscoveredHookAreTheExpectedJarBytes',
               'captureAndCaptureResultMatchTheReviewedSchemaOneBaseline',
               'sameBusinessRowWithTwoAttemptsFailsPolicyAndSeparateJvmCli')
 
 
-def receipt_for(version='0.1.3'):
+def receipt_for(version='0.1.3', artifact=ARTIFACT):
     artifacts = []
     for suffix in ('jar', 'pom', 'module'):
-        name = f'{ARTIFACT}-{version}.{suffix}'
-        artifacts.append({'module': ARTIFACT, 'name': name,
-                          'relativePath': f'io/github/ym0506/routecontract/{ARTIFACT}/{version}/{name}',
+        name = f'{artifact}-{version}.{suffix}'
+        artifacts.append({'module': artifact, 'name': name,
+                          'relativePath': f'io/github/ym0506/routecontract/{artifact}/{version}/{name}',
                           'sha256': hashlib.sha256(name.encode()).hexdigest()})
     return {'formatVersion': 1, 'routeContractVersion': version, 'artifacts': artifacts}
 
@@ -49,10 +51,18 @@ def passing_junit(suffix='()'):
     return suite
 
 
-def evidence_markers(version='0.1.3'):
-    return (f'ROUTECONTRACT_PUBLIC_RELEASE_GRAPH_VERIFIED version={version} runtime=5.5.3 payloads=3\n'
-            f'ROUTECONTRACT_PUBLIC_SINGLE_MYSQL_VERIFIED version={version} runtime=5.5.3 '
+def evidence_markers(version='0.1.3', runtime='5.5.3'):
+    return (f'ROUTECONTRACT_PUBLIC_RELEASE_GRAPH_VERIFIED version={version} runtime={runtime} payloads=3\n'
+            f'ROUTECONTRACT_PUBLIC_SINGLE_MYSQL_VERIFIED version={version} runtime={runtime} '
             'baseline=MATCH regression=POLICY_VIOLATION attempts=1-to-2\n')
+
+
+def lock_coordinates(text):
+    coordinates = set()
+    for line in text.splitlines():
+        if line and not line.startswith(('#', 'empty=')):
+            coordinates.add(tuple(line.split('=', 1)[0].split(':')))
+    return coordinates
 
 
 class PublicGradleReleasePreparationTest(unittest.TestCase):
@@ -344,6 +354,282 @@ class PublicGradleReleaseFailureTest(unittest.TestCase):
                 MODULE.verify(ROOT, self.receipt_path, self.evidence)
         self.assertFalse((self.evidence / 'summary.json').exists())
         self.assertTrue((self.evidence / 'junit' / MODULE.JUNIT_NAME).is_file())
+        self.assertNotIn('ROUTECONTRACT_PUBLIC_GRADLE_RELEASE_CONSUMER_VERIFIED', output.getvalue())
+
+
+
+class PublicGradleRuntimeProfileTest(unittest.TestCase):
+    """Each receipt selects its artifact's runtime profile; the 5.5 profile stays the original contract."""
+
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory(prefix='public-gradle-release-profile-')
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name)
+
+    def write_receipt(self, document, name='receipt.json'):
+        path = self.root / name
+        path.write_text(json.dumps(document))
+        return path
+
+    def test_profiles_cover_exactly_the_published_artifacts_in_order(self):
+        self.assertEqual(MODULE.PUBLIC.MODULES, tuple(MODULE.PROFILES))
+        self.assertEqual({ARTIFACT: '5.5.3', EARLIER: '5.5.2'},
+                         {name: profile.runtime for name, profile in MODULE.PROFILES.items()})
+        self.assertIs(MODULE.PROFILES[ARTIFACT], MODULE.DEFAULT_PROFILE)
+
+    def test_default_receipt_keeps_the_original_fixture_lock_and_metadata(self):
+        receipt, profile = MODULE.select_profile(receipt_for())
+        self.assertEqual(receipt_for(), receipt)
+        self.assertEqual(MODULE.DEFAULT_PROFILE, profile)
+        self.assertEqual(('examples/public-gradle-release-consumer', 'examples/standalone-consumer'),
+                         (profile.build, profile.reviewed))
+
+    def test_earlier_artifact_receipt_selects_the_552_profile_without_an_option(self):
+        receipt, profile = MODULE.select_profile(receipt_for('0.1.5', EARLIER))
+        self.assertEqual(receipt_for('0.1.5', EARLIER), receipt)
+        self.assertEqual((EARLIER, '5.5.2'), (profile.artifact, profile.runtime))
+        self.assertEqual((EARLIER_FIXTURE, EARLIER_FIXTURE), (ROOT / profile.build, ROOT / profile.reviewed))
+        path = self.write_receipt(receipt_for('0.1.5', EARLIER))
+        self.assertEqual((receipt, profile), MODULE.load_receipt(path))
+        self.assertEqual((receipt, profile), MODULE.load_receipt(path, EARLIER))
+
+    def test_receipt_for_one_artifact_cannot_use_the_other_artifact_profile(self):
+        for named, other in ((ARTIFACT, EARLIER), (EARLIER, ARTIFACT)):
+            with self.subTest(named=named, other=other):
+                path = self.write_receipt(receipt_for('0.1.5', named), f'{named}.json')
+                with self.assertRaisesRegex(MODULE.PUBLIC.ReceiptError, f'not a reviewed receipt for {other}'):
+                    MODULE.select_profile(receipt_for('0.1.5', named), other)
+                with self.assertRaisesRegex(MODULE.PUBLIC.ReceiptError, f'not a reviewed receipt for {other}'):
+                    MODULE.load_receipt(path, other)
+                evidence = self.root / f'evidence-{named}'
+                with mock.patch.object(MODULE.tempfile, 'TemporaryDirectory') as temporary, \
+                        mock.patch.object(MODULE, 'copy_consumer') as prepare, \
+                        mock.patch.object(MODULE, 'run') as run:
+                    with self.assertRaises(MODULE.PUBLIC.ReceiptError):
+                        MODULE.verify(ROOT, path, evidence, other)
+                    errors = io.StringIO()
+                    with redirect_stderr(errors):
+                        self.assertEqual(1, MODULE.main(['--receipt', str(path), '--evidence-directory',
+                                                         str(evidence), '--artifact', other]))
+                temporary.assert_not_called()
+                prepare.assert_not_called()
+                run.assert_not_called()
+                self.assertFalse(evidence.exists())
+                self.assertIn('PUBLIC_GRADLE_RELEASE_CONSUMER_FAILED', errors.getvalue())
+
+    def test_unpublished_artifact_option_and_mixed_receipts_are_rejected(self):
+        path = self.write_receipt(receipt_for())
+        for name in ('routecontract-shardingsphere-5.5.2', 'routecontract-core', ''):
+            with self.subTest(name=name):
+                with self.assertRaises(MODULE.PUBLIC.ReceiptError):
+                    MODULE.select_profile(receipt_for(), name)
+                with self.assertRaises(SystemExit), redirect_stderr(io.StringIO()):
+                    MODULE.main(['--receipt', str(path), '--evidence-directory', str(self.root / 'evidence'),
+                                 '--artifact', name])
+        mixed = receipt_for('0.1.5')
+        mixed['artifacts'][2] = receipt_for('0.1.5', EARLIER)['artifacts'][2]
+        for artifact in (None, ARTIFACT, EARLIER):
+            with self.subTest(artifact=artifact):
+                with self.assertRaisesRegex(MODULE.PUBLIC.ReceiptError, 'outside the exact coordinate set'):
+                    MODULE.select_profile(mixed, artifact)
+                with self.assertRaisesRegex(MODULE.PUBLIC.ReceiptError, 'outside the exact coordinate set'):
+                    MODULE.load_receipt(self.write_receipt(mixed, 'mixed.json'), artifact)
+        self.assertFalse((self.root / 'evidence').exists())
+
+    def test_receipt_errors_name_each_artifact_when_their_reasons_differ(self):
+        uppercase = receipt_for('0.1.5', EARLIER)
+        uppercase['artifacts'][0]['sha256'] = uppercase['artifacts'][0]['sha256'].upper()
+        with self.assertRaisesRegex(MODULE.PUBLIC.ReceiptError, 'does not match any published artifact') as raised:
+            MODULE.select_profile(uppercase)
+        self.assertIn(f'{EARLIER}: Consumer receipt requires lowercase SHA-256 digests', str(raised.exception))
+        self.assertIn(f'{ARTIFACT}: Consumer receipt payload is outside the exact coordinate set', str(raised.exception))
+        self.write_receipt({'formatVersion': 1}, 'header.json')
+        with self.assertRaisesRegex(MODULE.PUBLIC.ReceiptError, '^Consumer receipt header does not match format 1$'):
+            MODULE.load_receipt(self.root / 'header.json')
+
+    def test_lock_line_names_the_selected_artifact_only(self):
+        original = (EARLIER_FIXTURE / 'gradle.lockfile').read_text()
+        result = MODULE.versioned_lock(original, '0.1.5', EARLIER)
+        self.assertEqual(original + f'{GROUP}:{EARLIER}:0.1.5='
+                         'reviewedReleaseMetadata,testCompileClasspath,testRuntimeClasspath\n', result)
+        with self.assertRaises(MODULE.PUBLIC.ReceiptError):
+            MODULE.versioned_lock(original, '0.1.5', 'routecontract-shardingsphere-5.5.2')
+
+    def test_552_lock_and_metadata_pin_only_the_third_party_552_graph(self):
+        lock = (EARLIER_FIXTURE / 'gradle.lockfile').read_text()
+        lines = lock.splitlines()
+        self.assertTrue(lock.endswith('\n'))
+        self.assertEqual(1, sum(line.startswith('empty=') for line in lines))
+        self.assertFalse(any(line.startswith(GROUP + ':') or 'routecontract' in line for line in lines))
+        coordinates = lock_coordinates(lock)
+        sharding = {(name, version) for group, name, version in coordinates if group == 'org.apache.shardingsphere'}
+        self.assertIn(('shardingsphere-jdbc', '5.5.2'), sharding)
+        self.assertEqual({'5.5.2'}, {version for _, version in sharding})
+        for anchor in ('shardingsphere-infra-executor', 'shardingsphere-infra-spi', 'shardingsphere-infra-database-core',
+                       'shardingsphere-standalone-mode-repository-jdbc', 'shardingsphere-parser-sql-mysql'):
+            self.assertIn((anchor, '5.5.2'), sharding)
+        self.assertNotIn('shardingsphere-jdbc-core', {name for name, _ in sharding})
+        self.assertIn(('org.apache.calcite', 'calcite-core', '1.38.0'), coordinates)
+        self.assertNotIn('org.locationtech.jts.io', {group for group, _, _ in coordinates})
+        root = ET.parse(EARLIER_FIXTURE / 'gradle/verification-metadata.xml').getroot()
+        self.assertEqual('true', root.findtext('v:configuration/v:verify-metadata', namespaces=NAMESPACE))
+        self.assertIsNone(root.find('v:configuration/v:trusted-artifacts', NAMESPACE))
+        components = root.findall('v:components/v:component', NAMESPACE)
+        verified = {(item.get('group'), item.get('name'), item.get('version')) for item in components}
+        self.assertFalse(any(group == GROUP for group, _, _ in verified))
+        self.assertTrue(coordinates.issubset(verified), sorted(coordinates - verified))
+        for component in components:
+            artifacts = component.findall('v:artifact', NAMESPACE)
+            self.assertTrue(artifacts)
+            for artifact in artifacts:
+                hashes = artifact.findall('v:sha256', NAMESPACE)
+                self.assertEqual(1, len(hashes), artifact.get('name'))
+                self.assertRegex(hashes[0].get('value'), '^[0-9a-f]{64}$')
+            if component.get('group') == 'org.apache.shardingsphere':
+                self.assertEqual('5.5.2', component.get('version'))
+
+    def test_552_copy_uses_its_build_lock_and_metadata_with_the_shared_test(self):
+        consumer = self.root / 'consumer'
+        receipt = receipt_for('0.1.5', EARLIER)
+        MODULE.copy_consumer(ROOT, consumer, receipt)
+        self.assertEqual((EARLIER_FIXTURE / 'build.gradle').read_bytes(), (consumer / 'build.gradle').read_bytes())
+        self.assertEqual((FIXTURE / 'settings.gradle').read_bytes(), (consumer / 'settings.gradle').read_bytes())
+        sources = sorted(path.relative_to(FIXTURE / 'src') for path in (FIXTURE / 'src').rglob('*') if path.is_file())
+        self.assertEqual(sources, sorted(path.relative_to(consumer / 'src')
+                                         for path in (consumer / 'src').rglob('*') if path.is_file()))
+        for relative in sources:
+            self.assertEqual((FIXTURE / 'src' / relative).read_bytes(), (consumer / 'src' / relative).read_bytes())
+        self.assertFalse((consumer / 'runtime-5.5.2').exists())
+        self.assertEqual(MODULE.versioned_lock((EARLIER_FIXTURE / 'gradle.lockfile').read_text(), '0.1.5', EARLIER),
+                         (consumer / 'gradle.lockfile').read_text())
+        prepared = ET.parse(consumer / 'gradle/verification-metadata.xml').getroot()
+        first_party = [item for item in prepared.findall('v:components/v:component', NAMESPACE)
+                       if item.get('group') == GROUP]
+        self.assertEqual([{'group': GROUP, 'name': EARLIER, 'version': '0.1.5'}], [item.attrib for item in first_party])
+        self.assertEqual({item['name']: item['sha256'] for item in receipt['artifacts']},
+                         {artifact.get('name'): artifact.find('v:sha256', NAMESPACE).get('value')
+                          for artifact in first_party[0].findall('v:artifact', NAMESPACE)})
+        third_party = lambda root: [ET.tostring(item) for item in root.findall('v:components/v:component', NAMESPACE)
+                                    if item.get('group') != GROUP]
+        self.assertEqual(third_party(ET.parse(EARLIER_FIXTURE / 'gradle/verification-metadata.xml').getroot()),
+                         third_party(prepared))
+        self.assertEqual(MODULE.gradle_arguments(consumer, receipt_for('0.1.5', ARTIFACT))[:-3],
+                         MODULE.gradle_arguments(consumer, receipt)[:-3])
+
+    def test_both_builds_resolve_only_from_anonymous_central_without_local_or_project_inputs(self):
+        for build in (FIXTURE / 'build.gradle', EARLIER_FIXTURE / 'build.gradle'):
+            with self.subTest(build=build):
+                text = build.read_text()
+                for forbidden in ('mavenLocal', 'flatDir', 'files(', 'fileTree', 'project(', 'includeBuild',
+                                  'credentials', 'file:', 'exclusiveContent', 'gradlePluginPortal', 'google()'):
+                    self.assertNotIn(forbidden, text)
+                self.assertEqual(["url = uri('https://repo.maven.apache.org/maven2')"],
+                                 [line.strip() for line in text.splitlines() if 'url' in line and 'uri(' in line])
+                self.assertIn('lockMode = LockMode.STRICT', text)
+                self.assertIn("throw new GradleException('Public release consumer rejects supplied repository paths and URLs')",
+                              text)
+        self.assertNotIn('include', (FIXTURE / 'settings.gradle').read_text())
+
+    def test_552_build_pins_its_artifact_runtime_and_test_properties(self):
+        text = (EARLIER_FIXTURE / 'build.gradle').read_text()
+        self.assertIn(f"def moduleName = '{EARLIER}'", text)
+        self.assertIn("def shardingSphereVersion = '5.5.2'", text)
+        self.assertIn("systemProperty 'routecontract.artifact', moduleName", text)
+        self.assertIn("systemProperty 'routecontract.expectedRuntime', shardingSphereVersion", text)
+        self.assertIn('systemProperty "routecontract.sha256.${moduleName}", expectedHashes.jar', text)
+        self.assertIn('runtime=${shardingSphereVersion} payloads=3', text)
+        code = '\n'.join(line for line in text.splitlines() if not line.lstrip().startswith('//'))
+        self.assertNotRegex(code, r'shardingsphere[-a-z]*:5[.]5[.]3')
+        self.assertNotRegex(code, r"version != '5[.]5[.]3'")
+        # Workarounds for 5.5.0 (shardingsphere-test-util) and 5.4.1 (snakeyaml 1.33) do not apply to 5.5.2.
+        self.assertNotIn('shardingsphere-test-util', code)
+        self.assertNotIn('snakeyaml', code)
+
+    def test_shared_java_test_pairs_each_artifact_with_its_profile_runtime(self):
+        java = next((FIXTURE / 'src').rglob('PublicReleaseMySqlTest.java')).read_text()
+        self.assertIn(f'DEFAULT_ARTIFACT = "{ARTIFACT}"', java)
+        self.assertIn('DEFAULT_ARTIFACT, "5.5.3"', java)
+        self.assertIn(f'"{EARLIER}", "5.5.2"', java)
+        self.assertIn('System.getProperty("routecontract.artifact", DEFAULT_ARTIFACT)', java)
+        self.assertIn('"shardingsphere-jdbc-" + EXPECTED_RUNTIME + ".jar"', java)
+        self.assertNotIn('"5.5.3";', java)
+
+    def run_successfully(self, receipt, runtime):
+        path = self.write_receipt(receipt)
+        evidence = self.root / f'evidence-{runtime}'
+        commands = []
+
+        def succeed(command, cwd, environment, log):
+            commands.append((command, (cwd / 'build.gradle').read_bytes()))
+            junit = cwd / 'build/test-results/test' / MODULE.JUNIT_NAME
+            junit.parent.mkdir(parents=True)
+            ET.ElementTree(passing_junit()).write(junit, encoding='utf-8')
+            output = evidence_markers(receipt['routeContractVersion'], runtime)
+            log.write_text(output)
+            return output
+
+        output = io.StringIO()
+        with mock.patch.object(MODULE, 'run', side_effect=succeed), redirect_stdout(output):
+            summary = MODULE.verify(ROOT, path, evidence)
+        self.assertEqual(1, len(commands))
+        self.assertEqual(summary, json.loads((evidence / 'summary.json').read_text()))
+        return summary, output.getvalue(), commands[0], evidence
+
+    def test_default_summary_and_console_keep_the_original_shape(self):
+        summary, output, (_, build), evidence = self.run_successfully(receipt_for('0.1.5'), '5.5.3')
+        self.assertEqual(['formatVersion', 'routeContractVersion', 'normalizedReviewedReceiptSha256', 'buildTool',
+                          'runtime', 'junit', 'configuredRepository', 'publicRepositoryConsumptionVerified',
+                          'evidenceLabel', 'transportBoundary', 'boundary'], list(summary))
+        self.assertEqual('5.5.3', summary['runtime'])
+        self.assertEqual((FIXTURE / 'build.gradle').read_bytes(), build)
+        self.assertIn('Checking public Gradle release 0.1.5 with a fresh cache...\n', output)
+        self.assertTrue(output.endswith('ROUTECONTRACT_PUBLIC_GRADLE_RELEASE_CONSUMER_VERIFIED mysqlTests=3 '
+                                        'publicConsumption=true\n'))
+        self.assertEqual((FIXTURE / 'build.gradle').read_bytes(), (evidence / 'consumer-build.gradle').read_bytes())
+
+    def test_552_summary_names_the_artifact_and_runtime(self):
+        summary, output, (_, build), evidence = self.run_successfully(receipt_for('0.1.5', EARLIER), '5.5.2')
+        self.assertEqual(EARLIER, summary['artifact'])
+        self.assertEqual('5.5.2', summary['runtime'])
+        self.assertEqual((EARLIER_FIXTURE / 'build.gradle').read_bytes(), build)
+        self.assertEqual(receipt_for('0.1.5', EARLIER),
+                         json.loads((evidence / 'reviewed-receipt.json').read_text()))
+        self.assertTrue(output.endswith('ROUTECONTRACT_PUBLIC_GRADLE_RELEASE_CONSUMER_VERIFIED mysqlTests=3 '
+                                        f'publicConsumption=true artifact={EARLIER} runtime=5.5.2\n'))
+
+    def test_552_receipt_rejects_the_553_runtime_markers(self):
+        receipt = receipt_for('0.1.5', EARLIER)
+        path = self.write_receipt(receipt)
+
+        def wrong_runtime(command, cwd, environment, log):
+            junit = cwd / 'build/test-results/test' / MODULE.JUNIT_NAME
+            junit.parent.mkdir(parents=True)
+            ET.ElementTree(passing_junit()).write(junit, encoding='utf-8')
+            output = evidence_markers('0.1.5', '5.5.3')
+            log.write_text(output)
+            return output
+
+        with mock.patch.object(MODULE, 'run', side_effect=wrong_runtime), redirect_stdout(io.StringIO()):
+            with self.assertRaisesRegex(MODULE.PublicConsumerError, 'omitted required'):
+                MODULE.verify(ROOT, path, self.root / 'evidence')
+        self.assertFalse((self.root / 'evidence/summary.json').exists())
+
+    def test_receipt_replaced_by_the_other_artifact_during_the_run_prevents_success(self):
+        path = self.write_receipt(receipt_for('0.1.5', EARLIER))
+
+        def swap(command, cwd, environment, log):
+            junit = cwd / 'build/test-results/test' / MODULE.JUNIT_NAME
+            junit.parent.mkdir(parents=True)
+            ET.ElementTree(passing_junit()).write(junit, encoding='utf-8')
+            path.write_text(json.dumps(receipt_for('0.1.5', ARTIFACT)))
+            output = evidence_markers('0.1.5', '5.5.2')
+            log.write_text(output)
+            return output
+
+        with mock.patch.object(MODULE, 'run', side_effect=swap), redirect_stdout(io.StringIO()) as output:
+            with self.assertRaises((MODULE.PublicConsumerError, MODULE.PUBLIC.ReceiptError)):
+                MODULE.verify(ROOT, path, self.root / 'evidence')
+        self.assertFalse((self.root / 'evidence/summary.json').exists())
         self.assertNotIn('ROUTECONTRACT_PUBLIC_GRADLE_RELEASE_CONSUMER_VERIFIED', output.getvalue())
 
 

@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Consume a reviewed stable 0.1.3+ release from anonymous Maven Central with Gradle.
 
+The reviewed receipt names exactly one published artifact, and that artifact selects the runtime
+profile: routecontract-shardingsphere-5.5 runs on ShardingSphere-JDBC 5.5.3 (the original contract,
+unchanged) and routecontract-shardingsphere-5.4.1-5.5.2 runs on ShardingSphere-JDBC 5.5.2.
 No publication, local installation, source build or unavailable-version fallback occurs here.
 """
 from __future__ import annotations
@@ -15,10 +18,11 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from typing import NamedTuple
 import xml.etree.ElementTree as ET
 
 GROUP = 'io.github.ym0506.routecontract'
-MODULE = 'routecontract-shardingsphere-5.5'
+FIXTURE = 'examples/public-gradle-release-consumer'
 SUITE = 'io.github.ym0506.routecontract.consumer.PublicReleaseMySqlTest'
 JUNIT_NAME = f'TEST-{SUITE}.xml'
 TEST_NAMES = {'selectedRuntimeApiOriginsAndAutoDiscoveredHookAreTheExpectedJarBytes',
@@ -48,17 +52,68 @@ def load_helper():
 PUBLIC = load_helper()
 
 
-def versioned_lock(original: str, version: str) -> str:
+class RuntimeProfile(NamedTuple):
+    """The exact consumer runtime for one published artifact and the checked-in files that pin it."""
+    artifact: str
+    runtime: str
+    build: str  # directory holding this profile's build.gradle
+    reviewed: str  # directory holding the reviewed third-party gradle.lockfile and verification metadata
+
+
+PROFILES = {profile.artifact: profile for profile in (
+    RuntimeProfile('routecontract-shardingsphere-5.5', '5.5.3', FIXTURE, 'examples/standalone-consumer'),
+    RuntimeProfile('routecontract-shardingsphere-5.4.1-5.5.2', '5.5.2',
+                   f'{FIXTURE}/runtime-5.5.2', f'{FIXTURE}/runtime-5.5.2'))}
+if tuple(PROFILES) != tuple(PUBLIC.MODULES):
+    raise PublicConsumerError('Every published artifact needs exactly one consumer runtime profile')
+DEFAULT_PROFILE = PROFILES[PUBLIC.DEFAULT_MODULE]
+
+
+def _select(candidates: tuple[str, ...], validate) -> tuple[dict, RuntimeProfile]:
+    accepted, errors = [], {}
+    for artifact in candidates:
+        try:
+            accepted.append((validate(artifact), PROFILES[artifact]))
+        except PUBLIC.ReceiptError as error:
+            errors[artifact] = str(error)
+    if len(accepted) == 1:
+        return accepted[0]
+    if accepted:
+        raise PUBLIC.ReceiptError('Consumer receipt must name exactly one published artifact')
+    if len(candidates) == 1:
+        raise PUBLIC.ReceiptError(f'Consumer receipt is not a reviewed receipt for {candidates[0]}: '
+                                  f'{errors[candidates[0]]}')
+    if len(set(errors.values())) == 1:
+        raise PUBLIC.ReceiptError(next(iter(errors.values())))
+    raise PUBLIC.ReceiptError('Consumer receipt does not match any published artifact ('
+                              + '; '.join(f'{artifact}: {error}' for artifact, error in errors.items()) + ')')
+
+
+def _candidates(artifact: str | None) -> tuple[str, ...]:
+    return PUBLIC.MODULES if artifact is None else (PUBLIC.published_module(artifact),)
+
+
+def select_profile(document: object, artifact: str | None = None) -> tuple[dict, RuntimeProfile]:
+    """Validate a receipt for exactly one published artifact; an explicit artifact must be the one it names."""
+    return _select(_candidates(artifact), lambda module: PUBLIC.validate_consumer_receipt(document, module))
+
+
+def load_receipt(path: Path, artifact: str | None = None) -> tuple[dict, RuntimeProfile]:
+    return _select(_candidates(artifact), lambda module: PUBLIC.load_consumer_receipt(path, module))
+
+
+def versioned_lock(original: str, version: str, artifact: str = PUBLIC.DEFAULT_MODULE) -> str:
     PUBLIC.stable_version(version)
+    artifact = PUBLIC.published_module(artifact)
     if any(line.startswith(GROUP + ':') for line in original.splitlines()):
         raise PublicConsumerError('Standalone source lock must not contain unreviewed first-party coordinates')
     if not original.endswith('\n') or sum(line.startswith('empty=') for line in original.splitlines()) != 1:
         raise PublicConsumerError('Expected the complete reviewed standalone lock')
-    return original + f'{GROUP}:{MODULE}:{version}=reviewedReleaseMetadata,testCompileClasspath,testRuntimeClasspath\n'
+    return original + f'{GROUP}:{artifact}:{version}=reviewedReleaseMetadata,testCompileClasspath,testRuntimeClasspath\n'
 
 
 def prepare_metadata(source: Path, destination: Path, receipt: dict) -> None:
-    receipt = PUBLIC.validate_consumer_receipt(receipt)
+    receipt, profile = select_profile(receipt)
     tree = ET.parse(source)
     root = tree.getroot()
     configuration = root.find(f'{{{NAMESPACE}}}configuration')
@@ -74,7 +129,7 @@ def prepare_metadata(source: Path, destination: Path, receipt: dict) -> None:
         if component.get('group') == GROUP:
             components.remove(component)
     component = ET.SubElement(components, f'{{{NAMESPACE}}}component',
-                              {'group': GROUP, 'name': MODULE, 'version': receipt['routeContractVersion']})
+                              {'group': GROUP, 'name': profile.artifact, 'version': receipt['routeContractVersion']})
     for item in receipt['artifacts']:
         artifact = ET.SubElement(component, f'{{{NAMESPACE}}}artifact', {'name': item['name']})
         ET.SubElement(artifact, f'{{{NAMESPACE}}}sha256', {
@@ -85,23 +140,23 @@ def prepare_metadata(source: Path, destination: Path, receipt: dict) -> None:
 
 
 def copy_consumer(root: Path, consumer: Path, receipt: dict) -> None:
-    receipt = PUBLIC.validate_consumer_receipt(receipt)
-    fixture = root / 'examples/public-gradle-release-consumer'
-    legacy = root / 'examples/standalone-consumer'
+    receipt, profile = select_profile(receipt)
+    fixture, build, reviewed = root / FIXTURE, root / profile.build, root / profile.reviewed
     consumer.mkdir()
-    for name in ('settings.gradle', 'build.gradle'):
-        shutil.copy2(fixture / name, consumer / name)
+    shutil.copy2(fixture / 'settings.gradle', consumer / 'settings.gradle')
+    shutil.copy2(build / 'build.gradle', consumer / 'build.gradle')
     shutil.copytree(fixture / 'src', consumer / 'src')
     (consumer / 'gradle.lockfile').write_text(versioned_lock(
-        (legacy / 'gradle.lockfile').read_text(encoding='utf-8'), receipt['routeContractVersion']), encoding='utf-8')
+        (reviewed / 'gradle.lockfile').read_text(encoding='utf-8'), receipt['routeContractVersion'],
+        profile.artifact), encoding='utf-8')
     shutil.copy2(root / 'gradlew', consumer / 'gradlew')
     shutil.copytree(root / 'gradle/wrapper', consumer / 'gradle/wrapper')
-    prepare_metadata(legacy / 'gradle/verification-metadata.xml',
+    prepare_metadata(reviewed / 'gradle/verification-metadata.xml',
                      consumer / 'gradle/verification-metadata.xml', receipt)
 
 
 def gradle_arguments(consumer: Path, receipt: dict) -> list[str]:
-    receipt = PUBLIC.validate_consumer_receipt(receipt)
+    receipt, _ = select_profile(receipt)
     args = [str(consumer / 'gradlew'), '--no-daemon', '--no-build-cache', '--no-configuration-cache',
             '--dependency-verification=strict', '--console=plain',
             f'-ProutecontractVersion={receipt["routeContractVersion"]}']
@@ -160,9 +215,12 @@ def verify_junit(path: Path) -> dict:
     return counts
 
 
-def verify(root: Path, receipt_path: Path, evidence: Path) -> dict:
+def verify(root: Path, receipt_path: Path, evidence: Path, artifact: str | None = None) -> dict:
     root = root.resolve()
-    receipt = PUBLIC.load_consumer_receipt(receipt_path)
+    receipt, profile = load_receipt(receipt_path, artifact)
+    # The original artifact keeps its original console and summary shape; any other one names itself.
+    named = {} if profile == DEFAULT_PROFILE else {'artifact': profile.artifact}
+    label = f' artifact={profile.artifact} runtime={profile.runtime}' if named else ''
     normalized = (json.dumps(receipt, indent=2) + '\n').encode('utf-8')
     if evidence.exists() or evidence.is_symlink():
         raise PublicConsumerError('Choose a new public release evidence directory')
@@ -179,30 +237,30 @@ def verify(root: Path, receipt_path: Path, evidence: Path) -> dict:
         evidence.mkdir(parents=True)
         (evidence / 'reviewed-receipt.json').write_bytes(normalized)
         copy_consumer(root, consumer, receipt)
-        if PUBLIC.load_consumer_receipt(receipt_path) != receipt:
+        if PUBLIC.load_consumer_receipt(receipt_path, profile.artifact) != receipt:
             raise PublicConsumerError('Reviewed receipt changed before public consumption')
-        print(f'Checking public Gradle release {receipt["routeContractVersion"]} with a fresh cache...', flush=True)
+        print(f'Checking public Gradle release {receipt["routeContractVersion"]}{label} with a fresh cache...', flush=True)
         try:
             output = run([*gradle_arguments(consumer, receipt), 'clean', 'check'], consumer,
                          clean_environment(cache), evidence / 'gradle.log')
         finally:
             retain_evidence(consumer, evidence)
-        markers = [f'ROUTECONTRACT_PUBLIC_RELEASE_GRAPH_VERIFIED version={receipt["routeContractVersion"]} runtime=5.5.3 payloads=3',
-                   f'ROUTECONTRACT_PUBLIC_SINGLE_MYSQL_VERIFIED version={receipt["routeContractVersion"]} runtime=5.5.3 baseline=MATCH regression=POLICY_VIOLATION attempts=1-to-2']
+        markers = [f'ROUTECONTRACT_PUBLIC_RELEASE_GRAPH_VERIFIED version={receipt["routeContractVersion"]} runtime={profile.runtime} payloads=3',
+                   f'ROUTECONTRACT_PUBLIC_SINGLE_MYSQL_VERIFIED version={receipt["routeContractVersion"]} runtime={profile.runtime} baseline=MATCH regression=POLICY_VIOLATION attempts=1-to-2']
         if any(marker not in output for marker in markers):
             raise PublicConsumerError('Public consumer omitted required graph, MySQL or CLI evidence')
         counts = verify_junit(consumer / 'build/test-results/test' / JUNIT_NAME)
-    if PUBLIC.load_consumer_receipt(receipt_path) != receipt:
+    if PUBLIC.load_consumer_receipt(receipt_path, profile.artifact) != receipt:
         raise PublicConsumerError('Reviewed receipt changed during public consumption')
-    summary = {'formatVersion': 1, 'routeContractVersion': receipt['routeContractVersion'],
+    summary = {'formatVersion': 1, 'routeContractVersion': receipt['routeContractVersion'], **named,
                'normalizedReviewedReceiptSha256': hashlib.sha256(normalized).hexdigest(),
-               'buildTool': 'Gradle', 'runtime': '5.5.3', 'junit': counts,
+               'buildTool': 'Gradle', 'runtime': profile.runtime, 'junit': counts,
                'configuredRepository': CENTRAL, 'publicRepositoryConsumptionVerified': True,
                'evidenceLabel': 'verified - MySQL',
                'transportBoundary': 'Gradle final redirect origins are not independently constrained; require separate redirect-rejecting public-byte readback',
                'boundary': 'SQLExecutionHook-reported physical JDBC execution attempts; not a complete route plan or business success'}
     (evidence / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n', encoding='utf-8')
-    print('ROUTECONTRACT_PUBLIC_GRADLE_RELEASE_CONSUMER_VERIFIED mysqlTests=3 publicConsumption=true')
+    print(f'ROUTECONTRACT_PUBLIC_GRADLE_RELEASE_CONSUMER_VERIFIED mysqlTests=3 publicConsumption=true{label}')
     return summary
 
 
@@ -210,10 +268,12 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
     parser.add_argument('--receipt', required=True, type=Path)
     parser.add_argument('--evidence-directory', required=True, type=Path)
+    parser.add_argument('--artifact', choices=PUBLIC.MODULES,
+                        help='require the receipt to name this artifact (default: the one artifact it names)')
     args = parser.parse_args(argv)
     try:
         verify(Path(__file__).resolve().parents[1], args.receipt.expanduser().absolute(),
-               args.evidence_directory.expanduser().absolute())
+               args.evidence_directory.expanduser().absolute(), args.artifact)
         return 0
     except (PublicConsumerError, PUBLIC.ReceiptError, OSError, ValueError, subprocess.SubprocessError) as error:
         print(f'PUBLIC_GRADLE_RELEASE_CONSUMER_FAILED: {error}', file=sys.stderr)

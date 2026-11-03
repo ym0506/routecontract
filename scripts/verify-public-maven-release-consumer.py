@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Resolve and verify a reviewed public 0.1.3+ single-coordinate release with Maven/MySQL."""
+"""Resolve and verify a reviewed public 0.1.3+ single-coordinate release with Maven/MySQL.
+
+The reviewed receipt names exactly one published artifact, and that artifact selects the runtime
+profile: routecontract-shardingsphere-5.5 runs on ShardingSphere-JDBC 5.5.3 with the fixture POM's
+defaults (unchanged) and routecontract-shardingsphere-5.4.1-5.5.2 runs on ShardingSphere-JDBC 5.5.2
+through the fixture POM's runtime-5.5.2 profile.
+"""
 from __future__ import annotations
 
 import argparse
@@ -13,6 +19,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from typing import NamedTuple
 import xml.etree.ElementTree as ET
 
 GROUP = 'io.github.ym0506.routecontract'
@@ -43,6 +50,23 @@ class VerificationError(ValueError):
     """A distribution acceptance boundary failed."""
 
 
+class RuntimeProfile(NamedTuple):
+    """The exact consumer runtime for one published artifact and how the fixture POM selects it."""
+    artifact: str
+    runtime: str
+    required_ss: frozenset[str]  # ShardingSphere anchors that must be selected at exactly this runtime
+    maven_profile: str | None  # fixture POM profile activated with -P; None keeps the POM defaults
+
+
+PROFILES = {profile.artifact: profile for profile in (
+    RuntimeProfile(ARTIFACT, RUNTIME, frozenset(REQUIRED_SS), None),
+    # 5.5.2 keeps the database type SPI in shardingsphere-infra-database-core, which this artifact links.
+    RuntimeProfile('routecontract-shardingsphere-5.4.1-5.5.2', '5.5.2', frozenset({
+        'shardingsphere-jdbc', 'shardingsphere-infra-executor', 'shardingsphere-infra-spi',
+        'shardingsphere-infra-database-core'}), 'runtime-5.5.2'))}
+DEFAULT_PROFILE = PROFILES[ARTIFACT]
+
+
 def public_artifacts():
     name = 'routecontract_public_release_artifacts'
     if name not in sys.modules:
@@ -50,7 +74,50 @@ def public_artifacts():
         module = importlib.util.module_from_spec(spec)
         sys.modules[name] = module
         spec.loader.exec_module(module)
+        if tuple(PROFILES) != tuple(module.MODULES) or module.DEFAULT_MODULE != ARTIFACT:
+            del sys.modules[name]
+            raise VerificationError('Every published artifact needs exactly one consumer runtime profile')
     return sys.modules[name]
+
+
+def _select(candidates: tuple[str, ...], validate) -> tuple[dict, RuntimeProfile]:
+    receipt_error = public_artifacts().ReceiptError
+    accepted, errors = [], {}
+    for artifact in candidates:
+        try:
+            accepted.append((validate(artifact), PROFILES[artifact]))
+        except receipt_error as error:
+            errors[artifact] = str(error)
+    if len(accepted) == 1:
+        return accepted[0]
+    if accepted:
+        raise receipt_error('Consumer receipt must name exactly one published artifact')
+    if len(candidates) == 1:
+        raise receipt_error(f'Consumer receipt is not a reviewed receipt for {candidates[0]}: {errors[candidates[0]]}')
+    if len(set(errors.values())) == 1:
+        raise receipt_error(next(iter(errors.values())))
+    raise receipt_error('Consumer receipt does not match any published artifact ('
+                        + '; '.join(f'{artifact}: {error}' for artifact, error in errors.items()) + ')')
+
+
+def _candidates(artifact: str | None) -> tuple[str, ...]:
+    helper = public_artifacts()
+    return helper.MODULES if artifact is None else (helper.published_module(artifact),)
+
+
+def select_profile(document: object, artifact: str | None = None) -> tuple[dict, RuntimeProfile]:
+    """Validate a receipt for exactly one published artifact; an explicit artifact must be the one it names."""
+    return _select(_candidates(artifact),
+                   lambda module: public_artifacts().validate_consumer_receipt(document, module))
+
+
+def load_receipt(path: Path, artifact: str | None = None) -> tuple[dict, RuntimeProfile]:
+    return _select(_candidates(artifact), lambda module: public_artifacts().load_consumer_receipt(path, module))
+
+
+def named_artifact(profile: RuntimeProfile) -> dict:
+    """The original artifact keeps its original summary shape; any other one names itself."""
+    return {} if profile == DEFAULT_PROFILE else {'artifact': profile.artifact}
 
 
 def write_json(path: Path, value: dict) -> None:
@@ -66,7 +133,8 @@ def sha256(path: Path) -> str:
 
 
 def check_receipt(path: Path, expected: dict) -> None:
-    if public_artifacts().load_consumer_receipt(path) != expected:
+    _, profile = select_profile(expected)
+    if public_artifacts().load_consumer_receipt(path, profile.artifact) != expected:
         raise VerificationError('Reviewed receipt changed during verification')
 
 
@@ -80,11 +148,16 @@ def clean_environment(java_home: Path, private_home: Path) -> dict[str, str]:
     return environment
 
 
-def maven_arguments(maven: str, settings: Path, cache: Path, private_home: Path) -> list[str]:
-    return [maven, '--batch-mode', '--no-transfer-progress', '--strict-checksums',
-            '--settings', str(settings), '--global-settings', str(settings),
-            f'-Dmaven.repo.local={cache}', f'-Duser.home={private_home}', '-Dstyle.color=never',
-            '-Dmaven.resolver.transport=native', '-Daether.connector.http.followRedirects=false']
+def maven_arguments(maven: str, settings: Path, cache: Path, private_home: Path,
+                    profile: RuntimeProfile = DEFAULT_PROFILE) -> list[str]:
+    arguments = [maven, '--batch-mode', '--no-transfer-progress', '--strict-checksums',
+                 '--settings', str(settings), '--global-settings', str(settings),
+                 f'-Dmaven.repo.local={cache}', f'-Duser.home={private_home}', '-Dstyle.color=never',
+                 '-Dmaven.resolver.transport=native', '-Daether.connector.http.followRedirects=false']
+    if profile.maven_profile is not None:
+        # Every invocation (toolchain, resolve, verify, final graph) carries the same profile.
+        arguments.append(f'-P{profile.maven_profile}')
+    return arguments
 
 
 def run(command: list[str], cwd: Path, environment: dict[str, str], log: Path) -> str:
@@ -127,7 +200,7 @@ def nodes(tree: dict):
         yield from nodes(child)
 
 
-def verify_tree(tree: dict, version: str) -> dict:
+def verify_tree(tree: dict, version: str, profile: RuntimeProfile = DEFAULT_PROFILE) -> dict:
     selected = list(nodes(tree))
     first_party = [node for node in selected if node.get('groupId') == GROUP]
     direct = [node for node in tree.get('children', []) if node.get('groupId') == GROUP]
@@ -135,13 +208,15 @@ def verify_tree(tree: dict, version: str) -> dict:
         raise VerificationError('The reviewed single coordinate must be the sole direct first-party dependency')
     item = first_party[0]
     if (item.get('artifactId'), item.get('version'), item.get('type'), item.get('classifier') or '') != (
-            ARTIFACT, version, 'jar', ''):
+            profile.artifact, version, 'jar', ''):
         raise VerificationError('Unexpected selected RouteContract coordinate')
     ss = {(item.get('artifactId'), item.get('version')) for item in selected if item.get('groupId') == SS_GROUP}
-    if not REQUIRED_SS.issubset({artifact for artifact, _ in ss}) or any(value != RUNTIME for _, value in ss):
-        raise VerificationError('The whole selected ShardingSphere group must be exactly 5.5.3, including runtime anchors')
-    return {'firstPartyArtifacts': 1, 'soleDirectFirstPartyCoordinate': f'{GROUP}:{ARTIFACT}:{version}',
-            'shardingSphereComponents': len(ss), 'shardingSphereVersion': RUNTIME,
+    if not profile.required_ss.issubset({artifact for artifact, _ in ss}) or any(
+            value != profile.runtime for _, value in ss):
+        raise VerificationError(f'The whole selected ShardingSphere group must be exactly {profile.runtime}, '
+                                'including runtime anchors')
+    return {'firstPartyArtifacts': 1, 'soleDirectFirstPartyCoordinate': f'{GROUP}:{profile.artifact}:{version}',
+            'shardingSphereComponents': len(ss), 'shardingSphereVersion': profile.runtime,
             'selectedComponents': sorted({':'.join(str(item.get(field) or '') for field in
                 ('groupId', 'artifactId', 'type', 'classifier', 'version', 'scope')) for item in selected})}
 
@@ -197,6 +272,7 @@ def verify_consumer(root: Path, temporary: Path, evidence: Path, receipt_path: P
     consumer, cache, private_home = temporary / 'consumer', temporary / 'repository', temporary / 'home'
     if cache.exists() or cache.is_symlink() or private_home.exists() or private_home.is_symlink():
         raise VerificationError('Maven repository and private home must start absent')
+    receipt, profile = select_profile(receipt)
     private_home.mkdir()
     version = receipt['routeContractVersion']
     copy_consumer(root, consumer, version)
@@ -204,7 +280,7 @@ def verify_consumer(root: Path, temporary: Path, evidence: Path, receipt_path: P
     shutil.copy2(root / 'examples/public-maven-release-consumer/settings.xml', settings)
     shutil.copy2(settings, evidence / 'central-settings.xml')
     environment = clean_environment(java_home, private_home)
-    arguments = maven_arguments(maven, settings, cache, private_home)
+    arguments = maven_arguments(maven, settings, cache, private_home, profile)
     graph_path = evidence / 'resolved-graph.json'
     try:
         toolchain = run([*arguments, '--version'], consumer, environment, evidence / 'toolchain.log')
@@ -215,28 +291,28 @@ def verify_consumer(root: Path, temporary: Path, evidence: Path, receipt_path: P
         print(f'Resolving public Maven {version} with a fresh repository before compiling or testing...', flush=True)
         run([*arguments, f'{DEPENDENCY_PLUGIN}:resolve', f'{DEPENDENCY_PLUGIN}:tree',
              '-DoutputType=json', f'-DoutputFile={graph_path}'], consumer, environment, evidence / 'resolve.log')
-        graph = verify_tree(json.loads(graph_path.read_text(encoding='utf-8')), version)
+        graph = verify_tree(json.loads(graph_path.read_text(encoding='utf-8')), version, profile)
         consumed = verify_origins(cache, receipt)
         check_receipt(receipt_path, receipt)
         write_json(evidence / 'verified-before-tests.json', {'consumedPayloads': consumed, **graph})
         digest = next(item['sha256'] for item in consumed if item['name'].endswith('.jar'))
-        output = run([*arguments, f'-Droutecontract.sha256.{ARTIFACT}={digest}',
+        output = run([*arguments, f'-Droutecontract.sha256.{profile.artifact}={digest}',
                       f'-Droutecontract.evidenceDirectory={evidence / "reports"}', 'clean', 'verify'],
                      consumer, environment, evidence / 'maven.log')
         counts = verify_junit(consumer / 'target/surefire-reports' / JUNIT_NAME)
-        marker = (f'ROUTECONTRACT_PUBLIC_SINGLE_MYSQL_VERIFIED version={version} runtime=5.5.3 '
+        marker = (f'ROUTECONTRACT_PUBLIC_SINGLE_MYSQL_VERIFIED version={version} runtime={profile.runtime} '
                   'baseline=MATCH regression=POLICY_VIOLATION attempts=1-to-2')
         if marker not in output:
             raise VerificationError('Maven output omitted the real-MySQL acceptance marker')
         final_graph = evidence / 'resolved-graph-after-tests.json'
         run([*arguments, f'{DEPENDENCY_PLUGIN}:tree', '-DoutputType=json', f'-DoutputFile={final_graph}'],
             consumer, environment, evidence / 'graph-after-tests.log')
-        if verify_tree(json.loads(final_graph.read_text(encoding='utf-8')), version) != graph:
+        if verify_tree(json.loads(final_graph.read_text(encoding='utf-8')), version, profile) != graph:
             raise VerificationError('Selected dependency components changed during MySQL verification')
         verify_origins(cache, receipt)
         check_receipt(receipt_path, receipt)
         return {'junit': counts, **graph, 'consumedPayloads': consumed,
-                'evidenceLabels': ['verified - MySQL', 'verified - ShardingSphere-JDBC 5.5.3']}
+                'evidenceLabels': ['verified - MySQL', f'verified - ShardingSphere-JDBC {profile.runtime}']}
     finally:
         retain_evidence(consumer, cache, evidence)
 
@@ -247,10 +323,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument('--evidence-directory', type=Path, required=True)
     parser.add_argument('--java-home', type=Path, required=True)
     parser.add_argument('--maven', default='mvn')
+    parser.add_argument('--artifact', choices=public_artifacts().MODULES,
+                        help='require the receipt to name this artifact (default: the one artifact it names)')
     args = parser.parse_args(argv)
     root = Path(__file__).resolve().parents[1]
     receipt_path = args.receipt.expanduser().absolute()
-    receipt = public_artifacts().load_consumer_receipt(receipt_path)
+    receipt, profile = load_receipt(receipt_path, args.artifact)
+    named = named_artifact(profile)
     evidence = args.evidence_directory.expanduser().absolute()
     validate_evidence_path(root, receipt_path, evidence)
     java_home = args.java_home.expanduser().resolve(strict=True)
@@ -264,7 +343,7 @@ def main(argv: list[str] | None = None) -> int:
             result = verify_consumer(root, Path(temporary).resolve(), evidence, receipt_path, receipt, maven, java_home)
         check_receipt(receipt_path, receipt)
         write_json(evidence / 'summary.json', {
-            'formatVersion': 1, 'complete': True, 'routeContractVersion': receipt['routeContractVersion'],
+            'formatVersion': 1, 'complete': True, 'routeContractVersion': receipt['routeContractVersion'], **named,
             'publicRepositoryConsumptionVerified': True, 'repository': CENTRAL_URL,
             'redirectsFollowed': False, 'mavenVersion': MAVEN_VERSION, 'javaMajorVersion': 17,
             'normalizedReviewedReceiptSha256': sha256(evidence / 'reviewed-receipt.json'),
@@ -274,10 +353,11 @@ def main(argv: list[str] | None = None) -> int:
             **result})
     except BaseException:
         write_json(evidence / 'failure.json', {'formatVersion': 1, 'complete': False,
-                   'routeContractVersion': receipt['routeContractVersion'],
+                   'routeContractVersion': receipt['routeContractVersion'], **named,
                    'publicRepositoryConsumptionVerified': False})
         raise
-    print(f'ROUTECONTRACT_PUBLIC_MAVEN_RELEASE_CONSUMER_VERIFIED version={receipt["routeContractVersion"]} mysqlTests=3 publicConsumption=true')
+    label = f' artifact={profile.artifact} runtime={profile.runtime}' if named else ''
+    print(f'ROUTECONTRACT_PUBLIC_MAVEN_RELEASE_CONSUMER_VERIFIED version={receipt["routeContractVersion"]} mysqlTests=3 publicConsumption=true{label}')
     return 0
 
 

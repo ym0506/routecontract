@@ -57,7 +57,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Exercises one independently resolved public stable single-module release and its CLI.
- * Observes exact ShardingSphere-JDBC 5.5.3 synchronous non-batch physical JDBC execution attempts.
+ * Observes synchronous non-batch physical JDBC execution attempts on the exact ShardingSphere-JDBC
+ * runtime paired with the selected artifact: 5.5.3 for routecontract-shardingsphere-5.5 (the default)
+ * and 5.5.2 for routecontract-shardingsphere-5.4.1-5.5.2.
  * Business rows are asserted separately; hook completion does not prove business success or commit.
  */
 @Testcontainers
@@ -66,9 +68,13 @@ class PublicReleaseMySqlTest {
             "META-INF/services/org.apache.shardingsphere.infra.executor.sql.hook.SQLExecutionHook";
     private static final String OPERATION = "find-paid-orders-by-user";
     private static final List<OrderRow> EXPECTED_ROWS = List.of(new OrderRow(201L, 3L, "PAID"));
-    private static final String EXPECTED_RUNTIME = "5.5.3";
+    private static final String DEFAULT_ARTIFACT = "routecontract-shardingsphere-5.5";
+    private static final Map<String, String> RUNTIME_BY_ARTIFACT = Map.of(
+            DEFAULT_ARTIFACT, "5.5.3",
+            "routecontract-shardingsphere-5.4.1-5.5.2", "5.5.2");
+    private static final String ARTIFACT = System.getProperty("routecontract.artifact", DEFAULT_ARTIFACT);
+    private static final String EXPECTED_RUNTIME = expectedRuntime();
     private static final String VERSION = stableReleaseVersion();
-    private static final String ARTIFACT = "routecontract-shardingsphere-5.5";
     private static final String PROVIDER_CLASS =
             "io.github.ym0506.routecontract.internal.RouteContractSqlExecutionHook";
     private static final DataSourceAliases ALIASES = DataSourceAliases.of(Map.of(
@@ -248,7 +254,7 @@ class PublicReleaseMySqlTest {
         String summary = """
                 {
                   "routeContractVersion": "%s",
-                  "shardingSphereJdbcVersion": "5.5.3",
+                  "shardingSphereJdbcVersion": "%s",
                   "boundary": "synchronous non-batch PreparedStatement",
                   "business": {"exactExpectedRowMatched": true, "equalityRowCount": 1, "rangeRowCount": 1, "sameRows": true},
                   "equality": {"physicalJdbcExecutionAttempts": 1, "verification": "MATCH"},
@@ -256,7 +262,7 @@ class PublicReleaseMySqlTest {
                   "approvedSchemaVersion": 1,
                   "observedSchemaVersion": %d
                 }
-                """.formatted(VERSION, candidate.schemaVersion());
+                """.formatted(VERSION, EXPECTED_RUNTIME, candidate.schemaVersion());
         Files.writeString(evidence.resolve("business-summary.json"), summary,
                 StandardCharsets.UTF_8, StandardOpenOption.CREATE_NEW);
         // Separate synthetic business assertion evidence, derived from the actual captured rows.
@@ -323,7 +329,7 @@ class PublicReleaseMySqlTest {
         assertEquals("file", origin.getProtocol());
         Path jar = Path.of(origin.toURI());
         assertTrue(Files.isRegularFile(jar, LinkOption.NOFOLLOW_LINKS));
-        assertEquals("shardingsphere-jdbc-5.5.3.jar", jar.getFileName().toString());
+        assertEquals("shardingsphere-jdbc-" + EXPECTED_RUNTIME + ".jar", jar.getFileName().toString());
         try (JarFile archive = new JarFile(jar.toFile())) {
             var entry = archive.getJarEntry("META-INF/maven/org.apache.shardingsphere/shardingsphere-jdbc/pom.properties");
             assertNotNull(entry, "selected ShardingSphere JDBC JAR must retain Maven version metadata");
@@ -335,6 +341,20 @@ class PublicReleaseMySqlTest {
             assertEquals("shardingsphere-jdbc", properties.getProperty("artifactId"));
             assertEquals(EXPECTED_RUNTIME, properties.getProperty("version"));
         }
+    }
+
+    private static String expectedRuntime() {
+        // Each published artifact is verified on exactly one runtime; a mismatched pair fails before any test.
+        String paired = RUNTIME_BY_ARTIFACT.get(ARTIFACT);
+        if (paired == null) {
+            throw new IllegalArgumentException("Consumer requires a published RouteContract artifact: " + ARTIFACT);
+        }
+        String runtime = System.getProperty("routecontract.expectedRuntime", paired);
+        if (!runtime.equals(paired)) {
+            throw new IllegalArgumentException(ARTIFACT + " is verified on ShardingSphere-JDBC " + paired
+                    + ", not " + runtime);
+        }
+        return runtime;
     }
 
     private static String stableReleaseVersion() {
