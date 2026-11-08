@@ -23,9 +23,9 @@ sourceSets.test.java.srcDir(syncSharedTests)
 // 5.4.1 publishes the driver as shardingsphere-jdbc-core; 5.5.0 renamed it to shardingsphere-jdbc.
 def shardingSphereRuntimes = [
         '5.4.1': 'org.apache.shardingsphere:shardingsphere-jdbc-core:5.4.1',
-        '5.5.0': 'org.apache.shardingsphere:shardingsphere-jdbc:5.5.0',
-        '5.5.1': 'org.apache.shardingsphere:shardingsphere-jdbc:5.5.1',
-        '5.5.2': 'org.apache.shardingsphere:shardingsphere-jdbc:5.5.2']
+        '5.5.3': 'org.apache.shardingsphere:shardingsphere-jdbc:5.5.3',
+        '5.5.3': 'org.apache.shardingsphere:shardingsphere-jdbc:5.5.3',
+        '5.5.3': 'org.apache.shardingsphere:shardingsphere-jdbc:5.5.3']
 
 configurations {
     mysqlTestCommon {
